@@ -29,9 +29,6 @@ namespace YesSql.Tests
             // recreating a fresh SqlCe db
             new SqlCeEngine {LocalConnectionString = "Data Source=Store.sdf"}.CreateDatabase();
 
-            // using app.config settings as fluent config doesn't provide MsSqlCe40Dialect as a choice
-            // () => MsSqlCeConfiguration.Standard.ConnectionString("Data Source=Store.sdf")
-
             _store = new Store().Configure(MsSqlCeConfiguration.MsSqlCe40.ConnectionString("Data Source=Store.sdf").ShowSql());
 
         }

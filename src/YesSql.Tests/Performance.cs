@@ -3,6 +3,7 @@ using System.Data.SqlServerCe;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using FluentNHibernate.Cfg.Db;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
@@ -476,19 +477,16 @@ namespace YesSql.Tests
         [TestInitialize]
         public void Init() 
         {
-            // delete the db before starting tests
-            if (File.Exists("Store.sdf")) 
-            {
-                File.Delete("Store.sdf");
-            }
+            //// delete the db before starting tests
+            //if (File.Exists("Store.sdf")) 
+            //{
+            //    File.Delete("Store.sdf");
+            //}
 
-            // recreating a fresh SqlCe db
-            new SqlCeEngine { LocalConnectionString = "Data Source=Store.sdf" }.CreateDatabase();
+            //// recreating a fresh SqlCe db
+            //new SqlCeEngine { LocalConnectionString = "Data Source=Store.sdf" }.CreateDatabase();
 
-            // using app.config settings as fluent config doesn't provide MsSqlCe40Dialect as a choice
-            // () => MsSqlCeConfiguration.Standard.ConnectionString("Data Source=Store.sdf")
-
-            Store = new Store();
+            Store = new Store().Configure(MsSqlConfiguration.MsSql2008.ConnectionString("Data Source=localhost;Initial Catalog=yessql;Persist Security Info=False;Integrated Security=true"));
 
             Store.RegisterIndexes<UserByName>();
 
@@ -499,11 +497,28 @@ namespace YesSql.Tests
         [TestMethod]
         public void Main() 
         {
+            Clean(Store);
+
             WriteAllWithYesSql(Store);
 
             QueryByFullName(Store);
 
             QueryByPartialName(Store);
+        }
+
+        private static void Clean(IStore store)
+        {
+            using (var session = store.CreateSession())
+            {
+                var users = session.QueryDocument<User>();
+
+                foreach(var user in users)
+                {
+                    session.Delete(user);
+                }
+
+                session.Commit();
+            }
         }
 
         private static void QueryByFullName(IStore store) 

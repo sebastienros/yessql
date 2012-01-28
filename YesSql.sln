@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Core", "YesSql.Core\YesSql.Core.csproj", "{CB9AB06D-0ABA-49E3-8F78-A74534485CE4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Core", "src\YesSql.Core\YesSql.Core.csproj", "{CB9AB06D-0ABA-49E3-8F78-A74534485CE4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Tests", "YesSql.Tests\YesSql.Tests.csproj", "{3A07A938-7809-41F1-90EE-075ED4E788F6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Tests", "src\YesSql.Tests\YesSql.Tests.csproj", "{3A07A938-7809-41F1-90EE-075ED4E788F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Shards.Demo", "YesSql.Shards.Demo\YesSql.Shards.Demo.csproj", "{FA0782D5-EAE8-496C-A8B4-E6F98849C153}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Shards.Demo", "src\YesSql.Shards.Demo\YesSql.Shards.Demo.csproj", "{FA0782D5-EAE8-496C-A8B4-E6F98849C153}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
