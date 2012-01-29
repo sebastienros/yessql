@@ -587,11 +587,11 @@ namespace YesSql.Tests
         }
     }
 
-    public class UserByName : HasDocumentIndex, IIndexProvider
+    public class UserByName : HasDocumentIndex
     {
         public virtual string Name { get; set; }
 
-        public virtual void Describe(DescribeContext context)
+        public override void Describe(DescribeContext context)
         {
             context.For<User, UserByName>()
                 .Index(users => users.Select(user => new UserByName {Name = user.Name}));

@@ -1,15 +1,15 @@
 ﻿using System.Linq;
 using YesSql.Core.Indexes;
-using YesSql.Shards.Demo.Models;
+using YesSql.Samples.Shards.Models;
 
-namespace YesSql.Shards.Demo.Indexes
+namespace YesSql.Samples.Shards.Indexes
 {
-    public class OrderByCustomerName : HasDocumentsIndex, IIndexProvider
+    public class OrderByCustomerName : HasDocumentsIndex
     {
         [GroupKey]
         public virtual string Name { get; set; }
 
-        public virtual void Describe(DescribeContext context) {
+        public override void Describe(DescribeContext context) {
             context
                 .For<Order, OrderByCustomerName, string>()
                 .Index(

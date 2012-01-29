@@ -4,11 +4,11 @@ using YesSql.Tests.Models;
 
 namespace YesSql.Tests.Indexes
 {
-    public class PersonByName : HasDocumentIndex, IIndexProvider
+    public class PersonByName : HasDocumentIndex
     {
         public virtual string Name { get; set; }
 
-        public virtual void Describe(DescribeContext context) {
+        public override void Describe(DescribeContext context) {
             context
                 .For<Person, PersonByName>()
                 .Index(

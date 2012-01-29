@@ -5,7 +5,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Core", "src\YesSql.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Tests", "src\YesSql.Tests\YesSql.Tests.csproj", "{3A07A938-7809-41F1-90EE-075ED4E788F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Shards.Demo", "src\YesSql.Shards.Demo\YesSql.Shards.Demo.csproj", "{FA0782D5-EAE8-496C-A8B4-E6F98849C153}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{575DE04E-E0BB-41A5-8493-3F5DEDDA470D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Shards", "samples\YesSql.Samples.Shards\YesSql.Samples.Shards.csproj", "{FA0782D5-EAE8-496C-A8B4-E6F98849C153}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Hi", "YesSql.Samples.Hi\YesSql.Samples.Hi.csproj", "{1EC0F6B9-0441-4F42-8C0C-E85966D42145}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
@@ -50,8 +54,22 @@ Global
 		{FA0782D5-EAE8-496C-A8B4-E6F98849C153}.Release|Mixed Platforms.Build.0 = Release|x86
 		{FA0782D5-EAE8-496C-A8B4-E6F98849C153}.Release|x86.ActiveCfg = Release|x86
 		{FA0782D5-EAE8-496C-A8B4-E6F98849C153}.Release|x86.Build.0 = Release|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Debug|x86.ActiveCfg = Debug|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Debug|x86.Build.0 = Debug|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Release|Any CPU.ActiveCfg = Release|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Release|Mixed Platforms.Build.0 = Release|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Release|x86.ActiveCfg = Release|x86
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FA0782D5-EAE8-496C-A8B4-E6F98849C153} = {575DE04E-E0BB-41A5-8493-3F5DEDDA470D}
+		{1EC0F6B9-0441-4F42-8C0C-E85966D42145} = {575DE04E-E0BB-41A5-8493-3F5DEDDA470D}
 	EndGlobalSection
 EndGlobal

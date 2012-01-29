@@ -6,21 +6,22 @@ using System.Reflection;
 namespace YesSql.Core.Indexes {
     public class DescribeContext 
     {
-        private readonly Dictionary<Type, IDescribeFor> _describes = new Dictionary<Type, IDescribeFor>();
+        private readonly Dictionary<Type, IList<IDescribeFor>> _describes = new Dictionary<Type, IList<IDescribeFor>>();
 
         public IEnumerable<IndexDescriptor> Describe(params Type[] types)
         {
             return _describes
                 .Where(kp => types == null || types.Length == 0 || types.Contains(kp.Key))
+                .SelectMany(x => x.Value)
                 .Select(kp => new IndexDescriptor
                 {
-                    Type = kp.Key,
-                    Map = kp.Value.GetMap(),
-                    Reduce = kp.Value.GetReduce(),
-                    Delete = kp.Value.GetDelete(),
-                    Update = kp.Value.GetUpdate(),
-                    GroupKey = kp.Value.GroupProperty,
-                    IndexType = kp.Value.IndexType
+                    Type = kp.IndexType,
+                    Map = kp.GetMap(),
+                    Reduce = kp.GetReduce(),
+                    Delete = kp.GetDelete(),
+                    Update = kp.GetUpdate(),
+                    GroupKey = kp.GroupProperty,
+                    IndexType = kp.IndexType
                 });
         }
 
@@ -31,11 +32,13 @@ namespace YesSql.Core.Indexes {
 
         public DescribeFor<T, TIndex, TKey> For<T, TIndex, TKey>() where TIndex : IIndex 
         {
-            IDescribeFor describeFor;
-            if (!_describes.TryGetValue(typeof(T), out describeFor)) {
-                describeFor = new DescribeFor<T, TIndex, TKey>();
-                _describes[typeof(T)] = describeFor;
+            IList<IDescribeFor> descriptors;
+            if (!_describes.TryGetValue(typeof(T), out descriptors)) {
+                descriptors = _describes[typeof(T)] = new List<IDescribeFor>();
             }
+
+            var describeFor = new DescribeFor<T, TIndex, TKey>();
+            descriptors.Add(describeFor);
 
             var groupProperties = typeof(TIndex).GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(
                 x => x.GetCustomAttributes(typeof(GroupKeyAttribute), true).Any())
@@ -48,7 +51,7 @@ namespace YesSql.Core.Indexes {
 
             describeFor.GroupProperty = groupProperties.SingleOrDefault();
 
-            return (DescribeFor<T, TIndex, TKey>)describeFor;
+            return describeFor;
         }
 
     }

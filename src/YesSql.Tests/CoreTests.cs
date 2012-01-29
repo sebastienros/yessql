@@ -231,7 +231,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void ShouldReduce()
         {
-            _store.RegisterIndexes<ArticleByDayIndexer>();
+            _store.RegisterIndexes<ArticlesByDay>();
 
             using (var session = _store.CreateSession())
             {
@@ -297,7 +297,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void ShouldReduceAndMergeWithDatabase()
         {
-            _store.RegisterIndexes(typeof (ArticleByDayIndexer).Assembly);
+            _store.RegisterIndexes(typeof(ArticlesByDay).Assembly);
 
             using (var session = _store.CreateSession())
             {
@@ -438,7 +438,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void RemovingDocumentShouldDeleteReducedIndex()
         {
-            _store.RegisterIndexes<ArticleByDayIndexer>();
+            _store.RegisterIndexes<ArticlesByDay>();
 
             using (var session = _store.CreateSession())
             {
@@ -498,7 +498,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void UpdatingDocumentShouldUpdateReducedIndex()
         {
-            _store.RegisterIndexes<ArticleByDayIndexer>();
+            _store.RegisterIndexes<ArticlesByDay>();
 
             using (var session = _store.CreateSession())
             {
@@ -574,7 +574,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void AlteringDocumentShouldUpdateReducedIndex()
         {
-            _store.RegisterIndexes<ArticleByDayIndexer>();
+            _store.RegisterIndexes<ArticlesByDay>();
 
             using (var session = _store.CreateSession())
             {
@@ -634,7 +634,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void IndexHasLinkToDocuments()
         {
-            _store.RegisterIndexes<ArticleByDayIndexer>();
+            _store.RegisterIndexes<ArticlesByDay>();
 
             using (var session = _store.CreateSession())
             {

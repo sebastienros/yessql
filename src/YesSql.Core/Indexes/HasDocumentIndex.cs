@@ -9,7 +9,7 @@ namespace YesSql.Core.Indexes
         Document Document { get; set; }
     }
 
-    public abstract class HasDocumentIndex : IHasDocumentIndex
+    public abstract class HasDocumentIndex : IHasDocumentIndex, IIndexProvider
     {
         private readonly List<Document> _documents = new List<Document>(1);
 
@@ -32,5 +32,7 @@ namespace YesSql.Core.Indexes
         {
             get { return _documents; }
         }
+
+        public abstract void Describe(DescribeContext context);
     }
 }

@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using YesSql.Core.Indexes;
 using YesSql.Core.Sharding;
-using YesSql.Shards.Demo.Models;
+using YesSql.Samples.Shards.Models;
 
-namespace YesSql.Shards.Demo {
+namespace YesSql.Samples.Shards {
     public class ShardStrategyFactory : IShardStrategyFactory
     {
         public IShardStrategy Create(IEnumerable<string> shardIds)

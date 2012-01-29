@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using YesSql.Core.Data.Models;
 
 namespace YesSql.Core.Indexes
@@ -8,7 +7,7 @@ namespace YesSql.Core.Indexes
     {
     }
 
-    public abstract class HasDocumentsIndex : IHasDocumentsIndex
+    public abstract class HasDocumentsIndex : IHasDocumentsIndex, IIndexProvider
     {
         protected HasDocumentsIndex()
         {
@@ -17,5 +16,6 @@ namespace YesSql.Core.Indexes
 
         public virtual int Id { get; set; }
         public virtual ICollection<Document> Documents { get; set; }
+        public abstract void Describe(DescribeContext context);
     }
 }

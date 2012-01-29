@@ -3,10 +3,10 @@ using System.Linq;
 using FluentNHibernate.Cfg.Db;
 using NHibernate.Tool.hbm2ddl;
 using YesSql.Core.Data;
-using YesSql.Shards.Demo.Indexes;
-using YesSql.Shards.Demo.Models;
+using YesSql.Samples.Shards.Indexes;
+using YesSql.Samples.Shards.Models;
 
-namespace YesSql.Shards.Demo
+namespace YesSql.Samples.Shards
 {
     internal class Program
     {

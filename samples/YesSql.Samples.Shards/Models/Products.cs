@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace YesSql.Shards.Demo.Models
+namespace YesSql.Samples.Shards.Models
 {
     public class Product {
         public int Id { get; set; }
