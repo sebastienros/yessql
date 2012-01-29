@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{575D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Shards", "samples\YesSql.Samples.Shards\YesSql.Samples.Shards.csproj", "{FA0782D5-EAE8-496C-A8B4-E6F98849C153}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Hi", "YesSql.Samples.Hi\YesSql.Samples.Hi.csproj", "{1EC0F6B9-0441-4F42-8C0C-E85966D42145}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Hi", "samples\YesSql.Samples.Hi\YesSql.Samples.Hi.csproj", "{1EC0F6B9-0441-4F42-8C0C-E85966D42145}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
