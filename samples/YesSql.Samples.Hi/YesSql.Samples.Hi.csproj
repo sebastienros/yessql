@@ -60,8 +60,8 @@
   <ItemGroup>
     <Compile Include="Indexes\BlogPostByAuthor.cs" />
     <Compile Include="Indexes\BlogPostByDay.cs" />
+    <Compile Include="Indexes\BlogPostIndexProvider.cs" />
     <Compile Include="Models\BlogPost.cs" />
-    <Compile Include="Models\Comment.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

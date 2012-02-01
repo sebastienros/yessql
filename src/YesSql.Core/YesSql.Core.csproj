@@ -67,6 +67,8 @@
     <Compile Include="Indexes\Index.cs" />
     <Compile Include="Indexes\IndexDescriptor.cs" />
     <Compile Include="Data\Models\Document.cs" />
+    <Compile Include="Indexes\MapIndex.cs" />
+    <Compile Include="Indexes\ReduceIndex.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Data\Session.cs" />
     <Compile Include="Data\Store.cs" />

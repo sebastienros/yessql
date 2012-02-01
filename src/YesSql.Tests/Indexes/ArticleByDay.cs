@@ -4,23 +4,24 @@ using YesSql.Tests.Models;
 
 namespace YesSql.Tests.Indexes
 {
-    public class ArticlesByDay : HasDocumentsIndex
+    public class ArticlesByDay : ReduceIndex
     {
         [GroupKey]
         public virtual int DayOfYear { get; set; }
         public virtual int Count { get; set; }
+    }
 
-        public override void Describe(DescribeContext context) {
+    public class ArticleIndexProvider : IndexProvider<Article>
+    {
+        public override void Describe(DescribeContext<Article> context)
+        {
             context
-                .For<Article, ArticlesByDay, int>()
-                .Index(
-                    map: articles => articles.Select(x =>
-                        new ArticlesByDay {
+                .For<ArticlesByDay, int>().Index(
+                    map: articles => articles.Select(x => new ArticlesByDay {
                             DayOfYear = x.PublishedUtc.DayOfYear,
                             Count = 1
                         }),
-                    reduce: group =>
-                        new ArticlesByDay {
+                    reduce: group => new ArticlesByDay {
                             DayOfYear = group.Key,
                             Count = group.Sum(y => y.Count)
                         },

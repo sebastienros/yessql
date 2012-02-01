@@ -4,18 +4,23 @@ using YesSql.Samples.Shards.Models;
 
 namespace YesSql.Samples.Shards.Indexes
 {
-    public class OrderByCustomerName : HasDocumentsIndex
+    public class OrderByCustomerName : ReduceIndex
     {
         [GroupKey]
         public virtual string Name { get; set; }
+    }
 
-        public override void Describe(DescribeContext context) {
+    public class OrderIndexProvider : IndexProvider<Order>
+    {
+        public override void Describe(DescribeContext<Order> context) 
+        {
             context
-                .For<Order, OrderByCustomerName, string>()
+                .For<OrderByCustomerName, string>()
                 .Index(
                     map: orders => orders.Select(p => new OrderByCustomerName { Name = p.Customer }),
                     reduce: group => new OrderByCustomerName { Name = group.Key }
             );
         }
+        
     }
 }

@@ -140,9 +140,9 @@ namespace YesSql.Core.Data
             }
         }
 
-        public IStore RegisterIndexes<T>() where T : IIndexProvider
+        public IStore RegisterIndexes<T>() where T : IIndexProvider 
         {
-            return RegisterIndexes(typeof (T));
+            return RegisterIndexes(typeof(T));
         }
 
         public IStore RegisterIndexes(Type type)

@@ -193,7 +193,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void ShouldCreateIndexAndLinkToDocument()
         {
-            _store.RegisterIndexes<PersonByName>();
+            _store.RegisterIndexes<PersonIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
@@ -231,7 +231,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void ShouldReduce()
         {
-            _store.RegisterIndexes<ArticlesByDay>();
+            _store.RegisterIndexes<ArticleIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
@@ -297,7 +297,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void ShouldReduceAndMergeWithDatabase()
         {
-            _store.RegisterIndexes(typeof(ArticlesByDay).Assembly);
+            _store.RegisterIndexes<ArticleIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
@@ -367,9 +367,32 @@ namespace YesSql.Tests
         }
 
         [TestMethod]
+        public void MultipleIndexesShoudNotConflict() {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession()) {
+                session.Save(new ArticlesByDay { Count = 1, DayOfYear = new DateTime(2011, 11, 1).DayOfYear });
+                session.Commit();
+            }
+
+            using (var session = _store.CreateSession()) {
+                session.Save(new Article {
+                    PublishedUtc = new DateTime(2011, 11, 1)
+                });
+            
+                session.Commit();
+            }
+
+            using (var session = _store.CreateSession()) {
+                Assert.AreEqual(1, session.QueryIndex<ArticlesByDay>().Count());
+            }
+        }
+
+        [TestMethod]
         public void ShouldDeleteCustomObject()
         {
-            _store.RegisterIndexes<PersonByName>();
+            _store.RegisterIndexes<PersonIndexProvider>();
 
             var bill = new Person
             {
@@ -402,7 +425,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void RemovingDocumentShouldDeleteMappedIndex()
         {
-            _store.RegisterIndexes<PersonByName>();
+            _store.RegisterIndexes<PersonIndexProvider>();
 
             var bill = new Person
             {
@@ -438,7 +461,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void RemovingDocumentShouldDeleteReducedIndex()
         {
-            _store.RegisterIndexes<ArticlesByDay>();
+            _store.RegisterIndexes<ArticleIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
@@ -498,7 +521,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void UpdatingDocumentShouldUpdateReducedIndex()
         {
-            _store.RegisterIndexes<ArticlesByDay>();
+            _store.RegisterIndexes<ArticleIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
@@ -574,7 +597,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void AlteringDocumentShouldUpdateReducedIndex()
         {
-            _store.RegisterIndexes<ArticlesByDay>();
+            _store.RegisterIndexes<ArticleIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
@@ -634,7 +657,7 @@ namespace YesSql.Tests
         [TestMethod]
         public void IndexHasLinkToDocuments()
         {
-            _store.RegisterIndexes<ArticlesByDay>();
+            _store.RegisterIndexes<ArticleIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
@@ -671,7 +694,7 @@ namespace YesSql.Tests
 
         [TestMethod]
         public void ShouldPageResults() {
-            _store.RegisterIndexes<PersonByName>();
+            _store.RegisterIndexes<PersonIndexProvider>();
 
             using (var session = _store.CreateSession()) {
                 for (int i = 0; i < 100; i++)

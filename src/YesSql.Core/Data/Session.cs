@@ -390,11 +390,15 @@ namespace YesSql.Core.Data
 
             return _store.Descriptors.GetOrAdd(target, key =>
             {
-
-                var context = new DescribeContext();
+                var contextType = typeof (DescribeContext<>).MakeGenericType(target);
+                var context = Activator.CreateInstance(contextType) as IDescriptor;
+                
                 foreach (var provider in _store.Indexes)
                 {
-                    provider.Describe(context);
+                    if (provider.ForType().IsAssignableFrom(target))
+                    {
+                        provider.Describe(context);
+                    }
                 }
 
                 return context.Describe(new[] {target}).ToList();

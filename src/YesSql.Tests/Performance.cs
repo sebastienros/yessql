@@ -488,7 +488,7 @@ namespace YesSql.Tests
 
             Store = new Store().Configure(MsSqlConfiguration.MsSql2008.ConnectionString("Data Source=localhost;Initial Catalog=yessql;Persist Security Info=False;Integrated Security=true"));
 
-            Store.RegisterIndexes<UserByName>();
+            Store.RegisterIndexes<UserIndexProvider>();
 
             // compute configuration
             Store.CreateSession().Dispose();
@@ -587,14 +587,16 @@ namespace YesSql.Tests
         }
     }
 
-    public class UserByName : HasDocumentIndex
+    public class UserByName : MapIndex
     {
         public virtual string Name { get; set; }
+    }
 
-        public override void Describe(DescribeContext context)
-        {
-            context.For<User, UserByName>()
-                .Index(users => users.Select(user => new UserByName {Name = user.Name}));
+    public class UserIndexProvider :  IndexProvider<User>
+    {
+        public override void Describe(DescribeContext<User> context) {
+            context.For<UserByName>()
+                .Index(users => users.Select(user => new UserByName { Name = user.Name }));
         }
     }
 

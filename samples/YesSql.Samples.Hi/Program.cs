@@ -17,9 +17,7 @@ namespace YesSql.Samples.Hi
             var store = new Store().Configure(MsSqlCeConfiguration.MsSqlCe40.ConnectionString("Data Source=Store.sdf"));
             
             // register available indexes
-            store
-                .RegisterIndexes<BlogPostByAuthor>()
-                .RegisterIndexes<BlogPostByDay>();
+            store.RegisterIndexes<BlogPostIndexProvider>();
 
             // creating a blog post
             var post = new BlogPost

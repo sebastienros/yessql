@@ -27,8 +27,8 @@ namespace YesSql.Samples.Shards
                 new SchemaUpdate(config1).Execute(false, true);
             })
             .SetShardingStrategy(new ShardStrategyFactory())
-            .RegisterIndexes<ProductByName>()
-            .RegisterIndexes<OrderByCustomerName>()
+            .RegisterIndexes<ProductIndexProvider>()
+            .RegisterIndexes<OrderIndexProvider>()
             ;
             
             using(var session = store.CreateSession())

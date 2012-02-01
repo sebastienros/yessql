@@ -4,15 +4,19 @@ using YesSql.Tests.Models;
 
 namespace YesSql.Tests.Indexes
 {
-    public class PersonByName : HasDocumentIndex
+    public class PersonByName : MapIndex
     {
         public virtual string Name { get; set; }
+    }
 
-        public override void Describe(DescribeContext context) {
+    public class PersonIndexProvider : IndexProvider<Person>
+    {
+        public override void Describe(DescribeContext<Person> context) 
+        {
             context
-                .For<Person, PersonByName>()
+                .For<PersonByName>()
                 .Index(
-                    map: persons => persons.Select( p => new PersonByName { Name = p.Firstname })
+                    map: persons => persons.Select(p => new PersonByName { Name = p.Firstname })
             );
         }
     }
