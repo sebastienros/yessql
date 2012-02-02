@@ -36,7 +36,8 @@ There is a global [Document] table per shard. Then each index has it's own table
 
 I know :/ Well actually I am a big fan of document databases and I am well aware that some like MongoDb and RavenDb are already top-notch ones, but __what if you want a free, transactional docuemtn database__ ?
 
-* MongoDb is not transactional, and some application can't cope with it. RDBMS on the contrary are all transactional. RavenDb (which I am a big fan of) is not free, and also the fact that it's using Lucene as a storage engine. The latter might scare companies which have invested a lot in SQL, trust SQL, and have in-house experts.
+* MongoDb is not transactional, and some application can't cope with it. RDBMS on the contrary are all transactional. 
+* RavenDb (which I am a big fan of) is not free, and also the fact that it's using Lucene as a storage engine. The latter might scare companies which have invested a lot in SQL, trust SQL, and have in-house experts.
 
 So YesSql might be an answer for the developers who face those restrictions. If you don't so please don't spend one more minute on YesSql, it's useless for you.
 
