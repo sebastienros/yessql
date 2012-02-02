@@ -19,14 +19,14 @@ YesSql has support for the too. There is a YesSql.Shards.Demo project in the sou
 
 ### NOSQL are so fast compared to SQL
 
-Well, I don't what fast is, but you can try to run Performace test to ensure it fulfils your needs. Here is the output on my machine using Microsoft SQL Server 2008:
+Well, I don't know what fast is, but you can try to run Performance test to ensure it fits your needs. Here is the output on my machine using Microsoft SQL Server 2008:
 
   YesSql Wrote 5,163 documents in 2,157ms: 2.39: docs/ms
 
   Queried by full name 100*3 times at 430ms
   Queried by partial name 100*3 times at 827ms
 
-This performance test is based on one which was used to compare Redis to RavenDb. You can find the discussion here: http://www.servicestack.net/mythz_blog/?p=474
+This performance test is based on one used to compare Redis to RavenDb that you can find here: http://www.servicestack.net/mythz_blog/?p=474
 
 ### How is the database structured ?
 
