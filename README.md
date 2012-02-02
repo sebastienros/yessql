@@ -40,3 +40,9 @@ I know :/ Well actually I am a big fan of document databases and I am well aware
 * RavenDb (which I am a big fan of) is not free. Also the fact that it's using Lucene as a storage engine might scare companies which have invested a lot in SQL, trust SQL, and have in-house experts.
 
 So YesSql might be an answer for the developers who face those restrictions. If you don't care about those then please don't spend one more minute on YesSql, it's useless for you.
+
+### I am sold, where do I start ?
+
+The documentation is here: https://github.com/sebastienros/yessql/wiki
+
+You can also take a look at the sample apps in the source code.
