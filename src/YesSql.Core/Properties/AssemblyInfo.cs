@@ -2,6 +2,7 @@
 
 [assembly: AssemblyTitle("YesSql.Core")]
 [assembly: AssemblyDescription("A .NET document database using any RDBMS, because in SQL we (still) trust!")]
+[assembly: AssemblyCompany("Sébastien Ros")]
 [assembly: AssemblyCopyright("Sébastien Ros")]
 
 [assembly: AssemblyVersion("0.1")]
