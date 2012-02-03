@@ -3,7 +3,7 @@ YesSql
 
 A .NET document database using any RDBMS, because in SQL we (still) trust !
 
-How it works ?
+How does it work ?
 -------------------
 
 YesSql is a document database which allows you to define documents and indexes using plain old CLR objects. The main difference
@@ -13,13 +13,13 @@ like transactions, replication, reporting, ... But the main advantage might be t
 FAQ
 -------------------
 
-### NOSQL is also about sharding and map/reduce
+### Aren't NoSQL databases also about sharding and map/reduce ?
 
-YesSql has support for the too. There is a YesSql.Shards.Demo project in the source code, and you'll see that map/reduce is fully supported by looking at the tests.
+YesSql has support for it too. There is a YesSql.Shards.Demo project in the source code, and you'll see that map/reduce is fully supported by looking at the tests.
 
-### NOSQL are so fast compared to SQL
+### Aren't NoSQL databases  faster than SQL databases ?
 
-Well, I don't know what fast is, but you can try to run Performance test to ensure it fits your needs. Here is the output on my machine using Microsoft SQL Server 2008:
+Well, I don't know what fast is, but you can try to run the Performance test to ensure it fits your needs. Here is the output on my machine using Microsoft SQL Server 2008:
 
   YesSql Wrote 5,163 documents in 2,157ms: 2.39: docs/ms
 
