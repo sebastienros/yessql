@@ -66,7 +66,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\YesSql.Core\YesSql.Core.csproj">
+    <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj">
       <Project>{CB9AB06D-0ABA-49E3-8F78-A74534485CE4}</Project>
       <Name>YesSql.Core</Name>
     </ProjectReference>

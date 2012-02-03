@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Shards", "sa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Hi", "samples\YesSql.Samples.Hi\YesSql.Samples.Hi.csproj", "{1EC0F6B9-0441-4F42-8C0C-E85966D42145}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Performance", "YesSql.Samples.Performance\YesSql.Samples.Performance.csproj", "{BAF709A0-D49F-4DB4-ABC7-A13FFEC74243}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Performance", "samples\YesSql.Samples.Performance\YesSql.Samples.Performance.csproj", "{BAF709A0-D49F-4DB4-ABC7-A13FFEC74243}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
