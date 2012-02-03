@@ -2,7 +2,7 @@
 using System.Data.SqlServerCe;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 using YesSql.Core.Data;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Services;
@@ -11,13 +11,11 @@ using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
-    [TestClass]
-    public class CoreTests
+    public class CoreTests : IDisposable
     {
-        private IStore _store;
+        private readonly IStore _store;
 
-        [TestInitialize]
-        public void Init()
+        public CoreTests()
         {
 
             // delete the db before starting tests
@@ -33,13 +31,12 @@ namespace YesSql.Tests
 
         }
 
-        [TestCleanup]
-        public void Cleanup()
+        public void Dispose()
         {
             _store.Dispose();
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldCreateDatabase()
         {
 
@@ -52,7 +49,7 @@ namespace YesSql.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldSaveCustomObject()
         {
             using (var session = _store.CreateSession())
@@ -68,7 +65,7 @@ namespace YesSql.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldSaveSeveralObjects()
         {
             using (var session = _store.CreateSession())
@@ -91,7 +88,7 @@ namespace YesSql.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldSaveAnonymousObject()
         {
             using (var session = _store.CreateSession())
@@ -114,7 +111,7 @@ namespace YesSql.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldLoadAnonymousDocument()
         {
             using (var session = _store.CreateSession())
@@ -138,17 +135,17 @@ namespace YesSql.Tests
             {
                 dynamic person = session.QueryDocument().FirstOrDefault().As<object>();
 
-                Assert.IsNotNull(person);
-                Assert.AreEqual("Bill", person.Firstname);
-                Assert.AreEqual("Gates", person.Lastname);
+                Assert.NotNull(person);
+                Assert.Equal("Bill", person.Firstname);
+                Assert.Equal("Gates", person.Lastname);
 
-                Assert.IsNotNull(person.Address);
-                Assert.AreEqual("1 Microsoft Way", person.Address.Street);
-                Assert.AreEqual("Redmond", person.Address.City);
+                Assert.NotNull(person.Address);
+                Assert.Equal("1 Microsoft Way", person.Address.Street);
+                Assert.Equal("Redmond", person.Address.City);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldSerializeComplexObject()
         {
             using (var session = _store.CreateSession())
@@ -180,17 +177,17 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var order = session.QueryDocument<Order>(q => q.FirstOrDefault());
-                Assert.IsNotNull(order);
-                Assert.AreEqual(1, order.OrderLines.Count);
+                Assert.NotNull(order);
+                Assert.Equal(1, order.OrderLines.Count);
 
                 var prod =
                     session.QueryDocument<Product>(q => q.FirstOrDefault(x => x.Id == order.OrderLines[0].ProductId));
-                Assert.IsNotNull(prod);
-                Assert.AreEqual("Milk", prod.Name);
+                Assert.NotNull(prod);
+                Assert.Equal("Milk", prod.Name);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldCreateIndexAndLinkToDocument()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -216,19 +213,19 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(2, session.QueryIndex<PersonByName>().Count());
-                Assert.AreEqual(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill"));
-                Assert.AreEqual(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Steve"));
-                Assert.AreEqual(0, session.QueryIndex<PersonByName>().Count(x => x.Name == "Joe"));
+                Assert.Equal(2, session.QueryIndex<PersonByName>().Count());
+                Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill"));
+                Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Steve"));
+                Assert.Equal(0, session.QueryIndex<PersonByName>().Count(x => x.Name == "Joe"));
 
                 var person =
                     session.QueryByMappedIndex<PersonByName, Person>(q => q.FirstOrDefault(x => x.Name == "Bill"));
-                Assert.IsNotNull(person);
-                Assert.AreEqual("Bill", person.Firstname);
+                Assert.NotNull(person);
+                Assert.Equal("Bill", person.Firstname);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldReduce()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
@@ -264,37 +261,37 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
 
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear));
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear));
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear));
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear));
 
-                Assert.AreEqual(4,
+                Assert.Equal(4,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count);
-                Assert.AreEqual(3,
+                Assert.Equal(3,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count);
-                Assert.AreEqual(2,
+                Assert.Equal(2,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count);
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldReduceAndMergeWithDatabase()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
@@ -336,37 +333,37 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
 
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear));
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear));
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear));
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Count(
                                     x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear));
 
-                Assert.AreEqual(5,
+                Assert.Equal(5,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count);
-                Assert.AreEqual(3,
+                Assert.Equal(3,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count);
-                Assert.AreEqual(2,
+                Assert.Equal(2,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count);
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void MultipleIndexesShoudNotConflict() {
             _store.RegisterIndexes<ArticleIndexProvider>();
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -385,11 +382,11 @@ namespace YesSql.Tests
             }
 
             using (var session = _store.CreateSession()) {
-                Assert.AreEqual(1, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(1, session.QueryIndex<ArticlesByDay>().Count());
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldDeleteCustomObject()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -409,7 +406,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var person = session.QueryDocument<Person>(q => q.FirstOrDefault());
-                Assert.IsNotNull(person);
+                Assert.NotNull(person);
 
                 session.Delete(person);
                 session.Commit();
@@ -418,11 +415,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var person = session.QueryDocument<Person>(q => q.FirstOrDefault());
-                Assert.IsNull(person);
+                Assert.Null(person);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void RemovingDocumentShouldDeleteMappedIndex()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -442,10 +439,10 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var personByName = session.QueryIndex<PersonByName>().FirstOrDefault();
-                Assert.IsNotNull(personByName);
+                Assert.NotNull(personByName);
 
                 var person = session.QueryDocument<Person>(q => q.FirstOrDefault());
-                Assert.IsNotNull(person);
+                Assert.NotNull(person);
 
                 session.Delete(person);
                 session.Commit();
@@ -454,11 +451,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var personByName = session.QueryIndex<PersonByName>().FirstOrDefault();
-                Assert.IsNull(personByName);
+                Assert.Null(personByName);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void RemovingDocumentShouldDeleteReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
@@ -494,8 +491,8 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(10, session.QueryDocument<Article>().Count());
-                Assert.AreEqual(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
             }
 
             // delete a document
@@ -504,7 +501,7 @@ namespace YesSql.Tests
                 var article =
                     session.QueryByReducedIndex<ArticlesByDay, Article>(
                         a => a.Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear)).FirstOrDefault();
-                Assert.IsNotNull(article);
+                Assert.NotNull(article);
                 session.Delete(article);
 
                 session.Commit();
@@ -513,12 +510,14 @@ namespace YesSql.Tests
             // there should be only 3 indexes left
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(9, session.QueryDocument<Article>().Count(), "Document was not deleted");
-                Assert.AreEqual(3, session.QueryIndex<ArticlesByDay>().Count(), "Index was not deleted");
+                // document was deleted
+                Assert.Equal(9, session.QueryDocument<Article>().Count()); 
+                // index was deleted
+                Assert.Equal(3, session.QueryIndex<ArticlesByDay>().Count()); 
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void UpdatingDocumentShouldUpdateReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
@@ -554,17 +553,18 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(10, session.QueryDocument<Article>().Count());
-                Assert.AreEqual(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
             }
 
             // delete a document
             using (var session = _store.CreateSession())
             {
-                var article =
-                    session.QueryByReducedIndex<ArticlesByDay, Article>(
-                        a => a.Where(b => b.DayOfYear == new DateTime(2011, 11, 2).DayOfYear)).FirstOrDefault();
-                Assert.IsNotNull(article);
+                var article = session.QueryByReducedIndex<ArticlesByDay, Article>(
+                        a => a.Where(b => b.DayOfYear == new DateTime(2011, 11, 2).DayOfYear)
+                    ).FirstOrDefault();
+                
+                Assert.NotNull(article);
 
                 article.PublishedUtc = new DateTime(2011, 11, 3);
 
@@ -576,25 +576,25 @@ namespace YesSql.Tests
             // there should be the same number of indexes
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(10, session.QueryDocument<Article>().Count());
-                Assert.AreEqual(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
 
-                Assert.AreEqual(4,
+                Assert.Equal(4,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count);
-                Assert.AreEqual(2,
+                Assert.Equal(2,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count);
-                Assert.AreEqual(3,
+                Assert.Equal(3,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count);
-                Assert.AreEqual(1,
+                Assert.Equal(1,
                                 session.QueryIndex<ArticlesByDay>().Single(
                                     x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void AlteringDocumentShouldUpdateReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
@@ -630,8 +630,8 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(10, session.QueryDocument<Article>().Count());
-                Assert.AreEqual(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
             }
 
             // update a document
@@ -640,7 +640,7 @@ namespace YesSql.Tests
                 var article =
                     session.QueryByReducedIndex<ArticlesByDay, Article>(
                         a => a.Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear)).FirstOrDefault();
-                Assert.IsNotNull(article);
+                Assert.NotNull(article);
                 session.Delete(article);
 
                 session.Commit();
@@ -649,12 +649,14 @@ namespace YesSql.Tests
             // there should be only 3 indexes left
             using (var session = _store.CreateSession())
             {
-                Assert.AreEqual(9, session.QueryDocument<Article>().Count(), "Document was not deleted");
-                Assert.AreEqual(3, session.QueryIndex<ArticlesByDay>().Count(), "Index was not deleted");
+                // document was not deleted
+                Assert.Equal(9, session.QueryDocument<Article>().Count());
+                // index was not deleted
+                Assert.Equal(3, session.QueryIndex<ArticlesByDay>().Count());
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void IndexHasLinkToDocuments()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
@@ -673,11 +675,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var articles = session.QueryDocument<Article>();
-                Assert.AreEqual(2, articles.Count());
+                Assert.Equal(2, articles.Count());
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldSaveCustomObjectAsync()
         {
             var session = _store.CreateSession();
@@ -692,7 +694,7 @@ namespace YesSql.Tests
             task.Wait();
         }
 
-        [TestMethod]
+        [Fact]
         public void ShouldPageResults() {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -712,15 +714,15 @@ namespace YesSql.Tests
             }
 
             using (var session = _store.CreateSession()) {
-                Assert.AreEqual(100, session.QueryIndex<PersonByName>().Count());
-                Assert.AreEqual(10, session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ToList().Count);
-                Assert.AreEqual(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill0"));
+                Assert.Equal(100, session.QueryIndex<PersonByName>().Count());
+                Assert.Equal(10, session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ToList().Count);
+                Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill0"));
 
                 var persons = session.QueryByMappedIndex<PersonByName, Person>(
                     q => q.Take(10)
                 );
 
-                Assert.AreEqual(10, persons.Count());
+                Assert.Equal(10, persons.Count());
             }
         }
     }

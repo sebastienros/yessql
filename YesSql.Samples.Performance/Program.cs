@@ -1,19 +1,15 @@
 ﻿using System;
-using System.Data.SqlServerCe;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using FluentNHibernate.Cfg.Db;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NHibernate.Tool.hbm2ddl;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
 using YesSql.Core.Services;
+using Xunit;
 
-namespace YesSql.Tests 
-{
-    [TestClass]
-    public class Performance 
-    {
+namespace YesSql.Samples.Performance {
+    public class Performance {
         #region Names
         private static readonly string[] Names = new[]
 		{
@@ -472,107 +468,73 @@ namespace YesSql.Tests
 		};
         #endregion
 
-        protected IStore Store;
-
-        [TestInitialize]
-        public void Init() 
-        {
-            //// delete the db before starting tests
-            //if (File.Exists("Store.sdf")) 
-            //{
-            //    File.Delete("Store.sdf");
-            //}
-
-            //// recreating a fresh SqlCe db
-            //new SqlCeEngine { LocalConnectionString = "Data Source=Store.sdf" }.CreateDatabase();
-
-            Store = new Store().Configure(MsSqlConfiguration.MsSql2008.ConnectionString("Data Source=localhost;Initial Catalog=yessql;Persist Security Info=False;Integrated Security=true"));
-
-            Store.RegisterIndexes<UserIndexProvider>();
-
-            // compute configuration
-            Store.CreateSession().Dispose();
-        }
-
-        [TestMethod]
-        public void Main() 
-        {
-            Clean(Store);
-
-            WriteAllWithYesSql(Store);
-
-            QueryByFullName(Store);
-
-            QueryByPartialName(Store);
-        }
-
-        private static void Clean(IStore store)
-        {
-            using (var session = store.CreateSession())
-            {
-                var users = session.QueryDocument<User>();
-
-                foreach(var user in users)
+        public static void Main() {
+            var store = new Store().Configure(
+                // use local sql server
+                MsSqlConfiguration.MsSql2008.ConnectionString("Data Source=localhost;Initial Catalog=yessql;Persist Security Info=False;Integrated Security=true"),
+            
+                // this will drop and recreate the tables
+                config =>
                 {
-                    session.Delete(user);
+                    new SchemaExport(config).Execute(false, true, true);
+                    new SchemaUpdate(config).Execute(false, true);
                 }
+            );
+            
+            store.RegisterIndexes<UserIndexProvider>();
 
-                session.Commit();
-            }
+            // pre initialize configuration
+            store.CreateSession().Dispose();
+
+            WriteAllWithYesSql(store);
+
+            QueryByFullName(store);
+
+            QueryByPartialName(store);
         }
 
-        private static void QueryByFullName(IStore store) 
-        {
+        private static void QueryByFullName(IStore store) {
             var sp = Stopwatch.StartNew();
 
-            for (int i = 0; i < 100; i++) 
-            {
-                using (var session = store.CreateSession()) 
-                {
-                    Assert.IsTrue(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "WILLY")).ToList().Any());
-                    Assert.IsTrue(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "FAUSTINO")).ToList().Any());
-                    Assert.IsTrue(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "BART")).ToList().Any());
+            for (int i = 0; i < 100; i++) {
+                using (var session = store.CreateSession()) {
+                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "WILLY")).ToList().Any());
+                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "FAUSTINO")).ToList().Any());
+                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "BART")).ToList().Any());
                 }
             }
 
             Console.WriteLine("Queried by full name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
         }
 
-        private static void QueryByPartialName(IStore store) 
-        {
+        private static void QueryByPartialName(IStore store) {
             var sp = Stopwatch.StartNew();
 
-            for (int i = 0; i < 100; i++) 
-            {
-                using (var session = store.CreateSession()) 
-                {
-                    Assert.IsTrue(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("WIL"))).ToList().Any());
-                    Assert.IsNotNull(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("FAUS"))).ToList().Any());
-                    Assert.IsNotNull(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("BA"))).ToList().Any());
+            for (int i = 0; i < 100; i++) {
+                using (var session = store.CreateSession()) {
+                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("WIL"))).ToList().Any());
+                    Assert.NotNull(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("FAUS"))).ToList().Any());
+                    Assert.NotNull(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("BA"))).ToList().Any());
                 }
             }
 
             Console.WriteLine("Queried by partial name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
         }
 
-        private static void WriteAllWithYesSql(IStore store) 
-        {
+        private static void WriteAllWithYesSql(IStore store) {
             var sp = Stopwatch.StartNew();
             int batch = 0;
             var session = store.CreateSession();
             int id = 0;
-            foreach (var name in Names) 
-            {
+            foreach (var name in Names) {
                 batch++;
-                session.Save(new User 
-                {
+                session.Save(new User {
                     Id = (++id),
                     Email = name + "@" + name + ".name",
                     Name = name
                 });
 
-                if (batch % 128 == 0) 
-                {
+                if (batch % 128 == 0) {
                     session.Commit();
                     session.Dispose();
                     session = store.CreateSession();
@@ -587,21 +549,18 @@ namespace YesSql.Tests
         }
     }
 
-    public class UserByName : MapIndex
-    {
+    public class UserByName : MapIndex {
         public virtual string Name { get; set; }
     }
 
-    public class UserIndexProvider :  IndexProvider<User>
-    {
+    public class UserIndexProvider : IndexProvider<User> {
         public override void Describe(DescribeContext<User> context) {
             context.For<UserByName>()
                 .Index(users => users.Select(user => new UserByName { Name = user.Name }));
         }
     }
 
-    public class User
-    {
+    public class User {
         public int Id { get; set; }
         public string Email { get; set; }
         public string Name { get; set; }

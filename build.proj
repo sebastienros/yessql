@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <UsingTask AssemblyFile="$(MSBuildProjectDirectory)\tools\xunit-1.9\xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
+
+  <PropertyGroup>
+    <BuildFolder>$(MSBuildProjectDirectory)\build</BuildFolder>
+    <ArtifactsFolder>$(MSBuildProjectDirectory)\artifacts</ArtifactsFolder>
+    <SrcFolder>$(MSBuildProjectDirectory)\src</SrcFolder>
+    <RootFolder>$(MSBuildProjectDirectory)</RootFolder>
+    <Version Condition="$(BUILD_NUMBER) == ''">0.1.0</Version>
+  </PropertyGroup>
+
+  <Target Name ="Build">
+    <CallTarget Targets="Clean"/>
+    <CallTarget Targets="Compile"/>
+    <CallTarget Targets="Test" /> 
+  </Target>
+
+  <Target Name="Clean">
+    <MSBuild Projects="$(RootFolder)\YesSql.sln" Targets="Clean" />
+    <RemoveDir Directories="$(BuildFolder)" ContinueOnError="true"/>
+    <RemoveDir Directories="$(ArtifactsFolder)" />
+  </Target>
+
+  <Target Name ="Compile" DependsOnTargets="Clean">
+    <MSBuild
+      Projects="$(SrcFolder)\YesSql.Core\YesSql.Core.csproj"
+      Targets="Build"
+      Properties="Configuration=Release;OutputPath=$(BuildFolder)" />
+  </Target>
+  
+  <Target Name="Test" DependsOnTargets="Compile"> 
+    <MSBuild
+      Projects="$(SrcFolder)\YesSql.Tests\YesSql.Tests.csproj"
+      Targets="Build"
+      Properties="Configuration=Release;OutputPath=$(BuildFolder)" />
+
+    <xunit Assembly="$(BuildFolder)\YesSql.Tests.dll"/>
+  </Target>
+
+</Project>

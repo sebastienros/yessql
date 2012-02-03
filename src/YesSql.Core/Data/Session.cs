@@ -472,6 +472,12 @@ namespace YesSql.Core.Data
             }
 
             var obj = doc.As<T>();
+
+            if(obj == null)
+            {
+                throw new ArgumentException("Document of type '" + doc.Type + "' cannot be deserialized as '" + typeof(T).Name + "'");    
+            }
+
             _documents.Add(obj, doc.Id);
             return obj;
         }

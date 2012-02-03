@@ -89,7 +89,9 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Properties\YesSql.Core.nuspec" />
+    <None Include="Properties\YesSql.Core.nuspec">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

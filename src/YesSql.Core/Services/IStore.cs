@@ -30,6 +30,11 @@ namespace YesSql.Core.Services
         /// </summary>
         IStore Configure(IPersistenceConfigurer config);
 
+        /// <summary>
+        /// Configures the store
+        /// </summary>
+        IStore Configure(IPersistenceConfigurer config, Action<Configuration> init);
+
         /// Configures the store
         IStore Configure(Action<IStore> cfg);
 

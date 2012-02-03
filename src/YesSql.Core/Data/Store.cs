@@ -79,14 +79,19 @@ namespace YesSql.Core.Data
 
         public IStore Configure(IPersistenceConfigurer config)
         {
+            return Configure(config, configuration => new SchemaUpdate(configuration).Execute(false, true));
+        }
+
+        public IStore Configure(IPersistenceConfigurer config, Action<Configuration> init)
+        {
             return Configure(store =>
             {
                 CreateConfiguration(() => config);
-                foreach(var configuration  in _configurations.Values)
+                foreach (var configuration in _configurations.Values)
                 {
-                    new SchemaUpdate(configuration).Execute(false, true);
+                    init(configuration);
                 }
-                
+
             });
         }
 
