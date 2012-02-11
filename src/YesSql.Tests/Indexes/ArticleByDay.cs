@@ -16,23 +16,21 @@ namespace YesSql.Tests.Indexes
         public override void Describe(DescribeContext<Article> context)
         {
             context
-                .For<ArticlesByDay, int>().Index(
-                    map: articles => articles.Select(x => new ArticlesByDay {
-                            DayOfYear = x.PublishedUtc.DayOfYear,
-                            Count = 1
-                        }),
-                    reduce: group => new ArticlesByDay {
-                            DayOfYear = group.Key,
-                            Count = group.Sum(y => y.Count)
-                        },
-                    delete: (index, map) => {
+                .For<ArticlesByDay, int>()
+                    .Map(article => new ArticlesByDay {
+                        DayOfYear = article.PublishedUtc.DayOfYear,
+                        Count = 1
+                    })
+                    .Reduce(group => new ArticlesByDay {
+                        DayOfYear = group.Key,
+                        Count = group.Sum(y => y.Count)
+                    })
+                    .Delete((index, map) => {
                         index.Count -= map.Sum(x => x.Count);
 
                         // if Count == 0 then delete the index
                         return index.Count > 0 ? index : null;
-                    },
-                    update: (index, map) => index
-                );
+                    });
         }
     }
 }

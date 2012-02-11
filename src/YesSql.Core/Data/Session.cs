@@ -409,7 +409,7 @@ namespace YesSql.Core.Data
         {
             foreach (var descriptor in Describe(obj.GetType()))
             {
-                var mapped = descriptor.Map(new[] {obj});
+                var mapped = descriptor.Map(obj);
 
                 foreach (var index in mapped)
                 {
@@ -447,7 +447,7 @@ namespace YesSql.Core.Data
                     continue;
                 }
 
-                var mapped = descriptor.Map(new[] {obj});
+                var mapped = descriptor.Map(obj);
 
                 foreach (var index in mapped)
                 {

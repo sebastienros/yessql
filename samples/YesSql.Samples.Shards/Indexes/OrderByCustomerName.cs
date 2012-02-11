@@ -16,10 +16,8 @@ namespace YesSql.Samples.Shards.Indexes
         {
             context
                 .For<OrderByCustomerName, string>()
-                .Index(
-                    map: orders => orders.Select(p => new OrderByCustomerName { Name = p.Customer }),
-                    reduce: group => new OrderByCustomerName { Name = group.Key }
-            );
+                .Map(order => new OrderByCustomerName { Name = order.Customer })
+                .Reduce(group => new OrderByCustomerName { Name = group.Key });
         }
         
     }

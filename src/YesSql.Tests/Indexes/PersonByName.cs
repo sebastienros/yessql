@@ -11,13 +11,11 @@ namespace YesSql.Tests.Indexes
 
     public class PersonIndexProvider : IndexProvider<Person>
     {
-        public override void Describe(DescribeContext<Person> context) 
+        public override void Describe(DescribeContext<Person> context)
         {
             context
                 .For<PersonByName>()
-                .Index(
-                    map: persons => persons.Select(p => new PersonByName { Name = p.Firstname })
-            );
+                .Map(person => new PersonByName {Name = person.Firstname});
         }
     }
 }

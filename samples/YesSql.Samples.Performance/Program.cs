@@ -556,7 +556,7 @@ namespace YesSql.Samples.Performance {
     public class UserIndexProvider : IndexProvider<User> {
         public override void Describe(DescribeContext<User> context) {
             context.For<UserByName>()
-                .Index(users => users.Select(user => new UserByName { Name = user.Name }));
+                .Map(user => new UserByName { Name = user.Name });
         }
     }
 

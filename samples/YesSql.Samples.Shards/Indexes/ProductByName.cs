@@ -14,9 +14,7 @@ namespace YesSql.Samples.Shards.Indexes
         public override void Describe(DescribeContext<Product> context) {
             context
                 .For<ProductByName>()
-                .Index(
-                    map: products => products.Select(p => new ProductByName { Name = p.Name })
-            );
+                .Map(product => new ProductByName { Name = product.Name });
         }
         
     }

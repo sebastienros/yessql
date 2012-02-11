@@ -24,7 +24,6 @@ namespace YesSql.Core.Indexes {
                     Map = kp.GetMap(),
                     Reduce = kp.GetReduce(),
                     Delete = kp.GetDelete(),
-                    Update = kp.GetUpdate(),
                     GroupKey = kp.GroupProperty,
                     IndexType = kp.IndexType
                 });
