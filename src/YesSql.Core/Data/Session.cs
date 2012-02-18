@@ -22,7 +22,10 @@ namespace YesSql.Core.Data
         private readonly IDocumentSerializer _serializer;
         private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
         private readonly IDictionary<object, int> _documents = new Dictionary<object, int>();
-
+        
+        // a dictionary of returned objects indexed by document id
+        private readonly IDictionary<int, object> _objects = new Dictionary<int, object>();
+ 
         public Session(NHibernate.ISession session, Store store)
         {
             _session = session;
@@ -471,6 +474,12 @@ namespace YesSql.Core.Data
                 return null;
             }
 
+            object cached;
+            if (_objects.TryGetValue(doc.Id, out cached))
+            {
+                return (T) cached;
+            }
+            
             var obj = doc.As<T>();
 
             if(obj == null)
@@ -479,6 +488,7 @@ namespace YesSql.Core.Data
             }
 
             _documents.Add(obj, doc.Id);
+            _objects.Add(doc.Id, obj);
             return obj;
         }
 
