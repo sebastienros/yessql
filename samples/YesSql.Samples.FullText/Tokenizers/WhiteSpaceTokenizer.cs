@@ -18,6 +18,11 @@ namespace YesSql.Samples.FullText.Tokenizers {
 
                 start = cur + 1;
             }
+
+            if (start != text.Length)
+            {
+                yield return text.Substring(start);
+            }
         }
     }
 }

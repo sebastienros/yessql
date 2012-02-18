@@ -35,19 +35,26 @@ namespace YesSql.Samples.FullText
                 var simple = session.QueryByReducedIndex<ArticleByWord, Article>(
                     q => q.Where(a => a.Word == "white"));
 
-                foreach (var article in simple)
-                {
+                foreach (var article in simple) {
                     Console.WriteLine(article.Content);
                 }
 
-                //Console.WriteLine("Boolean query: 'white and fox or pink'");
-                //var boolean = session.QueryByReducedIndex<ArticleByWord, Article>(
-                //    q => q.Any(a => a.Word == "white"));
+                Console.WriteLine("Boolean query: 'white and fox or pink'");
+                var white = session.QueryByReducedIndex<ArticleByWord, Article>(
+                    q => q.Where(a => a.Word == "white"));
 
-                //foreach (var article in boolean) {
-                //    Console.WriteLine(article.Content);
-                //}
+                var fox = session.QueryByReducedIndex<ArticleByWord, Article>(
+                    q => q.Where(a => a.Word == "fox"));
 
+                var pink = session.QueryByReducedIndex<ArticleByWord, Article>(
+                    q => q.Where(a => a.Word == "pink"));
+
+                var result = white.Intersect(fox).Union(pink);
+
+                foreach (var article in result)
+                {
+                    Console.WriteLine(article.Content);
+                }
             }
         }
 

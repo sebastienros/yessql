@@ -7,7 +7,7 @@ namespace YesSql.Samples.FullText.Tokenizers
     {
         public IEnumerable<string> Filter(IEnumerable<string> tokens)
         {
-            return tokens.Where(token => token.Length >= 3);
+            return tokens.Where(token => token.Length >= 2);
         }
     }
 }
