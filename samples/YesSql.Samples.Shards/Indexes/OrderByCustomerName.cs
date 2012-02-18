@@ -1,12 +1,10 @@
-﻿using System.Linq;
-using YesSql.Core.Indexes;
+﻿using YesSql.Core.Indexes;
 using YesSql.Samples.Shards.Models;
 
 namespace YesSql.Samples.Shards.Indexes
 {
     public class OrderByCustomerName : ReduceIndex
     {
-        [GroupKey]
         public virtual string Name { get; set; }
     }
 
@@ -17,6 +15,7 @@ namespace YesSql.Samples.Shards.Indexes
             context
                 .For<OrderByCustomerName, string>()
                 .Map(order => new OrderByCustomerName { Name = order.Customer })
+                .Group(order => order.Name)
                 .Reduce(group => new OrderByCustomerName { Name = group.Key });
         }
         

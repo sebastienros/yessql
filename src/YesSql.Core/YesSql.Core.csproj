@@ -58,7 +58,6 @@
     <Compile Include="Data\Mappings\IndexTypeSource.cs" />
     <Compile Include="Data\MapState.cs" />
     <Compile Include="Data\MsSqlCeConfiguration.cs" />
-    <Compile Include="Indexes\GroupKeyAttribute.cs" />
     <Compile Include="Indexes\IIndexProvider.cs" />
     <Compile Include="Indexes\HasDocumentsIndex.cs" />
     <Compile Include="Indexes\HasDocumentIndex.cs" />

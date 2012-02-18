@@ -6,7 +6,6 @@ namespace YesSql.Tests.Indexes
 {
     public class ArticlesByDay : ReduceIndex
     {
-        [GroupKey]
         public virtual int DayOfYear { get; set; }
         public virtual int Count { get; set; }
     }
@@ -21,6 +20,7 @@ namespace YesSql.Tests.Indexes
                         DayOfYear = article.PublishedUtc.DayOfYear,
                         Count = 1
                     })
+                    .Group(article => article.DayOfYear)
                     .Reduce(group => new ArticlesByDay {
                         DayOfYear = group.Key,
                         Count = group.Sum(y => y.Count)

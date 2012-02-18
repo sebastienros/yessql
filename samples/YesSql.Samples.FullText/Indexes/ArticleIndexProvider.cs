@@ -18,6 +18,7 @@ namespace YesSql.Samples.FullText.Indexes
                     .Filter(tokenizer.Tokenize(article.Content))
                     .Select(x => new ArticleByWord {Word = x, Count = 1})
                 )
+                .Group(article => article.Word)
                 .Reduce(group => new ArticleByWord
                 {
                     Word = group.Key,

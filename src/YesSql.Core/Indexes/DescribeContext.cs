@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace YesSql.Core.Indexes {
 
@@ -34,11 +33,11 @@ namespace YesSql.Core.Indexes {
             return typeof (T).IsAssignableFrom(target);
         }
 
-        public IMapFor<T, TIndex, object> For<TIndex>() where TIndex : IIndex {
+        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex {
             return For<TIndex, object>();
         }
 
-        public IMapFor<T, TIndex, TKey> For<TIndex, TKey>() where TIndex : IIndex {
+        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex {
             IList<IDescribeFor> descriptors;
             if (!_describes.TryGetValue(typeof(T), out descriptors)) {
                 descriptors = _describes[typeof(T)] = new List<IDescribeFor>();
@@ -46,16 +45,6 @@ namespace YesSql.Core.Indexes {
 
             var describeFor = new IndexDescriptor<T, TIndex, TKey>();
             descriptors.Add(describeFor);
-
-            var groupProperties = typeof(TIndex).GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(
-                x => x.GetCustomAttributes(typeof(GroupKeyAttribute), true).Any())
-                .ToArray();
-
-            if (groupProperties.Count() > 1) {
-                throw new InvalidOperationException("There should be only one GroupKey attribute defined: " + typeof(TIndex).FullName);
-            }
-
-            describeFor.GroupProperty = groupProperties.SingleOrDefault();
 
             return describeFor;
         }
