@@ -14,7 +14,8 @@ namespace YesSql.Samples.Hi.Indexes
                 );
 
             // for each BlogPost, aggregate in an exiting BlogPostByDay
-            context.For<BlogPostByDay, string>().Map(
+            context.For<BlogPostByDay, string>()
+                .Map(
                     blogPost => new BlogPostByDay {
                             Day = blogPost.PublishedUtc.ToString("yyyyMMdd"),
                             Count = 1

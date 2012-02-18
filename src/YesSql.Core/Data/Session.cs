@@ -132,12 +132,12 @@ namespace YesSql.Core.Data
             }
         }
 
-        public IQueryable<Document> QueryDocument()
+        public IQueryable<Document> Load()
         {
             return _session.Query<Document>();
         }
 
-        public IEnumerable<T> QueryDocument<T>(Func<IQueryable<Document>, IEnumerable<Document>> query) where T : class
+        public IEnumerable<T> Load<T>(Func<IQueryable<Document>, IEnumerable<Document>> query) where T : class
         {
             var typeName = typeof (T).SimplifiedTypeName();
             var filter = _session.Query<Document>().Where(x => x.Type == typeName);
@@ -150,7 +150,7 @@ namespace YesSql.Core.Data
             return LoadAs<T>(filter.ToList());
         }
 
-        public T QueryDocument<T>(Func<IQueryable<Document>, Document> query) where T : class
+        public T Load<T>(Func<IQueryable<Document>, Document> query) where T : class
         {
             var typeName = typeof (T).SimplifiedTypeName();
             var queried = query(_session.Query<Document>().Where(x => x.Type == typeName));
@@ -180,11 +180,11 @@ namespace YesSql.Core.Data
             where TResult : class
         {
             IQueryable<TIndex> index = query(_session.Query<TIndex>());
-
             return LoadAs<TResult>(index.SelectMany(x => x.Documents));
         }
 
-        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, TIndex> query)
+        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
+            Func<IQueryable<TIndex>, TIndex> query)
             where TIndex : class, IHasDocumentsIndex
             where TResult : class
         {

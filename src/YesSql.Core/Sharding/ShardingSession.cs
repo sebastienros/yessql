@@ -60,18 +60,18 @@ namespace YesSql.Core.Sharding
             session.Save(obj);
         }
 
-        public IQueryable<Document> QueryDocument()
+        public IQueryable<Document> Load()
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<T> QueryDocument<T>(Func<IQueryable<Document>, IEnumerable<Document>> query = null)
+        public IEnumerable<T> Load<T>(Func<IQueryable<Document>, IEnumerable<Document>> query = null)
             where T : class
         {
             throw new NotImplementedException();
         }
 
-        public T QueryDocument<T>(Func<IQueryable<Document>, Document> query) where T : class
+        public T Load<T>(Func<IQueryable<Document>, Document> query) where T : class
         {
             throw new NotImplementedException();
         }

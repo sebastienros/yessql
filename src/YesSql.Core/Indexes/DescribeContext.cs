@@ -34,17 +34,17 @@ namespace YesSql.Core.Indexes {
             return typeof (T).IsAssignableFrom(target);
         }
 
-        public DescribeFor<T, TIndex, object> For<TIndex>() where TIndex : IIndex {
+        public IMapFor<T, TIndex, object> For<TIndex>() where TIndex : IIndex {
             return For<TIndex, object>();
         }
 
-        public DescribeFor<T, TIndex, TKey> For<TIndex, TKey>() where TIndex : IIndex {
+        public IMapFor<T, TIndex, TKey> For<TIndex, TKey>() where TIndex : IIndex {
             IList<IDescribeFor> descriptors;
             if (!_describes.TryGetValue(typeof(T), out descriptors)) {
                 descriptors = _describes[typeof(T)] = new List<IDescribeFor>();
             }
 
-            var describeFor = new DescribeFor<T, TIndex, TKey>();
+            var describeFor = new IndexDescriptor<T, TIndex, TKey>();
             descriptors.Add(describeFor);
 
             var groupProperties = typeof(TIndex).GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(

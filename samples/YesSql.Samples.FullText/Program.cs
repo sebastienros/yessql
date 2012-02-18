@@ -20,22 +20,35 @@ namespace YesSql.Samples.FullText
             store.RegisterIndexes<ArticleIndexProvider>();
 
             // creating articles
-            using (var session = store.CreateSession()) {
-                session.Save(new Article { Content = "This is a white fox" });
-                session.Save(new Article { Content = "This is a brown cat" });
-                session.Save(new Article { Content = "This is a pink elephant" });
-                session.Save(new Article { Content = "This is a white tiger" });
+            using (var session = store.CreateSession())
+            {
+                session.Save(new Article {Content = "This is a white fox"});
+                session.Save(new Article {Content = "This is a brown cat"});
+                session.Save(new Article {Content = "This is a pink elephant"});
+                session.Save(new Article {Content = "This is a white tiger"});
                 session.Commit();
             }
 
-            // loading a single blog post
-            using (var session = store.CreateSession()) {
-                foreach(var article in session.QueryByMappedIndex<ArticleByWord, Article>(q => q.Where(a => a.Word == "white")))
+            using (var session = store.CreateSession())
+            {
+                Console.WriteLine("Simple term: 'white'");
+                var simple = session.QueryByReducedIndex<ArticleByWord, Article>(
+                    q => q.Where(a => a.Word == "white"));
+
+                foreach (var article in simple)
                 {
                     Console.WriteLine(article.Content);
                 }
-            }
 
+                //Console.WriteLine("Boolean query: 'white and fox or pink'");
+                //var boolean = session.QueryByReducedIndex<ArticleByWord, Article>(
+                //    q => q.Any(a => a.Word == "white"));
+
+                //foreach (var article in boolean) {
+                //    Console.WriteLine(article.Content);
+                //}
+
+            }
         }
 
         /// <summary>

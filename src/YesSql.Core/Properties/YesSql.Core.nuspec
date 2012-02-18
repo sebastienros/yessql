@@ -10,6 +10,6 @@
     <projectUrl>https://github.com/sebastienros/yessql</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <tags>sql nosql orm</tags>
+    <tags>sql nosql orm document database</tags>
   </metadata>
 </package>

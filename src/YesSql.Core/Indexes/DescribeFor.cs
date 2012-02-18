@@ -14,15 +14,23 @@ namespace YesSql.Core.Indexes
         Type IndexType { get; }
     }
 
-    public interface IConfigureFor<out T, TIndex, out TKey> where TIndex : IIndex
+    public interface IMapFor<out T, TIndex, out TKey> where TIndex : IIndex
     {
-        IConfigureFor<T, TIndex, TKey> Map(Func<T, TIndex> map);
-        IConfigureFor<T, TIndex, TKey> Map(Func<T, IEnumerable<TIndex>> map);
-        IConfigureFor<T, TIndex, TKey> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce);
-        IConfigureFor<T, TIndex, TKey> Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null);
+        IReduceFor<TIndex, TKey> Map(Func<T, TIndex> map);
+        IReduceFor<TIndex, TKey> Map(Func<T, IEnumerable<TIndex>> map);
     }
 
-    public class DescribeFor<T, TIndex, TKey> : IDescribeFor, IConfigureFor<T, TIndex, TKey> where TIndex : IIndex
+    public interface IReduceFor<TIndex, out TKey> where TIndex : IIndex
+    {
+        IDeleteFor<TIndex> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce);
+    }
+
+    public interface IDeleteFor<TIndex> where TIndex : IIndex
+    {
+        void Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null);
+    }
+
+    public class IndexDescriptor<T, TIndex, TKey> : IDescribeFor, IMapFor<T, TIndex, TKey>, IReduceFor<TIndex, TKey>, IDeleteFor<TIndex> where TIndex : IIndex
     {
         private Func<T, IEnumerable<TIndex>> _map;
         private Func<IGrouping<TKey, TIndex>, TIndex> _reduce;
@@ -30,28 +38,27 @@ namespace YesSql.Core.Indexes
         public PropertyInfo GroupProperty { get; set; }
         public Type IndexType { get { return typeof (TIndex); } }
 
-        public IConfigureFor<T, TIndex, TKey> Map(Func<T, IEnumerable<TIndex>> map) 
+        public IReduceFor<TIndex, TKey> Map(Func<T, IEnumerable<TIndex>> map) 
         {
             _map = map;
             return this;
         }
 
-        public IConfigureFor<T, TIndex, TKey> Map(Func<T, TIndex> map)
+        public IReduceFor<TIndex, TKey> Map(Func<T, TIndex> map)
         {
             _map = x => new [] { map(x) };
             return this;
         }
 
-        public IConfigureFor<T, TIndex, TKey> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce) 
+        public IDeleteFor<TIndex> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce) 
         {
             _reduce = reduce;
             return this;
         }
 
-        public IConfigureFor<T, TIndex, TKey> Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null) 
+        public void Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null) 
         {
             _delete = delete;
-            return this;
         }
 
         Func<object, IEnumerable<IIndex>> IDescribeFor.GetMap()

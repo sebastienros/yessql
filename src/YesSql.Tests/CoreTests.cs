@@ -133,7 +133,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                dynamic person = session.QueryDocument().FirstOrDefault().As<object>();
+                dynamic person = session.Load().FirstOrDefault().As<object>();
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", person.Firstname);
@@ -176,12 +176,12 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var order = session.QueryDocument<Order>(q => q.FirstOrDefault());
+                var order = session.Load<Order>(q => q.FirstOrDefault());
                 Assert.NotNull(order);
                 Assert.Equal(1, order.OrderLines.Count);
 
                 var prod =
-                    session.QueryDocument<Product>(q => q.FirstOrDefault(x => x.Id == order.OrderLines[0].ProductId));
+                    session.Load<Product>(q => q.FirstOrDefault(x => x.Id == order.OrderLines[0].ProductId));
                 Assert.NotNull(prod);
                 Assert.Equal("Milk", prod.Name);
             }
@@ -405,7 +405,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = session.QueryDocument<Person>(q => q.FirstOrDefault());
+                var person = session.Load<Person>(q => q.FirstOrDefault());
                 Assert.NotNull(person);
 
                 session.Delete(person);
@@ -414,7 +414,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = session.QueryDocument<Person>(q => q.FirstOrDefault());
+                var person = session.Load<Person>(q => q.FirstOrDefault());
                 Assert.Null(person);
             }
         }
@@ -441,7 +441,7 @@ namespace YesSql.Tests
                 var personByName = session.QueryIndex<PersonByName>().FirstOrDefault();
                 Assert.NotNull(personByName);
 
-                var person = session.QueryDocument<Person>(q => q.FirstOrDefault());
+                var person = session.Load<Person>(q => q.FirstOrDefault());
                 Assert.NotNull(person);
 
                 session.Delete(person);
@@ -491,7 +491,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(10, session.Load<Article>().Count());
                 Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
             }
 
@@ -511,7 +511,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 // document was deleted
-                Assert.Equal(9, session.QueryDocument<Article>().Count()); 
+                Assert.Equal(9, session.Load<Article>().Count()); 
                 // index was deleted
                 Assert.Equal(3, session.QueryIndex<ArticlesByDay>().Count()); 
             }
@@ -553,7 +553,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(10, session.Load<Article>().Count());
                 Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
             }
 
@@ -576,7 +576,7 @@ namespace YesSql.Tests
             // there should be the same number of indexes
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(10, session.Load<Article>().Count());
                 Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
 
                 Assert.Equal(4,
@@ -630,7 +630,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.QueryDocument<Article>().Count());
+                Assert.Equal(10, session.Load<Article>().Count());
                 Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
             }
 
@@ -650,7 +650,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 // document was not deleted
-                Assert.Equal(9, session.QueryDocument<Article>().Count());
+                Assert.Equal(9, session.Load<Article>().Count());
                 // index was not deleted
                 Assert.Equal(3, session.QueryIndex<ArticlesByDay>().Count());
             }
@@ -674,7 +674,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var articles = session.QueryDocument<Article>();
+                var articles = session.Load<Article>();
                 Assert.Equal(2, articles.Count());
             }
         }

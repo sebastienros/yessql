@@ -60,7 +60,7 @@
   <ItemGroup>
     <Compile Include="Indexes\ArticleByWord.cs" />
     <Compile Include="Models\Article.cs" />
-    <Compile Include="Models\ArticleIndexProvider.cs" />
+    <Compile Include="Indexes\ArticleIndexProvider.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tokenizers\ITokenFilter.cs" />

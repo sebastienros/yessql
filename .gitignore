@@ -17,3 +17,4 @@ packages
 src/*.testsettings
 src/TestResults
 src/*.vsmdi
+artifacts

@@ -37,14 +37,17 @@ namespace YesSql.Core.Services
         /// Queries documents
         /// </summary>
         /// <returns></returns>
-        IQueryable<Document> QueryDocument();
+        IQueryable<Document> Load();
 
         /// <summary>
         /// Queries documents for a specific type
         /// </summary>
-        IEnumerable<T> QueryDocument<T>(Func<IQueryable<Document>, IEnumerable<Document>> query = null) where T : class;
+        IEnumerable<T> Load<T>(Func<IQueryable<Document>, IEnumerable<Document>> query = null) where T : class;
 
-        T QueryDocument<T>(Func<IQueryable<Document>, Document> query) where T : class;
+        /// <summary>
+        /// Queries a single document for a specific type
+        /// </summary>
+        T Load<T>(Func<IQueryable<Document>, Document> query) where T : class;
 
         /// <summary>
         /// Queries documents for a specific type based on a mapped index
