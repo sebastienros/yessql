@@ -40,18 +40,12 @@ namespace YesSql.Samples.FullText
                 }
 
                 Console.WriteLine("Boolean query: 'white and fox or pink'");
-                var white = session.QueryByReducedIndex<ArticleByWord, Article>(
-                    q => q.Where(a => a.Word == "white"));
+                var boolQuery = session.QueryByReducedIndex<ArticleByWord, Article>(
+                    i => i.Any(x => x.Word == "white")
+                         && i.Any(x => x.Word == "fox")
+                         || i.Any(x => x.Word == "pink"));
 
-                var fox = session.QueryByReducedIndex<ArticleByWord, Article>(
-                    q => q.Where(a => a.Word == "fox"));
-
-                var pink = session.QueryByReducedIndex<ArticleByWord, Article>(
-                    q => q.Where(a => a.Word == "pink"));
-
-                var result = white.Intersect(fox).Union(pink);
-
-                foreach (var article in result)
+                foreach (var article in boolQuery)
                 {
                     Console.WriteLine(article.Content);
                 }

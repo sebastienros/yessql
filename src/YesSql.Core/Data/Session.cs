@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using NHibernate;
 using NHibernate.Criterion;
+using YesSql.Core.Data.Mappings;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
 using YesSql.Core.Serialization;
@@ -160,6 +163,7 @@ namespace YesSql.Core.Data
             return LoadAs<T>(queried);
         }
 
+
         public IEnumerable<TResult> QueryByMappedIndex<TIndex, TResult>(
             Func<IQueryable<TIndex>, IQueryable<TIndex>> query)
             where TIndex : class, IHasDocumentIndex
@@ -194,6 +198,37 @@ namespace YesSql.Core.Data
 
             TIndex index = query(_session.Query<TIndex>());
             return LoadAs<TResult>(index.Documents);
+        }
+
+        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
+            Expression<Func<IEnumerable<TIndex>, bool>> query)
+            where TIndex : class, IHasDocumentsIndex
+            where TResult : class {
+
+            // public IList<{TIndex}> {TIndex} {get;set;}
+            var name = typeof (TIndex).Name;
+            var dynamicMethod = new DynamicMethod(name, typeof (IEnumerable<TIndex>), null, typeof (Document));
+            var syntheticMethod = new SyntheticMethodInfo(dynamicMethod, typeof (Document));
+            var syntheticProperty = new SyntheticPropertyInfo(syntheticMethod);
+
+            // doc => doc.{TIndex}
+            var parameter = Expression.Parameter(typeof (Document), "doc");
+            var syntheticExpression = (Expression<Func<Document, IEnumerable<TIndex>>>) Expression.Lambda(
+                typeof (Func<Document, IEnumerable<TIndex>>),
+                Expression.Property(parameter, syntheticProperty),
+                parameter);
+
+            // query: Expression<Func<IEnumerable<TIndex>, bool>>
+            // property: Expression<Func<Document, IEnumerable<TIndex>>>
+            // => Expression<Func<Document, bool>>
+
+            var body = Expression.Invoke(query,
+              Expression.Invoke(syntheticExpression, parameter));
+
+            var syntheticPredicate = Expression.Lambda<Func<Document, bool>>(body, parameter);
+
+            var documents = _session.Query<Document>().Where(syntheticPredicate);
+            return LoadAs<TResult>(documents);
         }
 
         public IQueryable<TIndex> QueryIndex<TIndex>() where TIndex : IIndex

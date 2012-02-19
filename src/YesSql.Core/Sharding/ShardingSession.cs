@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
@@ -104,6 +105,11 @@ namespace YesSql.Core.Sharding
             where TResult : class
         {
             return _sessions.Values.SelectMany(x => x.QueryByReducedIndex<TIndex, TResult>(query));
+        }
+
+        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(Expression<Func<IEnumerable<TIndex>, bool>> query) where TIndex : class, IHasDocumentsIndex where TResult : class
+        {
+            throw new NotImplementedException();
         }
 
         public IQueryable<TIndex> QueryIndex<TIndex>() where TIndex : IIndex

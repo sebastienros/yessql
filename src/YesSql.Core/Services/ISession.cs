@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
@@ -81,6 +82,12 @@ namespace YesSql.Core.Services
             where TResult : class
             ;
 
+        IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
+            Expression<Func<IEnumerable<TIndex>, bool>> query)
+            where TIndex : class, IHasDocumentsIndex
+            where TResult : class
+            ;
+        
         /// <summary>
         /// Queries a specific index.
         /// </summary>
