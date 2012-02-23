@@ -9,7 +9,9 @@ using NHibernate.Transform;
 using YesSql.Core.Data.Mappings;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
+using YesSql.Core.Services;
 using Expression = System.Linq.Expressions.Expression;
+using ISession = NHibernate.ISession;
 
 namespace YesSql.Core.Query {
     public class DefaultQuery : IQuery {
@@ -110,10 +112,11 @@ namespace YesSql.Core.Query {
             return BindDocument().RowCount();
         }
 
-        IQuery<TIndex> IQuery.For<TIndex>() {
-            return new Query<TIndex>(this);
+        IQuery<T> IQuery.For<T>() 
+        {
+            var typeName = typeof(T).SimplifiedTypeName();
+            return new Query<T>(this).Where(d => d.Type == typeName);
         }
-
 
         private T As<T>(Document doc) where T : class
         {
@@ -151,10 +154,8 @@ namespace YesSql.Core.Query {
                 {
                     return _query.As<T>(_query.Slice(_skip, _count)).ToList();
                 }
-                else
-                {
-                    return _query.As<T>(_query._queryOver.List()).ToList();
-                }
+                
+                return _query.As<T>(_query._queryOver.List()).ToList();
             }
 
             IQuery<T> IQuery<T>.Skip(int count)

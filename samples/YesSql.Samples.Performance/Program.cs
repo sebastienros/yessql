@@ -5,6 +5,7 @@ using FluentNHibernate.Cfg.Db;
 using NHibernate.Criterion;
 using NHibernate.Tool.hbm2ddl;
 using YesSql.Core.Data;
+using YesSql.Core.Data.Mappings;
 using YesSql.Core.Indexes;
 using YesSql.Core.Services;
 using Xunit;
@@ -483,15 +484,31 @@ namespace YesSql.Samples.Performance {
             );
             
             store.RegisterIndexes<UserIndexProvider>();
-
+            
             // pre initialize configuration
             store.CreateSession().Dispose();
+
+            Clean(store);
 
             WriteAllWithYesSql(store);
 
             QueryByFullName(store);
 
             QueryByPartialName(store);
+        }
+
+        private static void Clean(IStore store)
+        {
+            using (var session = store.CreateSession())
+            {
+                var documents = session.Load().ToList();
+                foreach(var document in documents)
+                {
+                    session.Delete(document);
+                }
+
+                session.Commit();
+            }
         }
 
         private static void QueryByFullName(IStore store) {
@@ -551,6 +568,7 @@ namespace YesSql.Samples.Performance {
     }
 
     public class UserByName : MapIndex {
+        [Indexed]
         public virtual string Name { get; set; }
     }
 

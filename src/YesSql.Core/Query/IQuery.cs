@@ -9,6 +9,12 @@ using YesSql.Core.Services;
 namespace YesSql.Core.Query {
     public interface IQuery {
         ISession Session { get; }
+
+        /// <summary>
+        /// Defines what type of document should be returned
+        /// </summary>
+        /// <typeparam name="T">The type of document to return</typeparam>
+        /// <returns></returns>
         IQuery<T> For<T>() where T : class;
     }
 

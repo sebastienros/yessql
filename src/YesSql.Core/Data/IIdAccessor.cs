@@ -5,28 +5,37 @@ namespace YesSql.Core.Data {
     {
         object Get(object obj);
         void Set(object obj, object value);
-
     }
 
-    public class IdAccessor : IIdAccessor
+    public class IdAccessor<T, TU> : IIdAccessor
     {
-        readonly Func<object, object> _getter;
-        readonly Action<object, object> _setter;
+        private readonly Func<T, TU> _getter;
+        private readonly Action<T, TU> _setter;
 
-        public IdAccessor(Func<object, object> getter, Action<object, object> setter)
+        public IdAccessor(Func<T, TU> getter, Action<T, TU> setter)
         {
             _getter = getter;
             _setter = setter;
         }
 
-        object IIdAccessor.Get(object obj)
+        private TU Get(T obj)
         {
             return _getter(obj);
         }
 
-        void IIdAccessor.Set(object obj, object value)
+        private void Set(T obj, TU value)
         {
             _setter(obj, value);
+        }
+
+        object IIdAccessor.Get(object obj)
+        {
+            return _getter((T) obj);
+        }
+
+        void IIdAccessor.Set(object obj, object value)
+        {
+            _setter((T) obj, (TU) value);
         }
     }
 }

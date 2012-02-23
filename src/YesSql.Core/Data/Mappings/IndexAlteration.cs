@@ -5,6 +5,8 @@ using System.Reflection;
 using FluentNHibernate;
 using FluentNHibernate.Automapping;
 using FluentNHibernate.Automapping.Alterations;
+using FluentNHibernate.Conventions;
+using FluentNHibernate.Conventions.Instances;
 using YesSql.Core.Indexes;
 
 namespace YesSql.Core.Data.Mappings
@@ -37,6 +39,9 @@ namespace YesSql.Core.Data.Mappings
 
                 genericMethod.Invoke(model, new[] {alteration});
             }
+
+            // automatically creates a database index on properties with the [Indexed] attribute
+            model.Conventions.Setup(s => s.Add<IndexedPropertyConvention>());
         }
     }
 
@@ -52,7 +57,14 @@ namespace YesSql.Core.Data.Mappings
                 ;
 
         }
+    }
 
+    public class IndexedPropertyConvention : AttributePropertyConvention<IndexedAttribute>
+    {
+        protected override void Apply(IndexedAttribute attribute, IPropertyInstance instance)
+        {
+            instance.Index("idx__" + instance.Property.Name);
+        }
     }
 }
 

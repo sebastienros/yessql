@@ -50,12 +50,15 @@
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\DefaultIdentifierFactory.cs" />
     <Compile Include="Data\IIdAccessor.cs" />
+    <Compile Include="Data\IIdentifierFactory.cs" />
     <Compile Include="Data\Mappings\DocumentAlteration.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Data\Mappings\IndexAlteration.cs" />
     <Compile Include="Data\Mappings\DocumentTypeSource.cs" />
+    <Compile Include="Data\Mappings\IndexedAttribute.cs" />
     <Compile Include="Data\Mappings\IndexTypeSource.cs" />
     <Compile Include="Data\MapState.cs" />
     <Compile Include="Data\MsSqlCeConfiguration.cs" />
