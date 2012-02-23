@@ -105,7 +105,7 @@ namespace YesSql.Core.Data.Mappings
         {
             // mapping.HasMany() Func<Document, IEnumerable<TChild>> memberExpression
 
-            // public IList<{TIndex}> {TIndex} {get;set;}
+            // public IList<{TIndex}> {TIndex} { get; set; }
             var name = typeof (TIndex).Name;
             var dynamicMethod = new DynamicMethod(name, typeof (IEnumerable<TIndex>), null, typeof (Document));
             var syntheticMethod = new SyntheticMethodInfo(dynamicMethod, typeof (Document));

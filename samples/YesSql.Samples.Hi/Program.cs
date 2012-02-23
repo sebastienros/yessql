@@ -2,6 +2,7 @@
 using System.Data.SqlServerCe;
 using System.IO;
 using System.Linq;
+using NHibernate.Criterion;
 using YesSql.Core.Data;
 using YesSql.Samples.Hi.Indexes;
 using YesSql.Samples.Hi.Models;
@@ -46,9 +47,7 @@ namespace YesSql.Samples.Hi
             // loading blog posts by author
             using (var session = store.CreateSession())
             {
-                var ps = session.QueryByMappedIndex<BlogPostByAuthor, BlogPost>(
-                    query => query.Where(x => x.Author.StartsWith("B"))
-                );
+                var ps = session.Query<BlogPost, BlogPostByAuthor>().Where(x => x.Author.IsLike("B%")).List();
 
                 foreach (var p in ps)
                 {
@@ -59,9 +58,7 @@ namespace YesSql.Samples.Hi
             // loading blog posts by day of publication
             using (var session = store.CreateSession())
             {
-                var ps = session.QueryByReducedIndex<BlogPostByDay, BlogPost>(
-                    query => query.Where(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd"))
-                    );
+                var ps = session.Query<BlogPost, BlogPostByDay>(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd")).List();
 
                 foreach (var p in ps)
                 {

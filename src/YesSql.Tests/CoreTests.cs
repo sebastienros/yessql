@@ -219,7 +219,7 @@ namespace YesSql.Tests
                 Assert.Equal(0, session.QueryIndex<PersonByName>().Count(x => x.Name == "Joe"));
 
                 var person =
-                    session.QueryByMappedIndex<PersonByName, Person>(q => q.FirstOrDefault(x => x.Name == "Bill"));
+                    session.Query<Person, PersonByName>().Where(x => x.Name == "Bill").FirstOrDefault();
                 Assert.NotNull(person);
                 Assert.Equal("Bill", person.Firstname);
             }
@@ -499,8 +499,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var article =
-                    session.QueryByReducedIndex<ArticlesByDay, Article>(
-                        a => a.Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear)).FirstOrDefault();
+                    session.Query<Article, ArticlesByDay>().Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).FirstOrDefault();
                 Assert.NotNull(article);
                 session.Delete(article);
 
@@ -560,9 +559,10 @@ namespace YesSql.Tests
             // delete a document
             using (var session = _store.CreateSession())
             {
-                var article = session.QueryByReducedIndex<ArticlesByDay, Article>(
-                        a => a.Where(b => b.DayOfYear == new DateTime(2011, 11, 2).DayOfYear)
-                    ).FirstOrDefault();
+                var article = session
+                    .Query<Article, ArticlesByDay>()
+                    .Where(b => b.DayOfYear == new DateTime(2011, 11, 2).DayOfYear)
+                    .FirstOrDefault();
                 
                 Assert.NotNull(article);
 
@@ -637,9 +637,10 @@ namespace YesSql.Tests
             // update a document
             using (var session = _store.CreateSession())
             {
-                var article =
-                    session.QueryByReducedIndex<ArticlesByDay, Article>(
-                        a => a.Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear)).FirstOrDefault();
+                var article = session.Query<Article, ArticlesByDay>()
+                    .Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear)
+                    .FirstOrDefault();
+
                 Assert.NotNull(article);
                 session.Delete(article);
 
@@ -718,11 +719,82 @@ namespace YesSql.Tests
                 Assert.Equal(10, session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ToList().Count);
                 Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill0"));
 
-                var persons = session.QueryByMappedIndex<PersonByName, Person>(
-                    q => q.Take(10)
-                );
+                var persons = session.Query<Person, PersonByName>().Take(10).List();
 
                 Assert.Equal(10, persons.Count());
+            }
+        }
+
+        [Fact]
+        public void ShouldQueryByMappedIndex() {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession()) {
+                var bill = new Person {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                var steve = new Person {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+                session.Commit();
+            }
+
+            using (var session = _store.CreateSession()) {
+                Assert.Equal(2, session.Query().For<Person>().With<PersonByName>().Count());
+                Assert.Equal(1, session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").Count());
+                Assert.Equal(1, session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").Count());
+                Assert.Equal(1, session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").List().Count());
+            }
+        }
+
+        [Fact]
+        public void ShouldQueryByReducedIndex() {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession()) {
+                var dates = new[]
+                {
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 3),
+                    new DateTime(2011, 11, 4),
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 3),
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 1)
+                };
+
+                var articles = dates.Select(x => new Article {
+                    PublishedUtc = x
+                });
+
+                foreach (var article in articles) {
+                    session.Save(article);
+                }
+
+                session.Commit();
+            }
+
+            using (var session = _store.CreateSession()) {
+                Assert.Equal(10, session.Query().For<Article>().With<ArticlesByDay>().Count());
+
+                Assert.Equal(4, session.Query().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == 305).Count());
+                Assert.Equal(7, session.Query().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == 305 || x.DayOfYear == 306).Count());
+
+                Assert.Equal(4, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305).Count());
+                Assert.Equal(7, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305 || x.DayOfYear == 306).Count());
+
+                Assert.Equal(4, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305).List().Count());
+                Assert.Equal(7, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305 || x.DayOfYear == 306).List().Count());
+
             }
         }
     }

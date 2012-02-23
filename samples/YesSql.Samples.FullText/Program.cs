@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Data.SqlServerCe;
 using System.IO;
-using System.Linq;
+using NHibernate.Criterion;
 using YesSql.Core.Data;
+using YesSql.Core.Data.Models;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
 
@@ -32,18 +33,16 @@ namespace YesSql.Samples.FullText
             using (var session = store.CreateSession())
             {
                 Console.WriteLine("Simple term: 'white'");
-                var simple = session.QueryByReducedIndex<ArticleByWord, Article>(
-                    q => q.Where(a => a.Word == "white"));
+                var simple = session.Query<Article, ArticleByWord>().Where(a => a.Word == "white").List();
 
                 foreach (var article in simple) {
                     Console.WriteLine(article.Content);
                 }
 
-                Console.WriteLine("Boolean query: 'white and fox or pink'");
-                var boolQuery = session.QueryByReducedIndex<ArticleByWord, Article>(
-                    i => i.Any(x => x.Word == "white")
-                         && i.Any(x => x.Word == "fox")
-                         || i.Any(x => x.Word == "pink"));
+                Document document = null;
+
+                Console.WriteLine("Boolean query: 'white or fox or pink'");
+                var boolQuery = session.Query<Article, ArticleByWord>().Where(a => a.Word.IsIn(new [] { "white", "fox", "pink" })).List();
 
                 foreach (var article in boolQuery)
                 {

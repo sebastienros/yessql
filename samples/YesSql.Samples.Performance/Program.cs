@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using FluentNHibernate.Cfg.Db;
+using NHibernate.Criterion;
 using NHibernate.Tool.hbm2ddl;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
@@ -498,9 +499,9 @@ namespace YesSql.Samples.Performance {
 
             for (int i = 0; i < 100; i++) {
                 using (var session = store.CreateSession()) {
-                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "WILLY")).ToList().Any());
-                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "FAUSTINO")).ToList().Any());
-                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name == "BART")).ToList().Any());
+                    Assert.True(session.Query<User, UserByName>().Where(x => x.Name == "WILLY").List().Any());
+                    Assert.True(session.Query<User, UserByName>().Where(x => x.Name == "FAUSTINO").List().Any());
+                    Assert.True(session.Query<User, UserByName>().Where(x => x.Name == "BART").List().Any());
                 }
             }
 
@@ -512,9 +513,9 @@ namespace YesSql.Samples.Performance {
 
             for (int i = 0; i < 100; i++) {
                 using (var session = store.CreateSession()) {
-                    Assert.True(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("WIL"))).ToList().Any());
-                    Assert.NotNull(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("FAUS"))).ToList().Any());
-                    Assert.NotNull(session.QueryByMappedIndex<UserByName, User>(q => q.Where(x => x.Name.StartsWith("BA"))).ToList().Any());
+                    Assert.True(session.   Query<User, UserByName>().Where(x => x.Name.IsLike("WIL%")).List().Any());
+                    Assert.NotNull(session.Query<User, UserByName>().Where(x => x.Name.IsLike("FAUS%")).List().Any());
+                    Assert.NotNull(session.Query<User, UserByName>().Where(x => x.Name.IsLike("BA%")).List().Any());
                 }
             }
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using FluentNHibernate.Cfg.Db;
 using NHibernate.Tool.hbm2ddl;
 using YesSql.Core.Data;
@@ -70,10 +69,10 @@ namespace YesSql.Samples.Shards
 
             using(var session = store.CreateSession())
             {
-                var p = session.QueryByMappedIndex<ProductByName, Product>(q => q.Where(x => x.Name == "Milk")).FirstOrDefault();
+                var p = session.Query<Product, ProductByName>().Where(x => x.Name == "Milk").FirstOrDefault();
                 Console.WriteLine(p.Name + " " + p.Cost);
 
-                var orders = session.QueryByReducedIndex<OrderByCustomerName, Order>(q => q.Where(x => x.Name == "Microsoft"));
+                var orders = session.Query<Order, OrderByCustomerName>().Where(x => x.Name == "Microsoft").List();
                 foreach (var order in orders)
                 {
                     Console.WriteLine(order.Id);

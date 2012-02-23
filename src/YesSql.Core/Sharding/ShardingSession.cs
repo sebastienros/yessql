@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
+using YesSql.Core.Query;
 using YesSql.Core.Services;
 
 namespace YesSql.Core.Sharding
@@ -77,44 +78,24 @@ namespace YesSql.Core.Sharding
             throw new NotImplementedException();
         }
 
-        public IEnumerable<TResult> QueryByMappedIndex<TIndex, TResult>(
-            Func<IQueryable<TIndex>, IQueryable<TIndex>> query)
-            where TIndex : class, IHasDocumentIndex
-            where TResult : class
-        {
-            return _sessions.Values.SelectMany(x => x.QueryByMappedIndex<TIndex, TResult>(query));
-        }
-
-        public TResult QueryByMappedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, TIndex> query)
-            where TIndex : class, IHasDocumentIndex
-            where TResult : class
-        {
-            return _sessions.Values.Select(x => x.QueryByMappedIndex<TIndex, TResult>(query)).FirstOrDefault();
-        }
-
-        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
-            Func<IQueryable<TIndex>, IQueryable<TIndex>> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class
-        {
-            return _sessions.Values.SelectMany(x => x.QueryByReducedIndex<TIndex, TResult>(query));
-        }
-
-        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, TIndex> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class
-        {
-            return _sessions.Values.SelectMany(x => x.QueryByReducedIndex<TIndex, TResult>(query));
-        }
-
-        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(Expression<Func<IEnumerable<TIndex>, bool>> query) where TIndex : class, IHasDocumentsIndex where TResult : class
-        {
-            throw new NotImplementedException();
-        }
-
         public IQueryable<TIndex> QueryIndex<TIndex>() where TIndex : IIndex
         {
             throw new NotImplementedException();
+        }
+
+        public IQuery Query()
+        {
+            throw new NotImplementedException();
+        }
+
+        public T As<T>(Document doc) where T : class
+        {
+            return _sessions.Values.First().As<T>(doc);
+        }
+
+        public IEnumerable<T> As<T>(IEnumerable<Document> doc) where T : class
+        {
+            return _sessions.Values.First().As<T>(doc);
         }
 
         public void Commit()

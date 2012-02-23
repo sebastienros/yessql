@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
+using YesSql.Core.Query;
 
 namespace YesSql.Core.Services
 {
@@ -51,48 +52,14 @@ namespace YesSql.Core.Services
         T Load<T>(Func<IQueryable<Document>, Document> query) where T : class;
 
         /// <summary>
-        /// Queries documents for a specific type based on a mapped index
-        /// </summary>
-        IEnumerable<TResult> QueryByMappedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, IQueryable<TIndex>> query)
-            where TIndex : class, IHasDocumentIndex
-            where TResult : class
-            ;
-
-        /// <summary>
-        /// Queries documents for a specific type based on a mapped index
-        /// </summary>
-        TResult QueryByMappedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, TIndex> query)
-            where TIndex : class, IHasDocumentIndex
-            where TResult : class
-            ;
-
-        /// <summary>
-        /// Queries documents for a specific type based on a reduced index
-        /// </summary>
-        IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, IQueryable<TIndex>> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class
-            ;
-
-        /// <summary>
-        /// Queries documents for a specific type based on a reduced index
-        /// </summary>
-        IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, TIndex> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class
-            ;
-
-        IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
-            Expression<Func<IEnumerable<TIndex>, bool>> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class
-            ;
-        
-        /// <summary>
         /// Queries a specific index.
         /// </summary>
         /// <typeparam name="TIndex">The index to query over.</typeparam>
         IQueryable<TIndex> QueryIndex<TIndex>() where TIndex : IIndex;
+
+        IQuery Query();
+        T As<T>(Document doc) where T : class;
+        IEnumerable<T> As<T>(IEnumerable<Document> doc) where T : class;
 
         /// <summary>
         /// Commits the current transaction

@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection.Emit;
 using System.Threading.Tasks;
 using NHibernate;
 using NHibernate.Criterion;
-using YesSql.Core.Data.Mappings;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
+using YesSql.Core.Query;
 using YesSql.Core.Serialization;
 using YesSql.Core.Services;
 using NHibernate.Linq;
@@ -27,7 +25,7 @@ namespace YesSql.Core.Data
         private readonly IDictionary<object, int> _documents = new Dictionary<object, int>();
         
         // a dictionary of returned objects indexed by document id
-        private readonly IDictionary<int, object> _objects = new Dictionary<int, object>();
+        private readonly IDictionary<int, object> _identityMap = new Dictionary<int, object>();
  
         public Session(NHibernate.ISession session, Store store)
         {
@@ -150,90 +148,53 @@ namespace YesSql.Core.Data
 
             if (query != null)
             {
-                return LoadAs<T>(query(filter).ToList());
+                return As<T>(query(filter).ToList());
             }
 
-            return LoadAs<T>(filter.ToList());
+            return As<T>(filter.ToList());
         }
 
         public T Load<T>(Func<IQueryable<Document>, Document> query) where T : class
         {
             var typeName = typeof (T).SimplifiedTypeName();
             var queried = query(_session.Query<Document>().Where(x => x.Type == typeName));
-            return LoadAs<T>(queried);
+            return As<T>(queried);
         }
-
-
-        public IEnumerable<TResult> QueryByMappedIndex<TIndex, TResult>(
-            Func<IQueryable<TIndex>, IQueryable<TIndex>> query)
-            where TIndex : class, IHasDocumentIndex
-            where TResult : class
-        {
-            IQueryable<TIndex> index = query(_session.Query<TIndex>());
-            return LoadAs<TResult>(index.Select(x => x.Document));
-        }
-
-        public TResult QueryByMappedIndex<TIndex, TResult>(Func<IQueryable<TIndex>, TIndex> query)
-            where TIndex : class, IHasDocumentIndex
-            where TResult : class
-        {
-            TIndex index = query(_session.Query<TIndex>());
-            return LoadAs<TResult>(index.Document);
-        }
-
-        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
-            Func<IQueryable<TIndex>, IQueryable<TIndex>> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class
-        {
-            IQueryable<TIndex> index = query(_session.Query<TIndex>());
-            return LoadAs<TResult>(index.SelectMany(x => x.Documents));
-        }
-
-        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
-            Func<IQueryable<TIndex>, TIndex> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class
-        {
-
-            TIndex index = query(_session.Query<TIndex>());
-            return LoadAs<TResult>(index.Documents);
-        }
-
-        public IEnumerable<TResult> QueryByReducedIndex<TIndex, TResult>(
-            Expression<Func<IEnumerable<TIndex>, bool>> query)
-            where TIndex : class, IHasDocumentsIndex
-            where TResult : class {
-
-            // public IList<{TIndex}> {TIndex} {get;set;}
-            var name = typeof (TIndex).Name;
-            var dynamicMethod = new DynamicMethod(name, typeof (IEnumerable<TIndex>), null, typeof (Document));
-            var syntheticMethod = new SyntheticMethodInfo(dynamicMethod, typeof (Document));
-            var syntheticProperty = new SyntheticPropertyInfo(syntheticMethod);
-
-            // doc => doc.{TIndex}
-            var parameter = Expression.Parameter(typeof (Document), "doc");
-            var syntheticExpression = (Expression<Func<Document, IEnumerable<TIndex>>>) Expression.Lambda(
-                typeof (Func<Document, IEnumerable<TIndex>>),
-                Expression.Property(parameter, syntheticProperty),
-                parameter);
-
-            // query: Expression<Func<IEnumerable<TIndex>, bool>>
-            // property: Expression<Func<Document, IEnumerable<TIndex>>>
-            // => Expression<Func<Document, bool>>
-
-            var body = Expression.Invoke(query,
-              Expression.Invoke(syntheticExpression, parameter));
-
-            var syntheticPredicate = Expression.Lambda<Func<Document, bool>>(body, parameter);
-
-            var documents = _session.Query<Document>().Where(syntheticPredicate);
-            return LoadAs<TResult>(documents);
-        }
-
+        
         public IQueryable<TIndex> QueryIndex<TIndex>() where TIndex : IIndex
         {
             return _session.Query<TIndex>();
+        }
+
+        public Query.IQuery Query()
+        {
+            return new DefaultQuery(_session, this);
+        }
+
+        public T As<T>(Document doc) where T : class {
+            if (doc == null) {
+                return null;
+            }
+
+            object cached;
+            if (_identityMap.TryGetValue(doc.Id, out cached)) {
+                return (T)cached;
+            }
+
+            var obj = _serializer.Deserialize(doc) as T;
+
+            if (obj == null) {
+                throw new ArgumentException("Document of type '" + doc.Type + "' cannot be deserialized as '" + typeof(T).Name + "'");
+            }
+
+            _documents.Add(obj, doc.Id);
+            _identityMap.Add(doc.Id, obj);
+            return obj;
+        }
+
+        public IEnumerable<T> As<T>(IEnumerable<Document> doc) where T : class {
+
+            return doc.Select(As<T>);
         }
 
         public Task CommitAsync()
@@ -501,36 +462,5 @@ namespace YesSql.Core.Data
                 }
             }
         }
-
-        private T LoadAs<T>(Document doc) where T : class
-        {
-            if (doc == null)
-            {
-                return null;
-            }
-
-            object cached;
-            if (_objects.TryGetValue(doc.Id, out cached))
-            {
-                return (T) cached;
-            }
-            
-            var obj = doc.As<T>();
-
-            if(obj == null)
-            {
-                throw new ArgumentException("Document of type '" + doc.Type + "' cannot be deserialized as '" + typeof(T).Name + "'");    
-            }
-
-            _documents.Add(obj, doc.Id);
-            _objects.Add(doc.Id, obj);
-            return obj;
-        }
-
-        private IEnumerable<T> LoadAs<T>(IEnumerable<Document> doc) where T : class
-        {
-            return doc.Select(LoadAs<T>);
-        }
-
     }
 }
