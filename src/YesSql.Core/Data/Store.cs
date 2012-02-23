@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using FluentNHibernate.Automapping;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
@@ -32,6 +33,9 @@ namespace YesSql.Core.Data
 
         internal readonly ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>> Descriptors =
             new ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>>();
+
+        private readonly ConcurrentDictionary<Type, IIdAccessor> _idAccessors = new ConcurrentDictionary<Type, IIdAccessor>();
+
 
         public Store()
         {
@@ -176,6 +180,39 @@ namespace YesSql.Core.Data
             var exportedTypes = assembly.GetExportedTypes();
             var indexes = exportedTypes.Where(x => typeof (IIndexProvider).IsAssignableFrom(x));
             return RegisterIndexes(indexes);
+        }
+
+
+        public IIdAccessor GetAccessor(Type tContainer, string name)
+        {
+            return _idAccessors.GetOrAdd(tContainer, type =>
+            {
+                var propertyInfo = tContainer.GetProperty(name);
+
+
+                if (propertyInfo == null)
+                {
+                    return new IdAccessor(x => null, (x, y) => { });
+                }
+
+                //var tProperty = propertyInfo.PropertyType;
+
+                //ParameterExpression instance = Expression.Parameter(typeof(object), "instance");
+                //ParameterExpression parameter = Expression.Parameter(tProperty, "param");
+
+                //var setter = Expression.Lambda(
+                //    Expression.Call(instance, propertyInfo.GetSetMethod(), parameter),
+                //    new ParameterExpression[] {instance, parameter}).Compile();
+
+                //var getter = Expression.Lambda(
+                //    Expression.Call(instance, propertyInfo.GetGetMethod(), parameter),
+                //    new ParameterExpression[] {instance, parameter}).Compile();
+
+                Func<object, object> getter = o => ((dynamic)o).Id;
+                Action<object, object> setter = (o, v) => ((dynamic)o).Id = (int)v;
+
+                return new IdAccessor(getter, setter);
+            });
         }
     }
 }

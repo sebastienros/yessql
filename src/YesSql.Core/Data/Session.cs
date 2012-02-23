@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace YesSql.Core.Data
         
         // a dictionary of returned objects indexed by document id
         private readonly IDictionary<int, object> _identityMap = new Dictionary<int, object>();
- 
+
         public Session(NHibernate.ISession session, Store store)
         {
             _session = session;
@@ -89,11 +90,13 @@ namespace YesSql.Core.Data
                     // new document
                     _session.Save(doc);
 
+                    var accessor = _store.GetAccessor(obj.GetType(), "Id");
+
                     // if the object has an Id property, set it back
-                    var idInfo = obj.GetType().GetProperty("Id");
-                    if (idInfo != null)
+                    var ident = accessor.Get(obj);
+                    if (ident != null)
                     {
-                        idInfo.SetValue(obj, doc.Id, null);
+                        accessor.Set(obj, doc.Id);
                     }
 
                     MapNew(doc, obj);

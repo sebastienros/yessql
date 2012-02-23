@@ -50,6 +50,7 @@
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\IIdAccessor.cs" />
     <Compile Include="Data\Mappings\DocumentAlteration.cs">
       <SubType>Code</SubType>
     </Compile>
