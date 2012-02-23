@@ -47,11 +47,6 @@ namespace YesSql.Core.Services
         IEnumerable<T> Load<T>(Func<IQueryable<Document>, IEnumerable<Document>> query = null) where T : class;
 
         /// <summary>
-        /// Queries a single document for a specific type
-        /// </summary>
-        T Load<T>(Func<IQueryable<Document>, Document> query) where T : class;
-
-        /// <summary>
         /// Queries a specific index.
         /// </summary>
         /// <typeparam name="TIndex">The index to query over.</typeparam>

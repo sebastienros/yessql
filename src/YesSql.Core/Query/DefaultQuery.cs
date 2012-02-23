@@ -187,6 +187,12 @@ namespace YesSql.Core.Query {
                 return new Query<T, TIndex>(_query);
             }
 
+            public IQuery<T> Where(Expression<Func<Document, bool>> predicate)
+            {
+                _query.BindDocument().Where(predicate);
+                return this;
+            }
+
             IQuery<T, TIndex> IQuery<T>.OrderBy<TIndex>(Expression<Func<TIndex, object>> keySelector) {
                 _query.OrderBy(keySelector);
                 return new Query<T, TIndex>(_query);

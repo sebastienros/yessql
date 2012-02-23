@@ -176,12 +176,12 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var order = session.Load<Order>(q => q.FirstOrDefault());
+                var order = session.Query<Order>().FirstOrDefault();
                 Assert.NotNull(order);
                 Assert.Equal(1, order.OrderLines.Count);
 
                 var prod =
-                    session.Load<Product>(q => q.FirstOrDefault(x => x.Id == order.OrderLines[0].ProductId));
+                    session.Query<Product>().Where(x => x.Id == order.OrderLines[0].ProductId).FirstOrDefault();
                 Assert.NotNull(prod);
                 Assert.Equal("Milk", prod.Name);
             }
@@ -405,7 +405,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = session.Load<Person>(q => q.FirstOrDefault());
+                var person = session.Query<Person>().FirstOrDefault();
                 Assert.NotNull(person);
 
                 session.Delete(person);
@@ -414,7 +414,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = session.Load<Person>(q => q.FirstOrDefault());
+                var person = session.Load<Person>().FirstOrDefault();
                 Assert.Null(person);
             }
         }
@@ -441,7 +441,7 @@ namespace YesSql.Tests
                 var personByName = session.QueryIndex<PersonByName>().FirstOrDefault();
                 Assert.NotNull(personByName);
 
-                var person = session.Load<Person>(q => q.FirstOrDefault());
+                var person = session.Load<Person>().FirstOrDefault();
                 Assert.NotNull(person);
 
                 session.Delete(person);

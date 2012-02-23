@@ -16,7 +16,9 @@ namespace YesSql.Core.Query {
 
         IQuery<T, TIndex> With<TIndex>() where TIndex : IIndex;
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : IIndex;
-        
+
+        IQuery<T> Where(Expression<Func<Document, bool>> predicate);
+
         IQuery<T, TIndex> OrderBy<TIndex>(Expression<Func<TIndex, object>> keySelector) where TIndex : IIndex;
         IQuery<T, TIndex> OrderByDescending<TIndex>(Expression<Func<TIndex, object>> keySelector) where TIndex : IIndex;
 

@@ -40,7 +40,7 @@ namespace YesSql.Samples.Hi
             // loading a single blog post
             using(var session = store.CreateSession())
             {
-                var p = session.Load<BlogPost>(query => query.FirstOrDefault());
+                var p = session.Query<BlogPost>().FirstOrDefault();
                 Console.WriteLine(p.Title); // > Hello YesSql
             }
 
