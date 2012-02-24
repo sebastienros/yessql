@@ -17,6 +17,7 @@
     <CallTarget Targets="Compile"/>
     <CallTarget Targets="Test" />
     <CallTarget Targets="Package" />
+    <CallTarget Targets="Nuget" />
   </Target>
 
   <Target Name="Clean">
@@ -48,4 +49,11 @@
       Properties="Configuration=Release;OutputPath=$(ArtifactsFolder)" />
   </Target>
 
+  <Target Name ="Nuget" DependsOnTargets="Package">
+    <MSBuild
+      Projects="$(SrcFolder)\YesSql.Core\YesSql.Core.csproj"
+      Targets="Build"
+      Properties="Configuration=Release;PackageOutputDir=$(ArtifactsFolder);BuildPackage=True" />
+  </Target>
+  
 </Project>
