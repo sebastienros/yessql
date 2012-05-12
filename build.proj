@@ -9,7 +9,6 @@
     <ArtifactsFolder>$(MSBuildProjectDirectory)\artifacts</ArtifactsFolder>
     <SrcFolder>$(MSBuildProjectDirectory)\src</SrcFolder>
     <RootFolder>$(MSBuildProjectDirectory)</RootFolder>
-    <Version Condition="$(BUILD_NUMBER) == ''">0.2.0</Version>
   </PropertyGroup>
 
   <Target Name ="Build">

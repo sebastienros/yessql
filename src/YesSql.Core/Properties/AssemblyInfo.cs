@@ -5,5 +5,5 @@
 [assembly: AssemblyCompany("Sébastien Ros")]
 [assembly: AssemblyCopyright("Sébastien Ros")]
 
-[assembly: AssemblyVersion("0.3")]
+[assembly: AssemblyVersion("0.3.1")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
