@@ -48,12 +48,15 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\DefaultIdentifierFactory.cs" />
     <Compile Include="Data\IIdAccessor.cs" />
     <Compile Include="Data\IIdentifierFactory.cs" />
+    <Compile Include="Data\Mappings\StringMaxLengthAttribute.cs" />
+    <Compile Include="Data\Mappings\StringLengthAttribute.cs" />
     <Compile Include="Data\Mappings\DocumentAlteration.cs">
       <SubType>Code</SubType>
     </Compile>

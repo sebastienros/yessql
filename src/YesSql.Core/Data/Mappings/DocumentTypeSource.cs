@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using FluentNHibernate;
 using FluentNHibernate.Diagnostics;
 using YesSql.Core.Data.Models;
-using YesSql.Core.Indexes;
 
 namespace YesSql.Core.Data.Mappings
 {

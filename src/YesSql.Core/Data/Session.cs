@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -174,20 +173,25 @@ namespace YesSql.Core.Data
             return new DefaultQuery(_session, this);
         }
 
-        public T As<T>(Document doc) where T : class {
-            if (doc == null) {
+        public T As<T>(Document doc) where T : class
+        {
+            if (doc == null)
+            {
                 return null;
             }
 
             object cached;
-            if (_identityMap.TryGetValue(doc.Id, out cached)) {
-                return (T)cached;
+            if (_identityMap.TryGetValue(doc.Id, out cached))
+            {
+                return (T) cached;
             }
 
             var obj = _serializer.Deserialize(doc) as T;
 
-            if (obj == null) {
-                throw new ArgumentException("Document of type '" + doc.Type + "' cannot be deserialized as '" + typeof(T).Name + "'");
+            if (obj == null)
+            {
+                throw new ArgumentException("Document of type '" + doc.Type + "' cannot be deserialized as '" +
+                                            typeof (T).Name + "'");
             }
 
             _documents.Add(obj, doc.Id);
@@ -195,8 +199,8 @@ namespace YesSql.Core.Data
             return obj;
         }
 
-        public IEnumerable<T> As<T>(IEnumerable<Document> doc) where T : class {
-
+        public IEnumerable<T> As<T>(IEnumerable<Document> doc) where T : class
+        {
             return doc.Select(As<T>);
         }
 
@@ -360,7 +364,7 @@ namespace YesSql.Core.Data
         }
 
         /// <summary>
-        /// Creates a Func&lt;IIndex, object&gt; dynamically, based on GroupKey attributes
+        /// Creates a Func{IIndex, object}; dynamically, based on GroupKey attributes
         /// this function will be used as the keySelector for Linq.Grouping
         /// </summary>
         private Func<IIndex, object> GetGroupingMetod(IndexDescriptor descriptor)

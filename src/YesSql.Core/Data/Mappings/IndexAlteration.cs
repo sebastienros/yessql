@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using FluentNHibernate;
 using FluentNHibernate.Automapping;
 using FluentNHibernate.Automapping.Alterations;
@@ -42,6 +41,9 @@ namespace YesSql.Core.Data.Mappings
 
             // automatically creates a database index on properties with the [Indexed] attribute
             model.Conventions.Setup(s => s.Add<IndexedPropertyConvention>());
+
+            // configure the size of the column
+            model.Conventions.Setup(s => s.Add<StringColumnLengthConvention>());
         }
     }
 
@@ -64,6 +66,14 @@ namespace YesSql.Core.Data.Mappings
         protected override void Apply(IndexedAttribute attribute, IPropertyInstance instance)
         {
             instance.Index("idx__" + instance.Property.Name);
+        }
+    }
+
+    public class StringColumnLengthConvention : AttributePropertyConvention<StringLengthAttribute>
+    {
+        protected override void Apply(StringLengthAttribute attribute, IPropertyInstance instance)
+        {
+            instance.Length(attribute.Length);
         }
     }
 }

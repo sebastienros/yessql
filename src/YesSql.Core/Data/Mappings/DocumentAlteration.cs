@@ -38,6 +38,7 @@ namespace YesSql.Core.Data.Mappings
                 // mapping.Id(x => x.Id).GeneratedBy.HiLo("100");
 
                 mapping.Map(x => x.Type).Index("idx_document_type");
+                mapping.Map(x => x.Content).Length(4001);
 
                 foreach (var index in _hasDocumentsIndexes)
                 {

@@ -797,5 +797,21 @@ namespace YesSql.Tests
 
             }
         }
+
+        [Fact]
+        public void ShouldSaveBigDocuments()
+        {
+            using(var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = new String('x', 10000),
+                };
+
+
+                session.Save(bill);
+                session.Commit();
+            }
+        }
     }
 }
