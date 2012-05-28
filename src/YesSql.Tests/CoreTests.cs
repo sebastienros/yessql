@@ -133,7 +133,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                dynamic person = _store.ConvertTo<object>(session.Load().FirstOrDefault());
+                dynamic person = session.As<object>(session.Load().FirstOrDefault());
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", person.Firstname);

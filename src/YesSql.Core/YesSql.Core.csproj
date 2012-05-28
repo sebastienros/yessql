@@ -91,7 +91,6 @@
     <Compile Include="Serialization\IDocumentSerializer.cs" />
     <Compile Include="Serialization\JSonSerializer.cs" />
     <Compile Include="Serialization\TypeExtensions.cs" />
-    <Compile Include="Services\DocumentExtensions.cs" />
     <Compile Include="Services\ISession.cs" />
     <Compile Include="Services\IStore.cs" />
     <Compile Include="Sharding\IShardSelectionStrategy.cs" />

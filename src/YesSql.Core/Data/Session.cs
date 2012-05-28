@@ -75,7 +75,7 @@ namespace YesSql.Core.Data
                 if (_documents.TryGetValue(obj, out id))
                 {
                     var oldDoc = _session.Get<Document>(id);
-                    var oldObj = _store.ConvertTo<object>(oldDoc);
+                    var oldObj = _serializer.Deserialize(oldDoc);
 
                     MapDeleted(oldDoc, oldObj);
 
