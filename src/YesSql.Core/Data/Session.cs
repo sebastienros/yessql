@@ -8,8 +8,8 @@ using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
 using YesSql.Core.Query;
 using YesSql.Core.Serialization;
-using YesSql.Core.Services;
 using NHibernate.Linq;
+using YesSql.Core.Services;
 using Expression = System.Linq.Expressions.Expression;
 using ISession = YesSql.Core.Services.ISession;
 
@@ -31,7 +31,7 @@ namespace YesSql.Core.Data
         {
             _session = session;
             _store = store;
-            _serializer = new JSonSerializer();
+            _serializer = _store.GetDocumentSerializer();
             _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
 
             _transaction = _session.BeginTransaction();
@@ -75,7 +75,7 @@ namespace YesSql.Core.Data
                 if (_documents.TryGetValue(obj, out id))
                 {
                     var oldDoc = _session.Get<Document>(id);
-                    var oldObj = oldDoc.As<object>();
+                    var oldObj = _store.ConvertTo<object>(oldDoc);
 
                     MapDeleted(oldDoc, oldObj);
 
@@ -89,7 +89,7 @@ namespace YesSql.Core.Data
                     // new document
                     _session.Save(doc);
 
-                    var accessor = _store.GetAccessor(obj.GetType(), "Id");
+                    var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
 
                     // if the object has an Id property, set it back
                     var ident = accessor.Get(obj);

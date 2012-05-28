@@ -10,6 +10,7 @@ using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
 using YesSql.Core.Data.Mappings;
 using YesSql.Core.Indexes;
+using YesSql.Core.Serialization;
 using YesSql.Core.Services;
 using YesSql.Core.Sharding;
 using ISession = YesSql.Core.Services.ISession;
@@ -27,6 +28,7 @@ namespace YesSql.Core.Data
         internal readonly IList<IIndexProvider> Indexes;
         private IShardStrategyFactory _shardStrategyFactory;
         private IIdentifierFactory _identifierFactory;
+        private IDocumentSerializerFactory _documentSerializerFactory;
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
@@ -192,9 +194,37 @@ namespace YesSql.Core.Data
             return RegisterIndexes(indexes);
         }
 
-        public IIdAccessor GetAccessor(Type tContainer, string name)
+        public IIdAccessor GetIdAccessor(Type tContainer, string name)
         {
             return _idAccessors.GetOrAdd(tContainer, type => _identifierFactory.CreateAccessor(tContainer, name));
+        }
+
+        public IStore RegisterSerializer<T>() where T : IDocumentSerializerFactory
+        {
+            return RegisterSerializer(typeof (T));
+        }
+
+        public IStore RegisterSerializer(Type type)
+        {
+            var documentSerializerFactory = Activator.CreateInstance(type) as IDocumentSerializerFactory;
+
+            if (documentSerializerFactory != null)
+            {
+                _documentSerializerFactory = documentSerializerFactory;
+            }
+
+            return this;
+        }
+
+        public IDocumentSerializer GetDocumentSerializer()
+        {
+            // set default factory
+            if(_documentSerializerFactory == null)
+            {
+                RegisterSerializer<JSonSerializerFactory>();
+            }
+
+            return _documentSerializerFactory.Build(this);
         }
     }
 }

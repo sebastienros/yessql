@@ -9,6 +9,7 @@ using NHibernate.Transform;
 using YesSql.Core.Data.Mappings;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Indexes;
+using YesSql.Core.Serialization;
 using YesSql.Core.Services;
 using Expression = System.Linq.Expressions.Expression;
 using ISession = NHibernate.ISession;

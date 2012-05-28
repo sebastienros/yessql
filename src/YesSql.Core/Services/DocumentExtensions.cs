@@ -9,20 +9,20 @@ namespace YesSql.Core.Services {
     /// </summary>
     public static class DocumentExtensions
     {
-        public static IEnumerable<T> As<T>(this IEnumerable<Document> documents)
+        public static IEnumerable<T> ConvertTo<T>(this IStore store, IEnumerable<Document> documents) where T : class
         {
-            IDocumentSerializer serializer = new JSonSerializer();
-            return documents.Select(serializer.Deserialize).Cast<T>();
+            IDocumentSerializer serializer = store.GetDocumentSerializer();
+            return documents.Select(d => serializer.Deserialize(d) as T);
         }
 
-        public static T As<T>(this Document document) where T : class
+        public static T ConvertTo<T>(this IStore store, Document document) where T : class
         {
             if(document == null)
             {
                 return null;
             }
 
-            IDocumentSerializer serializer = new JSonSerializer();
+            IDocumentSerializer serializer = store.GetDocumentSerializer();
             return serializer.Deserialize(document) as T;
         }
     }

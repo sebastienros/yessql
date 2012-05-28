@@ -41,6 +41,9 @@
       <HintPath>..\..\packages\Iesi.Collections.3.2.0.4000\lib\Net35\Iesi.Collections.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\packages\Newtonsoft.Json.4.5.5\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="NHibernate, Version=3.3.0.4000, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\NHibernate.3.3.0.4000\lib\Net35\NHibernate.dll</HintPath>
@@ -83,12 +86,14 @@
     <Compile Include="Data\Store.cs" />
     <Compile Include="Query\DefaultQuery.cs" />
     <Compile Include="Query\IQuery.cs" />
+    <Compile Include="Serialization\IDocumentSerializerFactory.cs" />
+    <Compile Include="Serialization\JSonNetSerializer.cs" />
     <Compile Include="Serialization\IDocumentSerializer.cs" />
     <Compile Include="Serialization\JSonSerializer.cs" />
+    <Compile Include="Serialization\TypeExtensions.cs" />
     <Compile Include="Services\DocumentExtensions.cs" />
     <Compile Include="Services\ISession.cs" />
     <Compile Include="Services\IStore.cs" />
-    <Compile Include="Services\TypeNameProvider.cs" />
     <Compile Include="Sharding\IShardSelectionStrategy.cs" />
     <Compile Include="Sharding\ShardingSession.cs" />
     <Compile Include="Sharding\ShardStrategyImpl.cs" />
@@ -103,7 +108,9 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Data\Migrations\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

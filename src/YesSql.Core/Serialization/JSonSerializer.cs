@@ -1,20 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Web.Script.Serialization;
 using YesSql.Core.Data.Models;
 using YesSql.Core.Services;
 
 namespace YesSql.Core.Serialization
 {
+    public class JSonSerializerFactory : IDocumentSerializerFactory
+    {
+        private JSonSerializer _serializer;
+
+        public IDocumentSerializer Build(IStore store)
+        {
+            if(_serializer == null)
+            {
+                _serializer = new JSonSerializer(store);
+            }
+
+            return _serializer;
+        }
+    }
+
     public class JSonSerializer : IDocumentSerializer
     {
+        private readonly IStore _store;
         private readonly JavaScriptSerializer _serializer;
 
-        public JSonSerializer()
+        public JSonSerializer(IStore store)
         {
+            _store = store;
             _serializer = new JavaScriptSerializer();
         }
 
@@ -22,7 +37,7 @@ namespace YesSql.Core.Serialization
         {
             var objType = obj.GetType();
             doc.Content = _serializer.Serialize(obj);
-            doc.Type = IsAnonymousType(objType) ? String.Empty : objType.SimplifiedTypeName();
+            doc.Type = objType.IsAnonymousType() ? String.Empty : objType.SimplifiedTypeName();
         }
 
         public object Deserialize(Document doc)
@@ -34,11 +49,7 @@ namespace YesSql.Core.Serialization
                 var des = _serializer.Deserialize(doc.Content, type);
 
                 // if the document has an Id property, set it back
-                var idInfo = des.GetType().GetProperty("Id");
-                if (idInfo != null) 
-                {
-                    idInfo.SetValue(des, doc.Id, null);
-                }
+                _store.GetIdAccessor(type, "Id").Set(des, doc.Id);
 
                 return des;
             }
@@ -71,12 +82,6 @@ namespace YesSql.Core.Serialization
             return dyn;
         }
 
-        public static bool IsAnonymousType(Type type)
-        {
-            return Attribute.IsDefined(type, typeof (CompilerGeneratedAttribute), false)
-                   && type.IsGenericType && type.Name.Contains("AnonymousType")
-                   && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))
-                   && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
-        }
+
     }
 }

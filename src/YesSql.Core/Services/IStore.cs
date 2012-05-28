@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using FluentNHibernate.Cfg.Db;
 using NHibernate.Cfg;
+using YesSql.Core.Data;
 using YesSql.Core.Indexes;
+using YesSql.Core.Serialization;
 using YesSql.Core.Sharding;
 
 namespace YesSql.Core.Services
@@ -51,5 +53,18 @@ namespace YesSql.Core.Services
         IStore RegisterIndexes(Type type);
         IStore RegisterIndexes(IEnumerable<Type> types);
         IStore RegisterIndexes(Assembly assembly);
+
+        /// <summary>
+        /// Registers an <see cref="IDocumentSerializerFactory"/> implementation providing
+        /// <see cref="IDocumentSerializer"/>
+        /// </summary>
+        /// <typeparam name="T">The <see cref="Type"/> of the factory.</typeparam>
+        IStore RegisterSerializer<T>() where T : IDocumentSerializerFactory;
+        IStore RegisterSerializer(Type type);
+
+        IDocumentSerializer GetDocumentSerializer();
+
+        IIdAccessor GetIdAccessor(Type tContainer, string name);
+
     }
 }

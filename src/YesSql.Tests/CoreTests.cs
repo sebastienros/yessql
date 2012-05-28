@@ -133,7 +133,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                dynamic person = session.Load().FirstOrDefault().As<object>();
+                dynamic person = _store.ConvertTo<object>(session.Load().FirstOrDefault());
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", person.Firstname);
@@ -526,25 +526,23 @@ namespace YesSql.Tests
                 var dates = new[]
                 {
                     new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 1),
+
                     new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 2),
+                    
                     new DateTime(2011, 11, 3),
+                    new DateTime(2011, 11, 3),
+                    
                     new DateTime(2011, 11, 4),
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 3),
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 1)
                 };
 
-                var articles = dates.Select(x => new Article
+                foreach (var date in dates)
                 {
-                    PublishedUtc = x
-                });
-
-                foreach (var article in articles)
-                {
-                    session.Save(article);
+                    session.Save(new Article { PublishedUtc = date });
                 }
 
                 session.Commit();
@@ -552,11 +550,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
+                // 10 articles
                 Assert.Equal(10, session.Load<Article>().Count());
+
+                // 4 indexes as there are 4 different dates
                 Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
             }
 
-            // delete a document
+            // change the published date of an article
             using (var session = _store.CreateSession())
             {
                 var article = session
