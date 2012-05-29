@@ -7,6 +7,7 @@ using NHibernate.Tool.hbm2ddl;
 using YesSql.Core.Data;
 using YesSql.Core.Data.Mappings;
 using YesSql.Core.Indexes;
+using YesSql.Core.Serialization;
 using YesSql.Core.Services;
 using Xunit;
 
@@ -484,7 +485,7 @@ namespace YesSql.Samples.Performance {
             );
             
             store.RegisterIndexes<UserIndexProvider>();
-            
+
             // pre initialize configuration
             store.CreateSession().Dispose();
 

@@ -9,7 +9,6 @@ using YesSql.Core.Indexes;
 using YesSql.Core.Query;
 using YesSql.Core.Serialization;
 using NHibernate.Linq;
-using YesSql.Core.Services;
 using Expression = System.Linq.Expressions.Expression;
 using ISession = YesSql.Core.Services.ISession;
 
@@ -193,6 +192,9 @@ namespace YesSql.Core.Data
                 throw new ArgumentException("Document of type '" + doc.Type + "' cannot be deserialized as '" +
                                             typeof (T).Name + "'");
             }
+
+            // if the document has an Id property, set it back
+            _store.GetIdAccessor(typeof(T), "Id").Set(obj, doc.Id);
 
             _documents.Add(obj, doc.Id);
             _identityMap.Add(doc.Id, obj);

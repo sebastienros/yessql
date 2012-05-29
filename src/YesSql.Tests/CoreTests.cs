@@ -5,6 +5,7 @@ using System.Linq;
 using Xunit;
 using YesSql.Core.Data;
 using YesSql.Core.Data.Models;
+using YesSql.Core.Serialization;
 using YesSql.Core.Services;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
@@ -28,7 +29,6 @@ namespace YesSql.Tests
             new SqlCeEngine {LocalConnectionString = "Data Source=Store.sdf"}.CreateDatabase();
 
             _store = new Store().Configure(MsSqlCeConfiguration.MsSqlCe40.ConnectionString("Data Source=Store.sdf").ShowSql());
-
         }
 
         public void Dispose()
@@ -136,12 +136,12 @@ namespace YesSql.Tests
                 dynamic person = session.As<object>(session.Load().FirstOrDefault());
 
                 Assert.NotNull(person);
-                Assert.Equal("Bill", person.Firstname);
-                Assert.Equal("Gates", person.Lastname);
+                Assert.Equal("Bill", (string)person.Firstname);
+                Assert.Equal("Gates", (string)person.Lastname);
 
                 Assert.NotNull(person.Address);
-                Assert.Equal("1 Microsoft Way", person.Address.Street);
-                Assert.Equal("Redmond", person.Address.City);
+                Assert.Equal("1 Microsoft Way", (string)person.Address.Street);
+                Assert.Equal("Redmond", (string)person.Address.City);
             }
         }
 

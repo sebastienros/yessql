@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Web.Script.Serialization;
 using YesSql.Core.Data.Models;
-using YesSql.Core.Services;
 
 namespace YesSql.Core.Serialization
 {
@@ -11,11 +10,11 @@ namespace YesSql.Core.Serialization
     {
         private JSonSerializer _serializer;
 
-        public IDocumentSerializer Build(IStore store)
+        public IDocumentSerializer Build()
         {
             if(_serializer == null)
             {
-                _serializer = new JSonSerializer(store);
+                _serializer = new JSonSerializer();
             }
 
             return _serializer;
@@ -24,17 +23,20 @@ namespace YesSql.Core.Serialization
 
     public class JSonSerializer : IDocumentSerializer
     {
-        private readonly IStore _store;
         private readonly JavaScriptSerializer _serializer;
 
-        public JSonSerializer(IStore store)
+        public JSonSerializer()
         {
-            _store = store;
             _serializer = new JavaScriptSerializer();
         }
 
         public void Serialize(object obj, ref Document doc)
         {
+            if (obj == null)
+            {
+                throw new ArgumentNullException("obj");
+            }
+
             var objType = obj.GetType();
             doc.Content = _serializer.Serialize(obj);
             doc.Type = objType.IsAnonymousType() ? String.Empty : objType.SimplifiedTypeName();
@@ -42,14 +44,16 @@ namespace YesSql.Core.Serialization
 
         public object Deserialize(Document doc)
         {
+            if (String.IsNullOrEmpty(doc.Content))
+            {
+                return null;
+            }
+
             // if a CLR type is specified, use it during deserialization
             if (!String.IsNullOrEmpty(doc.Type))
             {
                 var type = Type.GetType(doc.Type, false);
                 var des = _serializer.Deserialize(doc.Content, type);
-
-                // if the document has an Id property, set it back
-                _store.GetIdAccessor(type, "Id").Set(des, doc.Id);
 
                 return des;
             }
@@ -81,7 +85,5 @@ namespace YesSql.Core.Serialization
 
             return dyn;
         }
-
-
     }
 }

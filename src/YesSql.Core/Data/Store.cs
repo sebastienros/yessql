@@ -221,10 +221,10 @@ namespace YesSql.Core.Data
             // set default factory
             if(_documentSerializerFactory == null)
             {
-                RegisterSerializer<JSonSerializerFactory>();
+                RegisterSerializer<JSonNetSerializerFactory>();
             }
 
-            return _documentSerializerFactory.Build(this);
+            return _documentSerializerFactory.Build();
         }
     }
 }

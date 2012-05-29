@@ -57,6 +57,9 @@
     <Reference Include="xunit">
       <HintPath>..\..\tools\xunit-1.9\xunit.dll</HintPath>
     </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\..\tools\xunit-1.9\xunit.extensions.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -64,6 +67,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DocumentSerializersTests.cs" />
     <Compile Include="Indexes\ArticleByDay.cs" />
     <Compile Include="Indexes\PersonByName.cs" />
     <Compile Include="Models\Article.cs" />
