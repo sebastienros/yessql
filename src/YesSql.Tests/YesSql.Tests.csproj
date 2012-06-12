@@ -73,6 +73,7 @@
     <Compile Include="Models\Article.cs" />
     <Compile Include="Models\Person.cs" />
     <Compile Include="Models\Products.cs" />
+    <Compile Include="Models\Drawing.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CoreTests.cs" />
   </ItemGroup>

@@ -24,7 +24,7 @@ namespace YesSql.Core.Serialization
             }
 
             var objType = obj.GetType();
-            doc.Content = JsonConvert.SerializeObject(obj);
+            doc.Content = JsonConvert.SerializeObject(obj, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
             doc.Type = objType.IsAnonymousType() ? String.Empty : objType.SimplifiedTypeName();
         }
 
@@ -39,7 +39,7 @@ namespace YesSql.Core.Serialization
             if (!String.IsNullOrEmpty(doc.Type))
             {
                 var type = Type.GetType(doc.Type, false);
-                var des = JsonConvert.DeserializeObject(doc.Content, type);
+                var des = JsonConvert.DeserializeObject(doc.Content, type, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
 
                 return des;
             }

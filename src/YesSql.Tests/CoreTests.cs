@@ -814,5 +814,34 @@ namespace YesSql.Tests
                 session.Commit();
             }
         }
+
+        [Fact]
+        public void ShouldSavePolymorphicProperties() {
+            using (var session = _store.CreateSession()) {
+
+                var drawing = new Drawing 
+                {
+                    Shapes = new Shape []
+                    { 
+                        new Square { Size = 10 }, 
+                        new Square { Size = 20 }, 
+                        new Circle { Radius = 5 } 
+                    }
+                };
+
+                session.Save(drawing);
+                session.Commit();
+            }
+
+            using (var session = _store.CreateSession()) {
+                var drawing = session.As<Drawing>(session.Load().FirstOrDefault());
+
+                Assert.NotNull(drawing);
+                Assert.Equal(3, drawing.Shapes.Count);
+                Assert.Equal(typeof(Square), drawing.Shapes[0].GetType());
+                Assert.Equal(typeof(Square), drawing.Shapes[1].GetType());
+                Assert.Equal(typeof(Circle), drawing.Shapes[2].GetType());
+            }
+        }
     }
 }
