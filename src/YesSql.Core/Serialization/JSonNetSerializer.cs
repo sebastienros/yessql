@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using YesSql.Core.Data.Models;
+using Newtonsoft.Json.Serialization;
 
 namespace YesSql.Core.Serialization
 {
@@ -15,7 +16,6 @@ namespace YesSql.Core.Serialization
 
     public class JSonNetSerializer : IDocumentSerializer
     {
-    
         public void Serialize(object obj, ref Document doc)
         {
             if(obj == null)

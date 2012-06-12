@@ -564,7 +564,7 @@ namespace YesSql.Tests
                     .Query<Article, ArticlesByDay>()
                     .Where(b => b.DayOfYear == new DateTime(2011, 11, 2).DayOfYear)
                     .FirstOrDefault();
-                
+
                 Assert.NotNull(article);
 
                 article.PublishedUtc = new DateTime(2011, 11, 3);
@@ -665,8 +665,8 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var d1 = new Article {PublishedUtc = new DateTime(2011, 11, 1)};
-                var d2 = new Article {PublishedUtc = new DateTime(2011, 11, 1)};
+                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
 
                 session.Save(d1);
                 session.Save(d2);
@@ -685,10 +685,11 @@ namespace YesSql.Tests
         public void ShouldSaveCustomObjectAsync()
         {
             var session = _store.CreateSession();
-                var bill = new Person {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
             session.Save(bill);
             var task = session.CommitAsync();
@@ -697,10 +698,12 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldPageResults() {
+        public void ShouldPageResults()
+        {
             _store.RegisterIndexes<PersonIndexProvider>();
 
-            using (var session = _store.CreateSession()) {
+            using (var session = _store.CreateSession())
+            {
                 for (int i = 0; i < 100; i++)
                 {
                     var person = new Person
@@ -715,7 +718,8 @@ namespace YesSql.Tests
                 session.Commit();
             }
 
-            using (var session = _store.CreateSession()) {
+            using (var session = _store.CreateSession())
+            {
                 Assert.Equal(100, session.QueryIndex<PersonByName>().Count());
                 Assert.Equal(10, session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ToList().Count);
                 Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill0"));
@@ -727,16 +731,20 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldQueryByMappedIndex() {
+        public void ShouldQueryByMappedIndex()
+        {
             _store.RegisterIndexes<PersonIndexProvider>();
 
-            using (var session = _store.CreateSession()) {
-                var bill = new Person {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
                     Firstname = "Bill",
                     Lastname = "Gates",
                 };
 
-                var steve = new Person {
+                var steve = new Person
+                {
                     Firstname = "Steve",
                     Lastname = "Balmer"
                 };
@@ -746,7 +754,8 @@ namespace YesSql.Tests
                 session.Commit();
             }
 
-            using (var session = _store.CreateSession()) {
+            using (var session = _store.CreateSession())
+            {
                 Assert.Equal(2, session.Query().For<Person>().With<PersonByName>().Count());
                 Assert.Equal(1, session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").Count());
                 Assert.Equal(1, session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").Count());
@@ -755,10 +764,12 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldQueryByReducedIndex() {
+        public void ShouldQueryByReducedIndex()
+        {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
-            using (var session = _store.CreateSession()) {
+            using (var session = _store.CreateSession())
+            {
                 var dates = new[]
                 {
                     new DateTime(2011, 11, 1),
@@ -773,18 +784,21 @@ namespace YesSql.Tests
                     new DateTime(2011, 11, 1)
                 };
 
-                var articles = dates.Select(x => new Article {
+                var articles = dates.Select(x => new Article
+                {
                     PublishedUtc = x
                 });
 
-                foreach (var article in articles) {
+                foreach (var article in articles)
+                {
                     session.Save(article);
                 }
 
                 session.Commit();
             }
 
-            using (var session = _store.CreateSession()) {
+            using (var session = _store.CreateSession())
+            {
                 Assert.Equal(10, session.Query().For<Article>().With<ArticlesByDay>().Count());
 
                 Assert.Equal(4, session.Query().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == 305).Count());
@@ -816,12 +830,13 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldSavePolymorphicProperties() {
-            using (var session = _store.CreateSession()) {
-
-                var drawing = new Drawing 
+        public void ShouldSavePolymorphicProperties()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var drawing = new Drawing
                 {
-                    Shapes = new Shape []
+                    Shapes = new Shape[]
                     { 
                         new Square { Size = 10 }, 
                         new Square { Size = 20 }, 
@@ -833,7 +848,8 @@ namespace YesSql.Tests
                 session.Commit();
             }
 
-            using (var session = _store.CreateSession()) {
+            using (var session = _store.CreateSession())
+            {
                 var drawing = session.As<Drawing>(session.Load().FirstOrDefault());
 
                 Assert.NotNull(drawing);
@@ -841,6 +857,32 @@ namespace YesSql.Tests
                 Assert.Equal(typeof(Square), drawing.Shapes[0].GetType());
                 Assert.Equal(typeof(Square), drawing.Shapes[1].GetType());
                 Assert.Equal(typeof(Circle), drawing.Shapes[2].GetType());
+            }
+        }
+
+        [Fact]
+        public void ShouldIgnoreNonSerializedAttribute() 
+        {
+            using (var session = _store.CreateSession()) 
+            {
+
+                var dog = new Animal 
+                {
+                    Name = "Doggy",
+                    Color = "Pink"
+                };
+
+                session.Save(dog);
+                session.Commit();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var dog = session.As<Animal>(session.Load().FirstOrDefault());
+
+                Assert.NotNull(dog);
+                Assert.Equal("Doggy", dog.Name);
+                Assert.Equal(null, dog.Color);
             }
         }
     }
