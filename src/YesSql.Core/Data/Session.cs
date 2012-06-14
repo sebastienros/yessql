@@ -137,6 +137,16 @@ namespace YesSql.Core.Data
             }
         }
 
+        public Document Get(int id)
+        {
+            return _session.Get<Document>(id);
+        }
+
+        public T Get<T>(int id) where T : class
+        {
+            return As<T>(_session.Get<Document>(id));
+        }
+
         public IQueryable<Document> Load()
         {
             return _session.Query<Document>();

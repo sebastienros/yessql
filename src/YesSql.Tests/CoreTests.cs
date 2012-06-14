@@ -885,5 +885,113 @@ namespace YesSql.Tests
                 Assert.Equal(null, dog.Color);
             }
         }
+
+
+        [Fact]
+        public void ShouldGetTypeById()
+        {
+            int circleId = 0;
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+                session.Commit();
+
+                circleId = circle.Id;
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = session.Get<Circle>(circleId);
+
+                Assert.NotNull(circle);
+                Assert.Equal(10, circle.Radius);
+            }
+        }
+
+        [Fact]
+        public void ShouldGetDocumentById()
+        {
+            int circleId = 0;
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+                session.Commit();
+
+                circleId = circle.Id;
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = session.Get(circleId);
+
+                Assert.NotNull(circle);
+            }
+        }
+
+        [Fact]
+        public void ShouldGetObjectById()
+        {
+            int circleId = 0;
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+                session.Commit();
+
+                circleId = circle.Id;
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = session.Get<object>(circleId);
+
+                Assert.NotNull(circle);
+                Assert.Equal(typeof(Circle), circle.GetType());
+            }
+        }
+
+        [Fact]
+        public void ShouldGetDynamicById()
+        {
+            int circleId = 0;
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+                session.Commit();
+
+                circleId = circle.Id;
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = session.Get<dynamic>(circleId);
+
+                Assert.NotNull(circle);
+                Assert.Equal(10, circle.Radius);
+            }
+        }
     }
 }

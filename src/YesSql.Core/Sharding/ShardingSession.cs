@@ -110,5 +110,15 @@ namespace YesSql.Core.Sharding
         {
             throw new NotImplementedException();
         }
+
+        public Document Get(int id)
+        {
+            return _sessions.Select(x => x.Value.Get(id)).FirstOrDefault();
+        }
+
+        public T Get<T>(int id) where T : class
+        {
+            return _sessions.Select(x => x.Value.Get<T>(id)).FirstOrDefault();
+        }
     }
 }

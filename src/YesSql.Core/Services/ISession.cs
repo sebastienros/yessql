@@ -36,6 +36,18 @@ namespace YesSql.Core.Services
         void Delete(object obj);
 
         /// <summary>
+        /// Loads a document by its id
+        /// </summary>
+        /// <returns></returns>
+        Document Get(int id);
+
+        /// <summary>
+        /// Loads a document by its id
+        /// </summary>
+        /// <returns></returns>
+        T Get<T>(int id) where T : class;
+
+        /// <summary>
         /// Queries documents
         /// </summary>
         /// <returns></returns>
