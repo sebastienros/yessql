@@ -49,10 +49,20 @@ namespace YesSql.Core.Data
 
         public Configuration CreateConfiguration(Func<IPersistenceConfigurer> config)
         {
-            return CreateConfiguration(DefaultConfigurationName, config);
+            return CreateConfiguration(config, null);
         }
 
         public Configuration CreateConfiguration(string name, Func<IPersistenceConfigurer> config)
+        {
+            return CreateConfiguration(name, config, null);
+        }
+
+        public Configuration CreateConfiguration(Func<IPersistenceConfigurer> config, Func<AutoPersistenceModel, AutoPersistenceModel> mapping)
+        {
+            return CreateConfiguration(DefaultConfigurationName, config, mapping);
+        }
+
+        public Configuration CreateConfiguration(string name, Func<IPersistenceConfigurer> config, Func<AutoPersistenceModel, AutoPersistenceModel> mapping)
         {
             var typeSource = new IndexTypeSource(Indexes);
 
@@ -69,6 +79,11 @@ namespace YesSql.Core.Data
                                // map relationships from any indexes to their documents
                                .Add(new IndexAlteration(typeSource))
                 );
+
+            if (mapping != null)
+            {
+                model = mapping(model);
+            }
 
             return _configurations[name] = Fluently.Configure()
                                                .Mappings(m => m.AutoMappings.Add(model)
@@ -107,6 +122,16 @@ namespace YesSql.Core.Data
                 }
 
             });
+        }
+
+        public IStore Configure(Configuration cfg)
+        {
+            _sessionFactoryInitializer = (store) =>
+            {
+                _configurations[DefaultConfigurationName] = cfg;
+            };
+
+            return this;
         }
 
         public IStore Configure(Action<IStore> cfg)

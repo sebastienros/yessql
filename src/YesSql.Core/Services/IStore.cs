@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using FluentNHibernate.Cfg.Db;
+using FluentNHibernate.Automapping;
 using NHibernate.Cfg;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
@@ -23,9 +24,19 @@ namespace YesSql.Core.Services
         Configuration CreateConfiguration(Func<IPersistenceConfigurer> config);
 
         /// <summary>
+        /// Creates an NHibernate configuration using custom mappings
+        /// </summary>
+        Configuration CreateConfiguration(Func<IPersistenceConfigurer> config, Func<AutoPersistenceModel, AutoPersistenceModel> mapping);
+
+        /// <summary>
         /// Creates a named NHibernate configuration using automatic mappings
         /// </summary>
         Configuration CreateConfiguration(string name, Func<IPersistenceConfigurer> config);
+
+        /// <summary>
+        /// Creates a named NHibernate configuration using custom mappings
+        /// </summary>
+        Configuration CreateConfiguration(string name, Func<IPersistenceConfigurer> config, Func<AutoPersistenceModel, AutoPersistenceModel> mapping);
 
         /// <summary>
         /// Configures the store using default settings
@@ -39,6 +50,9 @@ namespace YesSql.Core.Services
 
         /// Configures the store
         IStore Configure(Action<IStore> cfg);
+
+        /// Configures the store
+        IStore Configure(Configuration cfg);
 
         /// <summary>
         /// Defines the <see cref="IShardStrategyFactory"/> to use

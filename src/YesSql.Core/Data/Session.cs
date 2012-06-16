@@ -11,6 +11,7 @@ using YesSql.Core.Serialization;
 using NHibernate.Linq;
 using Expression = System.Linq.Expressions.Expression;
 using ISession = YesSql.Core.Services.ISession;
+using System.Data;
 
 namespace YesSql.Core.Data
 {
@@ -97,9 +98,26 @@ namespace YesSql.Core.Data
                         accessor.Set(obj, doc.Id);
                     }
 
+                    // track the newly created object
+                    TrackObject(obj, doc);
+
                     MapNew(doc, obj);
                 }
             }
+        }
+
+        private void TrackObject(object obj, Document doc)
+        {
+            // track object and document
+            _documents.Add(obj, doc.Id);
+            _identityMap.Add(doc.Id, obj);
+        }
+
+        private void UntrackObject(object obj, Document doc)
+        {
+            // untrack object and document
+            _documents.Remove(obj);
+            _identityMap.Remove(doc.Id);
         }
 
         public void Delete(object obj)
@@ -132,6 +150,10 @@ namespace YesSql.Core.Data
                 if (doc != null)
                 {
                     Delete(doc);
+
+                    // untrack the deleted object
+                    UntrackObject(obj, doc);
+
                     MapDeleted(doc, obj);
                 }
             }
@@ -206,8 +228,9 @@ namespace YesSql.Core.Data
             // if the document has an Id property, set it back
             _store.GetIdAccessor(typeof(T), "Id").Set(obj, doc.Id);
 
-            _documents.Add(obj, doc.Id);
-            _identityMap.Add(doc.Id, obj);
+            // track the loaded object
+            TrackObject(obj, doc);
+
             return obj;
         }
 
@@ -421,6 +444,12 @@ namespace YesSql.Core.Data
 
                 return context.Describe(new[] {target}).ToList();
             });
+        }
+
+        // todo: remove it when migrations are done
+        public IDbConnection GetConnection()
+        {
+            return _session.Connection;
         }
 
         private void MapNew(Document doc, object obj)

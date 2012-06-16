@@ -993,5 +993,29 @@ namespace YesSql.Tests
                 Assert.Equal(10, circle.Radius);
             }
         }
+
+        [Fact]
+        public void ShouldAllowMultipleCallToSave()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+                session.Save(circle);
+                session.Save(circle);
+                session.Commit();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var circles = session.Load<Circle>().ToList();
+
+                Assert.Equal(1, circles.Count());
+            }
+        }
     }
 }
