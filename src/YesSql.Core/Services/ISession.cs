@@ -69,6 +69,11 @@ namespace YesSql.Core.Services
         IEnumerable<T> As<T>(IEnumerable<Document> doc) where T : class;
 
         /// <summary>
+        /// Processes any pending action
+        /// </summary>
+        void Flush();
+
+        /// <summary>
         /// Commits the current transaction
         /// </summary>
         void Commit();

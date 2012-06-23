@@ -23,6 +23,8 @@ namespace YesSql.Core.Data
         private readonly IDocumentSerializer _serializer;
         private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
         private readonly IDictionary<object, int> _documents = new Dictionary<object, int>();
+        private readonly HashSet<object> _saved = new HashSet<object>();
+        private readonly HashSet<object> _deleted = new HashSet<object>();
         
         // a dictionary of returned objects indexed by document id
         private readonly IDictionary<int, object> _identityMap = new Dictionary<int, object>();
@@ -45,19 +47,23 @@ namespace YesSql.Core.Data
 
         public void Save(Document document)
         {
-            _session.Save(document);
-        }
-
-        public void Delete(Document doc)
-        {
-            _session.Delete(doc);
+            _saved.Add(document);
         }
 
         public void Save(object obj)
         {
+            // don't add the object to the saved list if it's already tracked
+            if (!_documents.ContainsKey(obj))
+            {
+                _saved.Add(obj);
+            }
+        }
+
+        private void SaveConcrete(object obj)
+        {
             if (obj is Document)
             {
-                Save((Document) obj);
+                _session.Save(obj); ;
             }
             else if (obj is IIndex)
             {
@@ -77,12 +83,16 @@ namespace YesSql.Core.Data
                     var oldDoc = _session.Get<Document>(id);
                     var oldObj = _serializer.Deserialize(oldDoc);
 
-                    MapDeleted(oldDoc, oldObj);
+                    // do nothing if the document hasn't been modified
+                    if (oldDoc.Content != doc.Content)
+                    {
+                        oldDoc.Content = doc.Content;
 
-                    oldDoc.Content = doc.Content;
+                        MapDeleted(oldDoc, oldObj);
 
-                    // update document
-                    MapNew(oldDoc, obj);
+                        // update document
+                        MapNew(oldDoc, obj);
+                    }
                 }
                 else
                 {
@@ -120,7 +130,17 @@ namespace YesSql.Core.Data
             _identityMap.Remove(doc.Id);
         }
 
+        public void Delete(Document document)
+        {
+            _deleted.Add(document);
+        }
+        
         public void Delete(object obj)
+        {
+            _deleted.Add(obj);            
+        }
+
+        private void DeleteConcrete(object obj)
         {
             if (obj == null)
             {
@@ -129,7 +149,7 @@ namespace YesSql.Core.Data
 
             if (obj is Document)
             {
-                Delete((Document) obj);
+                Delete((Document)obj);
             }
             else if (obj is IIndex)
             {
@@ -149,7 +169,7 @@ namespace YesSql.Core.Data
 
                 if (doc != null)
                 {
-                    Delete(doc);
+                    _session.Delete(doc);
 
                     // untrack the deleted object
                     UntrackObject(obj, doc);
@@ -247,10 +267,41 @@ namespace YesSql.Core.Data
             }).ContinueWith(task => Dispose());
         }
 
+        public void Flush()
+        {
+            // saving all pending objects
+            foreach (var obj in _documents.Keys)
+            {
+                if (!_deleted.Contains(obj))
+                {
+                    SaveConcrete(obj);
+                }
+            }
+
+            // saving all pending objects
+            foreach (var obj in _saved)
+            {
+                SaveConcrete(obj);
+            }
+            _saved.Clear();
+
+            // deleting all pending objects
+            foreach (var obj in _deleted)
+            {
+                DeleteConcrete(obj);
+            }
+            _deleted.Clear();
+        }
+
         public void Commit()
         {
+            // processing any pensind action
+            Flush();
+
+            // compute all reduce indexes
             Reduce();
 
+            // commit the transaction
             _transaction.Commit();
 
             // restart a new transaction for the session to be reused

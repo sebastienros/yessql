@@ -120,5 +120,14 @@ namespace YesSql.Core.Sharding
         {
             return _sessions.Select(x => x.Value.Get<T>(id)).FirstOrDefault();
         }
+
+
+        public void Flush()
+        {
+            foreach (var session in _sessions.Values)
+            {
+                session.Flush();
+            }
+        }
     }
 }
