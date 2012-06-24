@@ -507,8 +507,6 @@ namespace YesSql.Samples.Performance {
                 {
                     session.Delete(document);
                 }
-
-                session.Commit();
             }
         }
 
@@ -554,13 +552,11 @@ namespace YesSql.Samples.Performance {
                 });
 
                 if (batch % 128 == 0) {
-                    session.Commit();
                     session.Dispose();
                     session = store.CreateSession();
                 }
             }
 
-            session.Commit();
             session.Dispose();
 
             Console.WriteLine("\nYesSql Wrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", Names.Length, sp.ElapsedMilliseconds,

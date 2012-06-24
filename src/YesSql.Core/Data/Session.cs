@@ -19,13 +19,13 @@ namespace YesSql.Core.Data
     {
         private readonly NHibernate.ISession _session;
         private readonly Store _store;
-        private ITransaction _transaction;
         private readonly IDocumentSerializer _serializer;
         private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
         private readonly IDictionary<object, int> _documents = new Dictionary<object, int>();
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
-        
+        private bool _cancel = false;
+
         // a dictionary of returned objects indexed by document id
         private readonly IDictionary<int, object> _identityMap = new Dictionary<int, object>();
 
@@ -35,13 +35,21 @@ namespace YesSql.Core.Data
             _store = store;
             _serializer = _store.GetDocumentSerializer();
             _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
+        }
 
-            _transaction = _session.BeginTransaction();
+        public void Cancel()
+        {
+            _cancel = true;
         }
 
         public void Dispose()
         {
-            _transaction.Dispose();
+            if (!_cancel)
+            {
+                // execute pending commands
+                Flush();
+            }
+
             _session.Dispose();
         }
 
@@ -263,49 +271,42 @@ namespace YesSql.Core.Data
         {
             return Task.Factory.StartNew(() => {
                 Reduce();
-                _transaction.Commit();
             }).ContinueWith(task => Dispose());
         }
 
         public void Flush()
         {
-            // saving all pending objects
-            foreach (var obj in _documents.Keys)
+            using (var transaction = _session.BeginTransaction())
             {
-                if (!_deleted.Contains(obj))
+                // saving all pending objects
+                foreach (var obj in _documents.Keys)
+                {
+                    if (!_deleted.Contains(obj))
+                    {
+                        SaveConcrete(obj);
+                    }
+                }
+
+                // saving all pending objects
+                foreach (var obj in _saved)
                 {
                     SaveConcrete(obj);
                 }
+                _saved.Clear();
+
+                // deleting all pending objects
+                foreach (var obj in _deleted)
+                {
+                    DeleteConcrete(obj);
+                }
+                _deleted.Clear();
+
+                // compute all reduce indexes
+                Reduce();
+
+                // commit the transaction
+                transaction.Commit();
             }
-
-            // saving all pending objects
-            foreach (var obj in _saved)
-            {
-                SaveConcrete(obj);
-            }
-            _saved.Clear();
-
-            // deleting all pending objects
-            foreach (var obj in _deleted)
-            {
-                DeleteConcrete(obj);
-            }
-            _deleted.Clear();
-        }
-
-        public void Commit()
-        {
-            // processing any pensind action
-            Flush();
-
-            // compute all reduce indexes
-            Reduce();
-
-            // commit the transaction
-            _transaction.Commit();
-
-            // restart a new transaction for the session to be reused
-            _transaction = _session.BeginTransaction();
         }
 
         private void Reduce()

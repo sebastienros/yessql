@@ -98,14 +98,6 @@ namespace YesSql.Core.Sharding
             return _sessions.Values.First().As<T>(doc);
         }
 
-        public void Commit()
-        {
-            foreach (var session in _sessions.Values)
-            {
-                session.Commit();
-            }
-        }
-
         public Task CommitAsync()
         {
             throw new NotImplementedException();
@@ -121,12 +113,20 @@ namespace YesSql.Core.Sharding
             return _sessions.Select(x => x.Value.Get<T>(id)).FirstOrDefault();
         }
 
-
         public void Flush()
         {
             foreach (var session in _sessions.Values)
             {
                 session.Flush();
+            }
+        }
+
+
+        public void Cancel()
+        {
+            foreach (var session in _sessions.Values)
+            {
+                session.Cancel();
             }
         }
     }

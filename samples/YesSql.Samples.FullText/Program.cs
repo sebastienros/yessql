@@ -27,7 +27,6 @@ namespace YesSql.Samples.FullText
                 session.Save(new Article {Content = "This is a brown cat"});
                 session.Save(new Article {Content = "This is a pink elephant"});
                 session.Save(new Article {Content = "This is a white tiger"});
-                session.Commit();
             }
 
             using (var session = store.CreateSession())

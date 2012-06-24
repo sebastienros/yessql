@@ -38,7 +38,7 @@ namespace YesSql.Samples.Shards
                 };
 
                 session.Save(product);
-                session.Commit();
+                session.Flush();
 
                 session.Save(new Order {
                     Customer = "Microsoft",
@@ -64,7 +64,6 @@ namespace YesSql.Samples.Shards
                         }
                 });
 
-                session.Commit();
             }
 
             using(var session = store.CreateSession())

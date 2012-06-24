@@ -45,7 +45,6 @@ namespace YesSql.Tests
                 var doc = new Document {Type = "Product", Content = "{}"};
 
                 session.Save(doc);
-                session.Commit();
             }
         }
 
@@ -61,7 +60,6 @@ namespace YesSql.Tests
                 };
 
                 session.Save(bill);
-                session.Commit();
             }
         }
 
@@ -84,7 +82,6 @@ namespace YesSql.Tests
 
                 session.Save(bill);
                 session.Save(steve);
-                session.Commit();
             }
         }
 
@@ -107,7 +104,6 @@ namespace YesSql.Tests
 
                 session.Save(bill);
                 session.Save(steve);
-                session.Commit();
             }
         }
 
@@ -128,7 +124,6 @@ namespace YesSql.Tests
                 };
 
                 session.Save(bill);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -157,7 +152,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(product);
-                session.Commit();
+                session.Flush();
 
                 session.Save(new Order
                 {
@@ -171,7 +166,6 @@ namespace YesSql.Tests
                             },
                         }
                 });
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -208,7 +202,6 @@ namespace YesSql.Tests
 
                 session.Save(bill);
                 session.Save(steve);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -256,7 +249,6 @@ namespace YesSql.Tests
                     session.Save(article);
                 }
 
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -299,7 +291,6 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 session.Save(new ArticlesByDay {Count = 1, DayOfYear = new DateTime(2011, 11, 1).DayOfYear});
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -327,8 +318,6 @@ namespace YesSql.Tests
                 {
                     session.Save(article);
                 }
-
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -370,15 +359,12 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession()) {
                 session.Save(new ArticlesByDay { Count = 1, DayOfYear = new DateTime(2011, 11, 1).DayOfYear });
-                session.Commit();
             }
 
             using (var session = _store.CreateSession()) {
                 session.Save(new Article {
                     PublishedUtc = new DateTime(2011, 11, 1)
                 });
-            
-                session.Commit();
             }
 
             using (var session = _store.CreateSession()) {
@@ -400,7 +386,6 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 session.Save(bill);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -409,7 +394,6 @@ namespace YesSql.Tests
                 Assert.NotNull(person);
 
                 session.Delete(person);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -433,7 +417,6 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 session.Save(bill);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -445,7 +428,6 @@ namespace YesSql.Tests
                 Assert.NotNull(person);
 
                 session.Delete(person);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -486,7 +468,6 @@ namespace YesSql.Tests
                     session.Save(article);
                 }
 
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -503,7 +484,6 @@ namespace YesSql.Tests
                 Assert.NotNull(article);
                 session.Delete(article);
 
-                session.Commit();
             }
 
             // there should be only 3 indexes left
@@ -545,7 +525,6 @@ namespace YesSql.Tests
                     session.Save(new Article { PublishedUtc = date });
                 }
 
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -571,7 +550,6 @@ namespace YesSql.Tests
 
                 session.Save(article);
 
-                session.Commit();
             }
 
             // there should be the same number of indexes
@@ -626,7 +604,6 @@ namespace YesSql.Tests
                     session.Save(article);
                 }
 
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -645,7 +622,6 @@ namespace YesSql.Tests
                 Assert.NotNull(article);
                 session.Delete(article);
 
-                session.Commit();
             }
 
             // there should be only 3 indexes left
@@ -671,7 +647,6 @@ namespace YesSql.Tests
                 session.Save(d1);
                 session.Save(d2);
 
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -715,7 +690,6 @@ namespace YesSql.Tests
                     session.Save(person);
                 }
 
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -751,7 +725,6 @@ namespace YesSql.Tests
 
                 session.Save(bill);
                 session.Save(steve);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -794,7 +767,6 @@ namespace YesSql.Tests
                     session.Save(article);
                 }
 
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -825,7 +797,6 @@ namespace YesSql.Tests
 
 
                 session.Save(bill);
-                session.Commit();
             }
         }
 
@@ -845,7 +816,6 @@ namespace YesSql.Tests
                 };
 
                 session.Save(drawing);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -873,7 +843,6 @@ namespace YesSql.Tests
                 };
 
                 session.Save(dog);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -900,7 +869,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                session.Flush();
 
                 circleId = circle.Id;
             }
@@ -927,7 +896,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                session.Flush();
 
                 circleId = circle.Id;
             }
@@ -953,7 +922,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                session.Flush();
 
                 circleId = circle.Id;
             }
@@ -980,7 +949,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                session.Flush();
 
                 circleId = circle.Id;
             }
@@ -1007,7 +976,6 @@ namespace YesSql.Tests
                 session.Save(circle);
                 session.Save(circle);
                 session.Save(circle);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -1029,6 +997,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
+                session.Cancel();
             }
 
             using (var session = _store.CreateSession())
@@ -1036,7 +1005,6 @@ namespace YesSql.Tests
                 Assert.Equal(0, session.Load<Circle>().ToList().Count);
             }
         }
-
 
         [Fact]
         public void ShouldSaveChangesAutomatically()
@@ -1049,7 +1017,6 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())
@@ -1058,8 +1025,6 @@ namespace YesSql.Tests
                 Assert.NotNull(circle);
 
                 circle.Radius = 20;
-
-                session.Commit();
             }
 
             using (var session = _store.CreateSession())

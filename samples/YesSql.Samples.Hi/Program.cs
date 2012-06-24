@@ -34,7 +34,6 @@ namespace YesSql.Samples.Hi
             using(var session = store.CreateSession())
             {
                 session.Save(post);
-                session.Commit();
             }
 
             // loading a single blog post

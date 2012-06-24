@@ -69,14 +69,15 @@ namespace YesSql.Core.Services
         IEnumerable<T> As<T>(IEnumerable<Document> doc) where T : class;
 
         /// <summary>
-        /// Processes any pending action
+        /// Cancels any pending command
         /// </summary>
-        void Flush();
+        void Cancel();
 
         /// <summary>
-        /// Commits the current transaction
+        /// Processes any pending action. It's called automatically when the session is disposed, unless Cancel() 
+        /// was called previously.
         /// </summary>
-        void Commit();
+        void Flush();
 
         /// <summary>
         /// Commits the current transaction asynchromously
