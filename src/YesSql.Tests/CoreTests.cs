@@ -5,7 +5,6 @@ using System.Linq;
 using Xunit;
 using YesSql.Core.Data;
 using YesSql.Core.Data.Models;
-using YesSql.Core.Serialization;
 using YesSql.Core.Services;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
@@ -517,7 +516,7 @@ namespace YesSql.Tests
                     new DateTime(2011, 11, 3),
                     new DateTime(2011, 11, 3),
                     
-                    new DateTime(2011, 11, 4),
+                    new DateTime(2011, 11, 4)
                 };
 
                 foreach (var date in dates)
@@ -695,7 +694,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(100, session.QueryIndex<PersonByName>().Count());
-                Assert.Equal(10, session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ToList().Count);
+                Assert.Equal(10, session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ToList().Count());
                 Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill0"));
 
                 var persons = session.Query<Person, PersonByName>().Take(10).List();
@@ -859,7 +858,7 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldGetTypeById()
         {
-            int circleId = 0;
+            int circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -886,7 +885,7 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldGetDocumentById()
         {
-            int circleId = 0;
+            int circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -912,7 +911,7 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldGetObjectById()
         {
-            int circleId = 0;
+            int circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -939,7 +938,7 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldGetDynamicById()
         {
-            int circleId = 0;
+            int circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -1002,7 +1001,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(0, session.Load<Circle>().ToList().Count);
+                Assert.Equal(0, session.Load<Circle>().Count());
             }
         }
 

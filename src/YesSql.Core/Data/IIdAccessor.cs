@@ -18,16 +18,6 @@ namespace YesSql.Core.Data {
             _setter = setter;
         }
 
-        private TU Get(T obj)
-        {
-            return _getter(obj);
-        }
-
-        private void Set(T obj, TU value)
-        {
-            _setter(obj, value);
-        }
-
         object IIdAccessor.Get(object obj)
         {
             return _getter((T) obj);

@@ -24,7 +24,7 @@ namespace YesSql.Core.Data
         private readonly IDictionary<object, int> _documents = new Dictionary<object, int>();
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
-        private bool _cancel = false;
+        private bool _cancel;
 
         // a dictionary of returned objects indexed by document id
         private readonly IDictionary<int, object> _identityMap = new Dictionary<int, object>();
@@ -71,7 +71,7 @@ namespace YesSql.Core.Data
         {
             if (obj is Document)
             {
-                _session.Save(obj); ;
+                _session.Save(obj);
             }
             else if (obj is IIndex)
             {
@@ -269,9 +269,7 @@ namespace YesSql.Core.Data
 
         public Task CommitAsync()
         {
-            return Task.Factory.StartNew(() => {
-                Reduce();
-            }).ContinueWith(task => Dispose());
+            return Task.Factory.StartNew(Reduce).ContinueWith(task => Dispose());
         }
 
         public void Flush()

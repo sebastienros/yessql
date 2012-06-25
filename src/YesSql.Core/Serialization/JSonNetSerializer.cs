@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using YesSql.Core.Data.Models;
-using Newtonsoft.Json.Serialization;
 
 namespace YesSql.Core.Serialization
 {

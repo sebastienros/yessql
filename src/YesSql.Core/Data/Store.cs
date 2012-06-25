@@ -126,7 +126,7 @@ namespace YesSql.Core.Data
 
         public IStore Configure(Configuration cfg)
         {
-            _sessionFactoryInitializer = (store) =>
+            _sessionFactoryInitializer = store =>
             {
                 _configurations[DefaultConfigurationName] = cfg;
             };

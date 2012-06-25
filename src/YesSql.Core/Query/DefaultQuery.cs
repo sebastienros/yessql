@@ -138,11 +138,6 @@ namespace YesSql.Core.Query {
                 _query = query;
             }
 
-            public Services.ISession Session 
-            {
-                get { return _query.Session; }
-            }
-
             public T FirstOrDefault()
             {
                 return _query.As<T>(_query.Slice(0, 1)).FirstOrDefault();
