@@ -29,6 +29,7 @@ namespace YesSql.Core.Data
         private IShardStrategyFactory _shardStrategyFactory;
         private IIdentifierFactory _identifierFactory;
         private IDocumentSerializerFactory _documentSerializerFactory;
+        private bool _trackChanges = true;
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
@@ -100,6 +101,13 @@ namespace YesSql.Core.Data
             return this;
         }
 
+
+        public IStore TrackChanges(bool trackChanges)
+        {
+            _trackChanges = trackChanges;
+            return this;
+        }
+
         public IStore SetIdentifierFactory(IIdentifierFactory identifierfFactory)
         {
             _identifierFactory = identifierfFactory;
@@ -165,8 +173,7 @@ namespace YesSql.Core.Data
                 throw new ApplicationException("The session factory should have been initialized during configuration.");
             }
 
-            var sessions = _sessionFactories.ToDictionary(s => s.Key,
-                                                          s => (ISession) new Session(s.Value.OpenSession(), this));
+            var sessions = _sessionFactories.ToDictionary(s => s.Key, s => (ISession) new Session(s.Value.OpenSession(), this, _trackChanges));
 
             // if multiple sessions factories are available, return a sharding session
             if (sessions.Count > 1)

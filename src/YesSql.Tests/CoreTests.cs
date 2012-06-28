@@ -1031,5 +1031,34 @@ namespace YesSql.Tests
                 Assert.Equal(20, session.Load<Circle>().Single().Radius);
             }
         }
+
+        [Fact]
+        public void ShouldNotSaveChangesAutomatically()
+        {
+            _store.TrackChanges(false);
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = session.Load<Circle>().FirstOrDefault();
+                Assert.NotNull(circle);
+
+                circle.Radius = 20;
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(10, session.Load<Circle>().Single().Radius);
+            }
+        }
     }
 }

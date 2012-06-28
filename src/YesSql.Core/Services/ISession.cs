@@ -79,7 +79,7 @@ namespace YesSql.Core.Services
         void Flush();
 
         /// <summary>
-        /// Commits the current transaction asynchromously
+        /// Commits the current transaction asynchronously
         /// </summary>
         Task CommitAsync();
     }

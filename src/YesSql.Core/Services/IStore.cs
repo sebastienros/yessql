@@ -59,6 +59,13 @@ namespace YesSql.Core.Services
         /// </summary>
         IStore SetShardingStrategy(IShardStrategyFactory shardStrategyFactory);
 
+        /// Whether changed objects should be detected automatically, <value>true</value> by default
+        /// <remarks>
+        /// By default objects which are queried will be saved back. In some applications this can increase CPU
+        /// usage as those objects will be serialized to detect changes.
+        /// </remarks>
+        IStore TrackChanges(bool trackChanges);
+
         /// <summary>
         /// Registers an index using an <see cref="IIndexProvider"/>
         /// </summary>
