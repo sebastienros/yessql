@@ -19,7 +19,7 @@ namespace YesSql.Core.Data
     {
         private readonly NHibernate.ISession _session;
         private readonly Store _store;
-        private readonly bool _saveTracked;
+        private readonly bool _trackChanges;
         private readonly IDocumentSerializer _serializer;
         private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
         private readonly IDictionary<object, int> _documents = new Dictionary<object, int>();
@@ -30,11 +30,11 @@ namespace YesSql.Core.Data
         // a dictionary of returned objects indexed by document id
         private readonly IDictionary<int, object> _identityMap = new Dictionary<int, object>();
 
-        public Session(NHibernate.ISession session, Store store, bool saveTracked)
+        public Session(NHibernate.ISession session, Store store, bool trackChanges)
         {
             _session = session;
             _store = store;
-            _saveTracked = saveTracked;
+            _trackChanges = trackChanges;
             _serializer = _store.GetDocumentSerializer();
             _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
         }
@@ -63,7 +63,8 @@ namespace YesSql.Core.Data
         public void Save(object obj)
         {
             // don't add the object to the saved list if it's already tracked
-            if (!_documents.ContainsKey(obj))
+            // unless we don't track automatically loaded objects
+            if (!_trackChanges || !_documents.ContainsKey(obj))
             {
                 _saved.Add(obj);
             }
@@ -279,7 +280,7 @@ namespace YesSql.Core.Data
             using (var transaction = _session.BeginTransaction())
             {
                 // saving all tracked objects
-                if(_saveTracked)
+                if(_trackChanges)
                 {
                     foreach (var obj in _documents.Keys)
                     {

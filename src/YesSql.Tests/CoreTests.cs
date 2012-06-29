@@ -1059,6 +1059,20 @@ namespace YesSql.Tests
             {
                 Assert.Equal(10, session.Load<Circle>().Single().Radius);
             }
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = session.Load<Circle>().FirstOrDefault();
+                Assert.NotNull(circle);
+
+                circle.Radius = 20;
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(20, session.Load<Circle>().Single().Radius);
+            }
         }
     }
 }
