@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Reflection;
 using FluentNHibernate.Cfg.Db;
 using FluentNHibernate.Automapping;
@@ -86,6 +87,11 @@ namespace YesSql.Core.Services
         IDocumentSerializer GetDocumentSerializer();
 
         IIdAccessor GetIdAccessor(Type tContainer, string name);
+
+        /// <summary>
+        /// Sets the isolation level to use by default when creating a new <see cref="ISession"/>
+        /// </summary>
+        IStore DefaultIsolationLevel(IsolationLevel isolationLevel);
 
     }
 }

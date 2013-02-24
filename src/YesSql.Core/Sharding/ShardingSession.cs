@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Core.Data.Models;
@@ -100,6 +101,16 @@ namespace YesSql.Core.Sharding
         public Task CommitAsync()
         {
             throw new NotImplementedException();
+        }
+
+        public ISession IsolationLevel(IsolationLevel isolationLevel)
+        {
+            foreach (var session in _sessions.Values)
+            {
+                session.IsolationLevel(isolationLevel);
+            }
+
+            return this;
         }
 
         public Document Get(int id)

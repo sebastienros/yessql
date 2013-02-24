@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using FluentNHibernate.Automapping;
 using FluentNHibernate.Cfg;
@@ -30,6 +31,7 @@ namespace YesSql.Core.Data
         private IIdentifierFactory _identifierFactory;
         private IDocumentSerializerFactory _documentSerializerFactory;
         private bool _trackChanges = true;
+        private IsolationLevel _isolationLevel = IsolationLevel.ReadCommitted;
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
@@ -173,7 +175,7 @@ namespace YesSql.Core.Data
                 throw new ApplicationException("The session factory should have been initialized during configuration.");
             }
 
-            var sessions = _sessionFactories.ToDictionary(s => s.Key, s => (ISession) new Session(s.Value.OpenSession(), this, _trackChanges));
+            var sessions = _sessionFactories.ToDictionary(s => s.Key, s => (ISession) new Session(s.Value.OpenSession(), this, _trackChanges, _isolationLevel));
 
             // if multiple sessions factories are available, return a sharding session
             if (sessions.Count > 1)
@@ -229,6 +231,12 @@ namespace YesSql.Core.Data
         public IIdAccessor GetIdAccessor(Type tContainer, string name)
         {
             return _idAccessors.GetOrAdd(tContainer, type => _identifierFactory.CreateAccessor(tContainer, name));
+        }
+
+        public IStore DefaultIsolationLevel(IsolationLevel isolationLevel)
+        {
+            _isolationLevel = isolationLevel;
+            return this;
         }
 
         public IStore RegisterSerializer<T>() where T : IDocumentSerializerFactory

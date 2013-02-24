@@ -26,15 +26,18 @@ namespace YesSql.Core.Data
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
         private bool _cancel;
+        private IsolationLevel _isolationLevel;
+        private ITransaction _transaction;
 
         // a dictionary of returned objects indexed by document id
         private readonly IDictionary<int, object> _identityMap = new Dictionary<int, object>();
 
-        public Session(NHibernate.ISession session, Store store, bool trackChanges)
+        public Session(NHibernate.ISession session, Store store, bool trackChanges, IsolationLevel isolationLevel)
         {
             _session = session;
             _store = store;
             _trackChanges = trackChanges;
+            _isolationLevel = isolationLevel;
             _serializer = _store.GetDocumentSerializer();
             _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
         }
@@ -50,6 +53,23 @@ namespace YesSql.Core.Data
             {
                 // execute pending commands
                 Flush();
+
+                if (_transaction != null)
+                {
+                    _transaction.Commit();
+                }
+            }
+            else
+            {
+                if (_transaction != null)
+                {
+                    _transaction.Rollback();
+                }
+            }
+
+            if (_session.IsOpen)
+            {
+                _session.Close();
             }
 
             _session.Dispose();
@@ -207,6 +227,8 @@ namespace YesSql.Core.Data
 
         public IEnumerable<T> Load<T>(Func<IQueryable<Document>, IEnumerable<Document>> query) where T : class
         {
+            Demand();
+
             var typeName = typeof (T).SimplifiedTypeName();
             var filter = _session.Query<Document>().Where(x => x.Type == typeName);
 
@@ -220,6 +242,8 @@ namespace YesSql.Core.Data
 
         public T Load<T>(Func<IQueryable<Document>, Document> query) where T : class
         {
+            Demand();
+
             var typeName = typeof (T).SimplifiedTypeName();
             var queried = query(_session.Query<Document>().Where(x => x.Type == typeName));
             return As<T>(queried);
@@ -227,11 +251,15 @@ namespace YesSql.Core.Data
         
         public IQueryable<TIndex> QueryIndex<TIndex>() where TIndex : IIndex
         {
+            Demand();
+
             return _session.Query<TIndex>();
         }
 
         public Query.IQuery Query()
         {
+            Demand();
+
             return new DefaultQuery(_session, this);
         }
 
@@ -272,45 +300,47 @@ namespace YesSql.Core.Data
 
         public Task CommitAsync()
         {
-            return Task.Factory.StartNew(Reduce).ContinueWith(task => Dispose());
+            return Task.Factory.StartNew(Flush).ContinueWith(task => Dispose());
+        }
+
+        public ISession IsolationLevel(IsolationLevel isolationLevel)
+        {
+            _isolationLevel = isolationLevel;
+            return this;
         }
 
         public void Flush()
         {
-            using (var transaction = _session.BeginTransaction())
+            Demand();
+
+            // saving all tracked objects
+            if(_trackChanges)
             {
-                // saving all tracked objects
-                if(_trackChanges)
+                foreach (var obj in _documents.Keys)
                 {
-                    foreach (var obj in _documents.Keys)
+                    if (!_deleted.Contains(obj))
                     {
-                        if (!_deleted.Contains(obj))
-                        {
-                            SaveConcrete(obj);
-                        }
+                        SaveConcrete(obj);
                     }
                 }
-
-                // saving all pending objects
-                foreach (var obj in _saved)
-                {
-                    SaveConcrete(obj);
-                }
-                _saved.Clear();
-
-                // deleting all pending objects
-                foreach (var obj in _deleted)
-                {
-                    DeleteConcrete(obj);
-                }
-                _deleted.Clear();
-
-                // compute all reduce indexes
-                Reduce();
-
-                // commit the transaction
-                transaction.Commit();
             }
+
+            // saving all pending objects
+            foreach (var obj in _saved)
+            {
+                SaveConcrete(obj);
+            }
+            _saved.Clear();
+
+            // deleting all pending objects
+            foreach (var obj in _deleted)
+            {
+                DeleteConcrete(obj);
+            }
+            _deleted.Clear();
+
+            // compute all reduce indexes
+            Reduce();
         }
 
         private void Reduce()
@@ -505,6 +535,8 @@ namespace YesSql.Core.Data
         // todo: remove it when migrations are done
         public IDbConnection GetConnection()
         {
+            Demand();
+
             return _session.Connection;
         }
 
@@ -564,6 +596,17 @@ namespace YesSql.Core.Data
                     listmap.Add(new MapState(index, MapStates.Delete));
                     index.Documents.Remove(doc);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new transaction if none has been yet
+        /// </summary>
+        private void Demand()
+        {
+            if(_transaction == null)
+            {
+                _transaction = _session.BeginTransaction(_isolationLevel);
             }
         }
     }

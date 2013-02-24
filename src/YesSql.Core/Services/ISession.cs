@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Core.Data.Models;
@@ -82,5 +83,10 @@ namespace YesSql.Core.Services
         /// Commits the current transaction asynchronously
         /// </summary>
         Task CommitAsync();
+
+        /// <summary>
+        /// Sets the isolation level to use
+        /// </summary>
+        ISession IsolationLevel(IsolationLevel isolationLevel);
     }
 }
