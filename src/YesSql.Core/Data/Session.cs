@@ -52,7 +52,7 @@ namespace YesSql.Core.Data
             if (!_cancel)
             {
                 // execute pending commands
-                Flush();
+                Commit();
 
                 if (_transaction != null)
                 {
@@ -300,7 +300,7 @@ namespace YesSql.Core.Data
 
         public Task CommitAsync()
         {
-            return Task.Factory.StartNew(Flush).ContinueWith(task => Dispose());
+            return Task.Factory.StartNew(Commit).ContinueWith(task => Dispose());
         }
 
         public ISession IsolationLevel(IsolationLevel isolationLevel)
@@ -309,7 +309,7 @@ namespace YesSql.Core.Data
             return this;
         }
 
-        public void Flush()
+        public void Commit()
         {
             Demand();
 

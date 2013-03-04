@@ -40,7 +40,9 @@ namespace YesSql.Core.Sharding
 
         public void Save(Document document)
         {
-            throw new NotImplementedException();
+            var shard = _shardStrategy.ShardSelectionStrategy.Select(document);
+            var session = _sessions[shard];
+            session.Save(document);
         }
 
         public void Save(object obj)
@@ -123,11 +125,11 @@ namespace YesSql.Core.Sharding
             return _sessions.Select(x => x.Value.Get<T>(id)).FirstOrDefault();
         }
 
-        public void Flush()
+        public void Commit()
         {
             foreach (var session in _sessions.Values)
             {
-                session.Flush();
+                session.Commit();
             }
         }
 

@@ -151,7 +151,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(product);
-                session.Flush();
+                session.Commit();
 
                 session.Save(new Order
                 {
@@ -868,7 +868,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Flush();
+                session.Commit();
 
                 circleId = circle.Id;
             }
@@ -895,7 +895,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Flush();
+                session.Commit();
 
                 circleId = circle.Id;
             }
@@ -921,7 +921,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Flush();
+                session.Commit();
 
                 circleId = circle.Id;
             }
@@ -948,7 +948,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Flush();
+                session.Commit();
 
                 circleId = circle.Id;
             }

@@ -38,7 +38,7 @@ namespace YesSql.Samples.Shards
                 };
 
                 session.Save(product);
-                session.Flush();
+                session.Commit();
 
                 session.Save(new Order {
                     Customer = "Microsoft",

@@ -77,7 +77,7 @@ namespace YesSql.Core.Services
         /// Processes any pending action. It's called automatically when the session is disposed, unless Cancel() 
         /// was called previously.
         /// </summary>
-        void Flush();
+        void Commit();
 
         /// <summary>
         /// Commits the current transaction asynchronously
