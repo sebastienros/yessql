@@ -3,6 +3,8 @@ YesSql
 
 A .NET document database using any RDBMS, because in SQL we (still) trust !
 
+[![Build status](https://ci.appveyor.com/api/projects/status?id=96n3byfpy0hnw87f)](https://ci.appveyor.com/project/yessql)
+
 How does it work ?
 -------------------
 
