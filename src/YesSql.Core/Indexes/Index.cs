@@ -1,16 +1,13 @@
 ﻿using System.Collections.Generic;
-using YesSql.Core.Data.Models;
 
 namespace YesSql.Core.Indexes
 {
-    public abstract class Index : IIndex
+    public abstract class Index
     {
-        public virtual int Id { get; set; }
-
-        public virtual ICollection<Document> Documents
-        {
-            get { return new List<Document>(); }
-            set { }
-        }
+        public int Id { get; set; }
+        public abstract void AddDocument(Document document);
+        public abstract void RemoveDocument(Document document);
+        public abstract IEnumerable<Document> GetAddedDocuments();
+        public abstract IEnumerable<Document> GetRemovedDocuments();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -8,6 +9,7 @@ namespace YesSql.Core.Serialization {
     /// Provides a set of extension methods on <see cref="Type"/>
     /// </summary>
     public static class TypeExtensions {
+        private static ConcurrentDictionary<Type, string> _typeNames = new ConcurrentDictionary<Type, string>();
 
         /// <summary>
         /// Whether a <see cref="Type"/> is anonymous or not
@@ -29,7 +31,14 @@ namespace YesSql.Core.Serialization {
         /// <returns>The name of the type without version information.</returns>
         public static string SimplifiedTypeName(this Type type)
         {
-            return String.Concat(type.FullName, ", ", type.Assembly.GetName().Name);
+            if(IsAnonymousType(type))
+            {
+                return "dynamic";
+            }
+
+            // todo: make this a service and rename to GetCollection, could also
+            // be used for sharding if generic enough
+            return _typeNames.GetOrAdd(type, t => String.Concat(type.FullName, ", ", type.Assembly.GetName().Name));
         }
     }
 }

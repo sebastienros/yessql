@@ -4,7 +4,7 @@ namespace YesSql.Samples.Hi.Indexes
 {
     public class BlogPostByDay : ReduceIndex
     {
-        public virtual string Day { get; set; }
-        public virtual int Count { get; set; }
+        public string Day { get; set; }
+        public int Count { get; set; }
     }
 }

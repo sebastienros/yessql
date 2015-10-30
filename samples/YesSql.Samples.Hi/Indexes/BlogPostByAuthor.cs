@@ -4,6 +4,6 @@ namespace YesSql.Samples.Hi.Indexes
 {
     public class BlogPostByAuthor : MapIndex
     {
-        public virtual string Author { get; set; }
+        public string Author { get; set; }
     }
 }

@@ -5,7 +5,7 @@ namespace YesSql.Tests.Indexes
 {
     public class PersonByName : MapIndex
     {
-        public virtual string Name { get; set; }
+        public string Name { get; set; }
     }
 
     public class PersonIndexProvider : IndexProvider<Person>

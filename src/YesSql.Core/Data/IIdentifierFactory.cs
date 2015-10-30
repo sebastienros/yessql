@@ -2,6 +2,11 @@ using System;
 
 namespace YesSql.Core.Data
 {
+    /// <summary>
+    /// This interface represents a component which can create
+    /// and instance of <see cref="IIdAccessor"/> in order to 
+    /// get/set the identifier of an object
+    /// </summary>
     public interface IIdentifierFactory
     {
         IIdAccessor CreateAccessor(Type tContainer, string name);

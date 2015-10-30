@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Data.SqlServerCe;
-using System.IO;
-using System.Linq;
-using NHibernate.Criterion;
-using YesSql.Core.Data;
 using YesSql.Samples.Hi.Indexes;
 using YesSql.Samples.Hi.Models;
+using YesSql.Core.Services;
+using System.Data.SQLite;
+using YesSql.Core.Storage.InMemory;
 
 namespace YesSql.Samples.Hi
 {
@@ -13,10 +11,22 @@ namespace YesSql.Samples.Hi
     {
         private static void Main()
         {
-            // configure the store to use a local SqlCe database
-            InitializeDatabase();
-            var store = new Store().Configure(MsSqlCeConfiguration.MsSqlCe40.ConnectionString("Data Source=Store.sdf"));
-            
+            var store = new Store(cfg =>
+            {
+                cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
+                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+
+                cfg.Migrations.Add(builder => builder
+                    .CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
+                        .Column<string>("Author")
+                    )
+                    .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
+                        .Column<int>("Count")
+                        .Column<int>("Day")
+                    )
+                );
+            });
+
             // register available indexes
             store.RegisterIndexes<BlogPostIndexProvider>();
 
@@ -39,14 +49,14 @@ namespace YesSql.Samples.Hi
             // loading a single blog post
             using(var session = store.CreateSession())
             {
-                var p = session.Query<BlogPost>().FirstOrDefault();
+                var p = session.QueryAsync().For<BlogPost>().FirstOrDefault().Result;
                 Console.WriteLine(p.Title); // > Hello YesSql
             }
 
             // loading blog posts by author
             using (var session = store.CreateSession())
             {
-                var ps = session.Query<BlogPost, BlogPostByAuthor>().Where(x => x.Author.IsLike("B%")).List();
+                var ps = session.QueryAsync<BlogPost, BlogPostByAuthor>().Where(x => x.Author.StartsWith("B")).List().Result;
 
                 foreach (var p in ps)
                 {
@@ -57,7 +67,7 @@ namespace YesSql.Samples.Hi
             // loading blog posts by day of publication
             using (var session = store.CreateSession())
             {
-                var ps = session.Query<BlogPost, BlogPostByDay>(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd")).List();
+                var ps = session.QueryAsync<BlogPost, BlogPostByDay>(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd")).List().Result;
 
                 foreach (var p in ps)
                 {
@@ -68,27 +78,13 @@ namespace YesSql.Samples.Hi
             // counting blog posts by day
             using (var session = store.CreateSession())
             {
-                var days = session.QueryIndex<BlogPostByDay>().ToList();
+                var days = session.QueryIndexAsync<BlogPostByDay>().List().Result;
 
                 foreach (var day in days)
                 {
                     Console.WriteLine(day.Day + ": " + day.Count); // > [Today]: 1
                 }
             }
-        }
-
-        /// <summary>
-        /// Creates a fresh database
-        /// </summary>
-        private static void InitializeDatabase()
-        {
-            // delete the db before starting tests
-            if (File.Exists("Store.sdf")) {
-                File.Delete("Store.sdf");
-            }
-
-            // recreating a fresh SqlCe db
-            new SqlCeEngine { LocalConnectionString = "Data Source=Store.sdf" }.CreateDatabase();
         }
     }
 }

@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Data.SqlServerCe;
+using System.Data.SQLite;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using YesSql.Core.Data;
-using YesSql.Core.Data.Models;
 using YesSql.Core.Services;
+using YesSql.Core.Storage.InMemory;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
@@ -17,17 +18,21 @@ namespace YesSql.Tests
 
         public CoreTests()
         {
-
-            // delete the db before starting tests
-            if (File.Exists("Store.sdf"))
+            _store = new Store(cfg =>
             {
-                File.Delete("Store.sdf");
-            }
+                cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
+                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
 
-            // recreating a fresh SqlCe db
-            new SqlCeEngine {LocalConnectionString = "Data Source=Store.sdf"}.CreateDatabase();
-
-            _store = new Store().Configure(MsSqlCeConfiguration.MsSqlCe40.ConnectionString("Data Source=Store.sdf").ShowSql());
+                cfg.Migrations.Add(builder => builder
+                    .CreateMapIndexTable(nameof(PersonByName), table => table
+                        .Column<string>("Name")
+                    )
+                    .CreateReduceIndexTable(nameof(ArticlesByDay), table => table
+                        .Column<int>("Count")
+                        .Column<int>("DayOfYear")
+                    )
+                );
+            });
         }
 
         public void Dispose()
@@ -38,11 +43,9 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldCreateDatabase()
         {
-
             using (var session = _store.CreateSession())
             {
-                var doc = new Document {Type = "Product", Content = "{}"};
-
+                var doc = new Product();
                 session.Save(doc);
             }
         }
@@ -107,7 +110,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldLoadAnonymousDocument()
+        public async Task ShouldLoadAnonymousDocument()
         {
             using (var session = _store.CreateSession())
             {
@@ -127,7 +130,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                dynamic person = session.As<object>(session.Load().FirstOrDefault());
+                dynamic person = await session.QueryAsync().Any().FirstOrDefault();
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", (string)person.Firstname);
@@ -140,8 +143,10 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldSerializeComplexObject()
+        public async Task ShouldSerializeComplexObject()
         {
+            int productId;
+
             using (var session = _store.CreateSession())
             {
                 var product = new Product
@@ -151,7 +156,8 @@ namespace YesSql.Tests
                 };
 
                 session.Save(product);
-                session.Commit();
+                await session.CommitAsync();
+                productId = product.Id;
 
                 session.Save(new Order
                 {
@@ -169,19 +175,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var order = session.Query<Order>().FirstOrDefault();
-                Assert.NotNull(order);
-                Assert.Equal(1, order.OrderLines.Count);
-
-                var prod =
-                    session.Query<Product>().Where(x => x.Id == order.OrderLines[0].ProductId).FirstOrDefault();
+                var prod = await session.GetAsync<Product>(productId);
                 Assert.NotNull(prod);
                 Assert.Equal("Milk", prod.Name);
             }
         }
 
         [Fact]
-        public void ShouldCreateIndexAndLinkToDocument()
+        public async Task ShouldCreateIndexAndLinkToDocument()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -205,20 +206,23 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(2, session.QueryIndex<PersonByName>().Count());
-                Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill"));
-                Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Steve"));
-                Assert.Equal(0, session.QueryIndex<PersonByName>().Count(x => x.Name == "Joe"));
+                Assert.Equal(2, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Bill").Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Steve").Count());
+                Assert.Equal(0, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Joe").Count());
 
-                var person =
-                    session.Query<Person, PersonByName>().Where(x => x.Name == "Bill").FirstOrDefault();
+                var person = await session
+                    .QueryAsync<Person, PersonByName>()
+                    .Where(x => x.Name == "Bill")
+                    .FirstOrDefault();
+
                 Assert.NotNull(person);
                 Assert.Equal("Bill", person.Firstname);
             }
         }
 
         [Fact]
-        public void ShouldReduce()
+        public async Task ShouldReduce()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -252,45 +256,24 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(4, await session.QueryIndexAsync<ArticlesByDay>().Count());
 
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear));
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear));
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear));
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear));
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count());
 
-                Assert.Equal(4,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count);
-                Assert.Equal(3,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count);
-                Assert.Equal(2,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count);
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count);
+                Assert.Equal(4, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count());
+                Assert.Equal(3, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count());
+                Assert.Equal(2, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count());
             }
         }
 
         [Fact]
-        public void ShouldReduceAndMergeWithDatabase()
+        public async Task ShouldReduceAndMergeWithDatabase()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
-
-            using (var session = _store.CreateSession())
-            {
-                session.Save(new ArticlesByDay {Count = 1, DayOfYear = new DateTime(2011, 11, 1).DayOfYear});
-            }
 
             using (var session = _store.CreateSession())
             {
@@ -321,58 +304,54 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
+                session.Save(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+            }
 
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear));
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear));
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear));
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Count(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear));
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(4, await session.QueryIndexAsync<ArticlesByDay>().Count());
 
-                Assert.Equal(5,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count);
-                Assert.Equal(3,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count);
-                Assert.Equal(2,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count);
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count);
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count());
+
+                Assert.Equal(5, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count());
+                Assert.Equal(3, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count());
+                Assert.Equal(2, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count());
             }
         }
 
         [Fact]
-        public void MultipleIndexesShoudNotConflict() {
+        public async Task MultipleIndexesShoudNotConflict() {
             _store.RegisterIndexes<ArticleIndexProvider>();
             _store.RegisterIndexes<PersonIndexProvider>();
 
-            using (var session = _store.CreateSession()) {
-                session.Save(new ArticlesByDay { Count = 1, DayOfYear = new DateTime(2011, 11, 1).DayOfYear });
-            }
-
-            using (var session = _store.CreateSession()) {
-                session.Save(new Article {
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Article
+                {
                     PublishedUtc = new DateTime(2011, 11, 1)
                 });
             }
 
-            using (var session = _store.CreateSession()) {
-                Assert.Equal(1, session.QueryIndex<ArticlesByDay>().Count());
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Article
+                {
+                    PublishedUtc = new DateTime(2011, 11, 1)
+                });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>().Count());
             }
         }
 
         [Fact]
-        public void ShouldDeleteCustomObject()
+        public async Task ShouldDeleteCustomObject()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -389,7 +368,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = session.Query<Person>().FirstOrDefault();
+                var person = await session.QueryAsync().For<Person>().FirstOrDefault();
                 Assert.NotNull(person);
 
                 session.Delete(person);
@@ -397,13 +376,13 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = session.Load<Person>().FirstOrDefault();
+                var person = await session.QueryAsync().For<Person>().FirstOrDefault();
                 Assert.Null(person);
             }
         }
 
         [Fact]
-        public void RemovingDocumentShouldDeleteMappedIndex()
+        public async Task RemovingDocumentShouldDeleteMappedIndex()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -420,10 +399,10 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var personByName = session.QueryIndex<PersonByName>().FirstOrDefault();
+                var personByName = await session.QueryIndexAsync<PersonByName>().FirstOrDefault();
                 Assert.NotNull(personByName);
 
-                var person = session.Load<Person>().FirstOrDefault();
+                var person = await session.QueryAsync().For<Person>().FirstOrDefault();
                 Assert.NotNull(person);
 
                 session.Delete(person);
@@ -431,13 +410,13 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var personByName = session.QueryIndex<PersonByName>().FirstOrDefault();
+                var personByName = await session.QueryIndexAsync<PersonByName>().FirstOrDefault();
                 Assert.Null(personByName);
             }
         }
 
         [Fact]
-        public void RemovingDocumentShouldDeleteReducedIndex()
+        public async Task RemovingDocumentShouldDeleteReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -471,15 +450,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.Load<Article>().Count());
-                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(10, await session.QueryAsync().For<Article>().Count());
+                Assert.Equal(4, await session.QueryIndexAsync<ArticlesByDay>().Count());
             }
 
             // delete a document
             using (var session = _store.CreateSession())
             {
-                var article =
-                    session.Query<Article, ArticlesByDay>().Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).FirstOrDefault();
+                var article = await session.QueryAsync<Article, ArticlesByDay>().Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).FirstOrDefault();
                 Assert.NotNull(article);
                 session.Delete(article);
 
@@ -489,14 +467,14 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 // document was deleted
-                Assert.Equal(9, session.Load<Article>().Count()); 
+                Assert.Equal(9, await session.QueryAsync().For<Article>().Count()); 
                 // index was deleted
-                Assert.Equal(3, session.QueryIndex<ArticlesByDay>().Count()); 
+                Assert.Equal(3, await session.QueryIndexAsync<ArticlesByDay>().Count()); 
             }
         }
 
         [Fact]
-        public void UpdatingDocumentShouldUpdateReducedIndex()
+        public async Task UpdatingDocumentShouldUpdateReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -529,17 +507,17 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 // 10 articles
-                Assert.Equal(10, session.Load<Article>().Count());
+                Assert.Equal(10, await session.QueryAsync().For<Article>().Count());
 
                 // 4 indexes as there are 4 different dates
-                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(4, await session.QueryIndexAsync<ArticlesByDay>().Count());
             }
 
             // change the published date of an article
             using (var session = _store.CreateSession())
             {
-                var article = session
-                    .Query<Article, ArticlesByDay>()
+                var article = await session
+                    .QueryAsync<Article, ArticlesByDay>()
                     .Where(b => b.DayOfYear == new DateTime(2011, 11, 2).DayOfYear)
                     .FirstOrDefault();
 
@@ -554,26 +532,18 @@ namespace YesSql.Tests
             // there should be the same number of indexes
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.Load<Article>().Count());
-                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
+                Assert.Equal(10, await session.QueryAsync().For<Article>().Count());
+                Assert.Equal(4, await session.QueryIndexAsync<ArticlesByDay>().Count());
 
-                Assert.Equal(4,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count);
-                Assert.Equal(2,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count);
-                Assert.Equal(3,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count);
-                Assert.Equal(1,
-                                session.QueryIndex<ArticlesByDay>().Single(
-                                    x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count);
+                Assert.Equal(4, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count());
+                Assert.Equal(2, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count());
+                Assert.Equal(3, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count());
             }
         }
 
         [Fact]
-        public void AlteringDocumentShouldUpdateReducedIndex()
+        public async Task AlteringDocumentShouldUpdateReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -583,14 +553,7 @@ namespace YesSql.Tests
                 {
                     new DateTime(2011, 11, 1),
                     new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 3),
-                    new DateTime(2011, 11, 4),
-                    new DateTime(2011, 11, 1),
                     new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 3),
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 1)
                 };
 
                 var articles = dates.Select(x => new Article
@@ -607,34 +570,58 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.Load<Article>().Count());
-                Assert.Equal(4, session.QueryIndex<ArticlesByDay>().Count());
+                // There should be 3 articles
+                Assert.Equal(3, await session.QueryAsync().For<Article>().Count());
+
+                // There should be 2 groups
+                Assert.Equal(2, await session.QueryIndexAsync<ArticlesByDay>().Count());
             }
 
-            // update a document
+            // Deleting a document which was the only one in the reduced group
             using (var session = _store.CreateSession())
             {
-                var article = session.Query<Article, ArticlesByDay>()
-                    .Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear)
+                var article = await session.QueryAsync<Article, ArticlesByDay>()
+                    .Where(b => b.DayOfYear == new DateTime(2011, 11, 1).DayOfYear)
                     .FirstOrDefault();
 
                 Assert.NotNull(article);
                 session.Delete(article);
-
             }
 
-            // there should be only 3 indexes left
+            // Ensure the document and its index have been deleted
             using (var session = _store.CreateSession())
             {
-                // document was not deleted
-                Assert.Equal(9, session.Load<Article>().Count());
-                // index was not deleted
-                Assert.Equal(3, session.QueryIndex<ArticlesByDay>().Count());
+                // There should be 1 article
+                Assert.Equal(2, await session.QueryAsync<Article>().Count());
+
+                // There should be 1 group
+                Assert.Equal(1, await session.QueryIndexAsync<ArticlesByDay>().Count());
             }
         }
 
         [Fact]
-        public void IndexHasLinkToDocuments()
+        public async Task IndexHasLinkToDocuments()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+
+                session.Save(d1);
+                session.Save(d2);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var articles = session.QueryAsync().For<Article>();
+                Assert.Equal(2, await articles.Count());
+            }
+        }
+
+        [Fact]
+        public async Task ChangesAreAutoFlushed()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -646,33 +633,13 @@ namespace YesSql.Tests
                 session.Save(d1);
                 session.Save(d2);
 
-            }
-
-            using (var session = _store.CreateSession())
-            {
-                var articles = session.Load<Article>();
-                Assert.Equal(2, articles.Count());
+                var articles = session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+                Assert.Equal(2, await articles.Count());
             }
         }
 
         [Fact]
-        public void ShouldSaveCustomObjectAsync()
-        {
-            var session = _store.CreateSession();
-            var bill = new Person
-            {
-                Firstname = "Bill",
-                Lastname = "Gates"
-            };
-
-            session.Save(bill);
-            var task = session.CommitAsync();
-
-            task.Wait();
-        }
-
-        [Fact]
-        public void ShouldPageResults()
+        public async Task ShouldPageResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -693,18 +660,18 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(100, session.QueryIndex<PersonByName>().Count());
-                Assert.Equal(10, session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ToList().Count());
-                Assert.Equal(1, session.QueryIndex<PersonByName>().Count(x => x.Name == "Bill0"));
+                Assert.Equal(100, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(10, (await session.QueryIndexAsync<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).List()).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Bill0").Count());
 
-                var persons = session.Query<Person, PersonByName>().Take(10).List();
+                 var persons = await session.QueryAsync<Person, PersonByName>().Take(10).List();
 
                 Assert.Equal(10, persons.Count());
             }
         }
 
         [Fact]
-        public void ShouldQueryByMappedIndex()
+        public async Task ShouldQueryByMappedIndex()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -728,15 +695,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(2, session.Query().For<Person>().With<PersonByName>().Count());
-                Assert.Equal(1, session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").Count());
-                Assert.Equal(1, session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").Count());
-                Assert.Equal(1, session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").List().Count());
+                Assert.Equal(2, await session.QueryAsync().For<Person>().With<PersonByName>().Count());
+                Assert.Equal(1, await session.QueryAsync().For<Person>().With<PersonByName>(x => x.Name == "Steve").Count());
+                Assert.Equal(1, await session.QueryAsync().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").Count());
             }
         }
 
         [Fact]
-        public void ShouldQueryByReducedIndex()
+        public async Task ShouldQueryByReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -770,16 +736,15 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.Query().For<Article>().With<ArticlesByDay>().Count());
+                Assert.Equal(10, await session.QueryAsync().For<Article>().With<ArticlesByDay>().Count());
 
-                Assert.Equal(4, session.Query().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == 305).Count());
-                Assert.Equal(7, session.Query().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == 305 || x.DayOfYear == 306).Count());
+                Assert.Equal(4, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == 305).Count());
+                Assert.Equal(3, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == 306).Count());
+                Assert.Equal(2, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == 307).Count());
+                Assert.Equal(1, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == 308).Count());
 
-                Assert.Equal(4, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305).Count());
-                Assert.Equal(7, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305 || x.DayOfYear == 306).Count());
-
-                Assert.Equal(4, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305).List().Count());
-                Assert.Equal(7, session.Query().For<Article>().With<ArticlesByDay>().Where(x => x.DayOfYear == 305 || x.DayOfYear == 306).List().Count());
+                Assert.Equal(7, await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == 305 || x.DayOfYear == 306).Count());
+                Assert.Equal(7, (await session.QueryAsync<Article, ArticlesByDay>(x => x.DayOfYear == 305 || x.DayOfYear == 306).List()).Count());
 
             }
         }
@@ -800,7 +765,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldSavePolymorphicProperties()
+        public async Task ShouldSavePolymorphicProperties()
         {
             using (var session = _store.CreateSession())
             {
@@ -819,7 +784,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var drawing = session.As<Drawing>(session.Load().FirstOrDefault());
+                var drawing = await session.QueryAsync().For<Drawing>().FirstOrDefault();
 
                 Assert.NotNull(drawing);
                 Assert.Equal(3, drawing.Shapes.Count);
@@ -830,7 +795,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldIgnoreNonSerializedAttribute() 
+        public async Task ShouldIgnoreNonSerializedAttribute() 
         {
             using (var session = _store.CreateSession()) 
             {
@@ -846,7 +811,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var dog = session.As<Animal>(session.Load().FirstOrDefault());
+                var dog = await session.QueryAsync().For<Animal>().FirstOrDefault();
 
                 Assert.NotNull(dog);
                 Assert.Equal("Doggy", dog.Name);
@@ -856,7 +821,7 @@ namespace YesSql.Tests
 
 
         [Fact]
-        public void ShouldGetTypeById()
+        public async Task ShouldGetTypeById()
         {
             int circleId;
 
@@ -868,14 +833,14 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                await session.CommitAsync();
 
                 circleId = circle.Id;
             }
 
             using (var session = _store.CreateSession())
             {
-                var circle = session.Get<Circle>(circleId);
+                var circle = await session.GetAsync<Circle>(circleId);
 
                 Assert.NotNull(circle);
                 Assert.Equal(10, circle.Radius);
@@ -883,7 +848,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldGetDocumentById()
+        public async Task ShouldGetDocumentById()
         {
             int circleId;
 
@@ -895,21 +860,21 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                await session.CommitAsync();
 
                 circleId = circle.Id;
             }
 
             using (var session = _store.CreateSession())
             {
-                var circle = session.Get(circleId);
+                var circle = await session.GetAsync<Circle>(circleId);
 
                 Assert.NotNull(circle);
             }
         }
 
         [Fact]
-        public void ShouldGetObjectById()
+        public async Task ShouldGetObjectById()
         {
             int circleId;
 
@@ -921,14 +886,14 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                await session.CommitAsync();
 
                 circleId = circle.Id;
             }
 
             using (var session = _store.CreateSession())
             {
-                var circle = session.Get<object>(circleId);
+                var circle = await session.GetAsync<object>(circleId);
 
                 Assert.NotNull(circle);
                 Assert.Equal(typeof(Circle), circle.GetType());
@@ -936,7 +901,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldGetDynamicById()
+        public async Task ShouldGetDynamicById()
         {
             int circleId;
 
@@ -948,14 +913,14 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                session.Commit();
+                await session.CommitAsync();
 
                 circleId = circle.Id;
             }
 
             using (var session = _store.CreateSession())
             {
-                var circle = session.Get<dynamic>(circleId);
+                var circle = await session.GetAsync<dynamic>(circleId);
 
                 Assert.NotNull(circle);
                 Assert.Equal(10, circle.Radius);
@@ -963,7 +928,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldAllowMultipleCallToSave()
+        public async Task ShouldAllowMultipleCallToSave()
         {
             using (var session = _store.CreateSession())
             {
@@ -979,14 +944,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var circles = session.Load<Circle>().ToList();
+                var circles = await session.QueryAsync().For<Circle>().List();
 
                 Assert.Equal(1, circles.Count());
             }
         }
 
         [Fact]
-        public void ShouldNotCommitTransaction()
+        public async Task ShouldNotCommitTransaction()
         {
             using (var session = _store.CreateSession())
             {
@@ -1001,12 +966,12 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(0, session.Load<Circle>().Count());
+                Assert.Equal(0, await session.QueryAsync().For<Circle>().Count());
             }
         }
 
         [Fact]
-        public void ShouldSaveChangesAutomatically()
+        public async Task ShouldSaveChangesAutomatically()
         {
             using (var session = _store.CreateSession())
             {
@@ -1020,7 +985,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var circle = session.Load<Circle>().FirstOrDefault();
+                var circle = await session.QueryAsync().For<Circle>().FirstOrDefault();
                 Assert.NotNull(circle);
 
                 circle.Radius = 20;
@@ -1028,15 +993,13 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(20, session.Load<Circle>().Single().Radius);
+                Assert.Equal(20, (await session.QueryAsync().For<Circle>().FirstOrDefault()).Radius);
             }
         }
 
         [Fact]
-        public void ShouldNotSaveChangesAutomatically()
+        public async Task ShouldNotSaveChangesAutomatically()
         {
-            _store.TrackChanges(false);
-
             using (var session = _store.CreateSession())
             {
                 var circle = new Circle
@@ -1047,9 +1010,9 @@ namespace YesSql.Tests
                 session.Save(circle);
             }
 
-            using (var session = _store.CreateSession())
+            using (var session = _store.CreateSession(false))
             {
-                var circle = session.Load<Circle>().FirstOrDefault();
+                var circle = await session.QueryAsync().For<Circle>().FirstOrDefault();
                 Assert.NotNull(circle);
 
                 circle.Radius = 20;
@@ -1057,12 +1020,12 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(10, session.Load<Circle>().Single().Radius);
+                Assert.Equal(10, (await session.QueryAsync().For<Circle>().FirstOrDefault()).Radius);
             }
 
             using (var session = _store.CreateSession())
             {
-                var circle = session.Load<Circle>().FirstOrDefault();
+                var circle = await session.QueryAsync().For<Circle>().FirstOrDefault();
                 Assert.NotNull(circle);
 
                 circle.Radius = 20;
@@ -1071,7 +1034,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(20, session.Load<Circle>().Single().Radius);
+                Assert.Equal(20, (await session.QueryAsync().For<Circle>().FirstOrDefault()).Radius);
             }
         }
     }

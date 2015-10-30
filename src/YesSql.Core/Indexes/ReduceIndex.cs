@@ -1,16 +1,37 @@
 using System.Collections.Generic;
-using YesSql.Core.Data.Models;
 
 namespace YesSql.Core.Indexes
 {
-    public abstract class ReduceIndex : IHasDocumentsIndex
+    public class ReduceIndex : Index
     {
-        protected ReduceIndex()
+        public ReduceIndex()
         {
-            Documents = new HashSet<Document>();
+            Documents = new List<Document>();
         }
 
-        public virtual int Id { get; set; }
-        public virtual ICollection<Document> Documents { get; private set; }
+        public List<Document> RemovedDocuments = new List<Document>();
+
+        private List<Document> Documents { get; set; }
+
+        public override void AddDocument(Document document)
+        {
+            Documents.Add(document);
+        }
+
+        public override void RemoveDocument(Document document)
+        {
+            Documents.Remove(document);
+            RemovedDocuments.Add(document);
+        }
+
+        public override IEnumerable<Document> GetAddedDocuments()
+        {
+            return Documents;
+        }
+
+        public override IEnumerable<Document> GetRemovedDocuments()
+        {
+            return RemovedDocuments;
+        }
     }
 }

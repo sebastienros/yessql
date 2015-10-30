@@ -6,8 +6,8 @@ namespace YesSql.Tests.Indexes
 {
     public class ArticlesByDay : ReduceIndex
     {
-        public virtual int DayOfYear { get; set; }
-        public virtual int Count { get; set; }
+        public int Count { get; set; }
+        public int DayOfYear { get; set; }
     }
 
     public class ArticleIndexProvider : IndexProvider<Article>

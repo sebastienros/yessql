@@ -8,35 +8,35 @@ namespace YesSql.Core.Indexes
 {
     public interface IDescribeFor
     {
-        Func<object, IEnumerable<IIndex>> GetMap();
-        Func<IGrouping<object, IIndex>, IIndex> GetReduce();
-        Func<IIndex, IEnumerable<IIndex>, IIndex> GetDelete();
+        Func<object, IEnumerable<Index>> GetMap();
+        Func<IGrouping<object, Index>, Index> GetReduce();
+        Func<Index, IEnumerable<Index>, Index> GetDelete();
         PropertyInfo GroupProperty { get; set; }
         Type IndexType { get; }
     }
 
-    public interface IMapFor<out T, TIndex> where TIndex : IIndex
+    public interface IMapFor<out T, TIndex> where TIndex : Index
     {
         IGroupFor<TIndex> Map(Func<T, TIndex> map);
         IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map);
     }
 
-    public interface IGroupFor<TIndex> where TIndex : IIndex 
+    public interface IGroupFor<TIndex> where TIndex : Index 
     {
         IReduceFor<TIndex, TKey> Group<TKey>(Expression<Func<TIndex, TKey>> group);
     }
 
-    public interface IReduceFor<TIndex, out TKey> where TIndex : IIndex 
+    public interface IReduceFor<TIndex, out TKey> where TIndex : Index 
     {
         IDeleteFor<TIndex> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce);
     }
 
-    public interface IDeleteFor<TIndex> where TIndex : IIndex
+    public interface IDeleteFor<TIndex> where TIndex : Index
     {
         void Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null);
     }
 
-    public class IndexDescriptor<T, TIndex, TKey> : IDescribeFor, IMapFor<T, TIndex>, IGroupFor<TIndex>, IReduceFor<TIndex, TKey>, IDeleteFor<TIndex> where TIndex : IIndex
+    public class IndexDescriptor<T, TIndex, TKey> : IDescribeFor, IMapFor<T, TIndex>, IGroupFor<TIndex>, IReduceFor<TIndex, TKey>, IDeleteFor<TIndex> where TIndex : Index
     {
         private Func<T, IEnumerable<TIndex>> _map;
         private Func<IGrouping<TKey, TIndex>, TIndex> _reduce;
@@ -93,12 +93,12 @@ namespace YesSql.Core.Indexes
             _delete = delete;
         }
 
-        Func<object, IEnumerable<IIndex>> IDescribeFor.GetMap()
+        Func<object, IEnumerable<Index>> IDescribeFor.GetMap()
         {
-            return x => _map((T)x).Cast<IIndex>();
+            return x => _map((T)x).Cast<Index>();
         }
 
-        Func<IGrouping<object, IIndex>, IIndex> IDescribeFor.GetReduce()
+        Func<IGrouping<object, Index>, Index> IDescribeFor.GetReduce()
         {
             if (_reduceDescribeFor != null) 
             {
@@ -117,7 +117,7 @@ namespace YesSql.Core.Indexes
             };
         }
 
-        Func<IIndex, IEnumerable<IIndex>, IIndex> IDescribeFor.GetDelete()
+        Func<Index, IEnumerable<Index>, Index> IDescribeFor.GetDelete()
         {
             if (_reduceDescribeFor != null)
             {
@@ -129,12 +129,12 @@ namespace YesSql.Core.Indexes
 
     }
 
-    public class GroupedEnumerable<TKey, TIndex> : IGrouping<TKey, TIndex> where TIndex : IIndex
+    public class GroupedEnumerable<TKey, TIndex> : IGrouping<TKey, TIndex> where TIndex : Index
     {
         private readonly object _key;
-        private readonly IEnumerable<IIndex> _enumerable;
+        private readonly IEnumerable<Index> _enumerable;
 
-        public GroupedEnumerable(object key, IEnumerable<IIndex> enumerable)
+        public GroupedEnumerable(object key, IEnumerable<Index> enumerable)
         {
             _key = key;
             _enumerable = enumerable;

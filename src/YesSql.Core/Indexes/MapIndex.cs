@@ -1,31 +1,28 @@
 using System.Collections.Generic;
-using System.Linq;
-using YesSql.Core.Data.Models;
 
 namespace YesSql.Core.Indexes
 {
-    public abstract class MapIndex : IHasDocumentIndex
+    public abstract class MapIndex : Index 
     {
-        private readonly List<Document> _documents = new List<Document>(1);
-
-        public virtual int Id { get; set; }
-
-        public virtual Document Document
+        private Document Document { get; set; }
+        public override void AddDocument(Document document)
         {
-            get { return _documents.FirstOrDefault(); }
-            set
-            {
-                _documents.Clear();
-                if (value != null)
-                {
-                    _documents.Add(value);
-                }
-            }
+            Document = document;
         }
 
-        ICollection<Document> IIndex.Documents
+        public override void RemoveDocument(Document document)
         {
-            get { return _documents; }
+            Document = null;
+        }
+
+        public override IEnumerable<Document> GetAddedDocuments()
+        {
+            yield return Document;
+        }
+
+        public override IEnumerable<Document> GetRemovedDocuments()
+        {
+            yield break;
         }
     }
 }

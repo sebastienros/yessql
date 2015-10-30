@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Reflection;
-using FluentNHibernate.Cfg.Db;
-using FluentNHibernate.Automapping;
-using NHibernate.Cfg;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
-using YesSql.Core.Serialization;
-using YesSql.Core.Sharding;
 
 namespace YesSql.Core.Services
 {
@@ -17,55 +11,7 @@ namespace YesSql.Core.Services
         /// <summary>
         /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/>
         /// </summary>
-        ISession CreateSession();
-
-        /// <summary>
-        /// Creates an NHibernate configuration using automatic mappings
-        /// </summary>
-        Configuration CreateConfiguration(Func<IPersistenceConfigurer> config);
-
-        /// <summary>
-        /// Creates an NHibernate configuration using custom mappings
-        /// </summary>
-        Configuration CreateConfiguration(Func<IPersistenceConfigurer> config, Func<AutoPersistenceModel, AutoPersistenceModel> mapping);
-
-        /// <summary>
-        /// Creates a named NHibernate configuration using automatic mappings
-        /// </summary>
-        Configuration CreateConfiguration(string name, Func<IPersistenceConfigurer> config);
-
-        /// <summary>
-        /// Creates a named NHibernate configuration using custom mappings
-        /// </summary>
-        Configuration CreateConfiguration(string name, Func<IPersistenceConfigurer> config, Func<AutoPersistenceModel, AutoPersistenceModel> mapping);
-
-        /// <summary>
-        /// Configures the store using default settings
-        /// </summary>
-        IStore Configure(IPersistenceConfigurer config);
-
-        /// <summary>
-        /// Configures the store
-        /// </summary>
-        IStore Configure(IPersistenceConfigurer config, Action<Configuration> init);
-
-        /// Configures the store
-        IStore Configure(Action<IStore> cfg);
-
-        /// Configures the store
-        IStore Configure(Configuration cfg);
-
-        /// <summary>
-        /// Defines the <see cref="IShardStrategyFactory"/> to use
-        /// </summary>
-        IStore SetShardingStrategy(IShardStrategyFactory shardStrategyFactory);
-
-        /// Whether changed objects should be detected automatically, <value>true</value> by default
-        /// <remarks>
-        /// By default objects which are queried will be saved back. In some applications this can increase CPU
-        /// usage as those objects will be serialized to detect changes.
-        /// </remarks>
-        IStore TrackChanges(bool trackChanges);
+        ISession CreateSession(bool trackChanges = true);
 
         /// <summary>
         /// Registers an index using an <see cref="IIndexProvider"/>
@@ -76,22 +22,8 @@ namespace YesSql.Core.Services
         IStore RegisterIndexes(IEnumerable<Type> types);
         IStore RegisterIndexes(Assembly assembly);
 
-        /// <summary>
-        /// Registers an <see cref="IDocumentSerializerFactory"/> implementation providing
-        /// <see cref="IDocumentSerializer"/>
-        /// </summary>
-        /// <typeparam name="T">The <see cref="Type"/> of the factory.</typeparam>
-        IStore RegisterSerializer<T>() where T : IDocumentSerializerFactory;
-        IStore RegisterSerializer(Type type);
-
-        IDocumentSerializer GetDocumentSerializer();
-
         IIdAccessor GetIdAccessor(Type tContainer, string name);
 
-        /// <summary>
-        /// Sets the isolation level to use by default when creating a new <see cref="ISession"/>
-        /// </summary>
-        IStore DefaultIsolationLevel(IsolationLevel isolationLevel);
-
+        IEnumerable<IndexDescriptor> Describe(Type target);
     }
 }

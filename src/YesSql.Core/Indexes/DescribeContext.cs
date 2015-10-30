@@ -33,11 +33,13 @@ namespace YesSql.Core.Indexes {
             return typeof (T).IsAssignableFrom(target);
         }
 
-        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex {
+        public IMapFor<T, TIndex> For<TIndex>() where TIndex : Index
+        {
             return For<TIndex, object>();
         }
 
-        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex {
+        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : Index
+        {
             IList<IDescribeFor> descriptors;
             if (!_describes.TryGetValue(typeof(T), out descriptors)) {
                 descriptors = _describes[typeof(T)] = new List<IDescribeFor>();

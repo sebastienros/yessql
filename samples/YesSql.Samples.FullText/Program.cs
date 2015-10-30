@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Data.SqlServerCe;
-using System.IO;
-using NHibernate.Criterion;
-using YesSql.Core.Data;
-using YesSql.Core.Data.Models;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
+using YesSql.Core.Services;
+using System.Data.SQLite;
+using YesSql.Core.Storage.InMemory;
 
 namespace YesSql.Samples.FullText
 {
@@ -13,9 +11,18 @@ namespace YesSql.Samples.FullText
     {
         private static void Main(string[] args)
         {
-            // configure the store to use a local SqlCe database
-            InitializeDatabase();
-            var store = new Store().Configure(MsSqlCeConfiguration.MsSqlCe40.ConnectionString("Data Source=Store.sdf"));
+            var store = new Store(cfg =>
+            {
+                cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
+                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+
+                cfg.Migrations.Add(builder => builder
+                    .CreateReduceIndexTable(nameof(ArticleByWord), table => table
+                        .Column<int>("Count")
+                        .Column<string>("Word")
+                    )
+                );
+            });
 
             // register available indexes
             store.RegisterIndexes<ArticleIndexProvider>();
@@ -32,35 +39,20 @@ namespace YesSql.Samples.FullText
             using (var session = store.CreateSession())
             {
                 Console.WriteLine("Simple term: 'white'");
-                var simple = session.Query<Article, ArticleByWord>().Where(a => a.Word == "white").List();
+                var simple = session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word == "white").List().Result;
 
                 foreach (var article in simple) {
                     Console.WriteLine(article.Content);
                 }
 
-                Document document = null;
-
                 Console.WriteLine("Boolean query: 'white or fox or pink'");
-                var boolQuery = session.Query<Article, ArticleByWord>().Where(a => a.Word.IsIn(new [] { "white", "fox", "pink" })).List();
+                var boolQuery = session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word.IsIn(new [] { "white", "fox", "pink" })).List().Result;
 
                 foreach (var article in boolQuery)
                 {
                     Console.WriteLine(article.Content);
                 }
             }
-        }
-
-        /// <summary>
-        /// Creates a fresh database
-        /// </summary>
-        private static void InitializeDatabase() {
-            // delete the db before starting tests
-            if (File.Exists("Store.sdf")) {
-                File.Delete("Store.sdf");
-            }
-
-            // recreating a fresh SqlCe db
-            new SqlCeEngine { LocalConnectionString = "Data Source=Store.sdf" }.CreateDatabase();
         }
     }
 }
