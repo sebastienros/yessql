@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Data.SQLite;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using YesSql.Core.Data;
 using YesSql.Core.Services;
 using YesSql.Core.Storage.InMemory;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
+using Microsoft.Data.Sqlite;
 
 namespace YesSql.Tests
 {
@@ -20,7 +18,7 @@ namespace YesSql.Tests
         {
             _store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
+                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
 
                 cfg.Migrations.Add(builder => builder

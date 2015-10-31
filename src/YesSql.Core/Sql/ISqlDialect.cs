@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Globalization;
 using System.Text;
+using YesSql.Core.Serialization;
 
 namespace YesSql.Core.Sql
 {
@@ -31,7 +33,8 @@ namespace YesSql.Core.Sql
     {
         private static readonly Dictionary<string, ISqlDialect> SqlDialects = new Dictionary<string, ISqlDialect>
         {
-            {"sqliteconnection", new SqliteDialect()}
+            {"sqliteconnection", new SqliteDialect()},
+            {"sqlconnection", new SqlServerDialect()}
         };
 
         public static void RegisterSqlDialect(string connectionName, ISqlDialect sqlTypeAdapter)
@@ -39,7 +42,7 @@ namespace YesSql.Core.Sql
             SqlDialects[connectionName] = sqlTypeAdapter;
         }
 
-        public static ISqlDialect For(IDbConnection connection)
+        public static ISqlDialect For(DbConnection connection)
         {
             string connectionName = connection.GetType().Name.ToLower();
 
@@ -61,7 +64,7 @@ namespace YesSql.Core.Sql
 
         public abstract string IdentitySelectString { get; }
         
-        public virtual string IdentityColumnString => "IDENTITY NOT NULL";
+        public virtual string IdentityColumnString => "[int] IDENTITY(1,1)";
         
         public virtual string NullColumnString => String.Empty;
 
@@ -149,12 +152,10 @@ namespace YesSql.Core.Sql
                 return "null";
             }
 
-            TypeCode typeCode = Type.GetTypeCode(value.GetType());
+            TypeCode typeCode = value.GetType().GetTypeCode();
             switch (typeCode)
             {
-                case TypeCode.Empty:
                 case TypeCode.Object:
-                case TypeCode.DBNull:
                 case TypeCode.String:
                 case TypeCode.Char:
                     return Quote(value.ToString());
@@ -222,7 +223,7 @@ namespace YesSql.Core.Sql
                 return value;
             }
 
-            throw new ApplicationException("DbType not found for: " + dbType);
+            throw new Exception("DbType not found for: " + dbType);
         }
 
         public override string Page(string sql, int offset, int limit)
@@ -280,7 +281,7 @@ namespace YesSql.Core.Sql
                 return value;
             }
 
-            throw new ApplicationException("DbType not found for: " + dbType);
+            throw new Exception("DbType not found for: " + dbType);
         }
 
         public override string Page(string sql, int offset, int limit)
@@ -300,5 +301,21 @@ namespace YesSql.Core.Sql
 
             return sb.ToString();
         }
+
+        private const char OpenQuote = '[';
+
+        private const char CloseQuote = ']';
+
+        public override string QuoteForColumnName(string columnName)
+        {
+            return OpenQuote + columnName + CloseQuote;
+        }
+
+        public override string QuoteForTableName(string tableName)
+        {
+            return OpenQuote + tableName + CloseQuote;
+        }
+
+
     }
 }

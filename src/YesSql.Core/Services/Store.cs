@@ -38,20 +38,7 @@ namespace YesSql.Core.Services
             {
                 using (var transaction = connection.BeginTransaction(_configuration.IsolationLevel))
                 {
-                    var schemaBuilder = new SchemaBuilder(connection);
-
-                    // Document
-                    // This table should be part of the default migration code, and 
-                    // its version also created in the migration table
-
-                    schemaBuilder
-                        .CreateTable("Document", table => table
-                            .Column<int>("Id", column => column.Identity().NotNull())
-                            .Column<string>("Type", column => column.NotNull())
-                        )
-                        .AlterTable("Document", table => table
-                            .CreateIndex("IX_Type", "Type")
-                        );
+                    var schemaBuilder = new SchemaBuilder(connection, transaction);
 
                     foreach (var migration in _configuration.Migrations)
                     {
@@ -77,12 +64,12 @@ namespace YesSql.Core.Services
         {
             if (_configuration.ConnectionFactory == null)
             {
-                throw new ApplicationException("The connection factory should be initialized during configuration.");
+                throw new Exception("The connection factory should be initialized during configuration.");
             }
 
             if (_configuration.DocumentStorageFactory == null)
             {
-                throw new ApplicationException("The document storage factory should be initialized during configuration.");
+                throw new Exception("The document storage factory should be initialized during configuration.");
             }
         }
 

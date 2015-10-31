@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using YesSql.Core.Data;
 using YesSql.Core.Sql;
 using YesSql.Core.Storage;
@@ -21,12 +22,28 @@ namespace YesSql.Core.Services
         public IsolationLevel IsolationLevel { get; set; }
         public IConnectionFactory ConnectionFactory { get; set; }
         public List<Action<SchemaBuilder>> Migrations { get; }
+        public void RunDefaultMigration()
+        {
+            // Document
+            // This table should be part of the default migration code, and 
+            // its version also created in the migration table
+
+            Migrations.Insert(0, builder => builder
+                .CreateTable("Document", table => table
+                    .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
+                    .Column<string>("Type", column => column.NotNull())
+                )
+                .AlterTable("Document", table => table
+                    .CreateIndex("IX_Type", "Type")
+                )
+            );
+        }
 
     }
 
     public interface IConnectionFactory : IDisposable
     {
-        IDbConnection CreateConnection();
+        DbConnection CreateConnection();
 
         /// <summary>
         /// <c>true</c> if the created connection can be disposed by the client.
@@ -35,7 +52,7 @@ namespace YesSql.Core.Services
     }
 
     public class DbConnectionFactory<TDbConnection> : IConnectionFactory
-        where TDbConnection : class, IDbConnection
+        where TDbConnection : DbConnection
     {
         private readonly bool _reuseConnection;
         private TDbConnection _connection;
@@ -49,7 +66,7 @@ namespace YesSql.Core.Services
 
         public bool Disposable => !_reuseConnection;
 
-        public IDbConnection CreateConnection()
+        public DbConnection CreateConnection()
         {
             if(_reuseConnection)
             {

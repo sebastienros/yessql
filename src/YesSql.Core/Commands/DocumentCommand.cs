@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Data.Common;
 using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
@@ -23,6 +24,6 @@ namespace YesSql.Core.Commands
 
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction);
     }
 }

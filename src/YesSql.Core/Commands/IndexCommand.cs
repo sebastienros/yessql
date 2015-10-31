@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -30,7 +31,7 @@ namespace YesSql.Core.Commands
         public Index Index { get; }
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction);
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {

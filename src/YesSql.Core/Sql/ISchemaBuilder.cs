@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using YesSql.Core.Sql.Schema;
 using YesSql.Core.Sql.SchemaBuilders;
 
@@ -22,7 +23,9 @@ namespace YesSql.Core.Sql
     {
         private static readonly Dictionary<string, Func<ISqlDialect, ISchemaBuilder>> SchemaBuilders = new Dictionary<string, Func<ISqlDialect, ISchemaBuilder>>
         {
-            {"sqliteconnection", d => new SqliteSchemaBuilder(d)}
+            {"sqliteconnection", d => new SqliteSchemaBuilder(d)},
+            {"sqlconnection", d => new SqlServerSchemaBuilder(d)}
+
         };
 
         public static void RegisterSchemaBuilder(string connectionName, Func<ISqlDialect, ISchemaBuilder> schemaBuilder)
@@ -30,7 +33,7 @@ namespace YesSql.Core.Sql
             SchemaBuilders[connectionName] = schemaBuilder;
         }
 
-        public static ISchemaBuilder For(IDbConnection connection)
+        public static ISchemaBuilder For(DbConnection connection)
         {
             string connectionName = connection.GetType().Name.ToLower();
 

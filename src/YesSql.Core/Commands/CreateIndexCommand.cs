@@ -5,6 +5,7 @@ using YesSql.Core.Sql;
 using Dapper;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Data.Common;
 
 namespace YesSql.Core.Commands
 {
@@ -19,7 +20,7 @@ namespace YesSql.Core.Commands
             _addedDocumentIds = addedDocumentIds;
         }
 
-        public override async Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
             var dialect = SqlDialectFactory.For(connection);
             var type = Index.GetType();

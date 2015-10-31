@@ -3,6 +3,7 @@ using YesSql.Core.Indexes;
 using YesSql.Core.Sql;
 using System.Threading.Tasks;
 using Dapper;
+using System.Data.Common;
 
 namespace YesSql.Core.Commands
 {
@@ -13,7 +14,7 @@ namespace YesSql.Core.Commands
         {
         }
 
-        public override async Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
             var dialect = SqlDialectFactory.For(connection);
             await connection.ExecuteAsync(deleteCmd, Document, transaction);

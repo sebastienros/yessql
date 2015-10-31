@@ -6,7 +6,6 @@ namespace YesSql.Tests.Models
     {
         public string Name { get; set; }
         
-        [IgnoreDataMember]
         public string Color { get; set; }
     }
 }

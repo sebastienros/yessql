@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Diagnostics;
-using YesSql.Core.Data;
 using YesSql.Core.Indexes;
 using YesSql.Core.Services;
 using Xunit;
 using YesSql.Core.Storage.InMemory;
-using System.Data.SQLite;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
+using System.Data.SqlClient;
+using System.Data;
 
 namespace YesSql.Samples.Performance
 {
-    public class Performance
+    public class Program
     {
         #region Names
         private static readonly string[] Names = new[]
@@ -471,22 +472,33 @@ namespace YesSql.Samples.Performance
         };
         #endregion
 
-        public static void Main()
+        public void Main()
         {
-            Console.WriteLine("6");
             var store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=" + Path.GetTempFileName());
+                var runMigrations = false;
+                var dbFileName = "performance.db";
+                if(File.Exists(dbFileName))
+                {
+                    File.Delete(dbFileName);
+                }
+                
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = (localdb)\MSSQLLocaldb; Initial Catalog = yessql; Integrated Security = True");
+                //cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared");
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-
-                cfg.Migrations.Add(builder => builder
-                    .CreateMapIndexTable("UserByName", table => table
-                        .Column<string>("Name")
-                    )
-                    .AlterTable("UserByName", table => table
-                        .CreateIndex("IX_Name", "Name")
-                    )
-                );
+                cfg.IsolationLevel = IsolationLevel.ReadUncommitted;
+                if (runMigrations)
+                {
+                    cfg.RunDefaultMigration();
+                    cfg.Migrations.Add(builder => builder
+                        .CreateMapIndexTable("UserByName", table => table
+                            .Column<string>("Name")
+                        )
+                        .AlterTable("UserByName", table => table
+                            .CreateIndex("IX_Name", "Name")
+                        )
+                    );
+                }
             });
 
             store.RegisterIndexes<UserIndexProvider>();
@@ -501,9 +513,13 @@ namespace YesSql.Samples.Performance
 
             Task.WaitAll(WriteAllWithYesSql(store));
 
-            Task.WaitAll(QueryByFullName(store));
+            Task.WaitAll(QueryIndexByFullName(store));
 
-            Task.WaitAll(QueryByPartialName(store));
+            Task.WaitAll(QueryIndexByPartialName(store));
+
+            Task.WaitAll(QueryDocumentByFullName(store));
+
+            Task.WaitAll(QueryDocumentByPartialName(store));
         }
 
         private async static Task Clean(IStore store)
@@ -518,7 +534,7 @@ namespace YesSql.Samples.Performance
             }
         }
 
-        private static async Task QueryByFullName(IStore store)
+        private static async Task QueryIndexByFullName(IStore store)
         {
             var sp = Stopwatch.StartNew();
 
@@ -526,20 +542,16 @@ namespace YesSql.Samples.Performance
             {
                 using (var session = store.CreateSession(false))
                 {
-                    //Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'WILLY'").List());
-                    //Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'FAUSTINO'").List());
-                    //Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'BART'").List());
-
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name == "WILLY").List());
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name == "FAUSTINO").List());
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name == "BART").List());
                 }
             }
 
-            Console.WriteLine("Queried by full name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
+            Console.WriteLine("Queried index by full name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
         }
 
-        private async static Task QueryByPartialName(IStore store)
+        private static async Task QueryDocumentByFullName(IStore store)
         {
             var sp = Stopwatch.StartNew();
 
@@ -547,17 +559,47 @@ namespace YesSql.Samples.Performance
             {
                 using (var session = store.CreateSession(false))
                 {
-                    //Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("WIL")).List());
-                    //Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("FAUS")).List());
-                    //Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("BA")).List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'WILLY'").List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'FAUSTINO'").List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'BART'").List());
+                }
+            }
 
+            Console.WriteLine("Queried document by full name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
+        }
+
+        private async static Task QueryIndexByPartialName(IStore store)
+        {
+            var sp = Stopwatch.StartNew();
+
+            for (int i = 0; i < 100; i++)
+            {
+                using (var session = store.CreateSession(false))
+                {
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name.StartsWith("WIL")).List());
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name.StartsWith("FAUS")).List());
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name.StartsWith("BA")).List());
                 }
             }
 
-            Console.WriteLine("Queried by partial name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
+            Console.WriteLine("Queried index by partial name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
+        }
+
+        private async static Task QueryDocumentByPartialName(IStore store)
+        {
+            var sp = Stopwatch.StartNew();
+
+            for (int i = 0; i < 100; i++)
+            {
+                using (var session = store.CreateSession(false))
+                {
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("WIL")).List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("FAUS")).List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("BA")).List());
+                }
+            }
+
+            Console.WriteLine("Queried document by partial name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
         }
 
         private static async Task WriteAllWithYesSql(IStore store)

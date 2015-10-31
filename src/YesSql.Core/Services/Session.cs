@@ -3,8 +3,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Core.Commands;
 using YesSql.Core.Data;
@@ -20,10 +22,10 @@ namespace YesSql.Core.Services
     {
         // Wether the Session should track the entities itself, in case the underlying
         // storage API doesn't do it
-        private readonly IDbConnection _connection;
+        private readonly DbConnection _connection;
         private readonly ISqlDialect _dialect;
          
-        private IDbTransaction _transaction;
+        private DbTransaction _transaction;
         private IsolationLevel _isolationLevel;
         protected readonly IdentityMap _identityMap = new IdentityMap();
         private List<IIndexCommand> _commands = new List<IIndexCommand>();

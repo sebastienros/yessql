@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace YesSql.Core.Data
 {
@@ -19,8 +20,8 @@ namespace YesSql.Core.Data
             var getType = typeof (Func<,>).MakeGenericType(new[] {tContainer, tProperty});
             var setType = typeof (Action<,>).MakeGenericType(new[] {tContainer, tProperty});
 
-            var getter = Delegate.CreateDelegate(getType, propertyInfo.GetGetMethod(), false);
-            var setter = Delegate.CreateDelegate(setType, propertyInfo.GetSetMethod(), false);
+            var getter = propertyInfo.GetGetMethod().CreateDelegate(getType);
+            var setter = propertyInfo.GetSetMethod().CreateDelegate(setType);
 
             var accessorType = typeof (IdAccessor<,>).MakeGenericType(tContainer, tProperty);
 

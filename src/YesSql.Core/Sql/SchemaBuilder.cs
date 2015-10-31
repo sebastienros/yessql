@@ -3,24 +3,28 @@ using System.Data;
 using Dapper;
 using System.Collections.Generic;
 using YesSql.Core.Sql.Schema;
+using System.Data.Common;
 
 namespace YesSql.Core.Sql
 {
     public class SchemaBuilder
     {
         private ISchemaBuilder _builder;
-        private IDbConnection _connection;
-        public SchemaBuilder(IDbConnection connection)
+        private DbConnection _connection;
+        private DbTransaction _transaction;
+
+        public SchemaBuilder(DbConnection connection, DbTransaction transaction)
         {
             _builder = SchemaBuilderFactory.For(connection);
             _connection = connection;
+            _transaction = transaction;
         }
 
         private void Execute(IEnumerable<string> statements)
         {
             foreach(var statement in statements)
             {
-                _connection.Execute(statement);
+                _connection.Execute(statement, null, _transaction);
             }
         }
 
@@ -29,7 +33,7 @@ namespace YesSql.Core.Sql
             var createTable = new CreateTableCommand(name);
 
             createTable
-                .Column<int>("Id", column => column.Identity().NotNull())
+                .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
                 .Column<int>("DocumentId");
 
             table(createTable);

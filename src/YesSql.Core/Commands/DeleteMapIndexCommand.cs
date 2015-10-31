@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using System;
 using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace YesSql.Core.Commands
@@ -16,7 +17,7 @@ namespace YesSql.Core.Commands
             _documentId = documentId;
         }
 
-        public virtual async Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction)
+        public virtual async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
             await connection.ExecuteAsync($"delete from {_indexType.Name} where DocumentId = @Id", new { Id = _documentId }, transaction);
         }

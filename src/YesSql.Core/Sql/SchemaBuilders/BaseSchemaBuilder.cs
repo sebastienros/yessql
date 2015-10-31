@@ -182,7 +182,7 @@ namespace YesSql.Core.Sql.SchemaBuilders
             {
                 if (command.Length > 0 || command.Precision > 0 || command.Scale > 0)
                 {
-                    throw new ApplicationException("Error while executing data migration: you need to specify the field's type in order to change its properties");
+                    throw new Exception("Error while executing data migration: you need to specify the field's type in order to change its properties");
                 }
             }
 

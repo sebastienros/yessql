@@ -1,9 +1,10 @@
 ﻿using Dapper;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
@@ -17,18 +18,18 @@ namespace YesSql.Core.Services
         private readonly Session _session;
 
         private List<Type> _bound = new List<Type>();
-        private readonly IDbConnection _connection;
+        private readonly DbConnection _connection;
         private readonly ISqlDialect _dialect;
-        private readonly IDbTransaction _transaction;
+        private readonly DbTransaction _transaction;
         private string _lastParameterName;
         private SqlBuilder _sqlBuilder;
 
-        public static Dictionary<RuntimeMethodHandle, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings = 
-            new Dictionary<RuntimeMethodHandle, Action<DefaultQuery, StringBuilder, MethodCallExpression>>();
+        public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings = 
+            new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>>();
 
         static DefaultQuery()
         {
-            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(string) }).MethodHandle] = (query, builder, expression) =>
+            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(string) })] = (query, builder, expression) =>
             {
                 builder.Append("(");
                 query.Convert(builder, expression.Object);
@@ -39,7 +40,7 @@ namespace YesSql.Core.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(string) }).MethodHandle] = (query, builder, expression) =>
+            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(string) })] = (query, builder, expression) =>
             {
                 builder.Append("(");
                 query.Convert(builder, expression.Object);
@@ -51,7 +52,7 @@ namespace YesSql.Core.Services
 
             };
 
-            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(string) }).MethodHandle] = (query, builder, expression) =>
+            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(string) })] = (query, builder, expression) =>
             {
                 builder.Append("(");
                 query.Convert(builder, expression.Object);
@@ -62,8 +63,8 @@ namespace YesSql.Core.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(string), typeof(IEnumerable<string>) }).MethodHandle] =
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(int), typeof(IEnumerable<int>) }).MethodHandle] =
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(string), typeof(IEnumerable<string>) })] =
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(int), typeof(IEnumerable<int>) })] =
                 (query, builder, expression) =>
             {
                 query.Convert(builder, expression.Arguments[0]);
@@ -81,7 +82,7 @@ namespace YesSql.Core.Services
             };
         }
 
-        public DefaultQuery(IDbConnection connection, IDbTransaction transaction, Session session)
+        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session)
         {
             _connection = connection;
             _transaction = transaction;
@@ -198,9 +199,8 @@ namespace YesSql.Core.Services
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)expression;
                     var methodInfo = methodCallExpression.Method;
-                    var methodInfoHandle = methodInfo.MethodHandle;
                     Action<DefaultQuery, StringBuilder, MethodCallExpression> action;
-                    if (MethodMappings.TryGetValue(methodInfoHandle, out action))
+                    if (MethodMappings.TryGetValue(methodInfo, out action))
                     {
                         action(this, builder, methodCallExpression);
                     }

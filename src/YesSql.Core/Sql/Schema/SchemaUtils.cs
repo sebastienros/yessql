@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Data;
+using YesSql.Core.Serialization;
 
 namespace YesSql.Core.Sql.Schema {
     public static class SchemaUtils {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.Enum.TryParse<System.Data.DbType>(System.String,System.Boolean,System.Data.DbType@)")]
         public static DbType ToDbType(Type type) {
             DbType dbType;
-            switch ( Type.GetTypeCode(type) ) {
+            switch ( type.GetTypeCode() ) {
                 case TypeCode.String:
                     dbType = DbType.String;
                     break;
@@ -23,7 +23,7 @@ namespace YesSql.Core.Sql.Schema {
                     if(type == typeof(Guid)) 
                         dbType = DbType.Guid;
                     else
-                        Enum.TryParse(Type.GetTypeCode(type).ToString(), true, out dbType);
+                        Enum.TryParse(type.GetTypeCode().ToString(), true, out dbType);
                     break;
             }
 

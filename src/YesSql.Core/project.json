@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0-*",
+  "dependencies": {
+    "Microsoft.Data.Sqlite": "1.0.0-*",
+    "Newtonsoft.Json": "8.0.1-beta1",
+    "Dapper.Dnx": "1.43.0-beta2"
+  },
+  "frameworks": {
+    "dnxcore50": {
+      "dependencies": {
+        "System.Reflection.Extensions": "4.0.0"
+      }
+    }
+  }
+}
