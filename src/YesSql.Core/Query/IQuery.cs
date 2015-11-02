@@ -29,6 +29,7 @@ namespace YesSql.Core.Query {
 
         IQuery<T, TIndex> With<TIndex>() where TIndex : Index;
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : Index;
+        IQuery<T> Where(string sql);
         IQuery<T> OrderBy(Expression<Func<T, object>> keySelector);
         IQuery<T> OrderByDescending(Expression<Func<T, object>> keySelector) ;
         IQuery<T> ThenBy(Expression<Func<T, object>> keySelector) ;

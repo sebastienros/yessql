@@ -420,6 +420,12 @@ namespace YesSql.Core.Services
                 return new Query<T, TIndex>(_query);
             }
 
+            public IQuery<T> Where(string sql)
+            {
+                _query._sqlBuilder.WhereAlso(sql);
+                return this;
+            }
+
             IQuery<T> IQuery<T>.OrderBy(Expression<Func<T, object>> keySelector) {
                 _query.OrderBy(keySelector);
                 return this;
