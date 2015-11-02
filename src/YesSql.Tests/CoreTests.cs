@@ -18,9 +18,10 @@ namespace YesSql.Tests
         {
             _store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true);
+                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:;Cache=Shared", true);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-
+                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+                cfg.RunDefaultMigration();
                 cfg.Migrations.Add(builder => builder
                     .CreateMapIndexTable(nameof(PersonByName), table => table
                         .Column<string>("Name")
