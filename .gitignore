@@ -19,3 +19,4 @@ src/TestResults
 src/*.vsmdi
 artifacts
 *.vsp
+project.lock.json
