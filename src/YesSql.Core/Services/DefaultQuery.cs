@@ -192,9 +192,9 @@ namespace YesSql.Core.Services
                     builder.Append(_bound.Last().Name + "." +  memberExpression.Member.Name);
                     break;
                 case ExpressionType.Constant:
-                    _lastParameterName = "p" + _sqlBuilder.Parameters.Count.ToString();
+                    _lastParameterName = "@p" + _sqlBuilder.Parameters.Count.ToString();
                     _sqlBuilder.Parameters.Add(_lastParameterName, ((ConstantExpression)expression).Value);
-                    builder.Append("@" + _lastParameterName);
+                    builder.Append(_lastParameterName);
                     break;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)expression;
@@ -319,8 +319,8 @@ namespace YesSql.Core.Services
 
             _sqlBuilder.Select();
             _sqlBuilder.Table("Document");
-            _sqlBuilder.WhereAlso("Document.Type = @type"); // TODO: investigate, this makes the query 3 times slower on sqlite
-            _sqlBuilder.Parameters["type"] = typeof(T).SimplifiedTypeName();
+            _sqlBuilder.WhereAlso("Document.Type = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
+            _sqlBuilder.Parameters["@Type"] = typeof(T).SimplifiedTypeName();
 
             return new Query<T>(this);
         }
