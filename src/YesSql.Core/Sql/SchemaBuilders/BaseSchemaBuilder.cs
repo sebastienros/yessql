@@ -79,7 +79,7 @@ namespace YesSql.Core.Sql.SchemaBuilders
                 Run(builder, createColumn);
             }
 
-            var primaryKeys = command.TableCommands.OfType<CreateColumnCommand>().Where(ccc => ccc.IsPrimaryKey).Select(ccc => ccc.ColumnName).ToArray();
+            var primaryKeys = command.TableCommands.OfType<CreateColumnCommand>().Where(ccc => ccc.IsPrimaryKey && !ccc.IsIdentity).Select(ccc => ccc.ColumnName).ToArray();
             if (primaryKeys.Any())
             {
                 if (appendComma)
