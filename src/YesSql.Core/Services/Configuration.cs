@@ -10,7 +10,7 @@ namespace YesSql.Core.Services
 {
     public class Configuration
     {
-        public Configuration()
+        internal Configuration()
         {
             IdentifierFactory = new DefaultIdentifierFactory();
             IsolationLevel = IsolationLevel.ReadCommitted;

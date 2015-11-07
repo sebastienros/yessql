@@ -43,11 +43,11 @@ namespace YesSql.Core.Services
             _storage = storage;
             _store = store;
             _trackChanges = trackChanges;
-            _isolationLevel = store._configuration.IsolationLevel;
+            _isolationLevel = store.Configuration.IsolationLevel;
 
             _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
 
-            _connection = _store._configuration.ConnectionFactory.CreateConnection();
+            _connection = _store.Configuration.ConnectionFactory.CreateConnection();
             _dialect = SqlDialectFactory.For(_connection);
         }
 
@@ -280,7 +280,7 @@ namespace YesSql.Core.Services
                     _transaction.Dispose();
                 }
 
-                if (_connection != null && _store._configuration.ConnectionFactory.Disposable)
+                if (_connection != null && _store.Configuration.ConnectionFactory.Disposable)
                 {
                     _connection.Dispose();
                 }

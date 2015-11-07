@@ -357,19 +357,25 @@ namespace YesSql.Core.Services
             public async Task<T> FirstOrDefault()
             {
                 _query.Page(1, 0);
-                
+
                 if (typeof(Index).IsAssignableFrom(typeof(T)))
                 {
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
-                    return _query._connection.Query<T>(sql, _query._sqlBuilder.Parameters, _query._transaction).FirstOrDefault();
+                    return (await _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction)).FirstOrDefault();
                 }
                 else
                 {
                     _query._sqlBuilder.Selector("Document", "Id");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
-                    var id = _query._connection.Query<int>(sql, _query._sqlBuilder.Parameters, _query._transaction).FirstOrDefault();
-                    return await _query._session.GetAsync<T>(id);
+                    var ids = (await _query._connection.QueryAsync<int>(sql, _query._sqlBuilder.Parameters, _query._transaction)).ToArray();
+                    
+                    if(ids.Length == 0)
+                    {
+                        return default(T);
+                    }
+
+                    return await _query._session.GetAsync<T>(ids[0]);
                 }
             }
 
@@ -484,12 +490,6 @@ namespace YesSql.Core.Services
             IQuery<T, TIndex> IQuery<T, TIndex>.ThenByDescending<TKey>(Expression<Func<TIndex, object>> keySelector)
             {
                 _query.ThenByDescending(keySelector);
-                return this;
-            }
-
-            public IQuery<T, TIndex> Where(string sql)
-            {
-                _query._sqlBuilder.WhereAlso(sql);
                 return this;
             }
         }

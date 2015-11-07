@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using System.Data.SqlClient;
 using System.Data;
+using YesSql.Core.Storage.FileSystem;
 
 namespace YesSql.Samples.Performance
 {
@@ -476,16 +477,21 @@ namespace YesSql.Samples.Performance
         {
             var store = new Store(cfg =>
             {
-                var runMigrations = false;
+                var runMigrations = true;
                 var dbFileName = "performance.db";
                 if(File.Exists(dbFileName))
                 {
                     File.Delete(dbFileName);
                 }
+
+                var tempPath = Path.GetTempPath();
+                Console.WriteLine("Temp path: {0}", tempPath);
+
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True");
+                cfg.DocumentStorageFactory = new FileSystemDocumentStorageFactory(tempPath);
                 
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = (localdb)\MSSQLLocaldb; Initial Catalog = yessql; Integrated Security = True");
                 //cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared");
-                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+                //cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
                 cfg.IsolationLevel = IsolationLevel.ReadUncommitted;
                 if (runMigrations)
                 {
@@ -514,11 +520,9 @@ namespace YesSql.Samples.Performance
             Task.WaitAll(WriteAllWithYesSql(store));
 
             Task.WaitAll(QueryIndexByFullName(store));
-
+            Task.WaitAll(QueryIndexByFullNameInSQL(store));
             Task.WaitAll(QueryIndexByPartialName(store));
-
             Task.WaitAll(QueryDocumentByFullName(store));
-
             Task.WaitAll(QueryDocumentByPartialName(store));
         }
 
@@ -551,6 +555,23 @@ namespace YesSql.Samples.Performance
             Console.WriteLine("Queried index by full name 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
         }
 
+        private static async Task QueryIndexByFullNameInSQL(IStore store)
+        {
+            var sp = Stopwatch.StartNew();
+
+            for (int i = 0; i < 100; i++)
+            {
+                using (var session = store.CreateSession(false))
+                {
+                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where("Name = 'WILLY'").List());
+                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where("Name = 'FAUSTINO'").List());
+                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where("Name = 'BART'").List());
+                }
+            }
+
+            Console.WriteLine("Queried index by full name in SQL 100*3 times at {0:#,#}ms", sp.ElapsedMilliseconds);
+        }
+
         private static async Task QueryDocumentByFullName(IStore store)
         {
             var sp = Stopwatch.StartNew();
@@ -559,9 +580,9 @@ namespace YesSql.Samples.Performance
             {
                 using (var session = store.CreateSession(false))
                 {
-                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'WILLY'").List());
-                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'FAUSTINO'").List());
-                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where("Name = 'BART'").List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>(x => x.Name == "WILLY").List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>(x => x.Name == "FAUSTINO").List());
+                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>(x => x.Name == "BART").List());
                 }
             }
 

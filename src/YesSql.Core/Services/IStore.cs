@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
+using YesSql.Core.Sql;
 
 namespace YesSql.Core.Services
 {
@@ -21,9 +23,9 @@ namespace YesSql.Core.Services
         IStore RegisterIndexes(Type type);
         IStore RegisterIndexes(IEnumerable<Type> types);
         IStore RegisterIndexes(Assembly assembly);
-
+        Configuration Configuration { get; set; }
         IIdAccessor GetIdAccessor(Type tContainer, string name);
-
+        Task ExecuteMigrationAsync(Action<SchemaBuilder> migration);
         IEnumerable<IndexDescriptor> Describe(Type target);
     }
 }

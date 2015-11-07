@@ -6,13 +6,17 @@ using YesSql.Core.Indexes;
 using YesSql.Core.Data;
 using System.Reflection;
 using YesSql.Core.Sql;
+using System.Threading.Tasks;
 
 namespace YesSql.Core.Services
 {
     public class Store : IStore
     {
         protected readonly IList<IIndexProvider> Indexes;
-        internal readonly Configuration _configuration;
+        public Configuration Configuration
+        {
+            get; set;
+        }
 
         internal readonly ConcurrentDictionary<Type, Func<Index, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<Index, object>>();
@@ -26,34 +30,39 @@ namespace YesSql.Core.Services
 
         public Store(Action<Configuration> cfg)
         {
-            _configuration = new Configuration();
+            Configuration = new Configuration();
             Indexes = new List<IIndexProvider>();
-            cfg(_configuration);
+            cfg(Configuration);
 
             ValidateConfiguration();
 
-            var connection = _configuration.ConnectionFactory.CreateConnection();
-            connection.Open();
+            ExecuteMigrationAsync(schemaBuilder =>
+            {
+                foreach(var migration in Configuration.Migrations)
+                {
+                    migration(schemaBuilder);
+                }
+            }).Wait();          
+        }
+
+        public async Task ExecuteMigrationAsync(Action<SchemaBuilder> migration)
+        {
+            var connection = Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
             try
             {
-                using (var transaction = connection.BeginTransaction(_configuration.IsolationLevel))
+                using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
                 {
                     var schemaBuilder = new SchemaBuilder(connection, transaction);
 
-                    foreach (var migration in _configuration.Migrations)
-                    {
-                        if (migration != null)
-                        {
-                            migration(schemaBuilder);
-                        }
-                    }
-
+                    migration(schemaBuilder);
+                    
                     transaction.Commit();
                 }
             }
             finally
             {
-                if (_configuration.ConnectionFactory.Disposable)
+                if (Configuration.ConnectionFactory.Disposable)
                 {
                     connection.Dispose();
                 }
@@ -62,12 +71,12 @@ namespace YesSql.Core.Services
 
         private void ValidateConfiguration()
         {
-            if (_configuration.ConnectionFactory == null)
+            if (Configuration.ConnectionFactory == null)
             {
                 throw new Exception("The connection factory should be initialized during configuration.");
             }
 
-            if (_configuration.DocumentStorageFactory == null)
+            if (Configuration.DocumentStorageFactory == null)
             {
                 throw new Exception("The document storage factory should be initialized during configuration.");
             }
@@ -75,7 +84,7 @@ namespace YesSql.Core.Services
 
         public ISession CreateSession(bool trackChanges = true)
         {
-            var storage = _configuration.DocumentStorageFactory.CreateDocumentStorage();
+            var storage = Configuration.DocumentStorageFactory.CreateDocumentStorage();
             return new Session(storage, trackChanges, this);
         }
 
@@ -118,7 +127,7 @@ namespace YesSql.Core.Services
 
         public IIdAccessor GetIdAccessor(Type tContainer, string name)
         {
-            return _idAccessors.GetOrAdd(tContainer, type => _configuration.IdentifierFactory.CreateAccessor(tContainer, name));
+            return _idAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierFactory.CreateAccessor(tContainer, name));
         }
 
         /// <summary>

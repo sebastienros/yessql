@@ -16,6 +16,8 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Samples.Performance"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Tests", "src\YesSql.Tests\YesSql.Tests.xproj", "{2E2082CC-BB43-4971-A419-3F5CE5BD2CD7}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Bench", "samples\YesSql.Bench\YesSql.Bench.xproj", "{54213D0E-F9D8-4293-AD78-852FC72423F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,12 +64,25 @@ Global
 		{2E2082CC-BB43-4971-A419-3F5CE5BD2CD7}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{2E2082CC-BB43-4971-A419-3F5CE5BD2CD7}.Release|x86.ActiveCfg = Release|Any CPU
 		{2E2082CC-BB43-4971-A419-3F5CE5BD2CD7}.Release|x86.Build.0 = Release|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Debug|x86.Build.0 = Debug|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|x86.ActiveCfg = Release|Any CPU
+		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F2C23E01-C045-4D8E-997F-A9110DA5E041} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
+		{54213D0E-F9D8-4293-AD78-852FC72423F9} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = Store.vsmdi

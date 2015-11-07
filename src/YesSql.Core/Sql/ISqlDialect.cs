@@ -64,7 +64,7 @@ namespace YesSql.Core.Sql
 
         public abstract string IdentitySelectString { get; }
         
-        public virtual string IdentityColumnString => "[int] IDENTITY(1,1)";
+        public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
         
         public virtual string NullColumnString => String.Empty;
 
@@ -288,15 +288,14 @@ namespace YesSql.Core.Sql
         {
             var sb = new StringBuilder(sql);
 
-            if (offset != 0)
+            if(offset ==0 && limit != 0)
             {
-                sb.Append(" OFFSET ");
-                sb.Append(offset);
+                // Insert LIMIT clause after the select
+                sb.Insert(7, $"TOP {limit} ");
             }
-
-            if (limit != 0)
+            else if (offset != 0 || limit != 0)
             {
-                sb.Append($" FETCH FIRST {limit} ROWS ONLY");
+                sb.Append($" OFFSET {offset} ROWS FETCH FIRST {limit} ROWS ONLY");
             }
 
             return sb.ToString();
