@@ -10,21 +10,21 @@ namespace YesSql.Core.Sql
     public class SchemaBuilder
     {
         private ISchemaBuilder _builder;
-        private DbConnection _connection;
-        private DbTransaction _transaction;
+        public DbConnection Connection { get; private set; }
+        public DbTransaction Transaction { get; private set; }
 
         public SchemaBuilder(DbConnection connection, DbTransaction transaction)
         {
             _builder = SchemaBuilderFactory.For(connection);
-            _connection = connection;
-            _transaction = transaction;
+            Connection = connection;
+            Transaction = transaction;
         }
 
         private void Execute(IEnumerable<string> statements)
         {
             foreach(var statement in statements)
             {
-                _connection.Execute(statement, null, _transaction);
+                Connection.Execute(statement, null, Transaction);
             }
         }
 

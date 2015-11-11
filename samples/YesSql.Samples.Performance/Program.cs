@@ -475,11 +475,12 @@ namespace YesSql.Samples.Performance
 
         public void Main()
         {
+            var runMigrations = true;
+
             var store = new Store(cfg =>
             {
-                var runMigrations = true;
                 var dbFileName = "performance.db";
-                if(File.Exists(dbFileName))
+                if (File.Exists(dbFileName))
                 {
                     File.Delete(dbFileName);
                 }
@@ -488,24 +489,27 @@ namespace YesSql.Samples.Performance
                 Console.WriteLine("Temp path: {0}", tempPath);
 
                 cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True");
-                cfg.DocumentStorageFactory = new FileSystemDocumentStorageFactory(tempPath);
-                
                 //cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared");
-                //cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+
+                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+                //cfg.DocumentStorageFactory = new FileSystemDocumentStorageFactory(tempPath);
                 cfg.IsolationLevel = IsolationLevel.ReadUncommitted;
-                if (runMigrations)
-                {
-                    cfg.RunDefaultMigration();
-                    cfg.Migrations.Add(builder => builder
-                        .CreateMapIndexTable("UserByName", table => table
-                            .Column<string>("Name")
-                        )
-                        .AlterTable("UserByName", table => table
-                            .CreateIndex("IX_Name", "Name")
-                        )
-                    );
-                }
+
             });
+
+            if (runMigrations)
+            {
+                store.CreateSchema().Wait();
+
+                store.ExecuteMigrationAsync(builder => builder
+                    .CreateMapIndexTable("UserByName", table => table
+                        .Column<string>("Name")
+                    )
+                    .AlterTable("UserByName", table => table
+                        .CreateIndex("IX_Name", "Name")
+                    )
+                ).Wait();
+            }
 
             store.RegisterIndexes<UserIndexProvider>();
 
@@ -669,7 +673,7 @@ namespace YesSql.Samples.Performance
 
     public class User
     {
-        public int Id { get; set; }
+        //public int Id { get; set; }
         public string Email { get; set; }
         public string Name { get; set; }
     }

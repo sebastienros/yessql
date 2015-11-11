@@ -5,14 +5,15 @@ namespace YesSql.Core.Data
 {
     public class DefaultIdentifierFactory : IIdentifierFactory
     {
-        public IIdAccessor CreateAccessor(Type tContainer, string name)
+        public IIdAccessor<T> CreateAccessor<T>(Type tContainer, string name)
         {
             var propertyName = name;
             var propertyInfo = tContainer.GetProperty(propertyName);
 
             if (propertyInfo == null)
             {
-                return new IdAccessor<object, object>(x => null, (x, y) => { });
+                return null;
+                //return new IdAccessor<object, T>(x => default(T), (x, y) => { });
             }
 
             var tProperty = propertyInfo.PropertyType;
@@ -25,7 +26,7 @@ namespace YesSql.Core.Data
 
             var accessorType = typeof (IdAccessor<,>).MakeGenericType(tContainer, tProperty);
 
-            return Activator.CreateInstance(accessorType, new object[] {getter, setter}) as IIdAccessor;
+            return Activator.CreateInstance(accessorType, new object[] {getter, setter}) as IIdAccessor<T>;
         }
 
     }

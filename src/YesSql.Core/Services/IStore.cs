@@ -24,7 +24,9 @@ namespace YesSql.Core.Services
         IStore RegisterIndexes(IEnumerable<Type> types);
         IStore RegisterIndexes(Assembly assembly);
         Configuration Configuration { get; set; }
-        IIdAccessor GetIdAccessor(Type tContainer, string name);
+        Task CreateSchema();
+        IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
+        int GetNextId();
         Task ExecuteMigrationAsync(Action<SchemaBuilder> migration);
         IEnumerable<IndexDescriptor> Describe(Type target);
     }

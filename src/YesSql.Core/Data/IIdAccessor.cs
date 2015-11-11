@@ -1,13 +1,13 @@
 ﻿using System;
 
 namespace YesSql.Core.Data {
-    public interface IIdAccessor
+    public interface IIdAccessor<T>
     {
-        object Get(object obj);
-        void Set(object obj, object value);
+        T Get(object obj);
+        void Set(object obj, T value);
     }
 
-    public class IdAccessor<T, TU> : IIdAccessor
+    public class IdAccessor<T, TU> : IIdAccessor<TU>
     {
         private readonly Func<T, TU> _getter;
         private readonly Action<T, TU> _setter;
@@ -18,14 +18,14 @@ namespace YesSql.Core.Data {
             _setter = setter;
         }
 
-        object IIdAccessor.Get(object obj)
+        TU IIdAccessor<TU>.Get(object obj)
         {
-            return _getter((T) obj);
+            return _getter((T)obj);
         }
 
-        void IIdAccessor.Set(object obj, object value)
+        void IIdAccessor<TU>.Set(object obj, TU value)
         {
-            _setter((T) obj, (TU) value);
+            _setter((T)obj, value);
         }
     }
 }

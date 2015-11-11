@@ -14,9 +14,9 @@ namespace Bench
                 cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True");
                 //cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-                cfg.RunDefaultMigration();
             });
 
+            _store.CreateSchema().Wait();
 
             using (var session = _store.CreateSession())
             {
@@ -28,7 +28,14 @@ namespace Bench
                     Name = "Bill"
                 };
 
+                Assert.True(bill.Id == 0);
                 session.Save(bill);
+                Assert.True(bill.Id > 0);
+
+                var newBill = session.GetAsync<User>(bill.Id).Result;
+
+                Assert.NotNull(newBill);
+                Assert.Same(bill, newBill);
             }
 
             using (var session = _store.CreateSession())
@@ -41,6 +48,7 @@ namespace Bench
 
     public class User
     {
+        public int Id { get; set; }
         public string Name { get; set; }
     }
 }

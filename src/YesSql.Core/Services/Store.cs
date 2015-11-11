@@ -13,6 +13,8 @@ namespace YesSql.Core.Services
     public class Store : IStore
     {
         protected readonly IList<IIndexProvider> Indexes;
+        protected readonly LinearBlockIdGenerator IdGenerator;
+
         public Configuration Configuration
         {
             get; set;
@@ -24,8 +26,8 @@ namespace YesSql.Core.Services
         internal readonly ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>> Descriptors =
             new ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>>();
 
-        internal readonly ConcurrentDictionary<Type, IIdAccessor> _idAccessors =
-            new ConcurrentDictionary<Type, IIdAccessor>();
+        internal readonly ConcurrentDictionary<Type, IIdAccessor<int>> _idAccessors =
+            new ConcurrentDictionary<Type, IIdAccessor<int>>();
 
 
         public Store(Action<Configuration> cfg)
@@ -36,13 +38,36 @@ namespace YesSql.Core.Services
 
             ValidateConfiguration();
 
-            ExecuteMigrationAsync(schemaBuilder =>
+            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20);
+        }
+
+        public async Task CreateSchema()
+        {
+            await ExecuteMigrationAsync(builder =>
             {
-                foreach(var migration in Configuration.Migrations)
-                {
-                    migration(schemaBuilder);
-                }
-            }).Wait();          
+                builder
+                    .CreateTable("Document", table => table
+                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                    .Column<string>("Type", column => column.NotNull())
+                )
+                .AlterTable("Document", table => table
+                    .CreateIndex("IX_Type", "Type")
+                );
+                
+                builder.CreateTable("YesSqlIds", table => table
+                    .Column<ulong>("nextval")
+                );
+
+                var command = builder.Connection.CreateCommand();
+                command.CommandText = "INSERT INTO YesSqlIds VALUES(@range);";
+                var parameter = command.CreateParameter();
+                parameter.Value = 1;
+                parameter.ParameterName = "@range";
+                command.Parameters.Add(parameter);
+                command.Transaction = builder.Transaction;
+
+                command.ExecuteNonQuery();
+            });
         }
 
         public async Task ExecuteMigrationAsync(Action<SchemaBuilder> migration)
@@ -125,9 +150,9 @@ namespace YesSql.Core.Services
             return RegisterIndexes(indexes);
         }
 
-        public IIdAccessor GetIdAccessor(Type tContainer, string name)
+        public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)
         {
-            return _idAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierFactory.CreateAccessor(tContainer, name));
+            return _idAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name));
         }
 
         /// <summary>
@@ -155,6 +180,11 @@ namespace YesSql.Core.Services
 
                 return context.Describe(new[] { target }).ToList();
             });
+        }
+
+        public int GetNextId()
+        {
+            return (int)IdGenerator.GetNextId();
         }
     }
 }

@@ -21,17 +21,8 @@ namespace YesSql.Tests
                 cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:;Cache=Shared", true);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
                 cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
-                cfg.RunDefaultMigration();
-                cfg.Migrations.Add(builder => builder
-                    .CreateMapIndexTable(nameof(PersonByName), table => table
-                        .Column<string>("Name")
-                    )
-                    .CreateReduceIndexTable(nameof(ArticlesByDay), table => table
-                        .Column<int>("Count")
-                        .Column<int>("DayOfYear")
-                    )
-                );
             });
+            _store.CreateSchema().Wait();
         }
 
         public void Dispose()
@@ -177,6 +168,41 @@ namespace YesSql.Tests
                 var prod = await session.GetAsync<Product>(productId);
                 Assert.NotNull(prod);
                 Assert.Equal("Milk", prod.Name);
+            }
+        }
+
+        [Fact]
+        public void ShouldAssignIdWhenSaved()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                Assert.True(bill.Id == 0);
+                session.Save(bill);
+                Assert.True(bill.Id != 0);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldAutoFlushOnGet()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+                var newBill = await session.GetAsync<Person>(bill.Id);
+
+                Assert.Same(newBill, bill);
             }
         }
 

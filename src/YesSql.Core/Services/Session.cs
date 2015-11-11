@@ -57,19 +57,26 @@ namespace YesSql.Core.Services
             // unless we don't track automatically loaded objects
             if (!_trackChanges || !_identityMap.HasEntity(entity))
             {
+                var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+                if (accessor != null)
+                {
+                    var id = _store.GetNextId();
+                    accessor.Set(entity, id);
+                }
+
                 _saved.Add(entity);
             }
         }
 
-        private async Task SaveEntityAsync(object obj)
+        private async Task SaveEntityAsync(object entity)
         {
-            if (obj == null)
+            if (entity == null)
             {
                 throw new ArgumentNullException("obj");
             }
 
-            var index = obj as Index;
-            var document = obj as Document;
+            var index = entity as Index;
+            var document = entity as Document;
 
             if (document != null)
             {
@@ -83,7 +90,7 @@ namespace YesSql.Core.Services
             {
                 // if the object is not new, reload to get the old map
                 int id;
-                if(_identityMap.TryGetDocumentId(obj, out id))
+                if(_identityMap.TryGetDocumentId(entity, out id))
                 {
                     var oldObj = await _storage.GetAsync(id);
                     var oldDoc = await GetDocumentByIdAsync(id);
@@ -92,34 +99,41 @@ namespace YesSql.Core.Services
                     // TODO: To prevent this check we could remove change tracking as a whole and have users
                     // use Update(entity), or have a NoTrack option in a session so that entities would still be 
                     // in the identity map but not saved on a Commit
-                    if (!(String.Equals(JsonConvert.SerializeObject(obj), JsonConvert.SerializeObject(oldObj))))
+                    if (!(String.Equals(JsonConvert.SerializeObject(entity), JsonConvert.SerializeObject(oldObj))))
                     {
                         // Update map index
                         MapDeleted(oldDoc, oldObj);
-                        MapNew(oldDoc, obj);
+                        MapNew(oldDoc, entity);
 
                         // Save entity
-                        await _storage.SaveAsync(id, obj);
+                        await _storage.SaveAsync(id, entity);
                     }
                 }
                 else
                 {
-                    var doc = new Document { Type = obj.GetType().SimplifiedTypeName() };
-
-                    await new CreateDocumentCommand(doc).ExecuteAsync(_connection, _transaction);
-                    await _storage.SaveAsync(doc.Id, obj);
-
-                    // Assign the Document id back to the entity
-                    var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
-                    if (accessor != null)
+                    var doc = new Document
                     {
-                        accessor.Set(obj, doc.Id);
+                        Type = entity.GetType().SimplifiedTypeName()
+                    };
+
+                    // Get the entity's Id if assigned
+                    var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+                    if(accessor != null)
+                    {
+                        doc.Id = accessor.Get(entity);
+                    }
+                    else
+                    {
+                        doc.Id = _store.GetNextId();
                     }
 
+                    await new CreateDocumentCommand(doc).ExecuteAsync(_connection, _transaction);
+                    await _storage.SaveAsync(doc.Id, entity);
+                    
                     // Track the newly created object
-                    _identityMap.Add(doc.Id, obj);
+                    _identityMap.Add(doc.Id, entity);
 
-                    MapNew(doc, obj);
+                    MapNew(doc, entity);
                 }
             }
         }
@@ -173,8 +187,9 @@ namespace YesSql.Core.Services
 
         public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids) where T : class
         {
-            var result = new List<T>();
+            await CommitAsync();
 
+            var result = new List<T>();
             
             if (ids == null || !ids.Any())
             {
@@ -184,10 +199,10 @@ namespace YesSql.Core.Services
             // Are all the objects already in cache?
             IEnumerable<object> cached = ids.Select(id =>
             {
-                object document;
-                if (_identityMap.TryGetEntityById(id, out document))
+                object entity;
+                if (_identityMap.TryGetEntityById(id, out entity))
                 {
-                    return document;
+                    return entity;
                 }
                 return null;
             });
@@ -211,15 +226,18 @@ namespace YesSql.Core.Services
                 var item = items[i];
                 var id = ids.ElementAt(i);
 
-                object document;
+                object entity;
 
-                if (_identityMap.TryGetEntityById(id, out document))
+                if (_identityMap.TryGetEntityById(id, out entity))
                 {    
-                    result.Add((T)document);
+                    result.Add((T)entity);
                 }
                 else
                 {
-                    accessor.Set(item, id);
+                    if (accessor != null)
+                    {
+                        accessor.Set(item, id);
+                    }
 
                     // track the loaded object
                     _identityMap.Add(id, item);
@@ -231,22 +249,9 @@ namespace YesSql.Core.Services
             return result;
         }
         
-        public IQueryable<TIndex> QueryIndex<TIndex>() where TIndex : Index
-        {
-            Demand();
-
-            // Commit any pending changes before doing a query (auto-flush)
-            CommitAsync().Wait();
-            return null;
-            //return _dbContext.Set<TIndex>();
-        }
-
         public IQuery QueryAsync()
         {
             Demand();
-
-            // Commit any pending changes before doing a query (auto-flush)
-            CommitAsync().Wait();
 
             return new DefaultQuery(_connection, _transaction, this);
         }

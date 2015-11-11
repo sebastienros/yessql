@@ -9,7 +9,7 @@ namespace YesSql.Core.Commands
 {
     public class CreateDocumentCommand : DocumentCommand
     {
-        private static string insertCmd = $"insert into Document ([Type]) values (@Type);";
+        private static string insertCmd = $"insert into Document ([Id], [Type]) values (@Id, @Type);";
         public CreateDocumentCommand(Document document) : base(document)
         {
         }
@@ -17,7 +17,7 @@ namespace YesSql.Core.Commands
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
             var dialect = SqlDialectFactory.For(connection);
-            Document.Id = await connection.ExecuteScalarAsync<int>(insertCmd + $"{dialect.IdentitySelectString} id;", Document, transaction);
+            await connection.ExecuteScalarAsync<int>(insertCmd, Document, transaction);
         }
     }
 }

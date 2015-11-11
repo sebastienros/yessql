@@ -3,7 +3,7 @@
   "dependencies": {
     "Microsoft.Data.Sqlite": "1.0.0-*",
     "Dapper.Dnx": "1.43.0-beta2",
-    "YesSql.Core": "2.0.0-alpha-*",
+    "YesSql.Core": "2.0.0-alpha",
     "xunit.assert": "2.1.0"
   },
   "commands": {

@@ -307,6 +307,9 @@ namespace YesSql.Core.Services
 
         public async Task<int> CountAsync()
         {
+            // Commit any pending changes before doing a query (auto-flush)
+            await _session.CommitAsync();
+
             _sqlBuilder.Selector("count(*)");
             var sql = _sqlBuilder.ToSqlString(_dialect);
             return await _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
@@ -356,6 +359,9 @@ namespace YesSql.Core.Services
                         
             public async Task<T> FirstOrDefault()
             {
+                // Commit any pending changes before doing a query (auto-flush)
+                await _query._session.CommitAsync();
+
                 _query.Page(1, 0);
 
                 if (typeof(Index).IsAssignableFrom(typeof(T)))
@@ -381,6 +387,9 @@ namespace YesSql.Core.Services
 
             async Task<IEnumerable<T>> IQuery<T>.List()
             {
+                // Commit any pending changes before doing a query (auto-flush)
+                await _query._session.CommitAsync();
+
                 if (typeof(Index).IsAssignableFrom(typeof(T)))
                 {
                     _query._sqlBuilder.Selector("*");

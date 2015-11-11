@@ -14,31 +14,12 @@ namespace YesSql.Core.Services
         {
             IdentifierFactory = new DefaultIdentifierFactory();
             IsolationLevel = IsolationLevel.ReadCommitted;
-            Migrations = new List<Action<SchemaBuilder>>();
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
         public IDocumentStorageFactory DocumentStorageFactory { get; set; }
         public IsolationLevel IsolationLevel { get; set; }
         public IConnectionFactory ConnectionFactory { get; set; }
-        public List<Action<SchemaBuilder>> Migrations { get; }
-        public void RunDefaultMigration()
-        {
-            // Document
-            // This table should be part of the default migration code, and 
-            // its version also created in the migration table
-
-            Migrations.Insert(0, builder => builder
-                .CreateTable("Document", table => table
-                    .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                )
-                .AlterTable("Document", table => table
-                    .CreateIndex("IX_Type", "Type")
-                )
-            );
-        }
-
     }
 
     public interface IConnectionFactory : IDisposable

@@ -9,6 +9,6 @@ namespace YesSql.Core.Data
     /// </summary>
     public interface IIdentifierFactory
     {
-        IIdAccessor CreateAccessor(Type tContainer, string name);
+        IIdAccessor<T> CreateAccessor<T>(Type tContainer, string name);
     }
 }
