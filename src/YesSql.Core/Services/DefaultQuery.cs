@@ -32,9 +32,9 @@ namespace YesSql.Core.Services
             MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(string) })] = (query, builder, expression) =>
             {
                 builder.Append("(");
-                query.Convert(builder, expression.Object);
+                query.ConvertFragment(builder, expression.Object);
                 builder.Append(" like ");
-                query.Convert(builder, expression.Arguments[0]);
+                query.ConvertFragment(builder, expression.Arguments[0]);
                 var parameter = query._sqlBuilder.Parameters[query._lastParameterName];
                 query._sqlBuilder.Parameters[query._lastParameterName] = parameter.ToString() + "%";
                 builder.Append(")");
@@ -43,9 +43,9 @@ namespace YesSql.Core.Services
             MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(string) })] = (query, builder, expression) =>
             {
                 builder.Append("(");
-                query.Convert(builder, expression.Object);
+                query.ConvertFragment(builder, expression.Object);
                 builder.Append(" like ");
-                query.Convert(builder, expression.Arguments[0]);
+                query.ConvertFragment(builder, expression.Arguments[0]);
                 var parameter = query._sqlBuilder.Parameters[query._lastParameterName];
                 query._sqlBuilder.Parameters[query._lastParameterName] = "%" + parameter.ToString();
                 builder.Append(")");
@@ -55,9 +55,9 @@ namespace YesSql.Core.Services
             MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(string) })] = (query, builder, expression) =>
             {
                 builder.Append("(");
-                query.Convert(builder, expression.Object);
+                query.ConvertFragment(builder, expression.Object);
                 builder.Append(" like ");
-                query.Convert(builder, expression.Arguments[0]);
+                query.ConvertFragment(builder, expression.Arguments[0]);
                 var parameter = query._sqlBuilder.Parameters[query._lastParameterName];
                 query._sqlBuilder.Parameters[query._lastParameterName] = "%" + parameter.ToString() + "%";
                 builder.Append(")");
@@ -67,12 +67,12 @@ namespace YesSql.Core.Services
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(int), typeof(IEnumerable<int>) })] =
                 (query, builder, expression) =>
             {
-                query.Convert(builder, expression.Arguments[0]);
+                query.ConvertFragment(builder, expression.Arguments[0]);
                 builder.Append(" in (");
                 var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
                 for(var i=0; i<values.Length; i++)
                 {
-                    query.Convert(builder, Expression.Constant(values[i]));
+                    query.ConvertFragment(builder, Expression.Constant(values[i]));
                     if (i < values.Length - 1)
                     {
                         builder.Append(", ");
@@ -104,7 +104,7 @@ namespace YesSql.Core.Services
             if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
             {
                 // inner join [PersonByName] on [PersonByName].[Id] = [Document].[Id]
-                _sqlBuilder.InnerJoin(name, name, "Id", "Document", "Id");
+                _sqlBuilder.InnerJoin(name, name, "DocumentId", "Document", "Id");
             }
             else
             {
@@ -139,57 +139,56 @@ namespace YesSql.Core.Services
 
             var builder = new StringBuilder();
             // if Filter is called, the Document type is implicit so there is no need to filter on TIndex 
-            Convert(builder, predicate.Body);
+            ConvertPredicate(builder, predicate.Body);
             _sqlBuilder.WhereAlso(builder.ToString());
         }
 
-        public void Convert(StringBuilder builder, Expression expression)
+        public void ConvertFragment(StringBuilder builder, Expression expression)
         {
             if (!IsParameterBased(expression))
             {
                 var value = Expression.Lambda(expression).Compile().DynamicInvoke();
-                Convert(builder, Expression.Constant(value));
-                return;
+                expression = Expression.Constant(value);
             }
 
             switch (expression.NodeType)
             {
                 case ExpressionType.LessThan:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " < ");
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " < ");
                     break;
                 case ExpressionType.LessThanOrEqual:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " <= ");
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " <= ");
                     break;
                 case ExpressionType.GreaterThan:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " > ");
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " > ");
                     break;
                 case ExpressionType.GreaterThanOrEqual:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " >= ");
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " >= ");
                     break;
                 case ExpressionType.And:
                 case ExpressionType.AndAlso:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " and ");
+                    ConvertEqualityBinaryExpression(builder, (BinaryExpression)expression, " and ");
                     break;
                 case ExpressionType.Or:
                 case ExpressionType.OrElse:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " or ");
+                    ConvertEqualityBinaryExpression(builder, (BinaryExpression)expression, " or ");
                     break;
                 case ExpressionType.Equal:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " = ");
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " = ");
                     break;
                 case ExpressionType.NotEqual:
-                    ConvertBinaryExpression(builder, (BinaryExpression)expression, " <> ");
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " <> ");
                     break;
                 case ExpressionType.IsTrue:
-                    Convert(builder, ((UnaryExpression)expression).Operand);
+                    ConvertFragment(builder, ((UnaryExpression)expression).Operand);
                     break;
                 case ExpressionType.IsFalse:
                     builder.Append(" not ");
-                    Convert(builder, ((UnaryExpression)expression).Operand);
+                    ConvertFragment(builder, ((UnaryExpression)expression).Operand);
                     break;
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)expression;
-                    builder.Append(_bound.Last().Name + "." +  memberExpression.Member.Name);
+                    builder.Append(_bound.Last().Name + "." + memberExpression.Member.Name);
                     break;
                 case ExpressionType.Constant:
                     _lastParameterName = "@p" + _sqlBuilder.Parameters.Count.ToString();
@@ -215,6 +214,37 @@ namespace YesSql.Core.Services
         }
 
         /// <summary>
+        /// Converts an expression that has to be a binary expression. Unary expressions
+        /// are converted to a binary expression and evaluated.
+        /// </summary>
+        public void ConvertPredicate(StringBuilder builder, Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.LessThan:
+                case ExpressionType.LessThanOrEqual:
+                case ExpressionType.GreaterThan:
+                case ExpressionType.GreaterThanOrEqual:
+                case ExpressionType.And:
+                case ExpressionType.AndAlso:
+                case ExpressionType.Or:
+                case ExpressionType.OrElse:
+                case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
+                    ConvertFragment(builder, expression);
+                    break;
+                case ExpressionType.MemberAccess:
+                    ConvertFragment(builder, Expression.Equal(expression, Expression.Constant(true, typeof(bool))));
+                    break;
+                case ExpressionType.Constant:
+                    ConvertFragment(builder, Expression.Equal(expression, Expression.Constant(true, typeof(bool))));
+                    break;
+                default:
+                    throw new ArgumentException("Not supported expression: " + expression);
+            }
+        }
+
+        /// <summary>
         /// Return true if an expression path is based on the parameter of the predicate.
         /// If false it means the expression should be evaluated, otherwise converted to 
         /// its sql equivalent.
@@ -226,6 +256,11 @@ namespace YesSql.Core.Services
             switch (expression.NodeType)
             {
                 case ExpressionType.Parameter:
+                    if (!typeof(Index).IsAssignableFrom(expression.Type))
+                    {
+                        return false;
+                    }
+
                     return true;
                 case ExpressionType.GreaterThan:
                 case ExpressionType.GreaterThanOrEqual:
@@ -242,7 +277,7 @@ namespace YesSql.Core.Services
                 case ExpressionType.IsTrue:
                 case ExpressionType.IsFalse:
                 case ExpressionType.Constant:
-                    return true;
+                    return false;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)expression;
 
@@ -268,40 +303,49 @@ namespace YesSql.Core.Services
             }
         }
 
-        private void ConvertBinaryExpression(StringBuilder builder, BinaryExpression expression, string operation)
+        private void ConvertComparisonBinaryExpression(StringBuilder builder, BinaryExpression expression, string operation)
         {
             builder.Append("(");
-            Convert(builder, expression.Left);
+            ConvertFragment(builder, expression.Left);
             builder.Append(operation);
-            Convert(builder, expression.Right);
+            ConvertFragment(builder, expression.Right);
+            builder.Append(")");
+        }
+
+        private void ConvertEqualityBinaryExpression(StringBuilder builder, BinaryExpression expression, string operation)
+        {
+            builder.Append("(");
+            ConvertPredicate(builder, expression.Left);
+            builder.Append(operation);
+            ConvertPredicate(builder, expression.Right);
             builder.Append(")");
         }
 
         private void OrderBy<T>(Expression<Func<T, object>> keySelector)
         {
             var builder = new StringBuilder();
-            Convert(builder, keySelector.Body);
+            ConvertFragment(builder, keySelector.Body);
             _sqlBuilder.OrderBy(builder.ToString());
         }
 
         private void ThenBy<T>(Expression<Func<T, object>> keySelector)
         {
             var builder = new StringBuilder();
-            Convert(builder, keySelector.Body);
+            ConvertFragment(builder, keySelector.Body);
             _sqlBuilder.ThenOrderBy(builder.ToString());
         }
 
         private void OrderByDescending<T>(Expression<Func<T, object>> keySelector)
         {
             var builder = new StringBuilder();
-            Convert(builder, keySelector.Body);
+            ConvertFragment(builder, keySelector.Body);
             _sqlBuilder.OrderByDescending(builder.ToString());
         }
 
         private void ThenByDescending<T>(Expression<Func<T, object>> keySelector)
         {
             var builder = new StringBuilder();
-            Convert(builder, keySelector.Body);
+            ConvertFragment(builder, keySelector.Body);
             _sqlBuilder.ThenOrderByDescending(builder.ToString());
         }
 
