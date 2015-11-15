@@ -38,7 +38,7 @@ namespace YesSql.Core.Services
 
             ValidateConfiguration();
 
-            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20);
+            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
         }
 
         public async Task CreateSchema()
@@ -54,12 +54,12 @@ namespace YesSql.Core.Services
                     .CreateIndex("IX_Type", "Type")
                 );
                 
-                builder.CreateTable("YesSqlIds", table => table
+                builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
                     .Column<ulong>("nextval")
                 );
 
                 var command = builder.Connection.CreateCommand();
-                command.CommandText = "INSERT INTO YesSqlIds VALUES(@range);";
+                command.CommandText = $"INSERT INTO [{Configuration.TablePrefix}{LinearBlockIdGenerator.TableName}] VALUES(@range);";
                 var parameter = command.CreateParameter();
                 parameter.Value = 1;
                 parameter.ParameterName = "@range";
@@ -78,7 +78,7 @@ namespace YesSql.Core.Services
             {
                 using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
                 {
-                    var schemaBuilder = new SchemaBuilder(connection, transaction);
+                    var schemaBuilder = new SchemaBuilder(connection, transaction, Configuration.TablePrefix);
 
                     migration(schemaBuilder);
                     

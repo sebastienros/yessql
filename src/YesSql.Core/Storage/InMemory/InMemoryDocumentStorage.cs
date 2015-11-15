@@ -48,7 +48,7 @@ namespace YesSql.Core.Storage.InMemory
             var result = new List<T>();
             foreach (var id in ids)
             {
-                string document; ;
+                string document;
                 if (_documents.TryGetValue(id, out document))
                 {
                     result.Add(JsonConvert.DeserializeObject<T>(document, _jsonSettings));

@@ -127,7 +127,7 @@ namespace YesSql.Core.Services
                         doc.Id = _store.GetNextId();
                     }
 
-                    await new CreateDocumentCommand(doc).ExecuteAsync(_connection, _transaction);
+                    await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction);
                     await _storage.SaveAsync(doc.Id, entity);
                     
                     // Track the newly created object
@@ -140,7 +140,8 @@ namespace YesSql.Core.Services
 
         private async Task<Document> GetDocumentByIdAsync(int id)
         {
-            var result = await _connection.QueryAsync<Document>("select * from Document where Id = @Id", new { Id = id }, _transaction);
+            var command = $"select * from [{_store.Configuration.TablePrefix}Document] where Id = @Id";
+            var result = await _connection.QueryAsync<Document>(command, new { Id = id }, _transaction);
             return result.FirstOrDefault();
         }
 
@@ -174,7 +175,7 @@ namespace YesSql.Core.Services
                 if (doc != null)
                 {
                     await _storage.DeleteAsync(id);
-                    _commands.Add(new DeleteDocumentCommand(doc));
+                    _commands.Add(new DeleteDocumentCommand(doc, _store.Configuration.TablePrefix));
 
                     // Untrack the deleted object
                     _identityMap.Remove(id, obj);
@@ -253,7 +254,7 @@ namespace YesSql.Core.Services
         {
             Demand();
 
-            return new DefaultQuery(_connection, _transaction, this);
+            return new DefaultQuery(_connection, _transaction, this, _store.Configuration.TablePrefix);
         }
 
         public void Dispose()
@@ -440,14 +441,14 @@ namespace YesSql.Core.Services
                     {
                         if (index == null)
                         {
-                            _commands.Add(new DeleteReduceIndexCommand(dbIndex));
+                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _store.Configuration.TablePrefix));
                         }
                         else
                         {
                             index.Id = dbIndex.Id;
 
                             // Update both new and deleted linked documents
-                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds));
+                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
                         }
                     }
                     else 
@@ -455,7 +456,7 @@ namespace YesSql.Core.Services
                         if (index != null)
                         {
                             // The index is new
-                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds));
+                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _store.Configuration.TablePrefix));
                         }
                     }
                 }
@@ -508,11 +509,11 @@ namespace YesSql.Core.Services
                     {
                         if (index.Id == 0)
                         {
-                            _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>()));
+                            _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _store.Configuration.TablePrefix));
                         }
                         else
                         {
-                            _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>()));
+                            _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _store.Configuration.TablePrefix));
                         }
                     }
                     else
@@ -540,7 +541,7 @@ namespace YesSql.Core.Services
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id, _store.Configuration.TablePrefix));
                 }
                 else
                 {

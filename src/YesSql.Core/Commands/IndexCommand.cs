@@ -13,6 +13,8 @@ namespace YesSql.Core.Commands
 {
     public abstract class IndexCommand : IIndexCommand
     {
+        protected readonly string _tablePrefix;
+
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> InsertsList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> UpdatesList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
@@ -23,9 +25,10 @@ namespace YesSql.Core.Commands
 
         protected static PropertyInfo[] KeysProperties = new[] { typeof(Index).GetProperty("Id") };
 
-        public IndexCommand(Index index)
+        public IndexCommand(Index index, string tablePrefix)
         {
             Index = index;
+            _tablePrefix = tablePrefix;
         }
 
         public Index Index { get; }
@@ -46,7 +49,7 @@ namespace YesSql.Core.Commands
             return properties;
         }
 
-        protected static string Inserts(Type type)
+        protected string Inserts(Type type)
         {
             string result;
             if (InsertsList.TryGetValue(type.TypeHandle, out result))
@@ -74,7 +77,7 @@ namespace YesSql.Core.Commands
                     sbParameterList.Append(", ");
             }
 
-            InsertsList[type.TypeHandle] = result = $"insert into {type.Name} ({sbColumnList}) values ({sbParameterList});";
+            InsertsList[type.TypeHandle] = result = $"insert into [{_tablePrefix}{type.Name}] ({sbColumnList}) values ({sbParameterList});";
             return result;
         }
 

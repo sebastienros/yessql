@@ -494,7 +494,6 @@ namespace YesSql.Samples.Performance
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
                 //cfg.DocumentStorageFactory = new FileSystemDocumentStorageFactory(tempPath);
                 cfg.IsolationLevel = IsolationLevel.ReadUncommitted;
-
             });
 
             if (runMigrations)

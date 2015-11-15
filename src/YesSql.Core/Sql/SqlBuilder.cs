@@ -19,6 +19,7 @@ namespace YesSql.Core.Sql
         private int _count;
 
         public Dictionary<string, object> Parameters { get; }
+        public string TablePrefix { get; set; }
 
         public SqlBuilder()
         {
@@ -43,7 +44,7 @@ namespace YesSql.Core.Sql
         }
         public void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
         {
-            _join.Add($"inner join {table} on {onTable}.{onColumn} = {toTable}.{toColumn}");
+            _join.Add($"inner join [{TablePrefix}{table}] on [{TablePrefix}{onTable}].{onColumn} = [{TablePrefix}{toTable}].{toColumn}");
         }
 
         public void Select()
@@ -58,7 +59,12 @@ namespace YesSql.Core.Sql
 
         public void Selector(string table, string column)
         {
-            _selector = table + "." + column;
+            _selector = FormatColumn(table, column);
+        }
+
+        public string FormatColumn(string table, string column)
+        {
+            return "[" + TablePrefix + table + "]." + column;
         }
 
         public void Where(string where)
@@ -99,7 +105,7 @@ namespace YesSql.Core.Sql
             if (_clause == "select")
             {
                 var sb = new StringBuilder();
-                sb.Append($"{_clause} {_selector} from {_table}");
+                sb.Append($"{_clause} {_selector} from [{TablePrefix}{_table}]");
 
                 if (_join.Any())
                 {

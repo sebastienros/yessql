@@ -82,15 +82,16 @@ namespace YesSql.Core.Services
             };
         }
 
-        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session)
+        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix)
         {
             _connection = connection;
             _transaction = transaction;
             _session = session;
             _dialect = SqlDialectFactory.For(connection);
             _sqlBuilder = new SqlBuilder();
+            _sqlBuilder.TablePrefix = tablePrefix;
         }
-        
+
         private void Bind<TIndex>() where TIndex : Index
         {
             if(_bound.Contains(typeof(TIndex)))
@@ -188,7 +189,7 @@ namespace YesSql.Core.Services
                     break;
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)expression;
-                    builder.Append(_bound.Last().Name + "." + memberExpression.Member.Name);
+                    builder.Append(_sqlBuilder.FormatColumn(_bound.Last().Name, memberExpression.Member.Name));
                     break;
                 case ExpressionType.Constant:
                     _lastParameterName = "@p" + _sqlBuilder.Parameters.Count.ToString();
@@ -371,7 +372,7 @@ namespace YesSql.Core.Services
 
             _sqlBuilder.Select();
             _sqlBuilder.Table("Document");
-            _sqlBuilder.WhereAlso("Document.Type = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
+            _sqlBuilder.WhereAlso(_sqlBuilder.FormatColumn("Document", "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
             _sqlBuilder.Parameters["@Type"] = typeof(T).SimplifiedTypeName();
 
             return new Query<T>(this);
@@ -447,7 +448,7 @@ namespace YesSql.Core.Services
                 }
                 else
                 {
-                    _query._sqlBuilder.Selector("Document.*");
+                    _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn("Document", "*"));
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var documents = await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     return await _query._session.GetAsync<T>(documents.Select(x => x.Id));

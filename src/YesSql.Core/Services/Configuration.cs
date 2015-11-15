@@ -12,12 +12,14 @@ namespace YesSql.Core.Services
         {
             IdentifierFactory = new DefaultIdentifierFactory();
             IsolationLevel = IsolationLevel.ReadCommitted;
+            TablePrefix = "";
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
         public IDocumentStorageFactory DocumentStorageFactory { get; set; }
         public IsolationLevel IsolationLevel { get; set; }
         public IConnectionFactory ConnectionFactory { get; set; }
+        public string TablePrefix { get; set; }
     }
 
     public interface IConnectionFactory : IDisposable

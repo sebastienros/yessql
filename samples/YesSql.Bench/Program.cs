@@ -15,6 +15,7 @@ namespace Bench
                 cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True");
                 //cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+                cfg.TablePrefix = "Bench";
             });
 
             _store.CreateSchema().Wait();
@@ -53,6 +54,9 @@ namespace Bench
                 Assert.NotNull(user);
 
                 user = session.QueryAsync<User, UserByName>().Where(x => x.Age == 1 && x.Adult).FirstOrDefault().Result;
+                Assert.NotNull(user);
+
+                user = session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("B")).FirstOrDefault().Result;
                 Assert.NotNull(user);
             }
         }

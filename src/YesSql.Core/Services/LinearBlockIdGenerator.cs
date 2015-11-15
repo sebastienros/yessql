@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using YesSql.Core.Services;
-using YesSql.Core.Sql;
 
 namespace YesSql.Core.Services
 {
@@ -14,17 +9,21 @@ namespace YesSql.Core.Services
     /// </summary>
     public class LinearBlockIdGenerator
     {
+        public static string TableName => "YesSqlIds";
+
         private readonly IConnectionFactory _connectionFactory;
         private readonly int _range;
 
         private long _start;
         private int _increment;
         private long _end;
+        private string _tablePrefix;
 
-        public LinearBlockIdGenerator(IConnectionFactory connectionFactory, int range)
+        public LinearBlockIdGenerator(IConnectionFactory connectionFactory, int range, string tablePrefix)
         {
             _connectionFactory = connectionFactory;
             _range = range;
+            _tablePrefix = tablePrefix;
         }
         
         public long GetNextId()
@@ -65,13 +64,13 @@ namespace YesSql.Core.Services
                         // at the same time
 
                         var selectCommand = connection.CreateCommand();
-                        selectCommand.CommandText = "SELECT nextval FROM YesSqlIds;";
+                        selectCommand.CommandText = $"SELECT nextval FROM [{_tablePrefix}{TableName}];";
                         nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
                         using (var transaction = connection.BeginTransaction())
                         {
                             var updateCommand = connection.CreateCommand();
-                            updateCommand.CommandText = "UPDATE YesSqlIds SET nextval=@new WHERE nextval = @previous;";
+                            updateCommand.CommandText = $"UPDATE [{_tablePrefix}{TableName}] SET nextval=@new WHERE nextval = @previous;";
 
                             var newValue = updateCommand.CreateParameter();
                             newValue.Value = nextval + _range;

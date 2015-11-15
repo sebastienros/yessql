@@ -1,5 +1,4 @@
-﻿using System.Data;
-using YesSql.Core.Indexes;
+﻿using YesSql.Core.Indexes;
 using YesSql.Core.Sql;
 using System.Threading.Tasks;
 using Dapper;
@@ -9,14 +8,16 @@ namespace YesSql.Core.Commands
 {
     public class DeleteDocumentCommand : DocumentCommand
     {
-        private static string deleteCmd = $"delete from Document where [Id] = @Id;";
-        public DeleteDocumentCommand(Document document) : base(document)
+        private readonly string _tablePrefix;
+        public DeleteDocumentCommand(Document document, string tablePrefix) : base(document)
         {
+            _tablePrefix = tablePrefix;
         }
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
             var dialect = SqlDialectFactory.For(connection);
+            var deleteCmd = $"delete from [{_tablePrefix}Document] where [Id] = @Id;";
             await connection.ExecuteAsync(deleteCmd, Document, transaction);
         }
     }

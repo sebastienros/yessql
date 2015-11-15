@@ -15,7 +15,8 @@ namespace YesSql.Core.Commands
 
         public CreateIndexCommand(
             Index index,
-            IEnumerable<int> addedDocumentIds) : base(index)
+            IEnumerable<int> addedDocumentIds,
+            string tablePrefix) : base(index, tablePrefix)
         {
             _addedDocumentIds = addedDocumentIds;
         }
@@ -30,7 +31,7 @@ namespace YesSql.Core.Commands
             {
                 var sql = Inserts(type) + $" {dialect.IdentitySelectString} id";
                 Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
-                await connection.ExecuteAsync($"update {type.Name} set DocumentId = @mapid where Id = @id", new { mapid = mapIndex.GetAddedDocuments().Single().Id, id = Index.Id }, transaction);
+                await connection.ExecuteAsync($"update [{_tablePrefix}{type.Name}] set DocumentId = @mapid where Id = @id", new { mapid = mapIndex.GetAddedDocuments().Single().Id, id = Index.Id }, transaction);
             }
             else
             {
@@ -42,7 +43,7 @@ namespace YesSql.Core.Commands
                 var bridgeTableName = type.Name + "_Document";
                 var columnList = $"[{type.Name}Id], [DocumentId]";
                 var parameterList = $"@Id, @DocumentId";
-                var bridgeSql = $"insert into {bridgeTableName} ({columnList}) values ({parameterList});";
+                var bridgeSql = $"insert into [{_tablePrefix}{bridgeTableName}] ({columnList}) values ({parameterList});";
 
                 await connection.ExecuteAsync(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
             }

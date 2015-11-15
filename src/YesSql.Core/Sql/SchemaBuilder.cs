@@ -10,12 +10,14 @@ namespace YesSql.Core.Sql
     public class SchemaBuilder
     {
         private ISchemaBuilder _builder;
+        private string _tablePrefix;
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
 
-        public SchemaBuilder(DbConnection connection, DbTransaction transaction)
+        public SchemaBuilder(DbConnection connection, DbTransaction transaction, string tablePrefix)
         {
             _builder = SchemaBuilderFactory.For(connection);
+            _tablePrefix = tablePrefix;
             Connection = connection;
             Transaction = transaction;
         }
@@ -28,9 +30,14 @@ namespace YesSql.Core.Sql
             }
         }
 
+        private string FormatTable(string table)
+        {
+            return _tablePrefix + table;
+        }
+
         public SchemaBuilder CreateMapIndexTable(string name, Action<CreateTableCommand> table)
         {
-            var createTable = new CreateTableCommand(name);
+            var createTable = new CreateTableCommand(FormatTable(name));
 
             createTable
                 .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
@@ -45,7 +52,7 @@ namespace YesSql.Core.Sql
 
         public SchemaBuilder CreateReduceIndexTable(string name, Action<CreateTableCommand> table)
         {
-            var createTable = new CreateTableCommand(name);
+            var createTable = new CreateTableCommand(FormatTable(name));
 
             createTable
                 .Column<int>("Id", column => column.Identity().NotNull())
@@ -68,7 +75,7 @@ namespace YesSql.Core.Sql
 
         public SchemaBuilder CreateTable(string name, Action<CreateTableCommand> table)
         {
-            var createTable = new CreateTableCommand(name);
+            var createTable = new CreateTableCommand(FormatTable(name));
             table(createTable);
             Execute(_builder.CreateSql(createTable));
             return this;
@@ -76,7 +83,7 @@ namespace YesSql.Core.Sql
 
         public SchemaBuilder AlterTable(string name, Action<AlterTableCommand> table)
         {
-            var alterTable = new AlterTableCommand(name);
+            var alterTable = new AlterTableCommand(FormatTable(name));
             table(alterTable);
             Execute(_builder.CreateSql(alterTable));
             return this;
@@ -84,49 +91,49 @@ namespace YesSql.Core.Sql
 
         public SchemaBuilder DropTable(string name)
         {
-            var deleteTable = new DropTableCommand(name);
+            var deleteTable = new DropTableCommand(FormatTable(name));
             Execute(_builder.CreateSql(deleteTable));
             return this;
         }
 
         public SchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
         {
-            var command = new CreateForeignKeyCommand(name, srcTable, srcColumns, destTable, destColumns);
+            var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
             Execute(_builder.CreateSql(command));
             return this;
         }
 
         public SchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
         {
-            var command = new CreateForeignKeyCommand(name, srcTable, srcColumns, destTable, destColumns);
+            var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
             Execute(_builder.CreateSql(command));
             return this;
         }
 
         public SchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
         {
-            var command = new CreateForeignKeyCommand(name, srcTable, srcColumns, destTable, destColumns);
+            var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
             Execute(_builder.CreateSql(command));
             return this;
         }
 
         public SchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
         {
-            var command = new CreateForeignKeyCommand(name, srcTable, srcColumns, destTable, destColumns);
+            var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
             Execute(_builder.CreateSql(command));
             return this;
         }
 
         public SchemaBuilder DropForeignKey(string srcTable, string name)
         {
-            var command = new DropForeignKeyCommand(srcTable, name);
+            var command = new DropForeignKeyCommand(FormatTable(srcTable), name);
             Execute(_builder.CreateSql(command));
             return this;
         }
 
         public SchemaBuilder DropForeignKey(string srcModule, string srcTable, string name)
         {
-            var command = new DropForeignKeyCommand(srcTable, name);
+            var command = new DropForeignKeyCommand(FormatTable(srcTable), name);
             Execute(_builder.CreateSql(command));
             return this;
         }
