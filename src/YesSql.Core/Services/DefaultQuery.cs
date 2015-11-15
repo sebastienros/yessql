@@ -233,6 +233,11 @@ namespace YesSql.Core.Services
                 case ExpressionType.NotEqual:
                     ConvertFragment(builder, expression);
                     break;
+                case ExpressionType.Call:
+                    // A method call is something like x.Name.StartsWith("B") thus it is supposed
+                    // to be part of the method mappings
+                    ConvertFragment(builder, expression);
+                    break;
                 case ExpressionType.MemberAccess:
                     ConvertFragment(builder, Expression.Equal(expression, Expression.Constant(true, typeof(bool))));
                     break;
