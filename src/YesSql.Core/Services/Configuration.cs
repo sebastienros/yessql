@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using YesSql.Core.Data;
-using YesSql.Core.Sql;
 using YesSql.Core.Storage;
 
 namespace YesSql.Core.Services
@@ -33,7 +31,7 @@ namespace YesSql.Core.Services
     }
 
     public class DbConnectionFactory<TDbConnection> : IConnectionFactory
-        where TDbConnection : DbConnection
+        where TDbConnection : DbConnection, new()
     {
         private readonly bool _reuseConnection;
         private TDbConnection _connection;
@@ -53,13 +51,17 @@ namespace YesSql.Core.Services
             {
                 if (_connection == null)
                 {
-                    _connection = (TDbConnection) Activator.CreateInstance(typeof(TDbConnection), _connectionString);
+                    _connection = new TDbConnection();
+                    _connection.ConnectionString = _connectionString;
                 }
 
                 return _connection;
             }
 
-            return (TDbConnection)Activator.CreateInstance(typeof(TDbConnection), _connectionString);
+            _connection = new TDbConnection();
+            _connection.ConnectionString = _connectionString;
+
+            return _connection;
         }
 
         public void Dispose()
