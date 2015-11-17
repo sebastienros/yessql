@@ -1,4 +1,6 @@
-﻿namespace YesSql.Core.Storage.InMemory
+﻿using YesSql.Core.Storage;
+
+namespace YesSql.Storage.Prevalence
 {
     public class PrevalenceDocumentStorageFactory : IDocumentStorageFactory
     {

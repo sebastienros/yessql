@@ -1,20 +1,28 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using YesSql.Core.Storage;
 
-namespace YesSql.Core.Storage.InMemory
+namespace YesSql.Storage.InMemory
 {
-    public class PrevalenceDocumentStorage : IDocumentStorage
+    public class InMemoryDocumentStorage : IDocumentStorage
     {
-        public Dictionary<int, object> _documents = new Dictionary<int, object>();
+        public Dictionary<int, string> _documents = new Dictionary<int, string>();
+        private readonly static JsonSerializerSettings _jsonSettings;
 
-        public PrevalenceDocumentStorage()
+        static InMemoryDocumentStorage()
+        {
+            _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
+        }
+
+        public InMemoryDocumentStorage()
         {
         }
 
         public Task SaveAsync<T>(int id, T item)
         {
-            _documents[id] = item;
+            _documents[id] = JsonConvert.SerializeObject(item, _jsonSettings);
 
             return Task.FromResult(0);
         }
@@ -41,7 +49,11 @@ namespace YesSql.Core.Storage.InMemory
             var result = new List<T>();
             foreach (var id in ids)
             {
-                result.Add((T)_documents[id]);
+                string document;
+                if (_documents.TryGetValue(id, out document))
+                {
+                    result.Add(JsonConvert.DeserializeObject<T>(document, _jsonSettings));
+                }
             }
 
             return Task.FromResult((IEnumerable<T>)result);
@@ -57,7 +69,11 @@ namespace YesSql.Core.Storage.InMemory
             var result = new List<object>();
             foreach (var id in ids)
             {
-                result.Add(_documents[id]);
+                string document; ;
+                if (_documents.TryGetValue(id, out document))
+                {
+                    result.Add(JsonConvert.DeserializeObject(document, _jsonSettings));
+                }
             }
 
             return Task.FromResult((IEnumerable<object>)result);

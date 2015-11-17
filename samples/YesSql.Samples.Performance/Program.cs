@@ -3,13 +3,12 @@ using System.Diagnostics;
 using YesSql.Core.Indexes;
 using YesSql.Core.Services;
 using Xunit;
-using YesSql.Core.Storage.InMemory;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using System.Data.SqlClient;
 using System.Data;
-using YesSql.Core.Storage.FileSystem;
+using YesSql.Storage.InMemory;
 
 namespace YesSql.Samples.Performance
 {

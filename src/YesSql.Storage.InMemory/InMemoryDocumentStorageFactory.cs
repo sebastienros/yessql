@@ -1,4 +1,6 @@
-﻿namespace YesSql.Core.Storage.InMemory
+﻿using YesSql.Core.Storage;
+
+namespace YesSql.Storage.InMemory
 {
     public class InMemoryDocumentStorageFactory : IDocumentStorageFactory
     {

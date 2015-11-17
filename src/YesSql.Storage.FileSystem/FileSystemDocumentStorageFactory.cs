@@ -1,4 +1,6 @@
-﻿namespace YesSql.Core.Storage.FileSystem
+﻿using YesSql.Core.Storage;
+
+namespace YesSql.Storage.FileSystem
 {
     public class FileSystemDocumentStorageFactory : IDocumentStorageFactory
     {

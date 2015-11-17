@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace YesSql.Core.Storage.InMemory
+﻿namespace YesSql.Storage.InMemory
 {
     /// <summary>
     /// Represents a document as stored with an <see cref="InMemoryDocumentStorage"/> instance

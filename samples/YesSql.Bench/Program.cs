@@ -2,7 +2,7 @@
 using Xunit;
 using YesSql.Core.Indexes;
 using YesSql.Core.Services;
-using YesSql.Core.Storage.InMemory;
+using YesSql.Storage.LightningDB;
 
 namespace Bench
 {
@@ -14,7 +14,7 @@ namespace Bench
             {
                 cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True");
                 //cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
-                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory("c:\\temp\\db");
                 cfg.TablePrefix = "Bench";
             });
 

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Core.Services;
-using YesSql.Core.Storage.InMemory;
+using YesSql.Storage.InMemory;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 using Microsoft.Data.Sqlite;

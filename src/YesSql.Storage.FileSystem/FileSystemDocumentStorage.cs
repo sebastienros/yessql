@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using YesSql.Core.Storage;
 
-namespace YesSql.Core.Storage.FileSystem
+namespace YesSql.Storage.FileSystem
 {
     public class FileSystemDocumentStorage : IDocumentStorage
     {
