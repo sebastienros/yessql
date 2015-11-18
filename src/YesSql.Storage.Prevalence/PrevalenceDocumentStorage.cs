@@ -13,23 +13,34 @@ namespace YesSql.Storage.Prevalence
         {
         }
 
-        public Task SaveAsync<T>(int id, T item)
+        public Task CreateAsync<T>(int[] ids, T[] items)
         {
-            _documents[id] = item;
+            for (var i = 0; i < ids.Length; i++)
+            {
+                _documents[ids[i]] = items[i];
+            }
 
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
-        
-        public Task DeleteAsync(int documentId)
+
+        public Task UpdateAsync<T>(int[] ids, T[] items)
         {
-            if (documentId == 0)
+            return CreateAsync(ids, items);
+        }
+
+        public Task DeleteAsync(int[] ids)
+        {
+            if (ids == null)
             {
                 throw new ArgumentException("Can't delete a document with a null id");
             }
 
-            _documents.Remove(documentId);
+            for (var i = 0; i < ids.Length; i++)
+            {
+                _documents.Remove(ids[i]);
+            }
 
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
 
         public Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids)

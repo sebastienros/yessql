@@ -9,7 +9,7 @@ using YesSql.Core.Storage;
 
 namespace YesSql.Storage.LightningDB
 {
-    public class LightningDocumentStorage : IDocumentStorage
+    public class LightningDocumentStorage : IDocumentStorage, IDisposable
     {
         public Dictionary<int, string> _documents = new Dictionary<int, string>();
         private readonly static JsonSerializerSettings _jsonSettings;
@@ -17,37 +17,53 @@ namespace YesSql.Storage.LightningDB
 
         static LightningDocumentStorage()
         {
-            _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
+            _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
         }
-        
+
         public LightningDocumentStorage(LightningEnvironment environment)
         {
             _env = environment;
         }
 
-        public Task SaveAsync<T>(int id, T item)
+        public Task CreateAsync<T>(int[] ids, T[] items)
         {
-            var content = JsonConvert.SerializeObject(item, _jsonSettings);
-
             using (var tx = _env.BeginTransaction())
-            using (var db = tx.OpenDatabase(null, new DatabaseConfiguration { Flags = DatabaseOpenFlags.Create }))
             {
-                tx.Put(db, Encoding.UTF8.GetBytes(id.ToString()), Encoding.UTF8.GetBytes(content));
-                tx.Commit();
+                using (var db = tx.OpenDatabase())
+                {
+                    for (int i = 0; i < ids.Length; i++)
+                    {
+                        var content = JsonConvert.SerializeObject(items[i], _jsonSettings);
+                        tx.Put(db, Encoding.UTF8.GetBytes(ids[i].ToString()), Encoding.UTF8.GetBytes(content));
+                    }
+
+                    tx.Commit();
+                }
             }
 
             return Task.CompletedTask;
         }
-        
-        public Task DeleteAsync(int documentId)
+
+        public Task UpdateAsync<T>(int[] ids, T[] items)
+        {
+            return CreateAsync(ids, items);
+        }
+
+        public Task DeleteAsync(int[] ids)
         {
             using (var tx = _env.BeginTransaction())
-            using (var db = tx.OpenDatabase(null, new DatabaseConfiguration { Flags = DatabaseOpenFlags.Create }))
             {
-                tx.Delete(db, Encoding.UTF8.GetBytes(documentId.ToString()));
-                tx.Commit();
-            }
+                using (var db = tx.OpenDatabase())
+                {
+                    for (int i = 0; i < ids.Length; i++)
+                    {
+                        tx.Delete(db, Encoding.UTF8.GetBytes(ids[i].ToString()));
+                    }
 
+                    tx.Commit();
+                }
+            }
+            
             return Task.CompletedTask;
         }
 
@@ -59,26 +75,33 @@ namespace YesSql.Storage.LightningDB
             }
 
             var result = new List<T>();
-            foreach (var id in ids)
+            using (var tx = _env.BeginTransaction())
             {
-                using (var tx = _env.BeginTransaction(TransactionBeginFlags.ReadOnly))
+                using (var db = tx.OpenDatabase())
                 {
-                    var db = tx.OpenDatabase();
-                    var bytes = tx.Get(db, Encoding.UTF8.GetBytes(id.ToString()));
-
-                    using (var binaryStream = new MemoryStream(bytes))
+                    foreach (var id in ids)
                     {
-                        StringBuilder sb = new StringBuilder();
+                        var bytes = tx.Get(db, Encoding.UTF8.GetBytes(id.ToString()));
 
-                        byte[] buffer = new byte[0x1000];
-                        int numRead;
-                        while ((numRead = await binaryStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                        if (bytes == null || bytes.Length == 0)
                         {
-                            string text = Encoding.UTF8.GetString(buffer, 0, numRead);
-                            sb.Append(text);
+                            continue;
                         }
 
-                        result.Add(JsonConvert.DeserializeObject<T>(sb.ToString(), _jsonSettings));
+                        using (var binaryStream = new MemoryStream(bytes))
+                        {
+                            StringBuilder sb = new StringBuilder();
+
+                            byte[] buffer = new byte[0x1000];
+                            int numRead;
+                            while ((numRead = await binaryStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                            {
+                                string text = Encoding.UTF8.GetString(buffer, 0, numRead);
+                                sb.Append(text);
+                            }
+
+                            result.Add(JsonConvert.DeserializeObject<T>(sb.ToString(), _jsonSettings));
+                        }
                     }
                 }
             }
@@ -91,5 +114,8 @@ namespace YesSql.Storage.LightningDB
             return await GetAsync<object>(ids);
         }
         
+        public void Dispose()
+        {
+        }
     }
 }

@@ -1,4 +1,6 @@
-﻿using YesSql.Core.Storage;
+﻿using System;
+using System.Threading.Tasks;
+using YesSql.Core.Storage;
 
 namespace YesSql.Storage.FileSystem
 {
@@ -19,6 +21,11 @@ namespace YesSql.Storage.FileSystem
             }
 
             return _storage;
+        }
+
+        public Task InitializeAsync()
+        {
+            return Task.CompletedTask;
         }
     }
 }

@@ -278,6 +278,44 @@ namespace YesSql.Core.Sql
 
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
+            if (length.HasValue)
+            {
+                if (length.Value > 4000)
+                {
+                    if (dbType == DbType.String)
+                    {
+                        return "NTEXT";
+                    }
+
+                    if (dbType == DbType.AnsiString)
+                    {
+                        return "TEXT";
+                    }
+
+                    if (dbType == DbType.Binary)
+                    {
+                        return "BLOB";
+                    }
+                }
+                else
+                {
+                    if (dbType == DbType.String)
+                    {
+                        return $"NVARCHAR({length})";
+                    }
+
+                    if (dbType == DbType.AnsiString)
+                    {
+                        return $"VARCHAR({length})";
+                    }
+
+                    if (dbType == DbType.Binary)
+                    {
+                        return $"VARBINARY({length})";
+                    }
+                }
+            }
+
             string value;
             if (ColumnTypes.TryGetValue(dbType, out value))
             {

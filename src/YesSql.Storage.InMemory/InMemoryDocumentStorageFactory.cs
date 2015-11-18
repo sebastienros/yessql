@@ -1,4 +1,5 @@
-﻿using YesSql.Core.Storage;
+﻿using System.Threading.Tasks;
+using YesSql.Core.Storage;
 
 namespace YesSql.Storage.InMemory
 {
@@ -15,5 +16,11 @@ namespace YesSql.Storage.InMemory
 
             return _storage;
         }
+
+        public Task InitializeAsync()
+        {
+            return Task.CompletedTask;
+        }
+
     }
 }

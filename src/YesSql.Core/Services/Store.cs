@@ -41,7 +41,7 @@ namespace YesSql.Core.Services
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
         }
 
-        public async Task CreateSchema()
+        public async Task InitializeAsync()
         {
             await ExecuteMigrationAsync(builder =>
             {
@@ -68,6 +68,8 @@ namespace YesSql.Core.Services
 
                 command.ExecuteNonQuery();
             });
+
+            await Configuration.DocumentStorageFactory.InitializeAsync();
         }
 
         public async Task ExecuteMigrationAsync(Action<SchemaBuilder> migration)

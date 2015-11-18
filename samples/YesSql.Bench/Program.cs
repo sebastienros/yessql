@@ -14,11 +14,11 @@ namespace Bench
             {
                 cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True");
                 //cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
-                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory("c:\\temp\\db");
+                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory("db");
                 cfg.TablePrefix = "Bench";
             });
 
-            _store.CreateSchema().Wait();
+            _store.InitializeAsync().Wait();
 
             _store.ExecuteMigrationAsync(x => x.CreateMapIndexTable(nameof(UserByName), c => c
                 .Column<string>("Name")

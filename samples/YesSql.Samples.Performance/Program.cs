@@ -9,6 +9,13 @@ using Microsoft.Data.Sqlite;
 using System.Data.SqlClient;
 using System.Data;
 using YesSql.Storage.InMemory;
+using YesSql.Storage.FileSystem;
+using YesSql.Core.Storage;
+using System.Threading;
+using YesSql.Storage.LightningDB;
+using System.Linq;
+using System.Collections.Generic;
+using YesSql.Storage.Sql;
 
 namespace YesSql.Samples.Performance
 {
@@ -474,6 +481,33 @@ namespace YesSql.Samples.Performance
 
         public void Main()
         {
+            //using (var tempFolder = new TemporaryFolder())
+            //{
+            //    StoreUsers(new FileSystemDocumentStorageFactory(tempFolder.Folder)).Wait();
+            //}
+
+            //StoreUsers(new InMemoryDocumentStorageFactory()).Wait();
+
+            //using (var tempFolder = new TemporaryFolder())
+            //{
+            //    Console.WriteLine(tempFolder);
+
+            //    using (var factory = new LightningDocumentStorageFactory(tempFolder.Folder))
+            //    {
+            //        StoreUsers(factory).Wait();
+            //    }
+            //}
+
+            var sqlFactory = new SqlDocumentStorageFactory(new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"));
+            sqlFactory.InitializeAsync().Wait();
+
+            using (var sqlStorage = new SqlDocumentStorage(sqlFactory))
+            {
+                StoreUsers(sqlFactory).Wait();
+            }
+
+            return;
+
             var runMigrations = true;
 
             var store = new Store(cfg =>
@@ -483,9 +517,6 @@ namespace YesSql.Samples.Performance
                 {
                     File.Delete(dbFileName);
                 }
-
-                var tempPath = Path.GetTempPath();
-                Console.WriteLine("Temp path: {0}", tempPath);
 
                 cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True");
                 //cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared");
@@ -497,7 +528,7 @@ namespace YesSql.Samples.Performance
 
             if (runMigrations)
             {
-                store.CreateSchema().Wait();
+                store.InitializeAsync().Wait();
 
                 store.ExecuteMigrationAsync(builder => builder
                     .CreateMapIndexTable("UserByName", table => table
@@ -653,6 +684,68 @@ namespace YesSql.Samples.Performance
             Console.WriteLine("\nYesSql Wrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", Names.Length, sp.ElapsedMilliseconds,
                 Names.Length / (double)sp.ElapsedMilliseconds);
         }
+
+        private static async Task StoreUsers(IDocumentStorageFactory storageFactory)
+        {
+            int batch = 0, batchSize = 128, i=0;
+            var session = storageFactory.CreateDocumentStorage();
+            var users = new List<User>();
+            var ids = new List<int>();
+
+            var sp = Stopwatch.StartNew();
+            foreach (var name in Names)
+            {
+                batch++; i++;
+
+                users.Add(new User
+                {
+                    Email = name + "@" + name + ".name",
+                    Name = name
+                });
+
+                ids.Add(i);
+
+                if (batch % batchSize == 0)
+                {
+                    await session.CreateAsync(ids.ToArray(), users.ToArray());
+
+                    ids.Clear();
+                    users.Clear();
+
+                    (session as IDisposable)?.Dispose();
+                    session = storageFactory.CreateDocumentStorage();
+                }
+            }
+
+            await session.CreateAsync(ids.ToArray(), users.ToArray());
+            (session as IDisposable)?.Dispose();
+
+            Console.WriteLine("\n{3} Wrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds,
+                Names.Length / (double)sp.ElapsedMilliseconds, storageFactory.GetType().Name);
+
+            session = storageFactory.CreateDocumentStorage();
+            sp.Restart();
+
+            batch = 0; batchSize = 128; i = 0;
+            foreach (var name in Names)
+            {
+                batch++; i++;
+                var user = await session.GetAsync<User>(i);
+
+                Assert.NotNull(user);
+
+                if (batch % batchSize == 0)
+                {
+                    (session as IDisposable)?.Dispose();
+                    session = storageFactory.CreateDocumentStorage();
+                }
+            }
+
+            (session as IDisposable)?.Dispose();
+
+            Console.WriteLine("\n{3} Read {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds,
+                Names.Length / (double)sp.ElapsedMilliseconds, storageFactory.GetType().Name);
+        }
     }
 
     public class UserByName : MapIndex
@@ -674,5 +767,34 @@ namespace YesSql.Samples.Performance
         //public int Id { get; set; }
         public string Email { get; set; }
         public string Name { get; set; }
+    }
+
+    public class TemporaryFolder : IDisposable
+    {
+        private readonly bool _deleteOnDispose;
+
+        public TemporaryFolder(bool deleteOnDispose = true)
+        {
+            Folder = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            _deleteOnDispose = deleteOnDispose;
+        }
+
+        public string Folder { get; }
+
+        public void Dispose()
+        {
+            if (_deleteOnDispose)
+            {
+                if (Directory.Exists(Folder))
+                {
+                    Directory.Delete(Folder, true);
+                }
+            }
+        }
+
+        public override string ToString()
+        {
+            return Folder;
+        }
     }
 }

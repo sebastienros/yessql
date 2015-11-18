@@ -11,14 +11,19 @@ namespace YesSql.Core.Storage
     public interface IDocumentStorage
     {
         /// <summary>
-        /// Saves a document or its modifications to the store.
+        /// Creates a document in the store.
         /// </summary>
-        Task SaveAsync<T>(int id, T item);
+        Task CreateAsync<T>(int[] ids, T[] items);
+
+        /// <summary>
+        /// Updates a document in the store.
+        /// </summary>
+        Task UpdateAsync<T>(int[] ids, T[] items);
 
         /// <summary>
         /// Deletes a document from the store.
         /// </summary>
-        Task DeleteAsync(int id);
+        Task DeleteAsync(int[] ids);
 
         /// <summary>
         /// Loads a document by its id
@@ -37,12 +42,38 @@ namespace YesSql.Core.Storage
     {
         public static async Task<object> GetAsync(this IDocumentStorage storage, int id)
         {
-            return (await storage.GetAsync(new[] { id })).FirstOrDefault();
+            return (await storage.GetAsync(new[] { id }))?.FirstOrDefault();
         }
 
         public static async Task<T> GetAsync<T>(this IDocumentStorage storage, int id) where T : class
         {
-            return (await storage.GetAsync<T>(new[] { id })).FirstOrDefault();
+            return (await storage.GetAsync<T>(new[] { id }))?.FirstOrDefault();
         }
+
+        /// <summary>
+        /// Updates a document in to the store.
+        /// </summary>
+        public static Task CreateAsync<T>(this IDocumentStorage storage, int id, T item)
+        {
+            return storage.CreateAsync<T>(new int[] { id }, new T[] { item });
+        }
+
+        /// <summary>
+        /// Updates a document in to the store.
+        /// </summary>
+        public static Task UpdateAsync<T>(this IDocumentStorage storage, int id, T item)
+        {
+            return storage.UpdateAsync<T>(new int[] { id }, new T[] { item });
+        }
+
+        /// <summary>
+        /// Deletes a document from the store.
+        /// </summary>
+        public static Task DeleteAsync(this IDocumentStorage storage, int id)
+        {
+            return storage.DeleteAsync(new int[] { id });
+        }
+
+
     }
 }

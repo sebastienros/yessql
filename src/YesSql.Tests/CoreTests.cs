@@ -22,7 +22,8 @@ namespace YesSql.Tests
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
                 cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
             });
-            _store.CreateSchema().Wait();
+
+            _store.InitializeAsync().Wait();
         }
 
         public void Dispose()

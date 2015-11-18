@@ -16,7 +16,7 @@ namespace YesSql.Storage.FileSystem
 
         static FileSystemDocumentStorage()
         {
-            _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
+            _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
         }
 
         public void Clear()
@@ -38,19 +38,30 @@ namespace YesSql.Storage.FileSystem
             return Path.Combine(_root, id.ToString()) + ".json";
         }
 
-        public async Task SaveAsync<T>(int id, T item)
+        public async Task CreateAsync<T>(int[] ids, T[] items)
         {
-            var fileName = GetFilePath(id);
-            var content = JsonConvert.SerializeObject(item, _jsonSettings);
-            await WriteTextAsync(fileName, content);
+            for (var i = 0; i < ids.Length; i++)
+            {
+                var fileName = GetFilePath(ids[i]);
+                var content = JsonConvert.SerializeObject(items[i], _jsonSettings);
+                await WriteTextAsync(fileName, content);
+            }
         }
-        
-        public Task DeleteAsync(int documentId)
-        {
-            var fileName = GetFilePath(documentId);
-            File.Delete(fileName);
 
-            return Task.FromResult(0);
+        public Task UpdateAsync<T>(int[] ids, T[] items)
+        {
+            return CreateAsync(ids, items);
+        }
+
+        public Task DeleteAsync(int[] ids)
+        {
+            for (var i = 0; i < ids.Length; i++)
+            {
+                var fileName = GetFilePath(ids[i]);
+                File.Delete(fileName);
+            }
+
+            return Task.CompletedTask;
         }
 
         public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids)

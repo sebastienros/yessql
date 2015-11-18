@@ -106,7 +106,7 @@ namespace YesSql.Core.Services
                         MapNew(oldDoc, entity);
 
                         // Save entity
-                        await _storage.SaveAsync(id, entity);
+                        await _storage.UpdateAsync(id, entity);
                     }
                 }
                 else
@@ -128,7 +128,7 @@ namespace YesSql.Core.Services
                     }
 
                     await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction);
-                    await _storage.SaveAsync(doc.Id, entity);
+                    await _storage.CreateAsync(doc.Id, entity);
                     
                     // Track the newly created object
                     _identityMap.Add(doc.Id, entity);

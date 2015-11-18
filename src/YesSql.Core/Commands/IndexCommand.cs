@@ -81,7 +81,7 @@ namespace YesSql.Core.Commands
             return result;
         }
 
-        protected static string Updates(Type type)
+        protected string Updates(Type type)
         {
             string result;
             if (UpdatesList.TryGetValue(type.TypeHandle, out result))
@@ -100,7 +100,7 @@ namespace YesSql.Core.Commands
                     values.Append(", ");
             }
 
-            UpdatesList[type.TypeHandle] = result = $"update {type.Name} set {values} where Id = @Id;";
+            UpdatesList[type.TypeHandle] = result = $"update [{_tablePrefix}{type.Name}] set {values} where Id = @Id;";
             return result;
         }
 
