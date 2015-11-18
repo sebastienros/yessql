@@ -1,11 +1,11 @@
 ﻿{
-  "version": "1.0.0-alpha-1",
+  "version": "1.0.0-alpha-1001",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
   "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt",
   "dependencies": {
-    "YesSql.Core": "2.0.0-alpha"
+    "YesSql.Core": "2.0.0-alpha-9001"
   },
   "frameworks": {
     "dnx46": { },
