@@ -4,7 +4,7 @@
     "Microsoft.Data.Sqlite": "1.0.0-*",
     "Newtonsoft.Json": "7.0.1",
     "YesSql.Core": "2.0.0-alpha",
-    "YesSql.Storage.InMemory": "1.0.0-alpha-1001",
+    "YesSql.Storage.InMemory": "1.0.0-alpha-1002",
     "xunit.runner.dnx" : "2.1.0-rc1-build204",
     "xunit": "2.1.0"
   },
