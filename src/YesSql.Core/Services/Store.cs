@@ -72,7 +72,7 @@ namespace YesSql.Core.Services
             await Configuration.DocumentStorageFactory.InitializeAsync();
         }
 
-        public async Task ExecuteMigrationAsync(Action<SchemaBuilder> migration)
+        public async Task ExecuteMigrationAsync(Action<SchemaBuilder> migration, bool throwException = true)
         {
             var connection = Configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
@@ -83,8 +83,15 @@ namespace YesSql.Core.Services
                     var schemaBuilder = new SchemaBuilder(connection, transaction, Configuration.TablePrefix);
 
                     migration(schemaBuilder);
-                    
+
                     transaction.Commit();
+                }
+            }
+            catch
+            {
+                if(throwException)
+                {
+                    throw;
                 }
             }
             finally
@@ -92,6 +99,11 @@ namespace YesSql.Core.Services
                 if (Configuration.ConnectionFactory.Disposable)
                 {
                     connection.Dispose();
+                }
+
+                if(connection.State == System.Data.ConnectionState.Open)
+                {
+                    connection.Close();
                 }
             }
         }

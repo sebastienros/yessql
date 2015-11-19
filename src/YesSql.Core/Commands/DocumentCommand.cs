@@ -1,5 +1,4 @@
-﻿using System.Data;
-using System.Data.Common;
+﻿using System.Data.Common;
 using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
@@ -17,6 +16,9 @@ namespace YesSql.Core.Commands
         {
             typeof(Document).GetProperty("Id")
         };
+
+        public abstract int ExecutionOrder { get; }
+
         public DocumentCommand(Document document)
         {
             Document = document;

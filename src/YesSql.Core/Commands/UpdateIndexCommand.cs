@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,6 +12,8 @@ namespace YesSql.Core.Commands
     {
         private readonly IEnumerable<int> _addedDocumentIds;
         private readonly IEnumerable<int> _deletedDocumentIds;
+
+        public override int ExecutionOrder { get; } = 3;
 
         public UpdateIndexCommand(
             Index index, 

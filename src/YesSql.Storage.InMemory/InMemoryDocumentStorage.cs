@@ -13,7 +13,7 @@ namespace YesSql.Storage.InMemory
 
         static InMemoryDocumentStorage()
         {
-            _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
+            _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Objects };
         }
 
         public InMemoryDocumentStorage()

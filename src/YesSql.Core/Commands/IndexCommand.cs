@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
@@ -24,6 +22,8 @@ namespace YesSql.Core.Commands
         private static PropertyInfo IndexIdPropertyInfo = typeof(Index).GetProperty("Id");
 
         protected static PropertyInfo[] KeysProperties = new[] { typeof(Index).GetProperty("Id") };
+
+        public abstract int ExecutionOrder { get; }
 
         public IndexCommand(Index index, string tablePrefix)
         {

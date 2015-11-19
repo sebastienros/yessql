@@ -2,17 +2,16 @@
   "version": "1.0.0-*",
   "dependencies": {
     "Microsoft.Data.Sqlite": "1.0.0-*",
-    "Newtonsoft.Json": "7.0.1",
     "YesSql.Core": "2.0.0-alpha",
     "YesSql.Storage.InMemory": "1.0.0-alpha-1002",
-    "xunit.runner.dnx" : "2.1.0-rc1-build204",
-    "xunit": "2.1.0"
+    "xunit.runner.dnx": "2.1.0-rc1-build204",
+    "xunit": "2.1.0-rc1-build3168",
+    "System.Runtime.Serialization.Primitives": "4.0.11-beta-23409"
   },
   "commands": {
     "test": "xunit.runner.dnx"
   },
   "frameworks": {
-    "dnx46": {},
     "dnxcore50": {
       "dependencies": {
         "System.Reflection.Extensions": "4.0.0"

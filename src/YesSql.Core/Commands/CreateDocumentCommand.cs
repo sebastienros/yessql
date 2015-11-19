@@ -1,5 +1,4 @@
-﻿using System.Data;
-using YesSql.Core.Indexes;
+﻿using YesSql.Core.Indexes;
 using YesSql.Core.Sql;
 using System.Threading.Tasks;
 using Dapper;
@@ -11,6 +10,8 @@ namespace YesSql.Core.Commands
     {
         private string _tablePrefix;
 
+        public override int ExecutionOrder { get; } = 0;
+        
         public CreateDocumentCommand(Document document, string tablePrefix) : base(document)
         {
             _tablePrefix = tablePrefix;

@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using System;
-using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 
@@ -11,6 +10,8 @@ namespace YesSql.Core.Commands
         private readonly int _documentId;
         private readonly Type _indexType;
         private readonly string _tablePrefix;
+
+        public int ExecutionOrder { get; } = 1;
 
         public DeleteMapIndexCommand(Type indexType, int documentId, string tablePrefix)
         {

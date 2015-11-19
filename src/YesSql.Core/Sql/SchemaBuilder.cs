@@ -73,6 +73,27 @@ namespace YesSql.Core.Sql
             return this;
         }
 
+        public SchemaBuilder DropReduceIndexTable(string name)
+        {
+            var bridgeTableName = name + "_Document";
+
+            DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_Id");
+            DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "DocumentId");
+
+            DropTable(bridgeTableName);
+            DropTable(name);
+
+            return this;
+        }
+
+        public SchemaBuilder DropMapIndexTable(string name)
+        {
+            DropForeignKey(name, "FK_" + name);
+            DropTable(name);
+
+            return this;
+        }
+
         public SchemaBuilder CreateTable(string name, Action<CreateTableCommand> table)
         {
             var createTable = new CreateTableCommand(FormatTable(name));
@@ -130,13 +151,6 @@ namespace YesSql.Core.Sql
             Execute(_builder.CreateSql(command));
             return this;
         }
-
-        public SchemaBuilder DropForeignKey(string srcModule, string srcTable, string name)
-        {
-            var command = new DropForeignKeyCommand(FormatTable(srcTable), name);
-            Execute(_builder.CreateSql(command));
-            return this;
-        }
-
+        
     }
 }

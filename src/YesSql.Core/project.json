@@ -1,16 +1,15 @@
 {
-  "version": "2.0.0-alpha-9002",
+  "version": "2.0.0-alpha-9003",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
   "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt",
   "dependencies": {
-    "Newtonsoft.Json": "7.0.1",
-    "Dapper": "1.50.0-beta1"
+    "Newtonsoft.Json": "8.0.1-beta2",
+    "Dapper": "1.50.0-beta3"
   },
   "frameworks": {
-    "dnx451": {},
-    "dnxcore50": {
+    "dotnet5.4": {
       "dependencies": {
         "System.Reflection.Extensions": "4.0.1-beta-23504"        
       }

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -37,7 +38,7 @@ namespace YesSql.Core.Services
 
         private Store _store;
         protected bool _cancel;
-                
+
         public Session(IDocumentStorage storage, bool trackChanges, Store store)
         {
             _storage = storage;
@@ -175,13 +176,15 @@ namespace YesSql.Core.Services
                 if (doc != null)
                 {
                     await _storage.DeleteAsync(id);
-                    _commands.Add(new DeleteDocumentCommand(doc, _store.Configuration.TablePrefix));
 
                     // Untrack the deleted object
                     _identityMap.Remove(id, obj);
 
                     // Update impacted indexes
                     MapDeleted(doc, obj);
+
+                    // The command needs to come after any index deletiong because of the database constraints
+                    _commands.Add(new DeleteDocumentCommand(doc, _store.Configuration.TablePrefix));
                 }
             }
         }
@@ -326,7 +329,7 @@ namespace YesSql.Core.Services
             // compute all reduce indexes
             await ReduceAsync();
 
-            foreach(var command in _commands)
+            foreach(var command in _commands.OrderBy(x => x.ExecutionOrder))
             {
                 await command.ExecuteAsync(_connection, _transaction);
             }
@@ -465,10 +468,10 @@ namespace YesSql.Core.Services
 
         public async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey)
         {
-            var name = descriptor.IndexType.Name;
+            var name = _store.Configuration.TablePrefix + descriptor.IndexType.Name;
             var sql = $"select * from {name} where {descriptor.GroupKey.Name} = @currentKey";
 
-            var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey });
+            var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);
             return index.FirstOrDefault() as ReduceIndex;
         }
 

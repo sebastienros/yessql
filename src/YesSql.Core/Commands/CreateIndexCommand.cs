@@ -1,5 +1,4 @@
-﻿using System.Data;
-using YesSql.Core.Indexes;
+﻿using YesSql.Core.Indexes;
 using System.Linq;
 using YesSql.Core.Sql;
 using Dapper;
@@ -12,6 +11,8 @@ namespace YesSql.Core.Commands
     public class CreateIndexCommand : IndexCommand
     {
         private readonly IEnumerable<int> _addedDocumentIds;
+
+        public override int ExecutionOrder { get; } = 2;
 
         public CreateIndexCommand(
             Index index,

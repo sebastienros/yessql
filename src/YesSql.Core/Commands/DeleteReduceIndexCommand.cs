@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
@@ -12,6 +11,8 @@ namespace YesSql.Core.Commands
         {
         }
 
+        public override int ExecutionOrder { get; } = 1;
+        
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
             var name = Index.GetType().Name;
