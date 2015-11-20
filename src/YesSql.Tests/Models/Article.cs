@@ -6,6 +6,6 @@ namespace YesSql.Tests.Models
     {
         public int Id { get; set; }
         public DateTime PublishedUtc { get; set; }
-        public string Body { get; set; }
+        public bool IsPublished { get; set; }
     }
 }

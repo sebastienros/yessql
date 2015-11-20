@@ -481,22 +481,22 @@ namespace YesSql.Samples.Performance
 
         public void Main()
         {
-            //using (var tempFolder = new TemporaryFolder())
-            //{
-            //    StoreUsers(new FileSystemDocumentStorageFactory(tempFolder.Folder)).Wait();
-            //}
+            using (var tempFolder = new TemporaryFolder())
+            {
+                StoreUsers(new FileSystemDocumentStorageFactory(tempFolder.Folder)).Wait();
+            }
 
-            //StoreUsers(new InMemoryDocumentStorageFactory()).Wait();
+            StoreUsers(new InMemoryDocumentStorageFactory()).Wait();
 
-            //using (var tempFolder = new TemporaryFolder())
-            //{
-            //    Console.WriteLine(tempFolder);
+            using (var tempFolder = new TemporaryFolder())
+            {
+                Console.WriteLine(tempFolder);
 
-            //    using (var factory = new LightningDocumentStorageFactory(tempFolder.Folder))
-            //    {
-            //        StoreUsers(factory).Wait();
-            //    }
-            //}
+                using (var factory = new LightningDocumentStorageFactory(tempFolder.Folder))
+                {
+                    StoreUsers(factory).Wait();
+                }
+            }
 
             var sqlFactory = new SqlDocumentStorageFactory(new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"));
             sqlFactory.InitializeAsync().Wait();
@@ -689,35 +689,35 @@ namespace YesSql.Samples.Performance
         {
             int batch = 0, batchSize = 128, i=0;
             var session = storageFactory.CreateDocumentStorage();
-            var users = new List<User>();
-            var ids = new List<int>();
+            var identities = new List<IdentityDocument>();
 
             var sp = Stopwatch.StartNew();
             foreach (var name in Names)
             {
                 batch++; i++;
 
-                users.Add(new User
-                {
-                    Email = name + "@" + name + ".name",
-                    Name = name
-                });
-
-                ids.Add(i);
+                identities.Add(
+                    new IdentityDocument(
+                        id: i,  
+                        entity: new User
+                        {
+                            Email = name + "@" + name + ".name",
+                            Name = name
+                        }
+                    ));
 
                 if (batch % batchSize == 0)
                 {
-                    await session.CreateAsync(ids.ToArray(), users.ToArray());
+                    await session.CreateAsync(identities.ToArray());
 
-                    ids.Clear();
-                    users.Clear();
+                    identities.Clear();
 
                     (session as IDisposable)?.Dispose();
                     session = storageFactory.CreateDocumentStorage();
                 }
             }
 
-            await session.CreateAsync(ids.ToArray(), users.ToArray());
+            await session.CreateAsync(identities.ToArray());
             (session as IDisposable)?.Dispose();
 
             Console.WriteLine("\n{3} Wrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds,

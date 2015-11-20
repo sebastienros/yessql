@@ -46,6 +46,10 @@ namespace YesSql.Tests
             ).Wait();
 
             _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+                .DropMapIndexTable(nameof(PublishedArticle)), false
+            ).Wait();
+
+            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
                 .DropTable("Document"), false
             ).Wait();
 
@@ -70,6 +74,11 @@ namespace YesSql.Tests
             _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
                 .CreateMapIndexTable(nameof(PersonByName), column => column
                     .Column<string>(nameof(PersonByName.Name))
+                )
+            ).Wait();
+
+            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+                .CreateMapIndexTable(nameof(PublishedArticle), column => { }
                 )
             ).Wait();
         }
@@ -1104,6 +1113,30 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(20, (await session.QueryAsync().For<Circle>().FirstOrDefault()).Radius);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldMapWithPredicate()
+        {
+            _store.RegisterIndexes<PublishedArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Article { IsPublished = true });
+                session.Save(new Article { IsPublished = true });
+                session.Save(new Article { IsPublished = true });
+                session.Save(new Article { IsPublished = true });
+                session.Save(new Article { IsPublished = false });
+                session.Save(new Article { IsPublished = false });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(6, await session.QueryAsync().For<Article>().Count());
+                Assert.Equal(4, await session.QueryAsync().For<Article>().With<PublishedArticle>().Count());
+
+                Assert.Equal(4, await session.QueryAsync<Article, PublishedArticle>().Count());
             }
         }
     }

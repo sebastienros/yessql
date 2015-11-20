@@ -33,38 +33,38 @@ namespace YesSql.Storage.FileSystem
             }
         }
 
-        private string GetFilePath(int id)
+        private string GetFilePath(IIdentityEntity document)
         {
-            return Path.Combine(_root, id.ToString()) + ".json";
+            return Path.Combine(_root, document.Id.ToString()) + ".json";
         }
 
-        public async Task CreateAsync<T>(int[] ids, T[] items)
+        public async Task CreateAsync(params IIdentityEntity[] documents)
         {
-            for (var i = 0; i < ids.Length; i++)
+            foreach (var document in documents)
             {
-                var fileName = GetFilePath(ids[i]);
-                var content = JsonConvert.SerializeObject(items[i], _jsonSettings);
+                var fileName = GetFilePath(document);
+                var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
                 await WriteTextAsync(fileName, content);
             }
         }
 
-        public Task UpdateAsync<T>(int[] ids, T[] items)
+        public Task UpdateAsync(params IIdentityEntity[] documents)
         {
-            return CreateAsync(ids, items);
+            return CreateAsync(documents);
         }
 
-        public Task DeleteAsync(int[] ids)
+        public Task DeleteAsync(params IIdentityEntity[] documents)
         {
-            for (var i = 0; i < ids.Length; i++)
+            foreach (var document in documents)
             {
-                var fileName = GetFilePath(ids[i]);
+                var fileName = GetFilePath(document);
                 File.Delete(fileName);
             }
 
             return Task.CompletedTask;
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids)
+        public async Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
         {
             if (ids == null)
             {
@@ -74,7 +74,7 @@ namespace YesSql.Storage.FileSystem
             var result = new List<T>();
             foreach (var id in ids)
             {
-                var fileName = GetFilePath(id);
+                var fileName = GetFilePath(new IdentityDocument(id, typeof(T)));
 
                 if (File.Exists(fileName))
                 {
@@ -86,17 +86,17 @@ namespace YesSql.Storage.FileSystem
             return result;
         }
 
-        public async Task<IEnumerable<object>> GetAsync(IEnumerable<int> ids)
+        public async Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
         {
-            if (ids == null)
+            if (documents == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(documents));
             }
 
             var result = new List<object>();
-            foreach (var id in ids)
+            foreach (var document in documents)
             {
-                var fileName = GetFilePath(id);
+                var fileName = GetFilePath(document);
 
                 if (File.Exists(fileName))
                 {

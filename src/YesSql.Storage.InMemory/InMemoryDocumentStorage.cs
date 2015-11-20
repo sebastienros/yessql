@@ -20,37 +20,37 @@ namespace YesSql.Storage.InMemory
         {
         }
 
-        public Task CreateAsync<T>(int[] ids, T[] items)
+        public Task CreateAsync(params IIdentityEntity[] documents)
         {
-            for (var i = 0; i < ids.Length; i++)
+            foreach (var document in documents)
             {
-                _documents[ids[i]] = JsonConvert.SerializeObject(items[i], _jsonSettings);
+                _documents[document.Id] = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
             }
 
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync<T>(int[] ids, T[] items)
+        public Task UpdateAsync(params IIdentityEntity[] documents)
         {
-            return CreateAsync(ids, items);
+            return CreateAsync(documents);
         }
 
-        public Task DeleteAsync(int[] ids)
+        public Task DeleteAsync(params IIdentityEntity[] documents)
         {
-            if (ids == null)
+            if (documents == null)
             {
                 throw new ArgumentException("Can't delete a document with a null id");
             }
 
-            for(var i=0; i<ids.Length; i++)
+            foreach(var document in documents)
             {
-                _documents.Remove(ids[i]);
+                _documents.Remove(document.Id);
             }
 
             return Task.CompletedTask;
         }
 
-        public Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids)
+        public Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
         {
             if (ids == null)
             {
@@ -70,20 +70,20 @@ namespace YesSql.Storage.InMemory
             return Task.FromResult((IEnumerable<T>)result);
         }
 
-        public Task<IEnumerable<object>> GetAsync(IEnumerable<int> ids)
+        public Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
         {
-            if (ids == null)
+            if (documents == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(documents));
             }
 
             var result = new List<object>();
-            foreach (var id in ids)
+            foreach (var document in documents)
             {
-                string document; ;
-                if (_documents.TryGetValue(id, out document))
+                string content; ;
+                if (_documents.TryGetValue(document.Id, out content))
                 {
-                    result.Add(JsonConvert.DeserializeObject(document, _jsonSettings));
+                    result.Add(JsonConvert.DeserializeObject(content, _jsonSettings));
                 }
             }
 

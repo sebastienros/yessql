@@ -57,27 +57,35 @@ namespace YesSql.Core.Commands
                 return result;
             }
 
+            string values = "DEFAULT VALUES";
+
             var allProperties = TypePropertiesCache(type);
-            var sbColumnList = new StringBuilder(null);
 
-            for (var i = 0; i < allProperties.Count(); i++)
+            if (allProperties.Any())
             {
-                var property = allProperties.ElementAt(i);
-                sbColumnList.Append($"[{property.Name}]");
-                if (i < allProperties.Count() - 1)
-                    sbColumnList.Append(", ");
+                var sbColumnList = new StringBuilder(null);
+
+                for (var i = 0; i < allProperties.Count(); i++)
+                {
+                    var property = allProperties.ElementAt(i);
+                    sbColumnList.Append($"[{property.Name}]");
+                    if (i < allProperties.Count() - 1)
+                        sbColumnList.Append(", ");
+                }
+
+                var sbParameterList = new StringBuilder(null);
+                for (var i = 0; i < allProperties.Count(); i++)
+                {
+                    var property = allProperties.ElementAt(i);
+                    sbParameterList.Append($"@{property.Name}");
+                    if (i < allProperties.Count() - 1)
+                        sbParameterList.Append(", ");
+                }
+
+                values = $"({sbColumnList}) values ({sbParameterList})";
             }
 
-            var sbParameterList = new StringBuilder(null);
-            for (var i = 0; i < allProperties.Count(); i++)
-            {
-                var property = allProperties.ElementAt(i);
-                sbParameterList.Append($"@{property.Name}");
-                if (i < allProperties.Count() - 1)
-                    sbParameterList.Append(", ");
-            }
-
-            InsertsList[type.TypeHandle] = result = $"insert into [{_tablePrefix}{type.Name}] ({sbColumnList}) values ({sbParameterList});";
+            InsertsList[type.TypeHandle] = result = $"insert into [{_tablePrefix}{type.Name}] {values};";
             return result;
         }
 

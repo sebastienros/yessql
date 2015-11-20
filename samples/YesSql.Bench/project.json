@@ -10,11 +10,6 @@
     "YesSql.Bench": "YesSql.Bench"
   },
   "frameworks": {
-    "dnx46": {
-      "frameworkAssemblies": {
-        "System.Runtime": ""
-      }
-    },
     "dnxcore50": {
       "dependencies": {
         "System.Console": "4.0.0-beta-23019",

@@ -20,3 +20,4 @@ src/*.vsmdi
 artifacts
 *.vsp
 project.lock.json
+*.mdb

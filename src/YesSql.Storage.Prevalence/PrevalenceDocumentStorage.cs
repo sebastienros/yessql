@@ -13,37 +13,37 @@ namespace YesSql.Storage.Prevalence
         {
         }
 
-        public Task CreateAsync<T>(int[] ids, T[] items)
+        public Task CreateAsync(params IIdentityEntity[] documents)
         {
-            for (var i = 0; i < ids.Length; i++)
+            foreach(var document in documents)
             {
-                _documents[ids[i]] = items[i];
+                _documents[document.Id] = document.Entity;
             }
 
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync<T>(int[] ids, T[] items)
+        public Task UpdateAsync(params IIdentityEntity[] documents)
         {
-            return CreateAsync(ids, items);
+            return CreateAsync(documents);
         }
 
-        public Task DeleteAsync(int[] ids)
+        public Task DeleteAsync(params IIdentityEntity[] documents)
         {
-            if (ids == null)
+            if (documents == null)
             {
                 throw new ArgumentException("Can't delete a document with a null id");
             }
 
-            for (var i = 0; i < ids.Length; i++)
+            foreach(var document in documents)
             {
-                _documents.Remove(ids[i]);
+                _documents.Remove(document.Id);
             }
 
             return Task.CompletedTask;
         }
 
-        public Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids)
+        public Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
         {
             if (ids == null)
             {
@@ -59,17 +59,17 @@ namespace YesSql.Storage.Prevalence
             return Task.FromResult((IEnumerable<T>)result);
         }
 
-        public Task<IEnumerable<object>> GetAsync(IEnumerable<int> ids)
+        public Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
         {
-            if (ids == null)
+            if (documents == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(documents));
             }
 
             var result = new List<object>();
-            foreach (var id in ids)
+            foreach (var document in documents)
             {
-                result.Add(_documents[id]);
+                result.Add(_documents[document.Id]);
             }
 
             return Task.FromResult((IEnumerable<object>)result);

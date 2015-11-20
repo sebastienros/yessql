@@ -93,7 +93,7 @@ namespace YesSql.Core.Services
                 int id;
                 if(_identityMap.TryGetDocumentId(entity, out id))
                 {
-                    var oldObj = await _storage.GetAsync(id);
+                    var oldObj = await _storage.GetAsync(id, entity.GetType());
                     var oldDoc = await GetDocumentByIdAsync(id);
 
                     // Do nothing if the document hasn't been modified
@@ -107,7 +107,7 @@ namespace YesSql.Core.Services
                         MapNew(oldDoc, entity);
 
                         // Save entity
-                        await _storage.UpdateAsync(id, entity);
+                        await _storage.UpdateAsync(new IdentityDocument(id, entity));
                     }
                 }
                 else
@@ -129,7 +129,7 @@ namespace YesSql.Core.Services
                     }
 
                     await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction);
-                    await _storage.CreateAsync(doc.Id, entity);
+                    await _storage.CreateAsync(new IdentityDocument(doc.Id, entity));
                     
                     // Track the newly created object
                     _identityMap.Add(doc.Id, entity);
@@ -163,19 +163,18 @@ namespace YesSql.Core.Services
             }
             else
             {
-                // if the document has an Id property, use it to find the document
-                var idInfo = obj.GetType().GetProperty("Id");
-                if (idInfo == null)
+                var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
+                if (accessor == null)
                 {
                     throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
                 }
 
-                var id = (int)idInfo.GetValue(obj, null);
+                var id = accessor.Get(obj);
                 var doc = await GetDocumentByIdAsync(id);
 
                 if (doc != null)
                 {
-                    await _storage.DeleteAsync(id);
+                    await _storage.DeleteAsync(new IdentityDocument(id, obj));
 
                     // Untrack the deleted object
                     _identityMap.Remove(id, obj);
@@ -220,7 +219,7 @@ namespace YesSql.Core.Services
             }
 
             // Some documents might not be in cache, load all of them from storage, then resolve local maps
-            var items = (await _storage.GetAsync<T>(ids)).ToArray();
+            var items = (await _storage.GetAsync<T>(ids.ToArray())).ToArray();
 
             // if the document has an Id property, set it back
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
@@ -504,6 +503,11 @@ namespace YesSql.Core.Services
 
                 foreach (var index in mapped)
                 {
+                    if(index == null)
+                    {
+                        continue;
+                    }
+
                     index.AddDocument(document);
 
                     // if the mapped elements are not meant to be reduced,

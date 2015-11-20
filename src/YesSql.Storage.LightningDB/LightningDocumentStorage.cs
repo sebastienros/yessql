@@ -25,16 +25,16 @@ namespace YesSql.Storage.LightningDB
             _env = environment;
         }
 
-        public Task CreateAsync<T>(int[] ids, T[] items)
+        public Task CreateAsync(params IIdentityEntity[] documents)
         {
             using (var tx = _env.BeginTransaction())
             {
                 using (var db = tx.OpenDatabase())
                 {
-                    for (int i = 0; i < ids.Length; i++)
+                    foreach (var document in documents)
                     {
-                        var content = JsonConvert.SerializeObject(items[i], _jsonSettings);
-                        tx.Put(db, Encoding.UTF8.GetBytes(ids[i].ToString()), Encoding.UTF8.GetBytes(content));
+                        var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
+                        tx.Put(db, Encoding.UTF8.GetBytes(document.Id.ToString()), Encoding.UTF8.GetBytes(content));
                     }
 
                     tx.Commit();
@@ -44,20 +44,20 @@ namespace YesSql.Storage.LightningDB
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync<T>(int[] ids, T[] items)
+        public Task UpdateAsync(params IIdentityEntity[] documents)
         {
-            return CreateAsync(ids, items);
+            return CreateAsync(documents);
         }
 
-        public Task DeleteAsync(int[] ids)
+        public Task DeleteAsync(params IIdentityEntity[] documents)
         {
             using (var tx = _env.BeginTransaction())
             {
                 using (var db = tx.OpenDatabase())
                 {
-                    for (int i = 0; i < ids.Length; i++)
+                    foreach (var document in documents)
                     {
-                        tx.Delete(db, Encoding.UTF8.GetBytes(ids[i].ToString()));
+                        tx.Delete(db, Encoding.UTF8.GetBytes(document.Id.ToString()));
                     }
 
                     tx.Commit();
@@ -67,7 +67,7 @@ namespace YesSql.Storage.LightningDB
             return Task.CompletedTask;
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids)
+        public async Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
         {
             if (ids == null)
             {
@@ -109,9 +109,46 @@ namespace YesSql.Storage.LightningDB
             return result;
         }
 
-        public async Task<IEnumerable<object>> GetAsync(IEnumerable<int> ids)
+        public async Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
         {
-            return await GetAsync<object>(ids);
+            if (documents == null)
+            {
+                throw new ArgumentNullException(nameof(documents));
+            }
+
+            var result = new List<object>();
+            using (var tx = _env.BeginTransaction())
+            {
+                using (var db = tx.OpenDatabase())
+                {
+                    foreach (var document in documents)
+                    {
+                        var bytes = tx.Get(db, Encoding.UTF8.GetBytes(document.Id.ToString()));
+
+                        if (bytes == null || bytes.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        using (var binaryStream = new MemoryStream(bytes))
+                        {
+                            StringBuilder sb = new StringBuilder();
+
+                            byte[] buffer = new byte[0x1000];
+                            int numRead;
+                            while ((numRead = await binaryStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                            {
+                                string text = Encoding.UTF8.GetString(buffer, 0, numRead);
+                                sb.Append(text);
+                            }
+
+                            result.Add(JsonConvert.DeserializeObject(sb.ToString(), document.EntityType, _jsonSettings));
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
         
         public void Dispose()

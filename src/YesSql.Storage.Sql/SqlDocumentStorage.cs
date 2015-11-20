@@ -27,7 +27,7 @@ namespace YesSql.Storage.Sql
             _dbConnection = _factory.ConnectionFactory.CreateConnection();
         }
 
-        public async Task CreateAsync<T>(int[] ids, T[] items)
+        public async Task CreateAsync(params IIdentityEntity[] documents)
         {
             await _dbConnection.OpenAsync();
 
@@ -35,13 +35,13 @@ namespace YesSql.Storage.Sql
             {
                 using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
                 {
-                    for (var i = 0; i < ids.Length; i++)
+                    foreach(var document in documents)
                     {
-                        var content = JsonConvert.SerializeObject(items[i], _jsonSettings);
+                        var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
                         var dialect = SqlDialectFactory.For(_dbConnection);
                         var insertCmd = $"insert into [{_factory.TablePrefix}Content] ([Id], [Content]) values (@Id, @Content);";
-                        await _dbConnection.ExecuteScalarAsync<int>(insertCmd, new { Id = ids[i], Content = content }, tx);
+                        await _dbConnection.ExecuteScalarAsync<int>(insertCmd, new { Id = document.Id, Content = content }, tx);
                     }
 
                     tx.Commit();
@@ -53,7 +53,7 @@ namespace YesSql.Storage.Sql
             }
         }
 
-        public async Task UpdateAsync<T>(int[] ids, T[] items)
+        public async Task UpdateAsync(params IIdentityEntity[] documents)
         {
             await _dbConnection.OpenAsync();
 
@@ -61,13 +61,13 @@ namespace YesSql.Storage.Sql
             {
                 using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
                 {
-                    for (var i = 0; i < ids.Length; i++)
+                    foreach(var document in documents)
                     {
-                        var content = JsonConvert.SerializeObject(items[i], _jsonSettings);
+                        var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
                         var dialect = SqlDialectFactory.For(_dbConnection);
                         var updateCmd = $"update [{_factory.TablePrefix}Content] set Content = @Content where Id = @Id;";
-                        await _dbConnection.ExecuteScalarAsync<int>(updateCmd, new { Id = ids[i], Content = content }, tx);
+                        await _dbConnection.ExecuteScalarAsync<int>(updateCmd, new { Id = document.Id, Content = content }, tx);
                     }
 
                     tx.Commit();
@@ -78,7 +78,7 @@ namespace YesSql.Storage.Sql
                 _dbConnection.Close();
             }
         }
-        public async Task DeleteAsync(int[] ids)
+        public async Task DeleteAsync(params IIdentityEntity[] documents)
         {
             await _dbConnection.OpenAsync();
 
@@ -86,11 +86,11 @@ namespace YesSql.Storage.Sql
             {
                 using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
                 {
-                    foreach (var idPages in ids.PagesOf(128))
+                    foreach (var documentsPage in documents.PagesOf(128))
                     {
                         var dialect = SqlDialectFactory.For(_dbConnection);
                         var deleteCmd = $"delete from [{_factory.TablePrefix}Content] where Id IN @Id;";
-                        await _dbConnection.ExecuteScalarAsync<int>(deleteCmd, new { Id = idPages.ToArray() }, tx);
+                        await _dbConnection.ExecuteScalarAsync<int>(deleteCmd, new { Id = documentsPage.Select(x => x.Id).ToArray() }, tx);
                     }
 
                     tx.Commit();
@@ -102,7 +102,7 @@ namespace YesSql.Storage.Sql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids)
+        public async Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
         {
             if (ids == null)
             {
@@ -140,9 +140,9 @@ namespace YesSql.Storage.Sql
             return result;
         }
 
-        public Task<IEnumerable<object>> GetAsync(IEnumerable<int> ids)
+        public Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
         {
-            return GetAsync<object>(ids);
+            return GetAsync<object>(documents.Select(x => x.Id).ToArray());
         }
 
         public void Dispose()
