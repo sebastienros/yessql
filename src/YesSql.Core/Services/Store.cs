@@ -38,7 +38,7 @@ namespace YesSql.Core.Services
 
             ValidateConfiguration();
 
-            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
+            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, "index", Configuration.TablePrefix);
         }
 
         public async Task InitializeAsync()
@@ -55,18 +55,10 @@ namespace YesSql.Core.Services
                 );
                 
                 builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
+                    .Column<string>("dimension")
                     .Column<ulong>("nextval")
                 );
 
-                var command = builder.Connection.CreateCommand();
-                command.CommandText = $"INSERT INTO [{Configuration.TablePrefix}{LinearBlockIdGenerator.TableName}] VALUES(@range);";
-                var parameter = command.CreateParameter();
-                parameter.Value = 1;
-                parameter.ParameterName = "@range";
-                command.Parameters.Add(parameter);
-                command.Transaction = builder.Transaction;
-
-                command.ExecuteNonQuery();
             });
 
             await Configuration.DocumentStorageFactory.InitializeAsync();
@@ -99,11 +91,6 @@ namespace YesSql.Core.Services
                 if (Configuration.ConnectionFactory.Disposable)
                 {
                     connection.Dispose();
-                }
-
-                if(connection.State == System.Data.ConnectionState.Open)
-                {
-                    connection.Close();
                 }
             }
         }
