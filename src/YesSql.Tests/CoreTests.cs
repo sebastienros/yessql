@@ -54,7 +54,7 @@ namespace YesSql.Tests
             ).Wait();
 
             _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
-                .DropTable("YesSqlIds"), false
+                .DropTable(LinearBlockIdGenerator.TableName), false
             ).Wait();
 
         }
@@ -288,6 +288,51 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Bill").Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Steve").Count());
                 Assert.Equal(0, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Joe").Count());
+
+                var person = await session
+                    .QueryAsync<Person, PersonByName>()
+                    .Where(x => x.Name == "Bill")
+                    .FirstOrDefault();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", person.Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task LoadingDocumentShouldNotDuplicateIndex()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Bill").Count());
+
+                var person = await session
+                    .QueryAsync<Person, PersonByName>()
+                    .Where(x => x.Name == "Bill")
+                    .FirstOrDefault();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", person.Firstname);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Bill").Count());
 
                 var person = await session
                     .QueryAsync<Person, PersonByName>()

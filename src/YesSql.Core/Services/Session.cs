@@ -93,15 +93,15 @@ namespace YesSql.Core.Services
                 int id;
                 if(_identityMap.TryGetDocumentId(entity, out id))
                 {
-                    var oldObj = await _storage.GetAsync(id, entity.GetType());
-                    var oldDoc = await GetDocumentByIdAsync(id);
-
                     // Do nothing if the document hasn't been modified
                     // TODO: To prevent this check we could remove change tracking as a whole and have users
                     // use Update(entity), or have a NoTrack option in a session so that entities would still be 
                     // in the identity map but not saved on a Commit
-                    if (!(String.Equals(JsonConvert.SerializeObject(entity), JsonConvert.SerializeObject(oldObj))))
+                    if (_identityMap.HasChanged(id, entity))
                     {
+                        var oldDoc = await GetDocumentByIdAsync(id);
+                        var oldObj = await _storage.GetAsync(id, entity.GetType());
+
                         // Update map index
                         MapDeleted(oldDoc, oldObj);
                         MapNew(oldDoc, entity);
