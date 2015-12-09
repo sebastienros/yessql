@@ -36,7 +36,7 @@ namespace YesSql.Core.Services
         where TDbConnection : DbConnection, new()
     {
         private readonly bool _reuseConnection;
-        private TDbConnection _connection;
+        private TDbConnection _reusedConnection;
         private readonly string _connectionString;
 
         public DbConnectionFactory(string connectionString, bool reuseConnection = false)
@@ -51,28 +51,28 @@ namespace YesSql.Core.Services
         {
             if(_reuseConnection)
             {
-                if (_connection == null)
+                if (_reusedConnection == null)
                 {
-                    _connection = new TDbConnection();
-                    _connection.ConnectionString = _connectionString;
+                    _reusedConnection = new TDbConnection();
+                    _reusedConnection.ConnectionString = _connectionString;
                 }
 
-                return _connection;
+                return _reusedConnection;
             }
 
-            _connection = new TDbConnection();
-            _connection.ConnectionString = _connectionString;
+            var connection = new TDbConnection();
+            connection.ConnectionString = _connectionString;
 
-            return _connection;
+            return connection;
         }
 
         public void Dispose()
         {
             if(_reuseConnection)
             {
-                if (_connection != null)
+                if (_reusedConnection != null)
                 {
-                    _connection.Dispose();
+                    _reusedConnection.Dispose();
                 }
             }
         }
