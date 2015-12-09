@@ -13,7 +13,7 @@ namespace YesSql.Core.Services
         /// <summary>
         /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/>
         /// </summary>
-        ISession CreateSession(bool trackChanges = true);
+        ISession CreateSession();
 
         /// <summary>
         /// Registers an index using an <see cref="IIndexProvider"/>

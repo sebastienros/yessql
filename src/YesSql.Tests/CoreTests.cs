@@ -1094,7 +1094,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldSaveChangesAutomatically()
+        public async Task ShouldSaveChangesExplicitly()
         {
             using (var session = _store.CreateSession())
             {
@@ -1112,6 +1112,7 @@ namespace YesSql.Tests
                 Assert.NotNull(circle);
 
                 circle.Radius = 20;
+                session.Save(circle);
             }
 
             using (var session = _store.CreateSession())
@@ -1133,7 +1134,7 @@ namespace YesSql.Tests
                 session.Save(circle);
             }
 
-            using (var session = _store.CreateSession(false))
+            using (var session = _store.CreateSession())
             {
                 var circle = await session.QueryAsync().For<Circle>().FirstOrDefault();
                 Assert.NotNull(circle);

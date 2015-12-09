@@ -1,13 +1,10 @@
 ﻿using Dapper;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Core.Commands;
 using YesSql.Core.Data;
@@ -30,20 +27,19 @@ namespace YesSql.Core.Services
         private IsolationLevel _isolationLevel;
         protected readonly IdentityMap _identityMap = new IdentityMap();
         private List<IIndexCommand> _commands = new List<IIndexCommand>();
-        protected readonly bool _trackChanges;
         protected readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
         protected readonly HashSet<object> _saved = new HashSet<object>();
+        protected readonly HashSet<object> _updated = new HashSet<object>();
         protected readonly HashSet<object> _deleted = new HashSet<object>();
         protected readonly IDocumentStorage _storage;
 
         private Store _store;
         protected bool _cancel;
 
-        public Session(IDocumentStorage storage, bool trackChanges, Store store)
+        public Session(IDocumentStorage storage, Store store)
         {
             _storage = storage;
             _store = store;
-            _trackChanges = trackChanges;
             _isolationLevel = store.Configuration.IsolationLevel;
 
             _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
@@ -54,10 +50,10 @@ namespace YesSql.Core.Services
 
         public void Save(object entity)
         {
-            // don't add the object to the saved list if it's already tracked
-            // unless we don't track automatically loaded objects
-            if (!_trackChanges || !_identityMap.HasEntity(entity))
+            // is it a new object?
+            if (!_identityMap.HasEntity(entity))
             {
+                // then assign it an identifier
                 var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
                 if (accessor != null)
                 {
@@ -67,9 +63,14 @@ namespace YesSql.Core.Services
 
                 _saved.Add(entity);
             }
+            else
+            {
+                // update it
+                _updated.Add(entity);
+            }
         }
 
-        private async Task SaveEntityAsync(object entity)
+        private async Task SaveEntityAsync(object entity, bool update)
         {
             if (entity == null)
             {
@@ -97,7 +98,7 @@ namespace YesSql.Core.Services
                     // TODO: To prevent this check we could remove change tracking as a whole and have users
                     // use Update(entity), or have a NoTrack option in a session so that entities would still be 
                     // in the identity map but not saved on a Commit
-                    if (_identityMap.HasChanged(id, entity))
+                    if (update)
                     {
                         var oldDoc = await GetDocumentByIdAsync(id);
                         var oldObj = await _storage.GetAsync(id, entity.GetType());
@@ -299,26 +300,23 @@ namespace YesSql.Core.Services
         {
             Demand();
 
-            // saving all tracked objects
-            if (_trackChanges)
+            // saving all updated entities
+            foreach (var obj in _updated)
             {
-                foreach (var obj in _identityMap.GetAll())
+                if (!_deleted.Contains(obj))
                 {
-                    if (!_deleted.Contains(obj))
-                    {
-                        await SaveEntityAsync(obj);
-                    }
+                    await SaveEntityAsync(obj, update: true);
                 }
             }
 
-            // saving all pending objects
+            // saving all pending entities
             foreach (var obj in _saved)
             {
-                await SaveEntityAsync(obj);
+                await SaveEntityAsync(obj, update: false);
             }
             _saved.Clear();
 
-            // deleting all pending objects
+            // deleting all pending entities
             foreach (var obj in _deleted)
             {
                 await DeleteEntityAsync(obj);

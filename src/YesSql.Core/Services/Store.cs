@@ -108,10 +108,10 @@ namespace YesSql.Core.Services
             }
         }
 
-        public ISession CreateSession(bool trackChanges = true)
+        public ISession CreateSession()
         {
             var storage = Configuration.DocumentStorageFactory.CreateDocumentStorage();
-            return new Session(storage, trackChanges, this);
+            return new Session(storage, this);
         }
 
         public void Dispose()

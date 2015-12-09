@@ -13,7 +13,7 @@ namespace YesSql.Core.Services
     public interface ISession : IDisposable
     {
         /// <summary>
-        /// Saves an object or its modifications to the store, and updates
+        /// Saves a new or existing object to the store, and updates
         /// the corresponding indexes.
         /// </summary>
         void Save(object obj);

@@ -577,7 +577,7 @@ namespace YesSql.Samples.Performance
 
             for (int i = 0; i < 100; i++)
             {
-                using (var session = store.CreateSession(false))
+                using (var session = store.CreateSession())
                 {
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name == "WILLY").List());
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name == "FAUSTINO").List());
@@ -594,7 +594,7 @@ namespace YesSql.Samples.Performance
 
             for (int i = 0; i < 100; i++)
             {
-                using (var session = store.CreateSession(false))
+                using (var session = store.CreateSession())
                 {
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where("Name = 'WILLY'").List());
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where("Name = 'FAUSTINO'").List());
@@ -611,7 +611,7 @@ namespace YesSql.Samples.Performance
 
             for (int i = 0; i < 100; i++)
             {
-                using (var session = store.CreateSession(false))
+                using (var session = store.CreateSession())
                 {
                     Assert.NotEmpty(await session.QueryAsync<User, UserByName>(x => x.Name == "WILLY").List());
                     Assert.NotEmpty(await session.QueryAsync<User, UserByName>(x => x.Name == "FAUSTINO").List());
@@ -628,7 +628,7 @@ namespace YesSql.Samples.Performance
 
             for (int i = 0; i < 100; i++)
             {
-                using (var session = store.CreateSession(false))
+                using (var session = store.CreateSession())
                 {
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name.StartsWith("WIL")).List());
                     Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name.StartsWith("FAUS")).List());
@@ -645,7 +645,7 @@ namespace YesSql.Samples.Performance
 
             for (int i = 0; i < 100; i++)
             {
-                using (var session = store.CreateSession(false))
+                using (var session = store.CreateSession())
                 {
                     Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("WIL")).List());
                     Assert.NotEmpty(await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("FAUS")).List());
