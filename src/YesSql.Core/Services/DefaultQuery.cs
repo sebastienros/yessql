@@ -23,6 +23,7 @@ namespace YesSql.Core.Services
         private readonly DbTransaction _transaction;
         private string _lastParameterName;
         private SqlBuilder _sqlBuilder;
+        private StringBuilder _builder = new StringBuilder();
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings = 
             new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>>();
@@ -138,10 +139,10 @@ namespace YesSql.Core.Services
                 _sqlBuilder.Selector(typeof(TIndex).Name, "DocumentId");
             }
 
-            var builder = new StringBuilder();
+            _builder.Clear();
             // if Filter is called, the Document type is implicit so there is no need to filter on TIndex 
-            ConvertPredicate(builder, predicate.Body);
-            _sqlBuilder.WhereAlso(builder.ToString());
+            ConvertPredicate(_builder, predicate.Body);
+            _sqlBuilder.WhereAlso(_builder.ToString());
         }
 
         public void ConvertFragment(StringBuilder builder, Expression expression)
@@ -329,30 +330,30 @@ namespace YesSql.Core.Services
 
         private void OrderBy<T>(Expression<Func<T, object>> keySelector)
         {
-            var builder = new StringBuilder();
-            ConvertFragment(builder, keySelector.Body);
-            _sqlBuilder.OrderBy(builder.ToString());
+            _builder.Clear();
+            ConvertFragment(_builder, keySelector.Body);
+            _sqlBuilder.OrderBy(_builder.ToString());
         }
 
         private void ThenBy<T>(Expression<Func<T, object>> keySelector)
         {
-            var builder = new StringBuilder();
-            ConvertFragment(builder, keySelector.Body);
-            _sqlBuilder.ThenOrderBy(builder.ToString());
+            _builder.Clear();
+            ConvertFragment(_builder, keySelector.Body);
+            _sqlBuilder.ThenOrderBy(_builder.ToString());
         }
 
         private void OrderByDescending<T>(Expression<Func<T, object>> keySelector)
         {
-            var builder = new StringBuilder();
-            ConvertFragment(builder, keySelector.Body);
-            _sqlBuilder.OrderByDescending(builder.ToString());
+            _builder.Clear();
+            ConvertFragment(_builder, keySelector.Body);
+            _sqlBuilder.OrderByDescending(_builder.ToString());
         }
 
         private void ThenByDescending<T>(Expression<Func<T, object>> keySelector)
         {
-            var builder = new StringBuilder();
-            ConvertFragment(builder, keySelector.Body);
-            _sqlBuilder.ThenOrderByDescending(builder.ToString());
+            _builder.Clear();
+            ConvertFragment(_builder, keySelector.Body);
+            _sqlBuilder.ThenOrderByDescending(_builder.ToString());
         }
 
         public async Task<int> CountAsync()

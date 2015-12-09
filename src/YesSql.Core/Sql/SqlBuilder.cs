@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace YesSql.Core.Sql
 {
@@ -11,9 +10,10 @@ namespace YesSql.Core.Sql
         private string _clause;
         private string _table;
         private string _selector;
-        private List<string> _join = new List<string>();
-        private List<string> _where = new List<string>();
-        private List<string> _order = new List<string>();
+
+        private StringBuilder _join;
+        private string _where;
+        private string _order;
 
         private int _skip;
         private int _count;
@@ -44,7 +44,16 @@ namespace YesSql.Core.Sql
         }
         public void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
         {
-            _join.Add($"inner join [{TablePrefix}{table}] on [{TablePrefix}{onTable}].{onColumn} = [{TablePrefix}{toTable}].{toColumn}");
+            if(_join == null)
+            {
+                _join = new StringBuilder();
+            }
+
+            _join.Append("inner join ").Append("[").Append(TablePrefix).Append(table)
+                .Append("] on [").Append(TablePrefix).Append(onTable)
+                .Append("].").Append(onColumn)
+                .Append(" = [").Append(TablePrefix).Append(toTable)
+                .Append("].").Append(toColumn).Append(" ");
         }
 
         public void Select()
@@ -62,74 +71,85 @@ namespace YesSql.Core.Sql
             _selector = FormatColumn(table, column);
         }
 
+        public string GetSelector()
+        {
+            return _selector;
+        }
+
         public string FormatColumn(string table, string column)
         {
             return "[" + TablePrefix + table + "]." + column;
         }
 
-        public void Where(string where)
-        {
-            _where.Clear();
-            _where.Add(where);
-        }
-
         public void WhereAlso(string where)
         {
-            _where.Add(where);
+            if (_where == null)
+            {
+                _where = where;
+            }
+            else
+            {
+                _where += " and " + where;
+            }
         }
 
         public void OrderBy(string orderBy)
         {
-            _order.Clear();
-            _order.Add(orderBy);
+            _order = orderBy;
         }
 
         public void OrderByDescending(string orderBy)
         {
-            _order.Clear();
-            _order.Add(orderBy + " desc");
+            _order = orderBy + " desc";
         }
 
         public void ThenOrderBy(string orderBy)
         {
-            _order.Add(orderBy);
+            _order += ", " + orderBy;
         }
 
         public void ThenOrderByDescending(string orderBy)
         {
-            _order.Add(orderBy + " desc");
+            _order += ", " + orderBy + " desc";
         }
+
+        public string Trail { get; set; }
 
         public string ToSqlString(ISqlDialect dialect)
         {
             if (_clause == "select")
             {
-                var sb = new StringBuilder();
-                sb.Append($"{_clause} {_selector} from [{TablePrefix}{_table}]");
-
-                if (_join.Any())
-                {
-                    sb.AppendFormat(" {0}", String.Join(" ", _join));
-                }
-
-                if (_where.Any())
-                {
-                    sb.AppendFormat(" where {0}", String.Join(" and ", _where));
-                }
-
-                if (_order.Any())
-                {
-                    sb.AppendFormat(" order by {0}", String.Join(", ", _order));
-                }
-
-                var sql = sb.ToString();
-
                 if (_skip != 0 || _count != 0)
                 {
-                    sql = dialect.Page(sql, _skip, _count);
+                    dialect.Page(this, _skip, _count);
                 }
 
-                return sql;
+                var sb = new StringBuilder();
+                sb
+                    .Append(_clause).Append(" ").Append(_selector)
+                    .Append(" from [").Append(TablePrefix).Append(_table).Append("]");
+
+                if (_join != null)
+                {
+                    sb.Append(" ").Append(_join.ToString());
+                }
+
+                if (_where != null)
+                {
+                    sb.Append(" where ").Append(_where);
+                }
+
+                if (_order != null)
+                {
+                    sb.Append(" order by ").Append(_order);
+                }
+
+                if(!String.IsNullOrEmpty(Trail))
+                {
+                    sb.Append(" ").Append(Trail);
+                }
+                
+                return sb.ToString();
             }
 
             return "";

@@ -26,7 +26,7 @@ namespace YesSql.Core.Sql
         string QuoteForColumnName(string columnName);
         string GetDropForeignKeyConstraintString(string name);
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
-        string Page(string sql, int offset, int limit);
+        void Page(SqlBuilder sqlBuilder, int offset, int limit);
     }
 
     public class SqlDialectFactory
@@ -179,7 +179,7 @@ namespace YesSql.Core.Sql
             return "null";
         }
 
-        public abstract string Page(string sql, int offset, int limit);
+        public abstract void Page(SqlBuilder sqlBuilder, int offset, int limit);
     }
 
     public class SqliteDialect : BaseDialect
@@ -226,9 +226,9 @@ namespace YesSql.Core.Sql
             throw new Exception("DbType not found for: " + dbType);
         }
 
-        public override string Page(string sql, int offset, int limit)
+        public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
         {
-            var sb = new StringBuilder(sql);
+            var sb = new StringBuilder();
             
             sb.Append(" limit ");
 
@@ -243,7 +243,7 @@ namespace YesSql.Core.Sql
                 sb.Append(offset);
             }
 
-            return sb.ToString();
+            sqlBuilder.Trail = sb.ToString();
         }
     }
 
@@ -325,21 +325,19 @@ namespace YesSql.Core.Sql
             throw new Exception("DbType not found for: " + dbType);
         }
 
-        public override string Page(string sql, int offset, int limit)
+        public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
         {
-            var sb = new StringBuilder(sql);
-
-            if(offset ==0 && limit != 0)
+            if (offset == 0 && limit != 0)
             {
                 // Insert LIMIT clause after the select
-                sb.Insert(7, $"TOP {limit} ");
+                var selector = sqlBuilder.GetSelector();
+                selector = " TOP " + limit + " " + selector;
+                sqlBuilder.Selector(selector);
             }
             else if (offset != 0 || limit != 0)
             {
-                sb.Append($" OFFSET {offset} ROWS FETCH FIRST {limit} ROWS ONLY");
+                sqlBuilder.Trail = "OFFSET " + offset + " ROWS FETCH FIRST " + limit + " ROWS ONLY";
             }
-
-            return sb.ToString();
         }
 
         private const char OpenQuote = '[';
