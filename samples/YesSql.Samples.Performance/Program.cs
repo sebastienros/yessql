@@ -530,14 +530,14 @@ namespace YesSql.Samples.Performance
             {
                 store.InitializeAsync().Wait();
 
-                store.ExecuteMigrationAsync(builder => builder
+                store.ExecuteMigration(builder => builder
                     .CreateMapIndexTable("UserByName", table => table
                         .Column<string>("Name")
                     )
                     .AlterTable("UserByName", table => table
                         .CreateIndex("IX_Name", "Name")
                     )
-                ).Wait();
+                );
             }
 
             store.RegisterIndexes<UserIndexProvider>();

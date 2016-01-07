@@ -20,11 +20,11 @@ namespace Bench
 
             _store.InitializeAsync().Wait();
 
-            _store.ExecuteMigrationAsync(x => x.CreateMapIndexTable(nameof(UserByName), c => c
+            _store.ExecuteMigration(x => x.CreateMapIndexTable(nameof(UserByName), c => c
                 .Column<string>("Name")
                 .Column<bool>("Adult")
                 .Column<int>("Age")
-            )).Wait();
+            ));
 
             _store.RegisterIndexes<UserIndexProvider>();
 

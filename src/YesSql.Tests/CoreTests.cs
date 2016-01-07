@@ -37,25 +37,25 @@ namespace YesSql.Tests
         public void CleanDatabase()
         {
             // Remove existing tables
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropReduceIndexTable(nameof(ArticlesByDay)), false
-            ).Wait();
+            );
 
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropMapIndexTable(nameof(PersonByName)), false
-            ).Wait();
+            );
 
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropMapIndexTable(nameof(PublishedArticle)), false
-            ).Wait();
+            );
 
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropTable("Document"), false
-            ).Wait();
+            );
 
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropTable(LinearBlockIdGenerator.TableName), false
-            ).Wait();
+            );
 
         }
 
@@ -64,23 +64,23 @@ namespace YesSql.Tests
             // Create tables
             _store.InitializeAsync().Wait();
 
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .CreateReduceIndexTable(nameof(ArticlesByDay), column => column
                     .Column<int>(nameof(ArticlesByDay.Count))
                     .Column<int>(nameof(ArticlesByDay.DayOfYear))
                 )
-            ).Wait();
+            );
 
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .CreateMapIndexTable(nameof(PersonByName), column => column
                     .Column<string>(nameof(PersonByName.Name))
                 )
-            ).Wait();
+            );
 
-            _store.ExecuteMigrationAsync(schemaBuilder => schemaBuilder
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .CreateMapIndexTable(nameof(PublishedArticle), column => { }
                 )
-            ).Wait();
+            );
         }
 
         [Fact]

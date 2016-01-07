@@ -43,7 +43,7 @@ namespace YesSql.Core.Services
 
         public async Task InitializeAsync()
         {
-            await ExecuteMigrationAsync(builder =>
+            ExecuteMigration(builder =>
             {
                 builder
                     .CreateTable("Document", table => table
@@ -58,16 +58,15 @@ namespace YesSql.Core.Services
                     .Column<string>("dimension")
                     .Column<ulong>("nextval")
                 );
-
             });
 
             await Configuration.DocumentStorageFactory.InitializeAsync();
         }
 
-        public async Task ExecuteMigrationAsync(Action<SchemaBuilder> migration, bool throwException = true)
+        public void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true)
         {
             var connection = Configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
+            connection.Open();
             try
             {
                 using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
@@ -98,7 +97,7 @@ namespace YesSql.Core.Services
                 }
             }
         }
-
+        
         private void ValidateConfiguration()
         {
             if (Configuration.ConnectionFactory == null)
