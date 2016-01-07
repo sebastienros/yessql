@@ -92,6 +92,10 @@ namespace YesSql.Core.Services
                 {
                     connection.Dispose();
                 }
+                else
+                {
+                    connection.Close();
+                }
             }
         }
 

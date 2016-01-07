@@ -127,6 +127,10 @@ namespace YesSql.Core.Services
                     {
                         connection.Dispose();
                     }
+                    else
+                    {
+                        connection.Close();
+                    }
                 }
             }
         }
@@ -188,6 +192,10 @@ namespace YesSql.Core.Services
                 if (_connectionFactory.Disposable)
                 {
                     connection.Dispose();
+                }
+                else
+                {
+                    connection.Close();
                 }
             }
         }

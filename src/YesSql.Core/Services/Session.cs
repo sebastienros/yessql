@@ -287,11 +287,19 @@ namespace YesSql.Core.Services
                 if (_transaction != null)
                 {
                     _transaction.Dispose();
+                    _transaction = null;
                 }
 
-                if (_connection != null && _store.Configuration.ConnectionFactory.Disposable)
+                if (_connection != null)
                 {
-                    _connection.Dispose();
+                    if (_store.Configuration.ConnectionFactory.Disposable)
+                    {
+                        _connection.Dispose();
+                    }
+                    else
+                    {
+                        _connection.Close();
+                    }
                 }
             }
         }

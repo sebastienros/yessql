@@ -52,6 +52,10 @@ namespace YesSql.Storage.Sql
                 {
                     connection.Dispose();
                 }
+                else
+                {
+                    connection.Close();
+                }
             }
         }
     }
