@@ -12,12 +12,12 @@ namespace YesSql.Core.Services {
             return session.QueryAsync().For<T>();
         }
 
-        public static IQuery<TIndex> QueryIndexAsync<TIndex>(this ISession session) where TIndex : Index
+        public static IQueryIndex<TIndex> QueryIndexAsync<TIndex>(this ISession session) where TIndex : Index
         {
             return session.QueryAsync().ForIndex<TIndex>();
         }
 
-        public static IQuery<TIndex> QueryIndexAsync<TIndex>(this ISession session, Expression<Func<TIndex, bool>> predicate) where TIndex : Index
+        public static IQueryIndex<TIndex> QueryIndexAsync<TIndex>(this ISession session, Expression<Func<TIndex, bool>> predicate) where TIndex : Index
         {
             return session.QueryAsync().ForIndex<TIndex>().With<TIndex>(predicate);
         }

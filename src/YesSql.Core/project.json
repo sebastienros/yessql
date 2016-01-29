@@ -1,11 +1,11 @@
 {
-  "version": "2.0.0-alpha-9013",
+  "version": "2.0.0-alpha-9014",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
   "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt",
   "dependencies": {
-    "Newtonsoft.Json": "8.0.1-beta2",
+    "Newtonsoft.Json": "8.0.2",
     "Dapper": "1.50.0-beta3"
   },
   "frameworks": {

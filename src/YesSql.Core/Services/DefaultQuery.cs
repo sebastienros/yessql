@@ -379,14 +379,14 @@ namespace YesSql.Core.Services
             return new Query<T>(this);
         }
 
-        IQuery<TIndex> IQuery.ForIndex<TIndex>()
+        IQueryIndex<TIndex> IQuery.ForIndex<TIndex>()
         {
             _bound.Clear();
             _bound.Add(typeof(TIndex));
             _sqlBuilder.Select();
             _sqlBuilder.Table(typeof(TIndex).Name);
             
-            return new Query<TIndex>(this);
+            return new QueryIndex<TIndex>(this);
         }
 
         IQuery<object> IQuery.Any()
@@ -408,7 +408,12 @@ namespace YesSql.Core.Services
                 _query = query;
             }
                         
-            public async Task<T> FirstOrDefault()
+            public Task<T> FirstOrDefault()
+            {
+                return FirstOrDefaultImpl();
+            }
+
+            protected async Task<T> FirstOrDefaultImpl()
             {
                 // Commit any pending changes before doing a query (auto-flush)
                 await _query._session.CommitAsync();
@@ -426,8 +431,8 @@ namespace YesSql.Core.Services
                     _query._sqlBuilder.Selector("Document", "Id");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var ids = (await _query._connection.QueryAsync<int>(sql, _query._sqlBuilder.Parameters, _query._transaction)).ToArray();
-                    
-                    if(ids.Length == 0)
+
+                    if (ids.Length == 0)
                     {
                         return default(T);
                     }
@@ -436,7 +441,12 @@ namespace YesSql.Core.Services
                 }
             }
 
-            async Task<IEnumerable<T>> IQuery<T>.List()
+            Task<IEnumerable<T>> IQuery<T>.List()
+            {
+                return ListImpl();
+            }
+
+            public async Task<IEnumerable<T>> ListImpl()
             {
                 // Commit any pending changes before doing a query (auto-flush)
                 await _query._session.CommitAsync();
@@ -485,30 +495,78 @@ namespace YesSql.Core.Services
                 _query.Filter(predicate);
                 return new Query<T, TIndex>(_query);
             }
+        }
 
-            public IQuery<T> Where(string sql)
+        class QueryIndex<T> : Query<T>, IQueryIndex<T> where T : Index
+        {
+            public QueryIndex(DefaultQuery query) : base(query)
+            { }
+
+            Task<T> IQueryIndex<T>.FirstOrDefault()
+            {
+                return FirstOrDefaultImpl();
+            }
+
+            Task<IEnumerable<T>> IQueryIndex<T>.List()
+            {
+                return ListImpl();
+            }
+
+            IQueryIndex<T> IQueryIndex<T>.Skip(int count)
+            {
+                _query._sqlBuilder.Skip(count);
+                return this;
+            }
+
+            IQueryIndex<T> IQueryIndex<T>.Take(int count)
+            {
+                _query._sqlBuilder.Take(count);
+                return this;
+            }
+
+            async Task<int> IQueryIndex<T>.Count()
+            {
+                return await _query.CountAsync();
+            }
+
+            IQueryIndex<TIndex> IQueryIndex<T>.With<TIndex>()
+            {
+                _query.Bind<TIndex>();
+                return new QueryIndex<TIndex>(_query);
+            }
+
+            IQueryIndex<TIndex> IQueryIndex<T>.With<TIndex>(Expression<Func<TIndex, bool>> predicate)
+            {
+                _query.Bind<TIndex>();
+                _query.Filter(predicate);
+                return new QueryIndex<TIndex>(_query);
+            }
+
+            public IQueryIndex<T> Where(string sql)
             {
                 _query._sqlBuilder.WhereAlso(sql);
                 return this;
             }
 
-            IQuery<T> IQuery<T>.OrderBy(Expression<Func<T, object>> keySelector) {
+            IQueryIndex<T> IQueryIndex<T>.OrderBy(Expression<Func<T, object>> keySelector)
+            {
                 _query.OrderBy(keySelector);
                 return this;
             }
 
-            IQuery<T> IQuery<T>.OrderByDescending(Expression<Func<T, object>> keySelector) {
+            IQueryIndex<T> IQueryIndex<T>.OrderByDescending(Expression<Func<T, object>> keySelector)
+            {
                 _query.OrderByDescending(keySelector);
                 return this;
             }
 
-            IQuery<T> IQuery<T>.ThenBy(Expression<Func<T, object>> keySelector)
+            IQueryIndex<T> IQueryIndex<T>.ThenBy(Expression<Func<T, object>> keySelector)
             {
                 _query.ThenBy(keySelector);
                 return this;
             }
 
-            IQuery<T> IQuery<T>.ThenByDescending(Expression<Func<T, object>> keySelector)
+            IQueryIndex<T> IQueryIndex<T>.ThenByDescending(Expression<Func<T, object>> keySelector)
             {
                 _query.ThenByDescending(keySelector);
                 return this;

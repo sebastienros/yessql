@@ -4,9 +4,10 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
 
-namespace YesSql.Core.Query {
-    public interface IQuery {
-
+namespace YesSql.Core.Query
+{
+    public interface IQuery
+    {
         /// <summary>
         /// Adds a filter on the document type
         /// </summary>
@@ -17,7 +18,7 @@ namespace YesSql.Core.Query {
         /// Defines what type of index should be returned
         /// </summary>
         /// <typeparam name="T">The type of index to return</typeparam>
-        IQuery<T> ForIndex<T>() where T : Index;
+        IQueryIndex<T> ForIndex<T>() where T : Index;
 
         /// <summary>
         /// Returns documents from any type
@@ -25,16 +26,14 @@ namespace YesSql.Core.Query {
         IQuery<object> Any();
     }
 
-    public interface IQuery<T> where T : class {
-
+    /// <summary>
+    /// Represents a query over an entity
+    /// </summary>
+    /// <typeparam name="T">The type to return. It can be and index or an entity</typeparam>
+    public interface IQuery<T> where T : class
+    {
         IQuery<T, TIndex> With<TIndex>() where TIndex : Index;
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : Index;
-        IQuery<T> Where(string sql);
-        IQuery<T> OrderBy(Expression<Func<T, object>> keySelector);
-        IQuery<T> OrderByDescending(Expression<Func<T, object>> keySelector) ;
-        IQuery<T> ThenBy(Expression<Func<T, object>> keySelector) ;
-        IQuery<T> ThenByDescending(Expression<Func<T, object>> keySelector) ;
-
         IQuery<T> Skip(int count);
         IQuery<T> Take(int count);
         Task<T> FirstOrDefault();
@@ -42,6 +41,31 @@ namespace YesSql.Core.Query {
         Task<int> Count();
     }
 
+    /// <summary>
+    /// Represents a query over an index, which can be ordered.
+    /// </summary>
+    /// <typeparam name="T">The index's type to query over.</typeparam>
+    public interface IQueryIndex<T> where T : Index
+    {
+        IQueryIndex<TIndex> With<TIndex>() where TIndex : Index;
+        IQueryIndex<TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : Index;
+        IQueryIndex<T> Where(string sql);
+        IQueryIndex<T> OrderBy(Expression<Func<T, object>> keySelector);
+        IQueryIndex<T> OrderByDescending(Expression<Func<T, object>> keySelector);
+        IQueryIndex<T> ThenBy(Expression<Func<T, object>> keySelector);
+        IQueryIndex<T> ThenByDescending(Expression<Func<T, object>> keySelector);
+        IQueryIndex<T> Skip(int count);
+        IQueryIndex<T> Take(int count);
+        Task<T> FirstOrDefault();
+        Task<IEnumerable<T>> List();
+        Task<int> Count();
+    }
+
+    /// <summary>
+    /// Represents a query over an index that targets a specific entity.
+    /// </summary>
+    /// <typeparam name="T">The entity's type to return.</typeparam>
+    /// <typeparam name="TIndex">The index's type to query over.</typeparam>
     public interface IQuery<T, TIndex> : IQuery<T>
         where T : class
         where TIndex : Index
