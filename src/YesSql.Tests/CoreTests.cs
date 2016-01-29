@@ -46,6 +46,10 @@ namespace YesSql.Tests
             );
 
             _store.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropMapIndexTable(nameof(PersonByAge)), false
+            );
+
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropMapIndexTable(nameof(PublishedArticle)), false
             );
 
@@ -74,6 +78,12 @@ namespace YesSql.Tests
             _store.ExecuteMigration(schemaBuilder => schemaBuilder
                 .CreateMapIndexTable(nameof(PersonByName), column => column
                     .Column<string>(nameof(PersonByName.Name))
+                )
+            );
+
+            _store.ExecuteMigration(schemaBuilder => schemaBuilder
+                .CreateMapIndexTable(nameof(PersonByAge), column => column
+                    .Column<int>(nameof(PersonByAge.Age))
                 )
             );
 
@@ -296,6 +306,153 @@ namespace YesSql.Tests
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", person.Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldJoinMapIndexes()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Age = 1
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Age = 2
+                };
+
+                var paul = new Person
+                {
+                    Firstname = "Paul",
+                    Age = 2
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+                session.Save(paul);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(2, await session.QueryIndexAsync<PersonByAge>(x => x.Age == 2).Count());
+                Assert.Equal(1, await session.QueryAsync().For<Person>()
+                    .With<PersonByName>(x => x.Name == "Steve")
+                    .With<PersonByAge>(x => x.Age == 2)
+                    .Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldOrderJoinedMapIndexes()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Age = 1
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Age = 2
+                };
+
+                var paul = new Person
+                {
+                    Firstname = "Scott",
+                    Age = 2
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+                session.Save(paul);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryAsync().For<Person>()
+                    .With<PersonByName>(x => x.Name.StartsWith("S"))
+                    .With<PersonByAge>(x => x.Age == 2)
+                    .Count());
+
+                Assert.Equal("Scott", (await session.QueryAsync().For<Person>()
+                    .With<PersonByName>(x => x.Name.StartsWith("S"))
+                    .OrderBy(x => x.Name)
+                    .With<PersonByAge>(x => x.Age == 2)
+                    .FirstOrDefault())
+                    .Firstname);
+
+                Assert.Equal("Steve", (await session.QueryAsync().For<Person>()
+                    .With<PersonByName>(x => x.Name.StartsWith("S"))
+                    .OrderByDescending(x => x.Name)
+                    .With<PersonByAge>(x => x.Age == 2)
+                    .FirstOrDefault())
+                    .Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldJoinReduceIndex()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+            _store.RegisterIndexes<PublishedArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var dates = new[]
+                {
+                    new DateTime(2011, 11, 1), // published
+                    new DateTime(2011, 11, 2), // not published
+                    new DateTime(2011, 11, 3), // published
+                    new DateTime(2011, 11, 4), // not published
+                    new DateTime(2011, 11, 1), // published
+                    new DateTime(2011, 11, 2), // not published
+                    new DateTime(2011, 11, 3), // published
+                    new DateTime(2011, 11, 1), // not published
+                    new DateTime(2011, 11, 2), // published
+                    new DateTime(2011, 11, 1) // not published
+                };
+
+                var articles = dates.Select((x, i) => new Article
+                {
+                    IsPublished = i % 2 == 0, // half are published
+                    PublishedUtc = x
+                });
+
+                foreach (var article in articles)
+                {
+                    session.Save(article);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(4, await session.QueryIndexAsync<ArticlesByDay>().Count());
+
+                Assert.Equal(4, await session.QueryAsync().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count());
+                Assert.Equal(3, await session.QueryAsync().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count());
+                Assert.Equal(2, await session.QueryAsync().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryAsync().For<Article>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count());
+
+                Assert.Equal(2, await session.QueryAsync().For<Article>().With<PublishedArticle>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 1).DayOfYear).Count());
+                Assert.Equal(1, await session.QueryAsync().For<Article>().With<PublishedArticle>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 2).DayOfYear).Count());
+                Assert.Equal(2, await session.QueryAsync().For<Article>().With<PublishedArticle>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 3).DayOfYear).Count());
+                Assert.Equal(0, await session.QueryAsync().For<Article>().With<PublishedArticle>().With<ArticlesByDay>(x => x.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).Count());
             }
         }
 
@@ -1070,6 +1227,34 @@ namespace YesSql.Tests
                 var circles = await session.QueryAsync().For<Circle>().List();
 
                 Assert.Equal(1, circles.Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldUpdateDisconnectedObject()
+        {
+            Circle circle;
+            using (var session = _store.CreateSession())
+            {
+                circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                circle.Radius = 20;
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var circles = await session.QueryAsync().For<Circle>().List();
+                Assert.Equal(1, circles.Count());
+                Assert.Equal(20, circles.FirstOrDefault().Radius);
             }
         }
 
