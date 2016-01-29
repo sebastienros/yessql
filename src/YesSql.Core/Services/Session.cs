@@ -53,12 +53,31 @@ namespace YesSql.Core.Services
             // is it a new object?
             if (!_identityMap.HasEntity(entity))
             {
+                // already beging saved?
+                if (_saved.Contains(entity))
+                {
+                    return;
+                }
+
                 // then assign it an identifier
                 var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
                 if (accessor != null)
                 {
-                    var id = _store.GetNextId();
-                    accessor.Set(entity, id);
+                    var id = accessor.Get(entity);
+
+                    // do we need to track the entity
+                    if (id > 0)
+                    {
+                        _identityMap.Add(id, entity);
+                        _updated.Add(entity);
+                        return;
+                    }
+                    else
+                    {
+                        // it's a new entity
+                        id = _store.GetNextId();
+                        accessor.Set(entity, id);
+                    }
                 }
 
                 _saved.Add(entity);
@@ -94,10 +113,6 @@ namespace YesSql.Core.Services
                 int id;
                 if(_identityMap.TryGetDocumentId(entity, out id))
                 {
-                    // Do nothing if the document hasn't been modified
-                    // TODO: To prevent this check we could remove change tracking as a whole and have users
-                    // use Update(entity), or have a NoTrack option in a session so that entities would still be 
-                    // in the identity map but not saved on a Commit
                     if (update)
                     {
                         var oldDoc = await GetDocumentByIdAsync(id);
