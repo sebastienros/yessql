@@ -919,6 +919,35 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldOrderOnValueType()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                        Age = i
+                    };
+
+                    session.Save(person);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(100, await session.QueryIndexAsync<PersonByAge>().Count());
+                Assert.Equal(0, (await session.QueryIndexAsync<PersonByAge>().OrderBy(x => x.Age).FirstOrDefault()).Age);
+                Assert.Equal(99, (await session.QueryIndexAsync<PersonByAge>().OrderByDescending(x => x.Age).FirstOrDefault()).Age);
+            }
+        }
+
+        [Fact]
         public async Task ShouldPageResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();

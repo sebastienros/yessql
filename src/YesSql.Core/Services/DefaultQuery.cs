@@ -328,31 +328,45 @@ namespace YesSql.Core.Services
             builder.Append(")");
         }
 
+        private Expression RemoveUnboxing(Expression e)
+        {
+            // If an expression is a conversion, extract its body.
+            // This is used when an OrderBy expression uses a ValueType but 
+            // it's automatically using unboxing conversion (to object)
+
+            if(e.NodeType == ExpressionType.Convert)
+            {
+                return ((UnaryExpression)e).Operand;
+            }
+
+            return e;
+        }
+
         private void OrderBy<T>(Expression<Func<T, object>> keySelector)
         {
             _builder.Clear();
-            ConvertFragment(_builder, keySelector.Body);
+            ConvertFragment(_builder, RemoveUnboxing(keySelector.Body));
             _sqlBuilder.OrderBy(_builder.ToString());
         }
 
         private void ThenBy<T>(Expression<Func<T, object>> keySelector)
         {
             _builder.Clear();
-            ConvertFragment(_builder, keySelector.Body);
+            ConvertFragment(_builder, RemoveUnboxing(keySelector.Body));
             _sqlBuilder.ThenOrderBy(_builder.ToString());
         }
 
         private void OrderByDescending<T>(Expression<Func<T, object>> keySelector)
         {
             _builder.Clear();
-            ConvertFragment(_builder, keySelector.Body);
+            ConvertFragment(_builder, RemoveUnboxing(keySelector.Body));
             _sqlBuilder.OrderByDescending(_builder.ToString());
         }
 
         private void ThenByDescending<T>(Expression<Func<T, object>> keySelector)
         {
             _builder.Clear();
-            ConvertFragment(_builder, keySelector.Body);
+            ConvertFragment(_builder, RemoveUnboxing(keySelector.Body));
             _sqlBuilder.ThenOrderByDescending(_builder.ToString());
         }
 
