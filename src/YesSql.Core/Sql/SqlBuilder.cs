@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace YesSql.Core.Sql
@@ -115,7 +114,7 @@ namespace YesSql.Core.Sql
 
         public string Trail { get; set; }
 
-        public string ToSqlString(ISqlDialect dialect)
+        public string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false)
         {
             if (_clause == "select")
             {
@@ -139,7 +138,7 @@ namespace YesSql.Core.Sql
                     sb.Append(" where ").Append(_where);
                 }
 
-                if (_order != null)
+                if (_order != null && !ignoreOrderBy)
                 {
                     sb.Append(" order by ").Append(_order);
                 }

@@ -948,6 +948,36 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task CanCountThenListOrdered()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                        Age = i
+                    };
+
+                    session.Save(person);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.QueryIndexAsync<PersonByAge>().OrderBy(x => x.Age);
+
+                Assert.Equal(100, await query.Count());
+                Assert.Equal(100, (await query.List()).Count());
+            }
+        }
+
+        [Fact]
         public async Task ShouldPageResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();

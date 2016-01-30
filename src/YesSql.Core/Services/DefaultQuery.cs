@@ -376,7 +376,7 @@ namespace YesSql.Core.Services
             await _session.CommitAsync();
 
             _sqlBuilder.Selector("count(*)");
-            var sql = _sqlBuilder.ToSqlString(_dialect);
+            var sql = _sqlBuilder.ToSqlString(_dialect, true);
             return await _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
         }
 
