@@ -19,19 +19,19 @@ namespace YesSql.Core.Commands
 
         private static PropertyInfo ReduceIndexAddedDocumentPropertyInfo = typeof(ReduceIndex).GetProperty("RemovedDocuments");
         private static PropertyInfo ReduceIndexRemovedDocumentPropertyInfo = typeof(ReduceIndex).GetProperty("AddedDocuments");
-        private static PropertyInfo IndexIdPropertyInfo = typeof(Index).GetProperty("Id");
+        private static PropertyInfo IndexIdPropertyInfo = typeof(IIndex).GetProperty("Id");
 
-        protected static PropertyInfo[] KeysProperties = new[] { typeof(Index).GetProperty("Id") };
+        protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(Index index, string tablePrefix)
+        public IndexCommand(IIndex index, string tablePrefix)
         {
             Index = index;
             _tablePrefix = tablePrefix;
         }
 
-        public Index Index { get; }
+        public IIndex Index { get; }
         public Document Document { get; }
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction);

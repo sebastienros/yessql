@@ -18,7 +18,7 @@ namespace YesSql.Core.Query
         /// Defines what type of index should be returned
         /// </summary>
         /// <typeparam name="T">The type of index to return</typeparam>
-        IQueryIndex<T> ForIndex<T>() where T : Index;
+        IQueryIndex<T> ForIndex<T>() where T : class, IIndex;
 
         /// <summary>
         /// Returns documents from any type
@@ -32,8 +32,8 @@ namespace YesSql.Core.Query
     /// <typeparam name="T">The type to return. It can be and index or an entity</typeparam>
     public interface IQuery<T> where T : class
     {
-        IQuery<T, TIndex> With<TIndex>() where TIndex : Index;
-        IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : Index;
+        IQuery<T, TIndex> With<TIndex>() where TIndex : class, IIndex;
+        IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
         IQuery<T> Skip(int count);
         IQuery<T> Take(int count);
         Task<T> FirstOrDefault();
@@ -45,10 +45,10 @@ namespace YesSql.Core.Query
     /// Represents a query over an index, which can be ordered.
     /// </summary>
     /// <typeparam name="T">The index's type to query over.</typeparam>
-    public interface IQueryIndex<T> where T : Index
+    public interface IQueryIndex<T> where T : IIndex
     {
-        IQueryIndex<TIndex> With<TIndex>() where TIndex : Index;
-        IQueryIndex<TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : Index;
+        IQueryIndex<TIndex> With<TIndex>() where TIndex : class, IIndex;
+        IQueryIndex<TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
         IQueryIndex<T> Where(string sql);
         IQueryIndex<T> OrderBy(Expression<Func<T, object>> keySelector);
         IQueryIndex<T> OrderByDescending(Expression<Func<T, object>> keySelector);
@@ -68,7 +68,7 @@ namespace YesSql.Core.Query
     /// <typeparam name="TIndex">The index's type to query over.</typeparam>
     public interface IQuery<T, TIndex> : IQuery<T>
         where T : class
-        where TIndex : Index
+        where TIndex : IIndex
     {
         IQuery<T, TIndex> Where(Expression<Func<TIndex, bool>> predicate);
         IQuery<T, TIndex> OrderBy(Expression<Func<TIndex, object>> keySelector);

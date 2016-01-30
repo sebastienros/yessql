@@ -96,7 +96,7 @@ namespace YesSql.Core.Services
                 throw new ArgumentNullException("obj");
             }
 
-            var index = entity as Index;
+            var index = entity as IIndex;
             var document = entity as Document;
 
             if (document != null)
@@ -173,7 +173,7 @@ namespace YesSql.Core.Services
             {
                 throw new ArgumentNullException("obj");
             }
-            else if (obj is Index)
+            else if (obj is IIndex)
             {
                 throw new ArgumentException("Can't call DeleteEntity on an Index");
             }
@@ -397,7 +397,7 @@ namespace YesSql.Core.Services
                     // todo: if an updated object got his Key changed, then apply a New to the new value group
                     // and a Delete to the old value group. Otherwise apply Update to the current value group
 
-                    Index index = null;
+                    IIndex index = null;
 
                     if (newMapsGroup.Any())
                     {
@@ -499,12 +499,12 @@ namespace YesSql.Core.Services
         /// Creates a Func{IIndex, object}; dynamically, based on GroupKey attributes
         /// this function will be used as the keySelector for Linq.Grouping
         /// </summary>
-        private Func<Index, object> GetGroupingMetod(IndexDescriptor descriptor)
+        private Func<IIndex, object> GetGroupingMetod(IndexDescriptor descriptor)
         {
             return _store.GroupMethods.GetOrAdd(descriptor.Type, (Type key) =>
             {
                 // IIndex i => i
-                var instance = Expression.Parameter(typeof(Index), "i");
+                var instance = Expression.Parameter(typeof(IIndex), "i");
                 // i => ((TIndex)i)
                 var convertInstance = Expression.Convert(instance, descriptor.GroupKey.DeclaringType);
                 // i => ((TIndex)i).{Property}
@@ -512,7 +512,7 @@ namespace YesSql.Core.Services
                 // i => (object)(((TIndex)i).{Property})
                 var convert = Expression.Convert(property, typeof(object));
 
-                return Expression.Lambda<Func<Index, object>>(convert, instance).Compile();
+                return Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
             });
         }
 

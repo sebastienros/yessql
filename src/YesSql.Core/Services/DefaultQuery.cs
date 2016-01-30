@@ -93,7 +93,7 @@ namespace YesSql.Core.Services
             _sqlBuilder.TablePrefix = tablePrefix;
         }
 
-        private void Bind<TIndex>() where TIndex : Index
+        private void Bind<TIndex>() where TIndex : IIndex
         {
             if(_bound.Contains(typeof(TIndex)))
             {
@@ -126,7 +126,7 @@ namespace YesSql.Core.Services
             _sqlBuilder.Take(count);
         }
 
-        private void Filter<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : Index
+        private void Filter<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : IIndex
         {
             // For<T> hasn't been called already
             if (String.IsNullOrEmpty(_sqlBuilder.Clause))
@@ -263,7 +263,7 @@ namespace YesSql.Core.Services
             switch (expression.NodeType)
             {
                 case ExpressionType.Parameter:
-                    if (!typeof(Index).IsAssignableFrom(expression.Type))
+                    if (!typeof(IIndex).IsAssignableFrom(expression.Type))
                     {
                         return false;
                     }
@@ -434,7 +434,7 @@ namespace YesSql.Core.Services
 
                 _query.Page(1, 0);
 
-                if (typeof(Index).IsAssignableFrom(typeof(T)))
+                if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                 {
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
@@ -465,7 +465,7 @@ namespace YesSql.Core.Services
                 // Commit any pending changes before doing a query (auto-flush)
                 await _query._session.CommitAsync();
 
-                if (typeof(Index).IsAssignableFrom(typeof(T)))
+                if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                 {
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
@@ -511,7 +511,7 @@ namespace YesSql.Core.Services
             }
         }
 
-        class QueryIndex<T> : Query<T>, IQueryIndex<T> where T : Index
+        class QueryIndex<T> : Query<T>, IQueryIndex<T> where T : class, IIndex
         {
             public QueryIndex(DefaultQuery query) : base(query)
             { }
@@ -589,7 +589,7 @@ namespace YesSql.Core.Services
 
         class Query<T, TIndex> : Query<T>, IQuery<T, TIndex> 
             where T : class 
-            where TIndex : Index
+            where TIndex : IIndex
         {
             public Query(DefaultQuery query)
                 : base(query) {

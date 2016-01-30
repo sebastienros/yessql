@@ -20,8 +20,8 @@ namespace YesSql.Core.Services
             get; set;
         }
 
-        internal readonly ConcurrentDictionary<Type, Func<Index, object>> GroupMethods =
-            new ConcurrentDictionary<Type, Func<Index, object>>();
+        internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
+            new ConcurrentDictionary<Type, Func<IIndex, object>>();
 
         internal readonly ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>> Descriptors =
             new ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>>();

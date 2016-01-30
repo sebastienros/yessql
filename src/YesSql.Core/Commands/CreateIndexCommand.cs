@@ -15,7 +15,7 @@ namespace YesSql.Core.Commands
         public override int ExecutionOrder { get; } = 2;
 
         public CreateIndexCommand(
-            Index index,
+            IIndex index,
             IEnumerable<int> addedDocumentIds,
             string tablePrefix) : base(index, tablePrefix)
         {
@@ -27,12 +27,11 @@ namespace YesSql.Core.Commands
             var dialect = SqlDialectFactory.For(connection);
             var type = Index.GetType();
 
-            var mapIndex = Index as MapIndex;
-            if (mapIndex != null)
+            if (Index is MapIndex)
             {
                 var sql = Inserts(type) + $" {dialect.IdentitySelectString} id";
                 Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
-                await connection.ExecuteAsync($"update [{_tablePrefix}{type.Name}] set DocumentId = @mapid where Id = @id", new { mapid = mapIndex.GetAddedDocuments().Single().Id, id = Index.Id }, transaction);
+                await connection.ExecuteAsync($"update [{_tablePrefix}{type.Name}] set DocumentId = @mapid where Id = @id", new { mapid = Index.GetAddedDocuments().Single().Id, id = Index.Id }, transaction);
             }
             else
             {

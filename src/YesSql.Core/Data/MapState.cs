@@ -3,7 +3,7 @@ using YesSql.Core.Indexes;
 
 namespace YesSql.Core.Data {
     public class MapState {
-        public MapState(Index map, MapStates state)
+        public MapState(IIndex map, MapStates state)
         {
             Map = map;
             State = state;
@@ -12,7 +12,7 @@ namespace YesSql.Core.Data {
             AddedDocuments = new List<Document>();
         }
 
-        public Index Map { get; set; }
+        public IIndex Map { get; set; }
         public MapStates State { get; set; }
         public List<Document> RemovedDocuments { get; }
         public List<Document> AddedDocuments { get; }

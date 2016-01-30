@@ -2,12 +2,12 @@
 
 namespace YesSql.Core.Indexes
 {
-    public abstract class Index
+    public interface IIndex
     {
-        public int Id { get; set; }
-        public abstract void AddDocument(Document document);
-        public abstract void RemoveDocument(Document document);
-        public abstract IEnumerable<Document> GetAddedDocuments();
-        public abstract IEnumerable<Document> GetRemovedDocuments();
+        int Id { get; set; }
+        void AddDocument(Document document);
+        void RemoveDocument(Document document);
+        IEnumerable<Document> GetAddedDocuments();
+        IEnumerable<Document> GetRemovedDocuments();
     }
 }

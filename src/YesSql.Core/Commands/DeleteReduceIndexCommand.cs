@@ -7,7 +7,7 @@ namespace YesSql.Core.Commands
 {
     public class DeleteReduceIndexCommand : IndexCommand
     {
-        public DeleteReduceIndexCommand(Index index, string tablePrefix) : base(index, tablePrefix)
+        public DeleteReduceIndexCommand(IIndex index, string tablePrefix) : base(index, tablePrefix)
         {
         }
 
