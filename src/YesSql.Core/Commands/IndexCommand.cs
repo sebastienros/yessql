@@ -17,10 +17,6 @@ namespace YesSql.Core.Commands
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> InsertsList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> UpdatesList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
 
-        private static PropertyInfo ReduceIndexAddedDocumentPropertyInfo = typeof(ReduceIndex).GetProperty("RemovedDocuments");
-        private static PropertyInfo ReduceIndexRemovedDocumentPropertyInfo = typeof(ReduceIndex).GetProperty("AddedDocuments");
-        private static PropertyInfo IndexIdPropertyInfo = typeof(IIndex).GetProperty("Id");
-
         protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
         public abstract int ExecutionOrder { get; }
@@ -115,9 +111,10 @@ namespace YesSql.Core.Commands
         private static bool IsWriteable(PropertyInfo pi)
         {
             return
-                //pi.Name != ReduceIndexAddedDocumentPropertyInfo.Name &&
-                //pi.Name != ReduceIndexRemovedDocumentPropertyInfo.Name &&
-                pi.Name != IndexIdPropertyInfo.Name
+                pi.Name != nameof(IIndex.Id) &&
+                // don't read DocumentId when on a MapIndex as it might be used to 
+                // read the DocumentId directly from an Index query
+                pi.Name != "DocumentId" 
                 ;
         }
     }
