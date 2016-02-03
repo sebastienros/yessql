@@ -11,13 +11,16 @@ install:
  - ps: dnvm upgrade
  - ps: dnvm install 1.0.0-rc1-final
  - ps: dnvm list
- - ps: dnvm use 1.0.0-rc1-final
-
+ - ps: dnvm alias default 1.0.0-update1 -r coreclr
+ - ps: dnvm use default -p
+ - ps: $env:DBCONNECTIONSTRING = "Server=(local)\\SQL2014;Database=master;User ID=sa;Password=Password12!"
+services:
+  - mssql2014 
+  
 before_build:
  - ps: dnu restore
 
-build:
-  parallel: true                  
+build:              
   project: YesSql.sln      
   
 test_script:

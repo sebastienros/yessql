@@ -19,7 +19,10 @@ namespace YesSql.Tests
         {
             _store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(
+                    Environment.GetEnvironmentVariable("DBCONNECTIONSTRING") ?? 
+                    @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
+                );
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
                 cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
             });
