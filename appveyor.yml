@@ -9,10 +9,11 @@ install:
  - ps: "&{$Branch='dev';iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.ps1'))}"
  - ps: dnvm update-self
  - ps: dnvm upgrade
- - ps: dnvm install 1.0.0-rc1-final
+ - ps: dnvm install -r coreclr -arch x64 latest
  - ps: dnvm list
- - ps: dnvm alias default 1.0.0-update1 -r coreclr
+ - ps: dnvm alias default 1.0.0-rc1-update1 -r coreclr
  - ps: dnvm use default -p
+ - ps: dnvm list
  - ps: $env:DBCONNECTIONSTRING = "Server=(local)\\SQL2014;Database=master;User ID=sa;Password=Password12!"
 services:
   - mssql2014 
