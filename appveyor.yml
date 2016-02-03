@@ -5,7 +5,7 @@ init:
   - git config --global core.autocrlf true
   
 install:
- - cmd: nuget sources add -Name api.nuget.org -Source https://api.nuget.org/v3/index.json
+# - cmd: nuget sources add -Name api.nuget.org -Source https://api.nuget.org/v3/index.json
  - ps: "&{$Branch='dev';iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.ps1'))}"
  - ps: dnvm update-self
  - ps: dnvm upgrade
