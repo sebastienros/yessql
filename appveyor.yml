@@ -10,7 +10,6 @@ install:
  - ps: dnvm update-self
  - ps: dnvm upgrade
  - ps: dnvm install -r coreclr -arch x64 latest
- - ps: dnvm list
  - ps: dnvm alias default 1.0.0-rc1-update1 -r coreclr
  - ps: dnvm use default -p
  - ps: dnvm list
@@ -21,6 +20,7 @@ services:
 before_build:
  - ps: cd .\src
  - ps: dnu restore
+ - ps: cd ..
 
 build:              
   project: YesSql.sln      
