@@ -19,6 +19,7 @@ services:
   - mssql2014 
   
 before_build:
+ - ps: cd .\src
  - ps: dnu restore
 
 build:              
