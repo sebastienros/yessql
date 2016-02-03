@@ -1,0 +1,27 @@
+nuget:
+  account_feed: true
+  
+init:
+  - git config --global core.autocrlf true
+  
+install:
+ - cmd: nuget sources add -Name api.nuget.org -Source https://api.nuget.org/v3/index.json
+ - ps: "&{$Branch='dev';iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.ps1'))}"
+ - ps: dnvm update-self
+ - ps: dnvm upgrade
+ - ps: dnvm install 1.0.0-rc1-final
+ - ps: dnvm list
+ - ps: dnvm use 1.0.0-rc1-final
+
+before_build:
+ - ps: dnu restore
+
+test_script:
+ - ps: >-
+    cd .\src\YesSql.Tests
+
+    dnx test -xml xunit-results.xml
+
+    $wc = New-Object 'System.Net.WebClient'
+
+#$wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\xunit-results.xml))
