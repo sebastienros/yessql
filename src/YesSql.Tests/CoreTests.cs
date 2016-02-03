@@ -270,6 +270,37 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldKeepTrackedOnAutoFlush()
+        {
+            // When auto-flush is called the new entities need
+            // to be kept as tracked so that later modifications 
+            // are applied on the actual commit.
+
+            int id;
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+                var newBill = await session.GetAsync<Person>(bill.Id);
+                id = bill.Id;
+
+                bill.Firstname = "Bill2";
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var newBill = await session.GetAsync<Person>(id);
+
+                Assert.Equal("Bill2", newBill.Firstname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldCreateIndexAndLinkToDocument()
         {
             _store.RegisterIndexes<PersonIndexProvider>();

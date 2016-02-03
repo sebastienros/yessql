@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Core.Indexes;
 using YesSql.Core.Query;
 
 namespace YesSql.Core.Services
@@ -39,7 +38,11 @@ namespace YesSql.Core.Services
         /// <summary>
         /// Commits the current transaction asynchronously
         /// </summary>
-        Task CommitAsync();
+        /// <param name="keepTracked">
+        /// <c>True</c> if the tracked entities should still be tracked. This
+        /// parameter should normally not be used.
+        /// </param>
+        Task CommitAsync(bool keepTracked = false);
     }
 
     public static class SessionExtensions

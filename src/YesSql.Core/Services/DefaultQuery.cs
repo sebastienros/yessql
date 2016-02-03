@@ -373,7 +373,7 @@ namespace YesSql.Core.Services
         public async Task<int> CountAsync()
         {
             // Commit any pending changes before doing a query (auto-flush)
-            await _session.CommitAsync();
+            await _session.CommitAsync(keepTracked: true);
 
             _sqlBuilder.Selector("count(*)");
             var sql = _sqlBuilder.ToSqlString(_dialect, true);
@@ -434,7 +434,7 @@ namespace YesSql.Core.Services
             protected async Task<T> FirstOrDefaultImpl()
             {
                 // Commit any pending changes before doing a query (auto-flush)
-                await _query._session.CommitAsync();
+                await _query._session.CommitAsync(keepTracked: true);
 
                 _query.Page(1, 0);
 
@@ -467,7 +467,7 @@ namespace YesSql.Core.Services
             public async Task<IEnumerable<T>> ListImpl()
             {
                 // Commit any pending changes before doing a query (auto-flush)
-                await _query._session.CommitAsync();
+                await _query._session.CommitAsync(keepTracked: true);
 
                 if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                 {

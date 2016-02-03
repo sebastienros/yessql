@@ -206,7 +206,8 @@ namespace YesSql.Core.Services
 
         public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids) where T : class
         {
-            await CommitAsync();
+            // Auto-flush
+            await CommitAsync(keepTracked: true);
 
             var result = new List<T>();
             
@@ -319,7 +320,7 @@ namespace YesSql.Core.Services
             }
         }
 
-        public async Task CommitAsync()
+        public async Task CommitAsync(bool keepTracked = false)
         {
             Demand();
 
@@ -332,10 +333,21 @@ namespace YesSql.Core.Services
                 }
             }
 
+            if (!keepTracked)
+            {
+                _updated.Clear();
+            }
+
             // saving all pending entities
             foreach (var obj in _saved)
             {
                 await SaveEntityAsync(obj, update: false);
+
+                // in case of an auto-flush commit, move the new entities to the _updated list
+                if (keepTracked)
+                {
+                    _updated.Add(obj);
+                }
             }
             _saved.Clear();
 
