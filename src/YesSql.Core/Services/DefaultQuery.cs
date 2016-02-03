@@ -380,19 +380,23 @@ namespace YesSql.Core.Services
             return await _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
         }
 
-        IQuery<T> IQuery.For<T>()
+        IQuery<T> IQuery.For<T>(bool filterType)
         {
             _bound.Clear();
             _bound.Add(typeof(Document));
 
             _sqlBuilder.Select();
             _sqlBuilder.Table("Document");
-            _sqlBuilder.WhereAlso(_sqlBuilder.FormatColumn("Document", "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
-            _sqlBuilder.Parameters["@Type"] = typeof(T).SimplifiedTypeName();
+
+            if (filterType)
+            {
+                _sqlBuilder.WhereAlso(_sqlBuilder.FormatColumn("Document", "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
+                _sqlBuilder.Parameters["@Type"] = typeof(T).SimplifiedTypeName();
+            }
 
             return new Query<T>(this);
         }
-
+        
         IQueryIndex<TIndex> IQuery.ForIndex<TIndex>()
         {
             _bound.Clear();
@@ -556,9 +560,15 @@ namespace YesSql.Core.Services
                 return new QueryIndex<TIndex>(_query);
             }
 
-            public IQueryIndex<T> Where(string sql)
+            IQueryIndex<T> IQueryIndex<T>.Where(string sql)
             {
                 _query._sqlBuilder.WhereAlso(sql);
+                return this;
+            }
+
+            IQueryIndex<T> IQueryIndex<T>.Where(Expression<Func<T, bool>> predicate)
+            {
+                _query.Filter<T>(predicate);
                 return this;
             }
 
@@ -594,6 +604,13 @@ namespace YesSql.Core.Services
             public Query(DefaultQuery query)
                 : base(query) {
             }
+
+            IQuery<T, TIndex> IQuery<T, TIndex>.Where(string sql)
+            {
+                _query._sqlBuilder.WhereAlso(sql);
+                return this;
+            }
+
 
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(Expression<Func<TIndex, bool>> predicate) 
             {

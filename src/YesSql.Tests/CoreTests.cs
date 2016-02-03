@@ -352,6 +352,28 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldReturnImplicitlyFilteredType()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Article());
+                session.Save(new Person { Firstname = "Bill" });
+                session.Save(new Person { Firstname = "Steve" });
+                session.Save(new Person { Firstname = "Paul" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(3, await session.QueryAsync().For<Person>().Count());
+                Assert.Equal(3, await session.QueryAsync().For<Person>(false).With<PersonByName>().Count());
+                Assert.Equal(4, await session.QueryAsync().For<Person>(false).Count());
+            }
+        }
+
+        [Fact]
         public async Task ShouldOrderJoinedMapIndexes()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
