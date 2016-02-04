@@ -272,11 +272,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldKeepTrackedOnAutoFlush()
         {
-            // When auto-flush is called the new entities need
-            // to be kept as tracked so that later modifications 
-            // are applied on the actual commit.
-
-            int id;
             using (var session = _store.CreateSession())
             {
                 var bill = new Person
@@ -287,16 +282,46 @@ namespace YesSql.Tests
 
                 session.Save(bill);
                 var newBill = await session.GetAsync<Person>(bill.Id);
-                id = bill.Id;
+
+                Assert.Same(newBill, bill);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldUpdateAutoflushedIndex()
+        {
+            // When auto-flush is called on an entity
+            // its indexes should be updated on the actual commit
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+
+                // This query should force the index to be persisted
+
+                Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Count());
 
                 bill.Firstname = "Bill2";
+
+                Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Where(x => x.Name == "Bill2").Count());
+
+                bill.Firstname = "Bill3";
+
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
             }
 
             using (var session = _store.CreateSession())
             {
-                var newBill = await session.GetAsync<Person>(id);
-
-                Assert.Equal("Bill2", newBill.Firstname);
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill3").Count());
             }
         }
 

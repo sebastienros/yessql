@@ -322,6 +322,11 @@ namespace YesSql.Core.Services
 
         public async Task CommitAsync(bool keepTracked = false)
         {
+            if(_saved.Count == 0 && _updated.Count == 0 && _deleted.Count == 0)
+            {
+                return;
+            }
+
             Demand();
 
             // saving all updated entities
@@ -333,30 +338,17 @@ namespace YesSql.Core.Services
                 }
             }
 
-            if (!keepTracked)
-            {
-                _updated.Clear();
-            }
-
             // saving all pending entities
             foreach (var obj in _saved)
             {
                 await SaveEntityAsync(obj, update: false);
-
-                // in case of an auto-flush commit, move the new entities to the _updated list
-                if (keepTracked)
-                {
-                    _updated.Add(obj);
-                }
             }
-            _saved.Clear();
 
             // deleting all pending entities
             foreach (var obj in _deleted)
             {
                 await DeleteEntityAsync(obj);
             }
-            _deleted.Clear();
 
             // compute all reduce indexes
             await ReduceAsync();
@@ -366,6 +358,20 @@ namespace YesSql.Core.Services
                 await command.ExecuteAsync(_connection, _transaction);
             }
 
+            if(keepTracked)
+            {
+                foreach(var saved in _saved)
+                {
+                    _updated.Add(saved);
+                }
+            }
+            else
+            {
+                _updated.Clear();
+            }
+
+            _saved.Clear();
+            _deleted.Clear();
             _commands.Clear();
         }
         

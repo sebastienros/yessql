@@ -140,9 +140,45 @@ namespace YesSql.Storage.Sql
             return result;
         }
 
-        public Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
+        public async Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
         {
-            return GetAsync<object>(documents.Select(x => x.Id).ToArray());
+            var result = new List<object>();
+
+            await _dbConnection.OpenAsync();
+
+            try
+            {
+                using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
+                {
+                    var typeGroups = documents.GroupBy(x => x.EntityType);
+
+                    // In case identities are from different types, group queries by type
+                    foreach (var typeGroup in typeGroups)
+                    {
+                        // Limit the IN clause to 128 items at a time
+                        foreach (var documentsPage in typeGroup.PagesOf(128))
+                        {
+                            var ids = documentsPage.Select(x => x.Id).ToArray();
+                            var dialect = SqlDialectFactory.For(_dbConnection);
+                            var selectCmd = $"select Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
+                            var entities = await _dbConnection.QueryAsync<string>(selectCmd, new { Id = ids }, tx);
+
+                            foreach (var entity in entities)
+                            {
+                                result.Add(JsonConvert.DeserializeObject(entity, typeGroup.Key, _jsonSettings));
+                            }
+                        }
+                    }
+
+                    tx.Commit();
+                }
+            }
+            finally
+            {
+                _dbConnection.Close();
+            }
+
+            return result;
         }
 
         public void Dispose()
