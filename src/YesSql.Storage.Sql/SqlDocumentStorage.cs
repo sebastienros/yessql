@@ -109,7 +109,14 @@ namespace YesSql.Storage.Sql
                 throw new ArgumentNullException("id");
             }
 
-            var result = new List<T>();
+            var result = new T[ids.Length];
+
+            // Create an index to lookup the position of a specific document id
+            var orderedLookup = new Dictionary<int, int>();
+            for (var i = 0; i < ids.Length; i++)
+            {
+                orderedLookup[ids[i]] = i;
+            }
 
             await _dbConnection.OpenAsync();
 
@@ -120,12 +127,13 @@ namespace YesSql.Storage.Sql
                     foreach (var idPages in ids.PagesOf(128))
                     {
                         var dialect = SqlDialectFactory.For(_dbConnection);
-                        var selectCmd = $"select Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
-                        var entities = await _dbConnection.QueryAsync<string>(selectCmd, new { Id = idPages.ToArray() }, tx);
+                        var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
+                        var entities = await _dbConnection.QueryAsync<IdString>(selectCmd, new { Id = idPages.ToArray() }, tx);
 
                         foreach (var entity in entities)
                         {
-                            result.Add(JsonConvert.DeserializeObject<T>(entity, _jsonSettings));
+                            var index = orderedLookup[entity.Id];
+                            result[index] = JsonConvert.DeserializeObject<T>(entity.Content, _jsonSettings);
                         }
                     }
 
@@ -142,7 +150,14 @@ namespace YesSql.Storage.Sql
 
         public async Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
         {
-            var result = new List<object>();
+            var result = new object[documents.Length];
+
+            // Create an index to lookup the position of a specific document id
+            var orderedLookup = new Dictionary<int, int>();
+            for(var i=0; i<documents.Length; i++)
+            {
+                orderedLookup[documents[i].Id] = i;
+            }
 
             await _dbConnection.OpenAsync();
 
@@ -160,12 +175,13 @@ namespace YesSql.Storage.Sql
                         {
                             var ids = documentsPage.Select(x => x.Id).ToArray();
                             var dialect = SqlDialectFactory.For(_dbConnection);
-                            var selectCmd = $"select Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
-                            var entities = await _dbConnection.QueryAsync<string>(selectCmd, new { Id = ids }, tx);
+                            var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
+                            var entities = await _dbConnection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
 
-                            foreach (var entity in entities)
+                            foreach(var entity in entities)
                             {
-                                result.Add(JsonConvert.DeserializeObject(entity, typeGroup.Key, _jsonSettings));
+                                var index = orderedLookup[entity.Id];
+                                result[index] = JsonConvert.DeserializeObject(entity.Content, typeGroup.Key, _jsonSettings);
                             }
                         }
                     }
@@ -187,6 +203,12 @@ namespace YesSql.Storage.Sql
             {
                 _dbConnection.Dispose();
             }
+        }
+
+        private struct IdString
+        {
+            public int Id;
+            public string Content;
         }
     }
 }
