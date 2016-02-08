@@ -1507,5 +1507,44 @@ namespace YesSql.Tests
                 Assert.Equal(4, await session.QueryAsync<Article, PublishedArticle>().Count());
             }
         }
+
+        [Fact]
+        public async Task ShouldAcceptEmptyIsIn()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill"
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve"
+                };
+
+                var paul = new Person
+                {
+                    Firstname = "Scott"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+                session.Save(paul);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryAsync().For<Person>()
+                    .With<PersonByName>(x => x.Name.IsIn(new[] { "Bill", "Steve" }))
+                    .Count());
+
+                Assert.Equal(0, await session.QueryAsync().For<Person>()
+                    .With<PersonByName>(x => x.Name.IsIn(new string[0]))
+                    .Count());
+            }
+        }
     }
 }

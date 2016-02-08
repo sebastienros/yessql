@@ -68,18 +68,25 @@ namespace YesSql.Core.Services
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(int), typeof(IEnumerable<int>) })] =
                 (query, builder, expression) =>
             {
-                query.ConvertFragment(builder, expression.Arguments[0]);
-                builder.Append(" in (");
                 var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
-                for(var i=0; i<values.Length; i++)
+
+                if (values.Length == 0)
                 {
-                    query.ConvertFragment(builder, Expression.Constant(values[i]));
-                    if (i < values.Length - 1)
-                    {
-                        builder.Append(", ");
-                    }
+                    builder.Append(" 1 = 0");
                 }
-                builder.Append(")");
+                else {
+                    query.ConvertFragment(builder, expression.Arguments[0]);
+                    builder.Append(" in (");
+                    for (var i = 0; i < values.Length; i++)
+                    {
+                        query.ConvertFragment(builder, Expression.Constant(values[i]));
+                        if (i < values.Length - 1)
+                        {
+                            builder.Append(", ");
+                        }
+                    }
+                    builder.Append(")");
+                }
             };
         }
 
