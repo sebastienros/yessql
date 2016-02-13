@@ -6,7 +6,7 @@
   "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt",
   "dependencies": {
     "YesSql.Core": "",
-    "LightningDB": "0.9.3-rc1-43"
+    "LightningDB": "0.9.3-rc1-45"
   },
   "frameworks": {
     "dotnet5.4": {
