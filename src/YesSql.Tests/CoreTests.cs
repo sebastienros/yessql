@@ -13,16 +13,18 @@ namespace YesSql.Tests
 {
     public class CoreTests : IDisposable
     {
+        public static string ConnectionString =>
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DBCONNECTIONSTRING"))
+                ? Environment.GetEnvironmentVariable("DBCONNECTIONSTRING")
+                : "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+
         private readonly IStore _store;
 
         public CoreTests()
         {
             _store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(
-                    Environment.GetEnvironmentVariable("DBCONNECTIONSTRING") ?? 
-                    @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
-                );
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
                 cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
             });
@@ -690,7 +692,8 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task MultipleIndexesShoudNotConflict() {
+        public async Task MultipleIndexesShoudNotConflict()
+        {
             _store.RegisterIndexes<ArticleIndexProvider>();
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -833,9 +836,9 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 // document was deleted
-                Assert.Equal(9, await session.QueryAsync().For<Article>().Count()); 
+                Assert.Equal(9, await session.QueryAsync().For<Article>().Count());
                 // index was deleted
-                Assert.Equal(3, await session.QueryIndexAsync<ArticlesByDay>().Count()); 
+                Assert.Equal(3, await session.QueryIndexAsync<ArticlesByDay>().Count());
             }
         }
 
@@ -856,10 +859,10 @@ namespace YesSql.Tests
                     new DateTime(2011, 11, 2),
                     new DateTime(2011, 11, 2),
                     new DateTime(2011, 11, 2),
-                    
+
                     new DateTime(2011, 11, 3),
                     new DateTime(2011, 11, 3),
-                    
+
                     new DateTime(2011, 11, 4)
                 };
 
@@ -1089,7 +1092,7 @@ namespace YesSql.Tests
                 Assert.Equal(10, (await session.QueryIndexAsync<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).List()).Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>(x => x.Name == "Bill0").Count());
 
-                 var persons = await session.QueryAsync<Person, PersonByName>().Take(10).List();
+                var persons = await session.QueryAsync<Person, PersonByName>().Take(10).List();
 
                 Assert.Equal(10, persons.Count());
             }
@@ -1177,7 +1180,7 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldSaveBigDocuments()
         {
-            using(var session = _store.CreateSession())
+            using (var session = _store.CreateSession())
             {
                 var bill = new Person
                 {
@@ -1197,10 +1200,10 @@ namespace YesSql.Tests
                 var drawing = new Drawing
                 {
                     Shapes = new Shape[]
-                    { 
-                        new Square { Size = 10 }, 
-                        new Square { Size = 20 }, 
-                        new Circle { Radius = 5 } 
+                    {
+                        new Square { Size = 10 },
+                        new Square { Size = 20 },
+                        new Circle { Radius = 5 }
                     }
                 };
 
@@ -1220,12 +1223,12 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldIgnoreNonSerializedAttribute() 
+        public async Task ShouldIgnoreNonSerializedAttribute()
         {
-            using (var session = _store.CreateSession()) 
+            using (var session = _store.CreateSession())
             {
 
-                var dog = new Animal 
+                var dog = new Animal
                 {
                     Name = "Doggy",
                     Color = "Pink"
