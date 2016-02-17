@@ -55,4 +55,5 @@ services:
 #   project: YesSql.sln      
   
 test_script:
- - ps: dnx -p ".\src\YesSql.Tests\project.json" test
+ - ps: cd .\src\YesSql.Tests
+ - ps: dnx test
