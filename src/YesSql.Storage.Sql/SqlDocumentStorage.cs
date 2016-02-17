@@ -133,7 +133,13 @@ namespace YesSql.Storage.Sql
                         foreach (var entity in entities)
                         {
                             var index = orderedLookup[entity.Id];
-                            result[index] = JsonConvert.DeserializeObject<T>(entity.Content, _jsonSettings);
+                            if (typeof(T) == typeof(object))
+                            {
+                                result[index] = JsonConvert.DeserializeObject<dynamic>(entity.Content, _jsonSettings);
+                            }
+                            else {
+                                result[index] = JsonConvert.DeserializeObject<T>(entity.Content, _jsonSettings);
+                            }
                         }
                     }
 
@@ -175,7 +181,8 @@ namespace YesSql.Storage.Sql
                         {
                             var ids = documentsPage.Select(x => x.Id).ToArray();
                             var dialect = SqlDialectFactory.For(_dbConnection);
-                            var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
+                            var op = ids.Length == 1 ? "=" : "IN";
+                            var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id {op} @Id;";
                             var entities = await _dbConnection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
 
                             foreach(var entity in entities)
