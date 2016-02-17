@@ -21,10 +21,10 @@ namespace YesSql.Core.Services
         // Wether the Session should track the entities itself, in case the underlying
         // storage API doesn't do it
         private readonly DbConnection _connection;
-        private readonly ISqlDialect _dialect;
-         
         private DbTransaction _transaction;
         private IsolationLevel _isolationLevel;
+        private readonly ISqlDialect _dialect;
+         
         protected readonly IdentityMap _identityMap = new IdentityMap();
         private List<IIndexCommand> _commands = new List<IIndexCommand>();
         protected readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
@@ -46,6 +46,15 @@ namespace YesSql.Core.Services
 
             _connection = _store.Configuration.ConnectionFactory.CreateConnection();
             _dialect = SqlDialectFactory.For(_connection);
+        }
+
+        public DbTransaction Transaction
+        {
+            get
+            {
+                Demand();
+                return _transaction;
+            }
         }
 
         public void Save(object entity)
@@ -635,6 +644,25 @@ namespace YesSql.Core.Services
             _isolationLevel = isolationLevel;
             return this;
         }
+
+        public void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true)
+        {
+            Demand();
+
+            try
+            {
+                var schemaBuilder = new SchemaBuilder(_connection, _transaction, _store.Configuration.TablePrefix);
+                migration(schemaBuilder);
+            }
+            catch
+            {
+                if (throwException)
+                {
+                    throw;
+                }
+            }
+        }
+
     }
 
 }

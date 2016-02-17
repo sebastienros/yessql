@@ -43,61 +43,29 @@ namespace YesSql.Core.Services
 
         public async Task InitializeAsync()
         {
-            ExecuteMigration(builder =>
+            using (var session = CreateSession())
             {
-                builder
-                    .CreateTable("Document", table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                )
-                .AlterTable("Document", table => table
-                    .CreateIndex("IX_Type", "Type")
-                );
-                
-                builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
-                    .Column<string>("dimension")
-                    .Column<ulong>("nextval")
-                );
-            });
+                session.ExecuteMigration(builder =>
+                {
+                    builder
+                        .CreateTable("Document", table => table
+                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                        .Column<string>("Type", column => column.NotNull())
+                    )
+                    .AlterTable("Document", table => table
+                        .CreateIndex("IX_Type", "Type")
+                    );
+
+                    builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
+                        .Column<string>("dimension")
+                        .Column<ulong>("nextval")
+                    );
+                });
+            }
 
             await Configuration.DocumentStorageFactory.InitializeAsync();
         }
 
-        public void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true)
-        {
-            var connection = Configuration.ConnectionFactory.CreateConnection();
-            connection.Open();
-            try
-            {
-                using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
-                {
-                    var schemaBuilder = new SchemaBuilder(connection, transaction, Configuration.TablePrefix);
-
-                    migration(schemaBuilder);
-
-                    transaction.Commit();
-                }
-            }
-            catch
-            {
-                if(throwException)
-                {
-                    throw;
-                }
-            }
-            finally
-            {
-                if (Configuration.ConnectionFactory.Disposable)
-                {
-                    connection.Dispose();
-                }
-                else
-                {
-                    connection.Close();
-                }
-            }
-        }
-        
         private void ValidateConfiguration()
         {
             if (Configuration.ConnectionFactory == null)

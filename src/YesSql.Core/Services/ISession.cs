@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Core.Query;
+using YesSql.Core.Sql;
 
 namespace YesSql.Core.Services
 {
@@ -43,6 +45,14 @@ namespace YesSql.Core.Services
         /// parameter should normally not be used.
         /// </param>
         Task CommitAsync(bool keepTracked = false);
+
+        /// <summary>
+        /// Returns a <see cref="DbTransaction"/> that is used by this instance.
+        /// </summary>
+        DbTransaction Transaction { get; }
+
+        void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true);
+
     }
 
     public static class SessionExtensions

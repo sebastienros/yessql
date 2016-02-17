@@ -27,7 +27,6 @@ namespace YesSql.Core.Services
         Task InitializeAsync();
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
         int GetNextId();
-        void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true);
         IEnumerable<IndexDescriptor> Describe(Type target);
     }
 }

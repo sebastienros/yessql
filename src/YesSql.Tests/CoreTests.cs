@@ -36,31 +36,33 @@ namespace YesSql.Tests
 
         public void CleanDatabase()
         {
-            // Remove existing tables
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropReduceIndexTable(nameof(ArticlesByDay)), false
-            );
+            using (var session = _store.CreateSession())
+            {
+                // Remove existing tables
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropReduceIndexTable(nameof(ArticlesByDay)), false
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropMapIndexTable(nameof(PersonByName)), false
-            );
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropMapIndexTable(nameof(PersonByName)), false
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropMapIndexTable(nameof(PersonByAge)), false
-            );
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropMapIndexTable(nameof(PersonByAge)), false
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropMapIndexTable(nameof(PublishedArticle)), false
-            );
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropMapIndexTable(nameof(PublishedArticle)), false
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable("Document"), false
-            );
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropTable("Document"), false
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable(LinearBlockIdGenerator.TableName), false
-            );
-
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropTable(LinearBlockIdGenerator.TableName), false
+                );
+            }
         }
 
         public void CreateTables()
@@ -68,29 +70,32 @@ namespace YesSql.Tests
             // Create tables
             _store.InitializeAsync().Wait();
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .CreateReduceIndexTable(nameof(ArticlesByDay), column => column
-                    .Column<int>(nameof(ArticlesByDay.Count))
-                    .Column<int>(nameof(ArticlesByDay.DayOfYear))
-                )
-            );
+            using (var session = _store.CreateSession())
+            {
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .CreateReduceIndexTable(nameof(ArticlesByDay), column => column
+                        .Column<int>(nameof(ArticlesByDay.Count))
+                        .Column<int>(nameof(ArticlesByDay.DayOfYear))
+                    )
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .CreateMapIndexTable(nameof(PersonByName), column => column
-                    .Column<string>(nameof(PersonByName.Name))
-                )
-            );
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .CreateMapIndexTable(nameof(PersonByName), column => column
+                        .Column<string>(nameof(PersonByName.Name))
+                    )
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .CreateMapIndexTable(nameof(PersonByAge), column => column
-                    .Column<int>(nameof(PersonByAge.Age))
-                )
-            );
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .CreateMapIndexTable(nameof(PersonByAge), column => column
+                        .Column<int>(nameof(PersonByAge.Age))
+                    )
+                );
 
-            _store.ExecuteMigration(schemaBuilder => schemaBuilder
-                .CreateMapIndexTable(nameof(PublishedArticle), column => { }
-                )
-            );
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .CreateMapIndexTable(nameof(PublishedArticle), column => { }
+                    )
+                );
+            }
         }
 
         [Fact]
