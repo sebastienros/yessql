@@ -10,7 +10,7 @@ install:
  - ps: dnvm update-self
  - ps: dnvm upgrade
  - ps: dnvm install 1.0.0-rc1-update1
-#  - ps: dnvm install -r coreclr -arch x64 latest
+ - ps: dnvm install -r coreclr -arch x64 latest
  - ps: dnvm alias default 1.0.0-rc1-update1 -r coreclr
  - ps: dnvm use default -p
  - ps: dnvm list
