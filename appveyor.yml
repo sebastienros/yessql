@@ -9,28 +9,22 @@ install:
  - ps: "&{$Branch='dev';iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.ps1'))}"
  - ps: dnvm update-self
  - ps: dnvm upgrade
- - ps: dnvm install -r coreclr -arch x64 latest
+ - ps: dnvm install 1.0.0-rc1-update1
+#  - ps: dnvm install -r coreclr -arch x64 latest
  - ps: dnvm alias default 1.0.0-rc1-update1 -r coreclr
  - ps: dnvm use default -p
  - ps: dnvm list
+ - ps: dnu restore .\src\YesSql.Core\project.json
+ - ps: dnu restore .\src\YesSql.Storage.Sql\project.json
+ - ps: dnu restore .\src\YesSql.Tests\project.json
+
  - ps: $env:DBCONNECTIONSTRING = "Server=(local)\\SQL2014;Database=master;User ID=sa;Password=Password12!"
+
 services:
   - mssql2014 
   
-before_build:
- - ps: cd .\src
- - ps: dnu restore
- - ps: cd ..
-
-build:              
-  project: YesSql.sln      
+# build:              
+#   project: YesSql.sln      
   
 test_script:
- - ps: >-
-    cd .\src\YesSql.Tests
-
-    dnx test -xml xunit-results.xml
-
-    $wc = New-Object 'System.Net.WebClient'
-
-#$wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\xunit-results.xml))
+ - ps: dnx -p .\src\YesSql.Tests\project.json test
