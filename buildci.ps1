@@ -15,10 +15,6 @@
 & dnu restore .\src\YesSql.Storage.Sql\project.json
 & dnu build .\src\YesSql.Storage.Sql\project.json
 
-# YesSql.Storage.Prevalence
-& dnu restore .\src\YesSql.Storage.Prevalence\project.json
-& dnu build .\src\YesSql.Storage.Prevalence\project.json
-
 # YesSql.Storage.LightningDB
 & dnu restore .\src\YesSql.Storage.LightningDB\project.json
 & dnu build .\src\YesSql.Storage.LightningDB\project.json
@@ -26,10 +22,6 @@
 # YesSql.Storage.InMemory
 & dnu restore .\src\YesSql.Storage.InMemory\project.json
 & dnu build .\src\YesSql.Storage.InMemory\project.json
-
-# YesSql.Storage.FileSystem
-& dnu restore .\src\YesSql.Storage.FileSystem\project.json
-& dnu build .\src\YesSql.Storage.FileSystem\project.json
 
 # YesSql.Storage.Cache
 & dnu restore .\src\YesSql.Storage.Cache\project.json
