@@ -9,7 +9,6 @@ using Microsoft.Data.Sqlite;
 using System.Data.SqlClient;
 using System.Data;
 using YesSql.Storage.InMemory;
-using YesSql.Storage.FileSystem;
 using YesSql.Core.Storage;
 using System.Threading;
 using YesSql.Storage.LightningDB;
@@ -481,11 +480,6 @@ namespace YesSql.Samples.Performance
 
         public void Main()
         {
-            using (var tempFolder = new TemporaryFolder())
-            {
-                StoreUsers(new FileSystemDocumentStorageFactory(tempFolder.Folder)).Wait();
-            }
-
             StoreUsers(new InMemoryDocumentStorageFactory()).Wait();
 
             using (var tempFolder = new TemporaryFolder())
@@ -522,7 +516,6 @@ namespace YesSql.Samples.Performance
                 //cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared");
 
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-                //cfg.DocumentStorageFactory = new FileSystemDocumentStorageFactory(tempPath);
                 cfg.IsolationLevel = IsolationLevel.ReadUncommitted;
             });
 

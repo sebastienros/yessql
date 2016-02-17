@@ -3,7 +3,6 @@
   "dependencies": {
     "Microsoft.Data.Sqlite": "1.0.0-*",
     "YesSql.Core": "2.0.0-alpha",
-    "YesSql.Storage.FileSystem": "1.0.0",
     "YesSql.Storage.InMemory": "1.0.0",
     "YesSql.Storage.LightningDB": "1.0.0",
     "YesSql.Storage.Sql": "1.0.0",

@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using YesSql.Core.Storage;
 
-namespace YesSql.Storage.InMemory
+namespace YesSql.Storage.Cache
 {
     public class CacheDocumentStorageFactory : IDocumentStorageFactory
     {
@@ -25,7 +25,7 @@ namespace YesSql.Storage.InMemory
 
         public Task InitializeAsync()
         {
-            return Task.CompletedTask;
+            return _concreteStorageFactory.InitializeAsync();
         }
 
     }

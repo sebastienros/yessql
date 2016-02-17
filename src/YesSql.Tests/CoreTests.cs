@@ -1,13 +1,26 @@
-﻿using System;
+﻿#define InMemory
+
+using System;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Core.Services;
-using YesSql.Storage.InMemory;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
-using Microsoft.Data.Sqlite;
-using System.Data.SqlClient;
+
+#if InMemory
+using YesSql.Storage.InMemory;
+#elif SQL
+using YesSql.Storage.Sql;
+#elif LightningDB
+using YesSql.Storage.LightningDB;
+#elif Prevalence
+using YesSql.Storage.Prevalence;
+#elif Cache
+using YesSql.Storage.Sql;
+using YesSql.Storage.Cache;
+#endif
 
 namespace YesSql.Tests
 {
@@ -20,13 +33,29 @@ namespace YesSql.Tests
 
         private readonly IStore _store;
 
+#if LightningDB
+        private TemporaryFolder _tempFolder;
+#endif
+
         public CoreTests()
         {
             _store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
+            cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
+            cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+
+#if InMemory
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+#elif SQL
+                cfg.DocumentStorageFactory = new SqlDocumentStorageFactory(cfg.ConnectionFactory);
+#elif Cache
+                cfg.DocumentStorageFactory = new CacheDocumentStorageFactory(new SqlDocumentStorageFactory(cfg.ConnectionFactory));
+#elif LightningDB
+                _tempFolder = new TemporaryFolder();
+                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory(_tempFolder.Folder);
+#elif Prevalence
+                cfg.DocumentStorageFactory = new PrevalenceDocumentStorageFactory();
+#endif
             });
 
             CleanDatabase();
@@ -37,6 +66,13 @@ namespace YesSql.Tests
         {
             CleanDatabase();
             _store.Dispose();
+
+            #if LightningDB
+            if (_tempFolder != null)
+            {
+                _tempFolder.Dispose();
+            }
+            #endif
         }
 
         public void CleanDatabase()
@@ -67,6 +103,18 @@ namespace YesSql.Tests
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .DropTable(LinearBlockIdGenerator.TableName), false
                 );
+
+#if SQL
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropTable("Content"), false
+                );
+#endif
+
+#if Cache
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropTable("Content"), false
+                );
+#endif
             }
         }
 
@@ -829,7 +877,6 @@ namespace YesSql.Tests
                 var article = await session.QueryAsync<Article, ArticlesByDay>().Where(b => b.DayOfYear == new DateTime(2011, 11, 4).DayOfYear).FirstOrDefault();
                 Assert.NotNull(article);
                 session.Delete(article);
-
             }
 
             // there should be only 3 indexes left
@@ -1321,7 +1368,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var circle = await session.GetAsync<object>(circleId);
+                var circle = await session.GetAsync<Circle>(circleId);
 
                 Assert.NotNull(circle);
                 Assert.Equal(typeof(Circle), circle.GetType());
@@ -1351,7 +1398,7 @@ namespace YesSql.Tests
                 var circle = await session.GetAsync<dynamic>(circleId);
 
                 Assert.NotNull(circle);
-                Assert.Equal(10, circle.Radius);
+                Assert.Equal(10, (int)circle.Radius);
             }
         }
 

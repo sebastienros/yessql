@@ -20,10 +20,6 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Bench", "samples\Yes
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Storage.InMemory", "src\YesSql.Storage.InMemory\YesSql.Storage.InMemory.xproj", "{D5A78707-E9FD-497B-8EF9-3739E63265B2}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Storage.Prevalence", "src\YesSql.Storage.Prevalence\YesSql.Storage.Prevalence.xproj", "{FA11D55D-744A-4C31-AE82-1A29F1825A09}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Storage.FileSystem", "src\YesSql.Storage.FileSystem\YesSql.Storage.FileSystem.xproj", "{AEC97C61-293E-4519-920A-6A7A7D7974DD}"
-EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Storage.LightningDB", "src\YesSql.Storage.LightningDB\YesSql.Storage.LightningDB.xproj", "{B45DB217-4CB4-4942-BD71-6126571D1504}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "YesSql.Storage.Sql", "src\YesSql.Storage.Sql\YesSql.Storage.Sql.xproj", "{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}"
@@ -100,30 +96,6 @@ Global
 		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|x86.ActiveCfg = Release|Any CPU
 		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|x86.Build.0 = Release|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Debug|x86.Build.0 = Debug|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Release|x86.ActiveCfg = Release|Any CPU
-		{FA11D55D-744A-4C31-AE82-1A29F1825A09}.Release|x86.Build.0 = Release|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Debug|x86.Build.0 = Debug|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Release|x86.ActiveCfg = Release|Any CPU
-		{AEC97C61-293E-4519-920A-6A7A7D7974DD}.Release|x86.Build.0 = Release|Any CPU
 		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

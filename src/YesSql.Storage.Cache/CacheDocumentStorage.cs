@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Core.Storage;
 
-namespace YesSql.Storage.InMemory
+namespace YesSql.Storage.Cache
 {
     public class CacheDocumentStorage : IDocumentStorage
     {
