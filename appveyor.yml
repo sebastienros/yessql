@@ -18,6 +18,10 @@ install:
  - ps: dnu restore .\src\YesSql.Storage.Sql\project.json
  - ps: dnu restore .\src\YesSql.Tests\project.json
 
+ - ps: dnu build .\src\YesSql.Core\project.json
+ - ps: dnu build .\src\YesSql.Storage.Sql\project.json
+ - ps: dnu build .\src\YesSql.Tests\project.json
+
  - ps: $env:DBCONNECTIONSTRING = "Server=(local)\\SQL2014;Database=master;User ID=sa;Password=Password12!"
 
 services:
@@ -27,4 +31,4 @@ services:
 #   project: YesSql.sln      
   
 test_script:
- - ps: dnx -p .\src\YesSql.Tests\project.json test
+ - ps: dnx -p ".\src\YesSql.Tests\project.json" test
