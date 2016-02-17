@@ -3,7 +3,10 @@ nuget:
   
 init:
   - git config --global core.autocrlf true
-  
+
+services:
+  - mssql2014 
+    
 install:
 # - cmd: nuget sources add -Name api.nuget.org -Source https://api.nuget.org/v3/index.json
  - ps: "&{$Branch='dev';iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.ps1'))}"
@@ -48,12 +51,12 @@ install:
 
  - ps: $env:DBCONNECTIONSTRING = "Server=(local)\\SQL2014;Database=master;User ID=sa;Password=Password12!"
 
-services:
-  - mssql2014 
+ - ps: cd .\src\YesSql.Tests
+ - ps: dnx test
+
   
 # build:              
 #   project: YesSql.sln      
   
-test_script:
- - ps: cd .\src\YesSql.Tests
- - ps: dnx test
+# test_script:
+
