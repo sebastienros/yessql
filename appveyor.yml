@@ -14,12 +14,36 @@ install:
  - ps: dnvm alias default 1.0.0-rc1-update1 -r coreclr
  - ps: dnvm use default -p
  - ps: dnvm list
+# YesSql.Core
  - ps: dnu restore .\src\YesSql.Core\project.json
- - ps: dnu restore .\src\YesSql.Storage.Sql\project.json
- - ps: dnu restore .\src\YesSql.Tests\project.json
-
  - ps: dnu build .\src\YesSql.Core\project.json
+
+# YesSql.Storage.Sql
+ - ps: dnu restore .\src\YesSql.Storage.Sql\project.json
  - ps: dnu build .\src\YesSql.Storage.Sql\project.json
+
+# YesSql.Storage.Prevalence
+ - ps: dnu restore .\src\YesSql.Storage.Prevalence\project.json
+ - ps: dnu build .\src\YesSql.Storage.Prevalence\project.json
+
+# YesSql.Storage.LightningDB
+ - ps: dnu restore .\src\YesSql.Storage.LightningDB\project.json
+ - ps: dnu build .\src\YesSql.Storage.LightningDB\project.json
+
+# YesSql.Storage.InMemory
+ - ps: dnu restore .\src\YesSql.Storage.InMemory\project.json
+ - ps: dnu build .\src\YesSql.Storage.InMemory\project.json
+
+# YesSql.Storage.FileSystem
+ - ps: dnu restore .\src\YesSql.Storage.FileSystem\project.json
+ - ps: dnu build .\src\YesSql.Storage.FileSystem\project.json
+
+# YesSql.Storage.Cache
+ - ps: dnu restore .\src\YesSql.Storage.Cache\project.json
+ - ps: dnu build .\src\YesSql.Storage.Cache\project.json
+
+# YesSql.Tests
+ - ps: dnu restore .\src\YesSql.Tests\project.json
  - ps: dnu build .\src\YesSql.Tests\project.json
 
  - ps: $env:DBCONNECTIONSTRING = "Server=(local)\\SQL2014;Database=master;User ID=sa;Password=Password12!"
