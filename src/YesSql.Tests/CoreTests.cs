@@ -26,10 +26,12 @@ namespace YesSql.Tests
 {
     public class CoreTests : IDisposable
     {
+        protected static readonly bool IsAppVeyor = Environment.GetEnvironmentVariable("Appveyor")?.ToUpperInvariant() == "TRUE";
         public static string ConnectionString =>
-            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DBCONNECTIONSTRING"))
-                ? Environment.GetEnvironmentVariable("DBCONNECTIONSTRING")
-                : "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+            IsAppVeyor
+                ? @"Server=(local)\SQL2014;Database=tempdb;User ID=sa;Password=Password12!"
+                : @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
+                ;
 
         private readonly IStore _store;
 
