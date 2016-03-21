@@ -8,6 +8,7 @@
     <BuildFolder>$(MSBuildProjectDirectory)\build</BuildFolder>
     <ArtifactsFolder>$(MSBuildProjectDirectory)\artifacts</ArtifactsFolder>
     <SrcFolder>$(MSBuildProjectDirectory)\src</SrcFolder>
+    <TestFolder>$(MSBuildProjectDirectory)\test</TestFolder>
     <RootFolder>$(MSBuildProjectDirectory)</RootFolder>
   </PropertyGroup>
 
@@ -34,7 +35,7 @@
   
   <Target Name="Test" DependsOnTargets="Compile"> 
     <MSBuild
-      Projects="$(SrcFolder)\YesSql.Tests\YesSql.Tests.csproj"
+      Projects="$(TestFolder)\YesSql.Tests\YesSql.Tests.csproj"
       Targets="Build"
       Properties="Configuration=Release;OutputPath=$(BuildFolder)" />
 

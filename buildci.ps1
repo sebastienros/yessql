@@ -28,5 +28,5 @@
 & dnu build .\src\YesSql.Storage.Cache\project.json
 
 # YesSql.Tests
-& dnu restore .\src\YesSql.Tests\project.json
-& dnu build .\src\YesSql.Tests\project.json
+& dnu restore .\test\YesSql.Tests\project.json
+& dnu build .\test\YesSql.Tests\project.json

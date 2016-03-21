@@ -1,2 +1,2 @@
- & cd .\src\YesSql.Tests
- & dnx test
+ & cd .\test\YesSql.Tests
+ & dotnet test
