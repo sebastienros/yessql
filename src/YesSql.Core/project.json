@@ -5,7 +5,7 @@
   "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
   "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt",
   "dependencies": {
-    "Newtonsoft.Json": "8.0.2",
+    "Newtonsoft.Json": "8.0.3",
     "Dapper": "1.50.0-beta7"
   },
   "frameworks": {
@@ -14,7 +14,8 @@
         "System.Reflection.Extensions": "4.0.1-*"
       },
       "imports": [
-        "dotnet5.4"
+        "dotnet5.4",
+        "portable-net451+win8"
       ]
     }
   }
