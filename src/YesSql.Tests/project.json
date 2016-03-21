@@ -2,23 +2,25 @@
   "version": "1.0.0-*",
   "dependencies": {
     "Microsoft.Data.Sqlite": "1.0.0-*",
+    "xunit": "2.1.0",
     "YesSql.Core": "",
-    "YesSql.Storage.InMemory": "",
-    "xunit.runner.dnx": "2.1.0-rc1-build204",
-    "xunit": "2.1.0-rc1-build3168",
-    "System.Runtime.Serialization.Primitives": "4.0.11-*",
     "YesSql.Storage.Cache": "1.0.0-*",
+    "YesSql.Storage.InMemory": "",
     "YesSql.Storage.LightningDB": "1.0.0-*",
     "YesSql.Storage.Sql": "1.0.0-*"
   },
-  "commands": {
-    "test": "xunit.runner.dnx"
-  },
+  "testRunner": "xunit",
   "frameworks": {
-    "dnxcore50": {
+    "netstandardapp1.5": {
       "dependencies": {
-        "System.Reflection.Extensions": "4.0.1-*"
-      }
+        "Microsoft.NETCore.Platforms": "1.0.1-*",
+        "dotnet-test-xunit": "1.0.0-dev-*",
+        "System.Reflection.Extensions": "4.0.1-*",
+        "System.Runtime.Serialization.Primitives": "4.0.11-*"
+      },
+      "imports": [
+        "dnxcore50"
+      ]
     }
   }
 }
