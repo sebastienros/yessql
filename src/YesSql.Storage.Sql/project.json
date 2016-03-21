@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha-1012",
+  "version": "1.0.0-alpha-1013",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
@@ -10,11 +10,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.CSharp": "4.0.1-*",
-        "System.Collections": "4.0.11-*",
-        "System.Linq": "4.1.0-*",
-        "System.Runtime": "4.1.0-*",
-        "System.Threading": "4.0.11-*"
+        "Microsoft.NETCore.Platforms": "1.0.1-*"
       },
       "imports": [
         "dotnet5.4",
