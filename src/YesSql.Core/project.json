@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0-alpha-9022",
+  "version": "2.0.0-alpha-9023",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
@@ -11,7 +11,7 @@
   "frameworks": {
     "dotnet5.4": {
       "dependencies": {
-        "System.Reflection.Extensions": "4.0.1-beta-23516"        
+        "System.Reflection.Extensions": "4.0.0-*"        
       }
     }
   }
