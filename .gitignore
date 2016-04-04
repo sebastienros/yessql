@@ -21,6 +21,6 @@ artifacts
 *.vsp
 project.lock.json
 *.mdb
-.vs/ 
-.build/ 
+.vs/
+.build/
 .testPublish/ 

@@ -15,7 +15,7 @@ namespace YesSql.Storage.Sql
         private readonly SqlDocumentStorageFactory _factory;
         private readonly static JsonSerializerSettings _jsonSettings;
         private readonly DbConnection _dbConnection;
-         
+
         static SqlDocumentStorage()
         {
             _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
@@ -214,8 +214,10 @@ namespace YesSql.Storage.Sql
 
         private struct IdString
         {
+            #pragma warning disable 0649
             public int Id;
             public string Content;
+            #pragma warning restore 0649
         }
     }
 }

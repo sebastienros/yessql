@@ -1,19 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics;
-using YesSql.Core.Indexes;
-using YesSql.Core.Services;
-using Xunit;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
-using System.Data.SqlClient;
-using System.Data;
-using YesSql.Storage.InMemory;
+using Xunit;
+using YesSql.Core.Indexes;
+using YesSql.Core.Services;
 using YesSql.Core.Storage;
-using System.Threading;
+using YesSql.Storage.InMemory;
 using YesSql.Storage.LightningDB;
-using System.Linq;
-using System.Collections.Generic;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Samples.Performance
@@ -694,7 +694,7 @@ namespace YesSql.Samples.Performance
 
                 identities.Add(
                     new IdentityDocument(
-                        id: i,  
+                        id: i,
                         entity: new User
                         {
                             Email = name + "@" + name + ".name",

@@ -1,22 +1,36 @@
 {
   "version": "1.0.0-*",
   "dependencies": {
-    "Microsoft.Data.Sqlite": "1.0.0-*",
-    "Dapper": "1.50.0-beta7",
+    "Microsoft.Data.Sqlite": "1.0.0-rc2-20451",
     "YesSql.Core": "2.0.0-*",
-    "xunit.assert": "2.1.0"
+    "YesSql.Storage.InMemory": "1.0.0-*",
+    "xunit": "2.1.0"
   },
   "commands": {
     "YesSql.Samples.Performance": "YesSql.Samples.Performance"
   },
   "frameworks": {
+    "net451": {
+      "frameworkAssemblies": {
+        "System.Runtime": {
+          "type": "build"
+        },
+        "System.Reflection": {
+          "type": "build"
+        },
+        "System.Threading.Tasks": {
+          "type": "build"
+        }
+      }
+    },
     "netstandardapp1.5": {
-      "dependencies": {
-        "NETStandard.Library": "1.0.0-*"
-      },
       "imports": [
-        "dnxcore50"
-      ]
+        "dnxcore50",
+        "portable-net451+win8"
+      ],
+      "dependencies": {
+        "NETStandard.Library": "1.5.0-*"
+      }
     }
   }
 }

@@ -19,7 +19,11 @@ namespace YesSql.Storage.InMemory
 
         public Task InitializeAsync()
         {
+#if NET451
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
     }

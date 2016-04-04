@@ -22,7 +22,7 @@ namespace YesSql.Storage.LightningDB
             LightningEnvironment.MapSize = mapSize;
             LightningEnvironment.MaxDatabases = 2;
             LightningEnvironment.Open();
-            
+
             using (var txn = LightningEnvironment.BeginTransaction())
             {
                 using (txn.OpenDatabase(null, new DatabaseConfiguration { Flags = DatabaseOpenFlags.Create }))
@@ -44,7 +44,11 @@ namespace YesSql.Storage.LightningDB
 
         public Task InitializeAsync()
         {
+#if NET451
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
     }

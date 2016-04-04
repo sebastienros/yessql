@@ -1,90 +1,95 @@
-﻿//using System;
-//using YesSql.Samples.Hi.Indexes;
-//using YesSql.Samples.Hi.Models;
-//using YesSql.Core.Services;
-//using System.Data.SQLite;
-//using YesSql.Core.Storage.InMemory;
+﻿using System;
+using Microsoft.Data.Sqlite;
+using YesSql.Core.Services;
+using YesSql.Samples.Hi.Indexes;
+using YesSql.Samples.Hi.Models;
+using YesSql.Storage.InMemory;
 
-//namespace YesSql.Samples.Hi
-//{
-//    internal class Program
-//    {
-//        private static void Main()
-//        {
-//            var store = new Store(cfg =>
-//            {
-//                cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
-//                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+namespace YesSql.Samples.Hi
+{
+    internal class Program
+    {
+        private static void Main()
+        {
+            var store = new Store(cfg =>
+            {
+                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true);
+                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+            });
 
-//                cfg.Migrations.Add(builder => builder
-//                    .CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
-//                        .Column<string>("Author")
-//                    )
-//                    .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
-//                        .Column<int>("Count")
-//                        .Column<int>("Day")
-//                    )
-//                );
-//            });
+            store.InitializeAsync().Wait();
 
-//            // register available indexes
-//            store.RegisterIndexes<BlogPostIndexProvider>();
+            using (var session = store.CreateSession())
+            {
+                session.ExecuteMigration(builder => builder
+                    .CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
+                        .Column<string>("Author")
+                    )
+                    .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
+                        .Column<int>("Count")
+                        .Column<int>("Day")
+                    )
+                );
+            };
 
-//            // creating a blog post
-//            var post = new BlogPost
-//            {
-//                Title = "Hello YesSql",
-//                Author = "Bill",
-//                Content = "Hello",
-//                PublishedUtc = DateTime.UtcNow,
-//                Tags = new[] {"Hello", "YesSql"}
-//            };
+            // register available indexes
+            store.RegisterIndexes<BlogPostIndexProvider>();
 
-//            // saving the post to the database
-//            using(var session = store.CreateSession())
-//            {
-//                session.Save(post);
-//            }
+            // creating a blog post
+            var post = new BlogPost
+            {
+                Title = "Hello YesSql",
+                Author = "Bill",
+                Content = "Hello",
+                PublishedUtc = DateTime.UtcNow,
+                Tags = new[] { "Hello", "YesSql" }
+            };
 
-//            // loading a single blog post
-//            using(var session = store.CreateSession())
-//            {
-//                var p = session.QueryAsync().For<BlogPost>().FirstOrDefault().Result;
-//                Console.WriteLine(p.Title); // > Hello YesSql
-//            }
+            // saving the post to the database
+            using (var session = store.CreateSession())
+            {
+                session.Save(post);
+            }
 
-//            // loading blog posts by author
-//            using (var session = store.CreateSession())
-//            {
-//                var ps = session.QueryAsync<BlogPost, BlogPostByAuthor>().Where(x => x.Author.StartsWith("B")).List().Result;
+            // loading a single blog post
+            using (var session = store.CreateSession())
+            {
+                var p = session.QueryAsync().For<BlogPost>().FirstOrDefault().Result;
+                Console.WriteLine(p.Title); // > Hello YesSql
+            }
 
-//                foreach (var p in ps)
-//                {
-//                    Console.WriteLine(p.Author); // > Bill
-//                }
-//            }
+            // loading blog posts by author
+            using (var session = store.CreateSession())
+            {
+                var ps = session.QueryAsync<BlogPost, BlogPostByAuthor>().Where(x => x.Author.StartsWith("B")).List().Result;
 
-//            // loading blog posts by day of publication
-//            using (var session = store.CreateSession())
-//            {
-//                var ps = session.QueryAsync<BlogPost, BlogPostByDay>(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd")).List().Result;
+                foreach (var p in ps)
+                {
+                    Console.WriteLine(p.Author); // > Bill
+                }
+            }
 
-//                foreach (var p in ps)
-//                {
-//                    Console.WriteLine(p.PublishedUtc); // > [Now]
-//                }
-//            }
+            // loading blog posts by day of publication
+            using (var session = store.CreateSession())
+            {
+                var ps = session.QueryAsync<BlogPost, BlogPostByDay>(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd")).List().Result;
 
-//            // counting blog posts by day
-//            using (var session = store.CreateSession())
-//            {
-//                var days = session.QueryIndexAsync<BlogPostByDay>().List().Result;
+                foreach (var p in ps)
+                {
+                    Console.WriteLine(p.PublishedUtc); // > [Now]
+                }
+            }
 
-//                foreach (var day in days)
-//                {
-//                    Console.WriteLine(day.Day + ": " + day.Count); // > [Today]: 1
-//                }
-//            }
-//        }
-//    }
-//}
+            // counting blog posts by day
+            using (var session = store.CreateSession())
+            {
+                var days = session.QueryIndexAsync<BlogPostByDay>().List().Result;
+
+                foreach (var day in days)
+                {
+                    Console.WriteLine(day.Day + ": " + day.Count); // > [Today]: 1
+                }
+            }
+        }
+    }
+}

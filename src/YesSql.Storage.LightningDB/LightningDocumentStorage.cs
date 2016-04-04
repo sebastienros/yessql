@@ -41,7 +41,11 @@ namespace YesSql.Storage.LightningDB
                 }
             }
 
+#if NET451
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
         public Task UpdateAsync(params IIdentityEntity[] documents)
@@ -63,8 +67,12 @@ namespace YesSql.Storage.LightningDB
                     tx.Commit();
                 }
             }
-            
+
+#if NET451
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
         public async Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
@@ -150,7 +158,7 @@ namespace YesSql.Storage.LightningDB
 
             return result;
         }
-        
+
         public void Dispose()
         {
         }

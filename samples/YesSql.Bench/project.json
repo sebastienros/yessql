@@ -4,21 +4,33 @@
     "Microsoft.Data.Sqlite": "1.0.0-*",
     "YesSql.Core": "2.0.0-*",
     "YesSql.Storage.LightningDB": "1.0.0-*",
-    "xunit.assert": "2.1.0"
+    "xunit": "2.1.0"
   },
   "commands": {
     "YesSql.Bench": "YesSql.Bench"
   },
   "frameworks": {
+    "net451": {
+      "frameworkAssemblies": {
+        "System.Runtime": {
+          "type": "build"
+        },
+        "System.Reflection": {
+          "type": "build"
+        },
+        "System.Threading.Tasks": {
+          "type": "build"
+        }
+      }
+    },
     "netstandardapp1.5": {
-      "dependencies": {
-        "NETStandard.Library": "1.0.0-*",
-        "System.Data.SqlClient": "4.0.0-*"
-      },
       "imports": [
         "dnxcore50",
         "portable-net451+win8"
-      ]
+      ],
+      "dependencies": {
+        "NETStandard.Library": "1.5.0-*"
+      }
     }
   }
 }

@@ -27,7 +27,11 @@ namespace YesSql.Storage.InMemory
                 _documents[document.Id] = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
             }
 
+#if NET451
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
         public Task UpdateAsync(params IIdentityEntity[] documents)
@@ -47,7 +51,11 @@ namespace YesSql.Storage.InMemory
                 _documents.Remove(document.Id);
             }
 
+#if NET451
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
         public Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
