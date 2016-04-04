@@ -1,3 +1,2 @@
-if "%~1"=="" build Build
-%WINDIR%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe /t:%~1 build.proj
-
+@ECHO OFF
+PowerShell -NoProfile -NoLogo -ExecutionPolicy unrestricted -Command "[System.Threading.Thread]::CurrentThread.CurrentCulture = ''; [System.Threading.Thread]::CurrentThread.CurrentUICulture = '';& '%~dp0build.ps1' %*; exit $LASTEXITCODE"

@@ -1,10 +1,10 @@
-﻿using YesSql.Core.Indexes;
+﻿//using YesSql.Core.Indexes;
 
-namespace YesSql.Samples.FullText.Indexes
-{
-    public class ArticleByWord : ReduceIndex
-    {
-        public string Word { get; set; }
-        public int Count { get; set; }
-    }
-}
+//namespace YesSql.Samples.FullText.Indexes
+//{
+//    public class ArticleByWord : ReduceIndex
+//    {
+//        public string Word { get; set; }
+//        public int Count { get; set; }
+//    }
+//}

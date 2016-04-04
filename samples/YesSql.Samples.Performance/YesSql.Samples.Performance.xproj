@@ -9,7 +9,7 @@
     <ProjectGuid>f2c23e01-c045-4d8e-997f-a9110da5e041</ProjectGuid>
     <RootNamespace>YesSql.Samples.Performance</RootNamespace>
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'=='' ">..\..\artifacts\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)'=='' ">..\..\artifacts\bin\$(MSBuildProjectName)\</OutputPath>
+    <OutputPath Condition="'$(OutputPath)'=='' ">..\..\artifacts\bin\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup>

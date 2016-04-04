@@ -1,21 +1,21 @@
 ﻿{
-  "version": "1.0.0-alpha-1003",
+  "version": "1.0.0-alpha-1008",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
   "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt",
   "dependencies": {
-    "YesSql.Core": ""
+    "YesSql.Core": "2.0.0-*"
   },
   "frameworks": {
-    "dotnet5.4": {
+    "netstandard1.3": {
       "dependencies": {
-        "Microsoft.CSharp": "4.0.1-beta-23509",
-        "System.Collections": "4.0.11-beta-23509",
-        "System.Linq": "4.0.1-beta-23509",
-        "System.Runtime": "4.0.21-beta-23509",
-        "System.Threading": "4.0.11-beta-23509"
-      }
+        "Microsoft.NETCore.Platforms": "1.0.1-*"
+      },
+      "imports": [
+        "dotnet5.4",
+        "portable-net451+win8"
+      ]
     }
   }
 }

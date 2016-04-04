@@ -10,7 +10,7 @@
     <ProjectGuid>d5a78707-e9fd-497b-8ef9-3739e63265b2</ProjectGuid>
     <RootNamespace>YesSql.Storage.InMemory</RootNamespace>
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'=='' ">..\..\artifacts\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)'=='' ">..\..\artifacts\bin\$(MSBuildProjectName)\</OutputPath>
+    <OutputPath Condition="'$(OutputPath)'=='' ">..\..\artifacts\bin\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
