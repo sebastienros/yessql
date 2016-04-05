@@ -35,7 +35,7 @@ namespace YesSql.Core.Sql.SchemaBuilders
                             _dialect.QuoteForTableName(command.TableName),
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength2 = builder2.Length;
-            
+
             if (command.Default != null) {
                 builder2.Append(" set default ").Append(_dialect.GetSqlValue(command.Default)).Append(" ");
             }
