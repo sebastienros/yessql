@@ -478,7 +478,7 @@ namespace YesSql.Samples.Performance
         };
         #endregion
 
-        public void Main()
+        public static void Main()
         {
             StoreUsers(new InMemoryDocumentStorageFactory()).Wait();
 

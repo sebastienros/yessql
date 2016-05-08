@@ -9,7 +9,9 @@
     "xunit": "2.1.0"
   },
   "buildOptions": {
-    "debugType": "portable"
+    "emitEntryPoint": true,
+    "debugType": "portable",
+    "preserveCompilationContext": true
   },
   "commands": {
     "YesSql.Samples.Performance": "YesSql.Samples.Performance"

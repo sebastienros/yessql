@@ -40,6 +40,6 @@
 			"args": [],
 			"cwd": "${workspaceRoot}/samples/YesSql.Bench",
 			"stopAtEntry": false
-		},
+		}
 	]
 }

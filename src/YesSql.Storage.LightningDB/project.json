@@ -6,9 +6,6 @@
     "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
     "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt"
   },
-  "buildOptions": {
-    "debugType": "portable"
-  },
   "dependencies": {
     "YesSql.Core": "2.0.0-*",
     "LightningDB": "0.9.3-rc1-45"

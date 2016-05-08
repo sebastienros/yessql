@@ -7,7 +7,9 @@
     "xunit": "2.1.0"
   },
   "buildOptions": {
-    "debugType": "portable"
+    "emitEntryPoint": true,
+    "debugType": "portable",
+    "preserveCompilationContext": true
   },
   "commands": {
     "YesSql.Bench": "YesSql.Bench"
