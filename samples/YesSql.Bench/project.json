@@ -1,10 +1,13 @@
 {
   "version": "1.0.0-*",
   "dependencies": {
-    "Microsoft.Data.Sqlite": "1.0.0-*",
+    "Microsoft.Data.Sqlite": "1.0.0-rc2-20809",
     "YesSql.Core": "2.0.0-*",
     "YesSql.Storage.LightningDB": "1.0.0-*",
     "xunit": "2.1.0"
+  },
+  "buildOptions": {
+    "debugType": "portable"
   },
   "commands": {
     "YesSql.Bench": "YesSql.Bench"
