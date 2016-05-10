@@ -2,8 +2,10 @@
   "version": "1.0.0-alpha-1010",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
-  "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
-  "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt",
+  "packOptions": {
+    "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
+    "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt"
+  },
   "dependencies": {
     "YesSql.Core": "2.0.0-*",
     "LightningDB": "0.9.3-rc1-45"

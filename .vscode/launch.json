@@ -1,0 +1,45 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": ".NET Core Launch (Samples.Hi)",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "Dotnet Build Debug",
+			"program": "${workspaceRoot}/samples/YesSql.Samples.Hi/bin/Debug/netstandardapp1.5/win7-x64/YesSql.Samples.Hi.exe",
+			"args": [],
+			"cwd": "${workspaceRoot}/samples/YesSql.Samples.Hi",
+			"stopAtEntry": false
+		},
+		{
+			"name": ".NET Core Launch (Samples.Performance)",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "Dotnet Build Debug",
+			"program": "${workspaceRoot}/samples/YesSql.Samples.Performance/bin/Debug/netstandardapp1.5/win7-x64/YesSql.Samples.Performance.exe",
+			"args": [],
+			"cwd": "${workspaceRoot}/samples/YesSql.Samples.Performance",
+			"stopAtEntry": false
+		},
+		{
+			"name": ".NET Core Launch (Samples.FullText)",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "Dotnet Build Debug",
+			"program": "${workspaceRoot}/samples/YesSql.Samples.FullText/bin/Debug/netstandardapp1.5/win7-x64/YesSql.Samples.FullText.exe",
+			"args": [],
+			"cwd": "${workspaceRoot}/samples/YesSql.Samples.FullText",
+			"stopAtEntry": false
+		},
+		{
+			"name": ".NET Core Launch (Samples.Bench)",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "Dotnet Build Debug",
+			"program": "${workspaceRoot}/samples/YesSql.Bench/bin/Debug/netstandardapp1.5/win7-x64/YesSql.Bench.exe",
+			"args": [],
+			"cwd": "${workspaceRoot}/samples/YesSql.Bench",
+			"stopAtEntry": false
+		}
+	]
+}

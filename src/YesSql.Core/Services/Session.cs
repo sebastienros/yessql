@@ -336,8 +336,6 @@ namespace YesSql.Core.Services
                 return;
             }
 
-            Demand();
-
             // saving all updated entities
             foreach (var obj in _updated)
             {

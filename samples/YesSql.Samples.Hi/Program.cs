@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Data.Sqlite;
+using System.Data;
 using YesSql.Core.Services;
 using YesSql.Samples.Hi.Indexes;
 using YesSql.Samples.Hi.Models;
@@ -13,8 +14,9 @@ namespace YesSql.Samples.Hi
         {
             var store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true);
+                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + System.IO.Directory.GetCurrentDirectory() + @"\bin\Debug\yessql.db;Cache=Shared", true);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+                cfg.IsolationLevel = IsolationLevel.Serializable;
             });
 
             store.InitializeAsync().Wait();
