@@ -24,7 +24,7 @@ namespace YesSql.Core.Services
         private DbTransaction _transaction;
         private IsolationLevel _isolationLevel;
         private readonly ISqlDialect _dialect;
-         
+
         protected readonly IdentityMap _identityMap = new IdentityMap();
         private List<IIndexCommand> _commands = new List<IIndexCommand>();
         protected readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
@@ -155,7 +155,7 @@ namespace YesSql.Core.Services
 
                     await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction);
                     await _storage.CreateAsync(new IdentityDocument(doc.Id, entity));
-                    
+
                     // Track the newly created object
                     _identityMap.Add(doc.Id, entity);
 
@@ -219,7 +219,7 @@ namespace YesSql.Core.Services
             await CommitAsync(keepTracked: true);
 
             var result = new List<T>();
-            
+
             if (ids == null || !ids.Any())
             {
                 return result;
@@ -258,7 +258,7 @@ namespace YesSql.Core.Services
                 object entity;
 
                 if (_identityMap.TryGetEntityById(id, out entity))
-                {    
+                {
                     result.Add((T)entity);
                 }
                 else
@@ -277,7 +277,7 @@ namespace YesSql.Core.Services
 
             return result;
         }
-        
+
         public IQuery QueryAsync()
         {
             Demand();
@@ -381,7 +381,7 @@ namespace YesSql.Core.Services
             _deleted.Clear();
             _commands.Clear();
         }
-        
+
         private async Task ReduceAsync()
         {
             // loop over each Indexer used by new objects
@@ -408,7 +408,7 @@ namespace YesSql.Core.Services
                 // reduce each group, will result in one Reduced index per group
                 foreach (var currentKey in allKeysForDescriptor)
                 {
-                    // group all mapped indexes 
+                    // group all mapped indexes
                     var newMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.New).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
@@ -499,7 +499,7 @@ namespace YesSql.Core.Services
                             _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
                         }
                     }
-                    else 
+                    else
                     {
                         if (index != null)
                         {

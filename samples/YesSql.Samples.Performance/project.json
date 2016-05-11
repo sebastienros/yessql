@@ -1,7 +1,7 @@
 {
   "version": "1.0.0-*",
   "dependencies": {
-    "Microsoft.Data.Sqlite": "1.0.0-rc2-20809",
+    "Microsoft.Data.Sqlite": "1.0.0-*",
     "YesSql.Core": "2.0.0-*",
     "YesSql.Storage.InMemory": "1.0.0-*",
     "YesSql.Storage.LightningDB": "1.0.0-*",
@@ -30,14 +30,16 @@
         }
       }
     },
-    "netstandardapp1.5": {
+    "netcoreapp1.0": {
       "imports": [
         "dnxcore50",
         "portable-net451+win8"
       ],
       "dependencies": {
-        "NETStandard.Library": "1.5.0-*",
-        "dotnet-test-xunit": "1.0.0-dev-*"
+        "Microsoft.NETCore.App": {
+          "version": "1.0.0-*",
+          "type": "platform"
+        }
       }
     }
   }
