@@ -1,67 +1,167 @@
-﻿#define InMemory
-
-using System;
+﻿using System;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
 using Xunit;
 using YesSql.Core.Services;
+using YesSql.Storage.Cache;
+using YesSql.Storage.InMemory;
+using YesSql.Storage.LightningDB;
+using YesSql.Storage.Sql;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
-#if InMemory
-using YesSql.Storage.InMemory;
-#elif SQL
-using YesSql.Storage.Sql;
-#elif LightningDB
-using YesSql.Storage.LightningDB;
-#elif Prevalence
-using YesSql.Storage.Prevalence;
-#elif Cache
-using YesSql.Storage.Sql;
-using YesSql.Storage.Cache;
-#endif
-
 namespace YesSql.Tests
 {
-    public class CoreTests : IDisposable
+    /// <summary>
+    /// Run all tests with a SqlServer document storage
+    /// </summary>
+    public abstract class SqliteTests : CoreTests
     {
-        protected static readonly bool IsAppVeyor = Environment.GetEnvironmentVariable("Appveyor")?.ToUpperInvariant() == "TRUE";
-        public static string ConnectionString =>
-            IsAppVeyor
-                ? @"Server=(local)\SQL2014;Database=tempdb;User ID=sa;Password=Password12!"
-                : @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
-                ;
-
-        private readonly IStore _store;
-
-#if LightningDB
         private TemporaryFolder _tempFolder;
-#endif
 
-        public CoreTests()
+        public SqliteTests()
         {
             _store = new Store(cfg =>
             {
-            cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
-            cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
-
-#if InMemory
-                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-#elif SQL
-                cfg.DocumentStorageFactory = new SqlDocumentStorageFactory(cfg.ConnectionFactory);
-#elif Cache
-                cfg.DocumentStorageFactory = new CacheDocumentStorageFactory(new SqlDocumentStorageFactory(cfg.ConnectionFactory));
-#elif LightningDB
                 _tempFolder = new TemporaryFolder();
-                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory(_tempFolder.Folder);
-#elif Prevalence
-                cfg.DocumentStorageFactory = new PrevalenceDocumentStorageFactory();
-#endif
+                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared", true);
+                cfg.IsolationLevel = System.Data.IsolationLevel.Serializable;
+
+                // Sqlite needs two databases and two connection factories as transactions can't be nested
+                // and using a single connection would create a new transaction when creating documents.
+                // The other solution is to create a custom document factory that doesn't create new transactions
+                var storageConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql_content.db;Cache=Shared", true);
+                cfg.DocumentStorageFactory = new SqlDocumentStorageFactory(storageConnectionFactory, cfg.IsolationLevel);
             });
 
             CleanDatabase();
             CreateTables();
+        }
+
+        protected override void OnCleanDatabase(ISession session)
+        {
+            base.OnCleanDatabase(session);
+
+            session.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropTable("Content"), false
+            );
+        }
+    }
+    public class SqlServerTests : CoreTests
+    {
+        public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+
+        public SqlServerTests()
+        {
+            _store = new Store(cfg =>
+            {
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
+                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+                cfg.DocumentStorageFactory = new SqlDocumentStorageFactory(cfg.ConnectionFactory);
+            });
+
+            CleanDatabase();
+            CreateTables();
+        }
+
+        protected override void OnCleanDatabase(ISession session)
+        {
+            base.OnCleanDatabase(session);
+
+            session.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropTable("Content"), false
+            );
+        }
+    }
+    public abstract class InMemoryTests : CoreTests
+    {
+        public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+
+        public InMemoryTests()
+        {
+            _store = new Store(cfg =>
+            {
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
+                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+            });
+
+            CleanDatabase();
+            CreateTables();
+        }
+
+        protected override void OnCleanDatabase(ISession session)
+        {
+            base.OnCleanDatabase(session);
+        }
+
+        protected override void OnDispose()
+        {
+            base.OnDispose();
+        }
+    }
+    public abstract class CacheTests : CoreTests
+    {
+        public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+
+        public CacheTests()
+        {
+            _store = new Store(cfg =>
+            {
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
+                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+                cfg.DocumentStorageFactory = new CacheDocumentStorageFactory(new SqlDocumentStorageFactory(cfg.ConnectionFactory));
+            });
+
+            CleanDatabase();
+            CreateTables();
+        }
+
+        protected override void OnCleanDatabase(ISession session)
+        {
+            base.OnCleanDatabase(session);
+
+            session.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropTable("Content"), false
+            );
+        }
+    }
+    public abstract class LightningDBTests : CoreTests
+    {
+        private TemporaryFolder _tempFolder;
+        public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+
+        public LightningDBTests()
+        {
+            _store = new Store(cfg =>
+            {
+                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
+                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+
+                _tempFolder = new TemporaryFolder();
+                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory(_tempFolder.Folder);
+            });
+
+            CleanDatabase();
+            CreateTables();
+        }
+
+        protected override void OnCleanDatabase(ISession session)
+        {
+            base.OnCleanDatabase(session);
+        }
+    }
+
+    public abstract class CoreTests : IDisposable
+    {
+
+        protected IStore _store;
+
+        public CoreTests()
+        {
+
         }
 
         public void Dispose()
@@ -69,15 +169,14 @@ namespace YesSql.Tests
             CleanDatabase();
             _store.Dispose();
 
-            #if LightningDB
-            if (_tempFolder != null)
-            {
-                _tempFolder.Dispose();
-            }
-            #endif
+            OnDispose();
         }
 
-        public void CleanDatabase()
+        protected virtual void OnDispose()
+        {
+        }
+
+        protected virtual void CleanDatabase()
         {
             using (var session = _store.CreateSession())
             {
@@ -106,18 +205,14 @@ namespace YesSql.Tests
                     .DropTable(LinearBlockIdGenerator.TableName), false
                 );
 
-#if SQL
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropTable("Content"), false
-                );
-#endif
+                OnCleanDatabase(session);
 
-#if Cache
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropTable("Content"), false
-                );
-#endif
             }
+        }
+
+        protected virtual void OnCleanDatabase(ISession session)
+        {
+
         }
 
         public void CreateTables()

@@ -14,7 +14,7 @@ namespace YesSql.Samples.Hi
         {
             var store = new Store(cfg =>
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + System.IO.Directory.GetCurrentDirectory() + @"\bin\Debug\yessql.db;Cache=Shared", true);
+                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=yessql.db;Cache=Shared", true);
                 cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
                 cfg.IsolationLevel = IsolationLevel.Serializable;
             });
