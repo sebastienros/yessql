@@ -18,6 +18,12 @@ namespace YesSql.Storage.Sql
             ConnectionFactory = connectionFactory;
         }
 
+        public SqlDocumentStorageFactory(IConnectionFactory connectionFactory, IsolationLevel isolationLevel)
+            : this(connectionFactory)
+        {
+            IsolationLevel = isolationLevel;
+        }
+
         public IDocumentStorage CreateDocumentStorage()
         {
             return new SqlDocumentStorage(this);

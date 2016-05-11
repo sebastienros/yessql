@@ -29,7 +29,7 @@ namespace YesSql.Core.Services
         /// </summary>
         /// <returns></returns>
         Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids) where T : class;
-                        
+
         IQuery QueryAsync();
 
         /// <summary>

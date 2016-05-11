@@ -31,7 +31,7 @@ namespace YesSql.Core.Commands
             {
                 var sql = Inserts(type) + $" {dialect.IdentitySelectString} id";
                 Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
-                await connection.ExecuteAsync($"update [{_tablePrefix}{type.Name}] set DocumentId = @mapid where Id = @id", new { mapid = Index.GetAddedDocuments().Single().Id, id = Index.Id }, transaction);
+                await connection.ExecuteAsync($"update [{_tablePrefix}{type.Name}] set DocumentId = @mapid where Id = @Id", new { mapid = Index.GetAddedDocuments().Single().Id, Id = Index.Id }, transaction);
             }
             else
             {

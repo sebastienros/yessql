@@ -12,13 +12,13 @@ namespace YesSql.Core.Commands
         }
 
         public override int ExecutionOrder { get; } = 1;
-        
+
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
             var name = Index.GetType().Name;
 
             var bridgeTableName = name + "_Document";
-            var bridgeSql = $"delete from [{_tablePrefix}{bridgeTableName}] where {name}Id = @id";
+            var bridgeSql = $"delete from [{_tablePrefix}{bridgeTableName}] where {name}Id = @Id";
 
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
 
