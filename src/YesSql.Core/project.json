@@ -3,8 +3,8 @@
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "packOptions": {
-    "projectUrl": "https://github.com/sebastienros/yessql/blob/dnx",
-    "licenseUrl": "https://github.com/sebastienros/yessql/blob/dnx/LICENSE.txt"
+    "projectUrl": "https://github.com/sebastienros/yessql",
+    "licenseUrl": "https://github.com/sebastienros/yessql/blob/master/LICENSE.txt"
   },
   "buildOptions": {
     "debugType": "portable"
