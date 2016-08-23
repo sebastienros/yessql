@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.0-alpha-1008",
+  "version": "1.0.0-alpha-1009",
   "authors": [ "Sebastien Ros" ],
   "copyright": "Sebastien Ros",
   "packOptions": {
@@ -20,8 +20,8 @@
         "portable-net451+win8"
       ],
       "dependencies": {
-        "NETStandard.Library": "1.5.0-*",
-        "System.Runtime.Serialization.Primitives":  "4.0.10"
+        "NETStandard.Library": "1.6.0-*",
+        "System.Runtime.Serialization.Primitives": "4.1.1"
       }
     }
   }
