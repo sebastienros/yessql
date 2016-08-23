@@ -8,20 +8,20 @@ A .NET document database using any RDBMS, because in SQL we (still) trust !
 How does it work ?
 -------------------
 
-YesSql is a document database which allows you to define documents and indexes using plain old CLR objects. The main difference
-with other document databases is that it uses NHibernate and any RDBMS to store them, which gives you all the power of SQL databases
+YesSql is a .NET Core document database framework which allows you to define documents and indexes using plain old CLR objects. The main difference
+with other document databases is that it uses any RDBMS to store them, which gives you all the power of SQL databases
 like transactions, replication, reporting, ... But the main advantage might be that there is no magic involved. It's pure SQL !
 
 FAQ
 -------------------
 
-### Aren't NoSQL databases also about sharding and map/reduce ?
+### Aren't NoSQL databases also about map/reduce ?
 
 YesSql has support for it too. There is a [sample project](https://github.com/sebastienros/yessql/tree/master/samples/YesSql.Samples.Shards) in the source code, and you'll see that map/reduce is fully supported by looking at the tests.
 
 ### Aren't NoSQL databases  faster than SQL databases ?
 
-Well, I don't know what fast is, but you can try to run the [performance sample](https://github.com/sebastienros/yessql/tree/master/samples/YesSql.Samples.Performance) to ensure it fits your needs. Here is the output on my machine using Microsoft SQL Server 2008:
+Well, I don't know what fast is, but you can try to run the [performance sample](https://github.com/sebastienros/yessql/tree/master/samples/YesSql.Samples.Performance) to ensure it fits your needs. Here is the output on my machine using Microsoft SQL Server 2016:
 
     YesSql Wrote 5,163 documents in 2,157ms: 2.39: docs/ms
   
@@ -32,7 +32,7 @@ This performance test is based on one used to compare Redis to RavenDb that you 
 
 ### How is the database structured ?
 
-There is a global [Document] table per shard. Then each index has it's own table. In the case of a map/reduce index there is also another table to handle the many-to-many relationships between an indexes and documents.
+There is a global [Document] table. Each index has it's own table. In the case of a map/reduce index there is also another table to handle the many-to-many relationships between an indexes and documents.
 
 ### Dude ! Why another document database ?
 
