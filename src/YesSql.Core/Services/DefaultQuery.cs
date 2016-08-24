@@ -25,7 +25,7 @@ namespace YesSql.Core.Services
         private SqlBuilder _sqlBuilder;
         private StringBuilder _builder = new StringBuilder();
 
-        public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings = 
+        public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings =
             new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>>();
 
         static DefaultQuery()
@@ -147,7 +147,7 @@ namespace YesSql.Core.Services
             }
 
             _builder.Clear();
-            // if Filter is called, the Document type is implicit so there is no need to filter on TIndex 
+            // if Filter is called, the Document type is implicit so there is no need to filter on TIndex
             ConvertPredicate(_builder, predicate.Body);
             _sqlBuilder.WhereAlso(_builder.ToString());
         }
@@ -260,7 +260,7 @@ namespace YesSql.Core.Services
 
         /// <summary>
         /// Return true if an expression path is based on the parameter of the predicate.
-        /// If false it means the expression should be evaluated, otherwise converted to 
+        /// If false it means the expression should be evaluated, otherwise converted to
         /// its sql equivalent.
         /// </summary>
         /// <param name="e"></param>
@@ -338,7 +338,7 @@ namespace YesSql.Core.Services
         private Expression RemoveUnboxing(Expression e)
         {
             // If an expression is a conversion, extract its body.
-            // This is used when an OrderBy expression uses a ValueType but 
+            // This is used when an OrderBy expression uses a ValueType but
             // it's automatically using unboxing conversion (to object)
 
             if(e.NodeType == ExpressionType.Convert)
@@ -403,14 +403,14 @@ namespace YesSql.Core.Services
 
             return new Query<T>(this);
         }
-        
+
         IQueryIndex<TIndex> IQuery.ForIndex<TIndex>()
         {
             _bound.Clear();
             _bound.Add(typeof(TIndex));
             _sqlBuilder.Select();
             _sqlBuilder.Table(typeof(TIndex).Name);
-            
+
             return new QueryIndex<TIndex>(this);
         }
 
@@ -432,7 +432,7 @@ namespace YesSql.Core.Services
             public Query(DefaultQuery query) {
                 _query = query;
             }
-                        
+
             public Task<T> FirstOrDefault()
             {
                 return FirstOrDefaultImpl();
@@ -503,18 +503,18 @@ namespace YesSql.Core.Services
                 return this;
             }
 
-            async Task<int> IQuery<T>.Count() 
+            async Task<int> IQuery<T>.Count()
             {
                 return await _query.CountAsync();
             }
 
-            IQuery<T, TIndex> IQuery<T>.With<TIndex>() 
+            IQuery<T, TIndex> IQuery<T>.With<TIndex>()
             {
                 _query.Bind<TIndex>();
                 return new Query<T, TIndex>(_query);
             }
 
-            IQuery<T, TIndex> IQuery<T>.With<TIndex>(Expression<Func<TIndex, bool>> predicate) 
+            IQuery<T, TIndex> IQuery<T>.With<TIndex>(Expression<Func<TIndex, bool>> predicate)
             {
                 _query.Bind<TIndex>();
                 _query.Filter(predicate);
@@ -604,8 +604,8 @@ namespace YesSql.Core.Services
             }
         }
 
-        class Query<T, TIndex> : Query<T>, IQuery<T, TIndex> 
-            where T : class 
+        class Query<T, TIndex> : Query<T>, IQuery<T, TIndex>
+            where T : class
             where TIndex : IIndex
         {
             public Query(DefaultQuery query)
@@ -619,7 +619,7 @@ namespace YesSql.Core.Services
             }
 
 
-            IQuery<T, TIndex> IQuery<T, TIndex>.Where(Expression<Func<TIndex, bool>> predicate) 
+            IQuery<T, TIndex> IQuery<T, TIndex>.Where(Expression<Func<TIndex, bool>> predicate)
             {
                 _query.Filter<TIndex>(predicate);
                 return this;
