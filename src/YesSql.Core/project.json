@@ -16,12 +16,8 @@
   "frameworks": {
     "net451": { },
     "netstandard1.5": {
-      "imports": [
-        "dnxcore50",
-        "portable-net451+win8"
-      ],
       "dependencies": {
-        "NETStandard.Library": "1.6.0-*",
+        "NETStandard.Library": "1.6.0",
 
         "Microsoft.CSharp": "4.0.1",
         "System.Collections": "4.0.11",

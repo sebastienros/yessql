@@ -4,7 +4,7 @@
     "Microsoft.Data.Sqlite": "1.0.0-*",
     "YesSql.Core": "2.0.0-*",
     "YesSql.Storage.InMemory": "1.0.0-*",
-    "xunit": "2.1.0"
+    "xunit": "2.2.0-*"
   },
   "buildOptions": {
     "emitEntryPoint": true,
@@ -29,13 +29,9 @@
       }
     },
     "netcoreapp1.0": {
-      "imports": [
-        "dnxcore50",
-        "portable-net451+win8"
-      ],
       "dependencies": {
         "Microsoft.NETCore.App": {
-          "version": "1.0.0-*",
+          "version": "1.0.0",
           "type": "platform"
         }
       }

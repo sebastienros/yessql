@@ -15,13 +15,8 @@
   "frameworks": {
     "net451": { },
     "netstandard1.5": {
-      "imports": [
-        "dnxcore50",
-        "portable-net451+win8"
-      ],
       "dependencies": {
-        "NETStandard.Library": "1.6.0-*",
-        "System.Runtime.Serialization.Primitives": "4.1.1"
+        "NETStandard.Library": "1.6.0"
       }
     }
   }
