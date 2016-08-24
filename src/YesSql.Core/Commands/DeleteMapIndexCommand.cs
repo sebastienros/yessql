@@ -20,9 +20,9 @@ namespace YesSql.Core.Commands
             _tablePrefix = tablePrefix;
         }
 
-        public virtual async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
+        public virtual Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
-            await connection.ExecuteAsync($"delete from [{_tablePrefix}{_indexType.Name}] where DocumentId = @Id", new { Id = _documentId }, transaction);
+            return connection.ExecuteAsync($"delete from [{_tablePrefix}{_indexType.Name}] where DocumentId = @Id", new { Id = _documentId }, transaction);
         }
     }
 }

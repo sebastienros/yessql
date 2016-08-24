@@ -46,26 +46,28 @@ namespace YesSql.Core.Sql
         {
             string connectionName = connection.GetType().Name.ToLower();
 
-            if (!SqlDialects.ContainsKey(connectionName))
+            ISqlDialect dialect = null;
+
+            if (!SqlDialects.TryGetValue(connectionName, out dialect))
             {
                 throw new ArgumentException("Unknown connection name: " + connectionName);
             }
 
-            return SqlDialects[connectionName];
+            return dialect;
         }
     }
 
     public abstract class BaseDialect : ISqlDialect
     {
-        
+
         public virtual string CreateTableString => "create table";
 
         public virtual bool HasDataTypeInIdentityColumn => false;
 
         public abstract string IdentitySelectString { get; }
-        
+
         public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
-        
+
         public virtual string NullColumnString => String.Empty;
 
         public virtual string PrimaryKeyString => "primary key";
@@ -229,7 +231,7 @@ namespace YesSql.Core.Sql
         public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
         {
             var sb = new StringBuilder();
-            
+
             sb.Append(" limit ");
 
             if (limit != 0)
