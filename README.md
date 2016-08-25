@@ -1,23 +1,23 @@
 YesSql
 =============
 
-A .NET document database using any RDBMS, because in SQL we (still) trust !
+A .NET document database interface for relational databases, because in SQL we (still) trust !
 
 [![Build status](https://ci.appveyor.com/api/projects/status/96n3byfpy0hnw87f)](https://ci.appveyor.com/project/SebastienRos/yessql)
 
 How does it work ?
 -------------------
 
-YesSql is a .NET Core document database framework which allows you to define documents and indexes using plain old CLR objects. The main difference
-with other document databases is that it uses any RDBMS to store them, which gives you all the power of SQL databases
-like transactions, replication, reporting, ... But the main advantage might be that there is no magic involved. It's pure SQL !
+YesSql is a .NET Core document database interface over relational databases which allows you to define documents and indexes using plain old CLR objects. The main difference
+with document databases is that it uses any RDBMS to store them, which gives you all the power of SQL databases
+like transactions, replication, reporting, ... But the main advantage might be that there is no magic involved, it's pure SQL !
 
 FAQ
 -------------------
 
 ### Aren't NoSQL databases also about map/reduce ?
 
-YesSql has support for it too. There is a [sample project](https://github.com/sebastienros/yessql/tree/master/samples/YesSql.Samples.Shards) in the source code, and you'll see that map/reduce is fully supported by looking at the tests.
+YesSql has support for it too. There is a [sample project](https://github.com/sebastienros/yessql/tree/master/samples/YesSql.Samples.Hi) in the source code, and you'll see that map/reduce is fully supported by looking at the tests.
 
 ### Aren't NoSQL databases  faster than SQL databases ?
 
@@ -32,14 +32,15 @@ This performance test is based on one used to compare Redis to RavenDb that you 
 
 ### How is the database structured ?
 
-There is a global [Document] table. Each index has it's own table. In the case of a map/reduce index there is also another table to handle the many-to-many relationships between an indexes and documents.
+There is a global [Document] table. Each index is a custom class which has its own table. A reduce index also adds a bridge table in order to map many documents. 
+Internally YesSql communicates with the database server using [Dapper](https://github.com/StackExchange/dapper-dot-net).
 
 ### Dude ! Why another document database ?
 
 I know :/ Well actually I am a big fan of document databases and I am well aware that some like MongoDb and RavenDb are already top-notch ones, but __what if you want a free, transactional .NET document database__ ?
 
 * MongoDb is not transactional, and some applications can't cope with it. RDBMS on the contrary are all transactional. 
-* RavenDb (which I am a big fan of) is not free. Also the fact that it's using Esent and Lucene to store the data might scare some companies which have invested a lot in SQL, trust SQL, and have in-house experts.
+* RavenDb (which I am a big fan of) is not free. Also the fact that it's using custom serialization libraries and Lucene to store the data might scare some companies which have invested a lot in SQL, trust SQL, and have in-house experts.
 
 So YesSql might be an answer for the developers who face those restrictions. If you don't care about those then please don't spend one more minute on YesSql, it's useless for you.
 
