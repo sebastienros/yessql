@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Core.Storage;
+using YesSql.Core.Services;
 
 namespace YesSql.Storage.LightningDB
 {
@@ -24,6 +25,8 @@ namespace YesSql.Storage.LightningDB
         {
             _env = environment;
         }
+
+        public ISession Session { get; set; }
 
         public Task CreateAsync(params IIdentityEntity[] documents)
         {

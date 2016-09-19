@@ -18,8 +18,6 @@ namespace YesSql.Core.Services
 {
     public class Session : ISession
     {
-        // Wether the Session should track the entities itself, in case the underlying
-        // storage API doesn't do it
         private readonly DbConnection _connection;
         private DbTransaction _transaction;
         private IsolationLevel _isolationLevel;
@@ -36,9 +34,9 @@ namespace YesSql.Core.Services
         private Store _store;
         protected bool _cancel;
 
-        public Session(IDocumentStorage storage, Store store)
+        public Session(Func<ISession, IDocumentStorage> storage, Store store)
         {
-            _storage = storage;
+            _storage = storage(this);
             _store = store;
             _isolationLevel = store.Configuration.IsolationLevel;
 
@@ -619,7 +617,7 @@ namespace YesSql.Core.Services
         /// <summary>
         /// Initializes a new transaction if none has been yet
         /// </summary>
-        protected void Demand()
+        public DbTransaction Demand()
         {
             if (_transaction == null)
             {
@@ -630,6 +628,8 @@ namespace YesSql.Core.Services
 
                 _transaction = _connection.BeginTransaction(_isolationLevel);
             }
+
+            return _transaction;
         }
 
         public void Cancel()

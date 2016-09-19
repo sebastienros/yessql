@@ -1,104 +1,69 @@
-﻿using Dapper;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
+using Newtonsoft.Json;
+using YesSql.Core.Services;
 using YesSql.Core.Sql;
 using YesSql.Core.Storage;
 
 namespace YesSql.Storage.Sql
 {
-    public class SqlDocumentStorage : IDocumentStorage, IDisposable
+    public class SqlDocumentStorage : IDocumentStorage
     {
         private readonly SqlDocumentStorageFactory _factory;
         private readonly static JsonSerializerSettings _jsonSettings;
-        private readonly DbConnection _dbConnection;
+        private readonly ISession _session;
 
         static SqlDocumentStorage()
         {
             _jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
         }
 
-        public SqlDocumentStorage(SqlDocumentStorageFactory factory)
+        public SqlDocumentStorage(ISession session, SqlDocumentStorageFactory factory)
         {
+            _session = session;
             _factory = factory;
-            _dbConnection = _factory.ConnectionFactory.CreateConnection();
         }
 
         public async Task CreateAsync(params IIdentityEntity[] documents)
         {
-            await _dbConnection.OpenAsync();
+            var tx = _session.Demand();
 
-            try
+            foreach (var document in documents)
             {
-                using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
-                {
-                    foreach(var document in documents)
-                    {
-                        var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
+                var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
-                        var dialect = SqlDialectFactory.For(_dbConnection);
-                        var insertCmd = $"insert into [{_factory.TablePrefix}Content] ([Id], [Content]) values (@Id, @Content);";
-                        await _dbConnection.ExecuteScalarAsync<int>(insertCmd, new { Id = document.Id, Content = content }, tx);
-                    }
-
-                    tx.Commit();
-                }
-            }
-            finally
-            {
-                _dbConnection.Close();
+                var dialect = SqlDialectFactory.For(tx.Connection);
+                var insertCmd = $"insert into [{_factory.TablePrefix}Content] ([Id], [Content]) values (@Id, @Content);";
+                await tx.Connection.ExecuteScalarAsync<int>(insertCmd, new { Id = document.Id, Content = content }, tx);
             }
         }
 
         public async Task UpdateAsync(params IIdentityEntity[] documents)
         {
-            await _dbConnection.OpenAsync();
+            var tx = _session.Demand();
 
-            try
+            foreach (var document in documents)
             {
-                using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
-                {
-                    foreach(var document in documents)
-                    {
-                        var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
+                var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
-                        var dialect = SqlDialectFactory.For(_dbConnection);
-                        var updateCmd = $"update [{_factory.TablePrefix}Content] set Content = @Content where Id = @Id;";
-                        await _dbConnection.ExecuteScalarAsync<int>(updateCmd, new { Id = document.Id, Content = content }, tx);
-                    }
-
-                    tx.Commit();
-                }
-            }
-            finally
-            {
-                _dbConnection.Close();
+                var dialect = SqlDialectFactory.For(tx.Connection);
+                var updateCmd = $"update [{_factory.TablePrefix}Content] set Content = @Content where Id = @Id;";
+                await tx.Connection.ExecuteScalarAsync<int>(updateCmd, new { Id = document.Id, Content = content }, tx);
             }
         }
+
         public async Task DeleteAsync(params IIdentityEntity[] documents)
         {
-            await _dbConnection.OpenAsync();
+            var tx = _session.Demand();
 
-            try
+            foreach (var documentsPage in documents.PagesOf(128))
             {
-                using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
-                {
-                    foreach (var documentsPage in documents.PagesOf(128))
-                    {
-                        var dialect = SqlDialectFactory.For(_dbConnection);
-                        var deleteCmd = $"delete from [{_factory.TablePrefix}Content] where Id IN @Id;";
-                        await _dbConnection.ExecuteScalarAsync<int>(deleteCmd, new { Id = documentsPage.Select(x => x.Id).ToArray() }, tx);
-                    }
-
-                    tx.Commit();
-                }
-            }
-            finally
-            {
-                _dbConnection.Close();
+                var dialect = SqlDialectFactory.For(tx.Connection);
+                var deleteCmd = $"delete from [{_factory.TablePrefix}Content] where Id IN @Id;";
+                await tx.Connection.ExecuteScalarAsync<int>(deleteCmd, new { Id = documentsPage.Select(x => x.Id).ToArray() }, tx);
             }
         }
 
@@ -118,37 +83,25 @@ namespace YesSql.Storage.Sql
                 orderedLookup[ids[i]] = i;
             }
 
-            await _dbConnection.OpenAsync();
+            var tx = _session.Demand();
 
-            try
+            foreach (var idPages in ids.PagesOf(128))
             {
-                using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
+                var dialect = SqlDialectFactory.For(tx.Connection);
+                var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
+                var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = idPages.ToArray() }, tx);
+
+                foreach (var entity in entities)
                 {
-                    foreach (var idPages in ids.PagesOf(128))
+                    var index = orderedLookup[entity.Id];
+                    if (typeof(T) == typeof(object))
                     {
-                        var dialect = SqlDialectFactory.For(_dbConnection);
-                        var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id IN @Id;";
-                        var entities = await _dbConnection.QueryAsync<IdString>(selectCmd, new { Id = idPages.ToArray() }, tx);
-
-                        foreach (var entity in entities)
-                        {
-                            var index = orderedLookup[entity.Id];
-                            if (typeof(T) == typeof(object))
-                            {
-                                result[index] = JsonConvert.DeserializeObject<dynamic>(entity.Content, _jsonSettings);
-                            }
-                            else {
-                                result[index] = JsonConvert.DeserializeObject<T>(entity.Content, _jsonSettings);
-                            }
-                        }
+                        result[index] = JsonConvert.DeserializeObject<dynamic>(entity.Content, _jsonSettings);
                     }
-
-                    tx.Commit();
+                    else {
+                        result[index] = JsonConvert.DeserializeObject<T>(entity.Content, _jsonSettings);
+                    }
                 }
-            }
-            finally
-            {
-                _dbConnection.Close();
             }
 
             return result;
@@ -165,51 +118,31 @@ namespace YesSql.Storage.Sql
                 orderedLookup[documents[i].Id] = i;
             }
 
-            await _dbConnection.OpenAsync();
+            var tx = _session.Demand();
 
-            try
+            var typeGroups = documents.GroupBy(x => x.EntityType);
+
+            // In case identities are from different types, group queries by type
+            foreach (var typeGroup in typeGroups)
             {
-                using (var tx = _dbConnection.BeginTransaction(_factory.IsolationLevel))
+                // Limit the IN clause to 128 items at a time
+                foreach (var documentsPage in typeGroup.PagesOf(128))
                 {
-                    var typeGroups = documents.GroupBy(x => x.EntityType);
+                    var ids = documentsPage.Select(x => x.Id).ToArray();
+                    var dialect = SqlDialectFactory.For(tx.Connection);
+                    var op = ids.Length == 1 ? "=" : "IN";
+                    var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id {op} @Id;";
+                    var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
 
-                    // In case identities are from different types, group queries by type
-                    foreach (var typeGroup in typeGroups)
+                    foreach(var entity in entities)
                     {
-                        // Limit the IN clause to 128 items at a time
-                        foreach (var documentsPage in typeGroup.PagesOf(128))
-                        {
-                            var ids = documentsPage.Select(x => x.Id).ToArray();
-                            var dialect = SqlDialectFactory.For(_dbConnection);
-                            var op = ids.Length == 1 ? "=" : "IN";
-                            var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id {op} @Id;";
-                            var entities = await _dbConnection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
-
-                            foreach(var entity in entities)
-                            {
-                                var index = orderedLookup[entity.Id];
-                                result[index] = JsonConvert.DeserializeObject(entity.Content, typeGroup.Key, _jsonSettings);
-                            }
-                        }
+                        var index = orderedLookup[entity.Id];
+                        result[index] = JsonConvert.DeserializeObject(entity.Content, typeGroup.Key, _jsonSettings);
                     }
-
-                    tx.Commit();
                 }
-            }
-            finally
-            {
-                _dbConnection.Close();
             }
 
             return result;
-        }
-
-        public void Dispose()
-        {
-            if(_factory.ConnectionFactory.Disposable)
-            {
-                _dbConnection.Dispose();
-            }
         }
 
         private struct IdString

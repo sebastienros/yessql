@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Core.Storage;
+using YesSql.Core.Services;
 
 namespace YesSql.Storage.InMemory
 {
@@ -19,6 +20,8 @@ namespace YesSql.Storage.InMemory
         public InMemoryDocumentStorage()
         {
         }
+
+        public ISession Session { get; set; }
 
         public Task CreateAsync(params IIdentityEntity[] documents)
         {

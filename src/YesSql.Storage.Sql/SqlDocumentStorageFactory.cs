@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using YesSql.Core.Services;
 using YesSql.Core.Sql;
 using YesSql.Core.Storage;
@@ -9,36 +7,23 @@ namespace YesSql.Storage.Sql
 {
     public class SqlDocumentStorageFactory : IDocumentStorageFactory
     {
-        public IsolationLevel IsolationLevel { get; set; } = IsolationLevel.ReadCommitted;
-        public IConnectionFactory ConnectionFactory { get; set; }
         public string TablePrefix { get; set; }
 
-        public SqlDocumentStorageFactory(IConnectionFactory connectionFactory)
+        public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
         {
-            ConnectionFactory = connectionFactory;
-        }
-
-        public SqlDocumentStorageFactory(IConnectionFactory connectionFactory, IsolationLevel isolationLevel)
-            : this(connectionFactory)
-        {
-            IsolationLevel = isolationLevel;
-        }
-
-        public IDocumentStorage CreateDocumentStorage()
-        {
-            return new SqlDocumentStorage(this);
+            return new SqlDocumentStorage(session, this);
         }
 
         /// <summary>
         /// Creates the necessary tables
         /// </summary>
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(Configuration configuration)
         {
-            var connection = ConnectionFactory.CreateConnection();
+            var connection = configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
             try
             {
-                using (var transaction = connection.BeginTransaction(IsolationLevel))
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
                     var schemaBuilder = new SchemaBuilder(connection, transaction, TablePrefix);
 
@@ -54,7 +39,7 @@ namespace YesSql.Storage.Sql
             }
             finally
             {
-                if (ConnectionFactory.Disposable)
+                if (configuration.ConnectionFactory.Disposable)
                 {
                     connection.Dispose();
                 }

@@ -2,6 +2,7 @@
 using System;
 using System.Threading.Tasks;
 using YesSql.Core.Storage;
+using YesSql.Core.Services;
 
 namespace YesSql.Storage.LightningDB
 {
@@ -32,7 +33,7 @@ namespace YesSql.Storage.LightningDB
             }
         }
 
-        public IDocumentStorage CreateDocumentStorage()
+        public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
         {
             return new LightningDocumentStorage(LightningEnvironment);
         }
@@ -42,7 +43,7 @@ namespace YesSql.Storage.LightningDB
             LightningEnvironment.Dispose();
         }
 
-        public Task InitializeAsync()
+        public Task InitializeAsync(Configuration configuration)
         {
 #if NET451
             return Task.FromResult(0);

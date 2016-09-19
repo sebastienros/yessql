@@ -10,13 +10,15 @@ namespace Bench
     {
         static void Main(string[] args)
         {
-            var _store = new Store(cfg =>
+            var configuration = new Configuration()
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True");
-                //cfg.ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true);
-                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory("db");
-                cfg.TablePrefix = "Bench";
-            });
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True"),
+                //ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true),
+                DocumentStorageFactory = new LightningDocumentStorageFactory("db"),
+                TablePrefix = "Bench"
+            };
+
+            var _store = new Store(configuration);
 
             _store.InitializeAsync().Wait();
 

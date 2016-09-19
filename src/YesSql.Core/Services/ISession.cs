@@ -49,7 +49,7 @@ namespace YesSql.Core.Services
         /// <summary>
         /// Returns a <see cref="DbTransaction"/> that is used by this instance.
         /// </summary>
-        DbTransaction Transaction { get; }
+        DbTransaction Demand();
 
         void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true);
 

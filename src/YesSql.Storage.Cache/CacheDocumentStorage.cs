@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Core.Storage;
+using YesSql.Core.Services;
 
 namespace YesSql.Storage.Cache
 {
@@ -17,6 +18,8 @@ namespace YesSql.Storage.Cache
         }
 
         private readonly IDocumentStorage _concreteDocumentStorage;
+
+        public ISession Session { get; set; }
 
         public CacheDocumentStorage(IDocumentStorage concreteDocumentStorage)
         {

@@ -11,12 +11,13 @@ namespace YesSql.Samples.FullText
     {
         private static void Main(string[] args)
         {
-            var store = new Store(cfg =>
+            var configuration = new Configuration
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true);
-                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true),
+                DocumentStorageFactory = new InMemoryDocumentStorageFactory()
+            };
 
-            });
+            var store = new Store(configuration);
 
             store.InitializeAsync().Wait();
 

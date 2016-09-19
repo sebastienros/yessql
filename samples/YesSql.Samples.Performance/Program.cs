@@ -480,7 +480,27 @@ namespace YesSql.Samples.Performance
 
         public static void Main()
         {
-            StoreUsers(new InMemoryDocumentStorageFactory()).Wait();
+            var dbFileName = "performance.db";
+            if (File.Exists(dbFileName))
+            {
+                File.Delete(dbFileName);
+            }
+
+            var configuration = new Configuration
+            {
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"),
+                //ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared"),
+
+                DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
+                IsolationLevel = IsolationLevel.ReadUncommitted
+            };
+
+            var store = new Store(configuration);
+
+            using (var session = store.CreateSession())
+            {
+                StoreUsers(new InMemoryDocumentStorageFactory(), session, configuration).Wait();
+            }
 
             using (var tempFolder = new TemporaryFolder())
             {
@@ -488,36 +508,25 @@ namespace YesSql.Samples.Performance
 
                 using (var factory = new LightningDocumentStorageFactory(tempFolder.Folder))
                 {
-                    StoreUsers(factory).Wait();
+                    using (var session = store.CreateSession())
+                    {
+                        StoreUsers(factory, session, configuration).Wait();
+                    }
                 }
             }
 
-            var sqlFactory = new SqlDocumentStorageFactory(new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"));
-            sqlFactory.InitializeAsync().Wait();
+            var sqlFactory = new SqlDocumentStorageFactory();
+            sqlFactory.InitializeAsync(configuration).Wait();
 
-            using (var sqlStorage = new SqlDocumentStorage(sqlFactory))
+            using (var session = store.CreateSession())
             {
-                StoreUsers(sqlFactory).Wait();
+                var sqlStorage = new SqlDocumentStorage(session, sqlFactory);
+                StoreUsers(sqlFactory, session, configuration).Wait();
             }
 
             return;
 
             var runMigrations = true;
-
-            var store = new Store(cfg =>
-            {
-                var dbFileName = "performance.db";
-                if (File.Exists(dbFileName))
-                {
-                    File.Delete(dbFileName);
-                }
-
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True");
-                //cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared");
-
-                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-                cfg.IsolationLevel = IsolationLevel.ReadUncommitted;
-            });
 
             if (runMigrations)
             {
@@ -681,10 +690,10 @@ namespace YesSql.Samples.Performance
                 Names.Length / (double)sp.ElapsedMilliseconds);
         }
 
-        private static async Task StoreUsers(IDocumentStorageFactory storageFactory)
+        private static async Task StoreUsers(IDocumentStorageFactory storageFactory, ISession session, Configuration configuration)
         {
             int batch = 0, batchSize = 128, i=0;
-            var session = storageFactory.CreateDocumentStorage();
+            var storage = storageFactory.CreateDocumentStorage(session, configuration);
             var identities = new List<IdentityDocument>();
 
             var sp = Stopwatch.StartNew();
@@ -704,40 +713,40 @@ namespace YesSql.Samples.Performance
 
                 if (batch % batchSize == 0)
                 {
-                    await session.CreateAsync(identities.ToArray());
+                    await storage.CreateAsync(identities.ToArray());
 
                     identities.Clear();
 
-                    (session as IDisposable)?.Dispose();
-                    session = storageFactory.CreateDocumentStorage();
+                    (storage as IDisposable)?.Dispose();
+                    storage = storageFactory.CreateDocumentStorage(session, configuration);
                 }
             }
 
-            await session.CreateAsync(identities.ToArray());
-            (session as IDisposable)?.Dispose();
+            await storage.CreateAsync(identities.ToArray());
+            (storage as IDisposable)?.Dispose();
 
             Console.WriteLine("\n{3} Wrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds,
                 Names.Length / (double)sp.ElapsedMilliseconds, storageFactory.GetType().Name);
 
-            session = storageFactory.CreateDocumentStorage();
+            storage = storageFactory.CreateDocumentStorage(session, configuration);
             sp.Restart();
 
             batch = 0; batchSize = 128; i = 0;
             foreach (var name in Names)
             {
                 batch++; i++;
-                var user = await session.GetAsync<User>(i);
+                var user = await storage.GetAsync<User>(i);
 
                 Assert.NotNull(user);
 
                 if (batch % batchSize == 0)
                 {
-                    (session as IDisposable)?.Dispose();
-                    session = storageFactory.CreateDocumentStorage();
+                    (storage as IDisposable)?.Dispose();
+                    storage = storageFactory.CreateDocumentStorage(session, configuration);
                 }
             }
 
-            (session as IDisposable)?.Dispose();
+            (storage as IDisposable)?.Dispose();
 
             Console.WriteLine("\n{3} Read {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds,
                 Names.Length / (double)sp.ElapsedMilliseconds, storageFactory.GetType().Name);

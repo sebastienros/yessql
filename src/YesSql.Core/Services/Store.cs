@@ -2,11 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using YesSql.Core.Indexes;
-using YesSql.Core.Data;
 using System.Reflection;
-using YesSql.Core.Sql;
 using System.Threading.Tasks;
+using YesSql.Core.Data;
+using YesSql.Core.Indexes;
 
 namespace YesSql.Core.Services
 {
@@ -30,14 +29,11 @@ namespace YesSql.Core.Services
             new ConcurrentDictionary<Type, IIdAccessor<int>>();
 
 
-        public Store(Action<Configuration> cfg)
+        public Store(Configuration configuration)
         {
-            Configuration = new Configuration();
+            Configuration = configuration;
             Indexes = new List<IIndexProvider>();
-            cfg(Configuration);
-
             ValidateConfiguration();
-
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, "index", Configuration.TablePrefix);
         }
 
@@ -63,7 +59,7 @@ namespace YesSql.Core.Services
                 });
             }
 
-            await Configuration.DocumentStorageFactory.InitializeAsync();
+            await Configuration.DocumentStorageFactory.InitializeAsync(Configuration);
         }
 
         private void ValidateConfiguration()
@@ -81,8 +77,7 @@ namespace YesSql.Core.Services
 
         public ISession CreateSession()
         {
-            var storage = Configuration.DocumentStorageFactory.CreateDocumentStorage();
-            return new Session(storage, this);
+            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this);
         }
 
         public void Dispose()

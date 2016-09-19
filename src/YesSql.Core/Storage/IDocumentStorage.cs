@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using YesSql.Core.Services;
 
 namespace YesSql.Core.Storage
 {
@@ -27,13 +28,13 @@ namespace YesSql.Core.Storage
         Task DeleteAsync(params IIdentityEntity[] documents);
 
         /// <summary>
-        /// Loads a document by its id
+        /// Loads documents by id.
         /// </summary>
         /// <returns></returns>
         Task<IEnumerable<T>> GetAsync<T>(params int[] ids);
 
         /// <summary>
-        /// Loads a document by its id
+        /// Loads documents by <see cref="IIdentityEntity"/>.
         /// </summary>
         /// <returns></returns>
         Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents);

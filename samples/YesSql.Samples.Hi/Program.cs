@@ -12,12 +12,14 @@ namespace YesSql.Samples.Hi
     {
         private static void Main()
         {
-            var store = new Store(cfg =>
+            var configuration = new Configuration
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=yessql.db;Cache=Shared", true);
-                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-                cfg.IsolationLevel = IsolationLevel.Serializable;
-            });
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=yessql.db;Cache=Shared", true),
+                DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
+                IsolationLevel = IsolationLevel.Serializable
+            };
+
+            var store = new Store(configuration);
 
             store.InitializeAsync().Wait();
 

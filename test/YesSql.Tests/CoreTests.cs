@@ -17,24 +17,22 @@ namespace YesSql.Tests
     /// <summary>
     /// Run all tests with a SqlServer document storage
     /// </summary>
-    public abstract class SqliteTests : CoreTests
+    public class SqliteTests : CoreTests
     {
         private TemporaryFolder _tempFolder;
 
         public SqliteTests()
         {
-            _store = new Store(cfg =>
-            {
-                _tempFolder = new TemporaryFolder();
-                cfg.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared", true);
-                cfg.IsolationLevel = System.Data.IsolationLevel.Serializable;
+            _tempFolder = new TemporaryFolder();
 
-                // Sqlite needs two databases and two connection factories as transactions can't be nested
-                // and using a single connection would create a new transaction when creating documents.
-                // The other solution is to create a custom document factory that doesn't create new transactions
-                var storageConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql_content.db;Cache=Shared", true);
-                cfg.DocumentStorageFactory = new SqlDocumentStorageFactory(storageConnectionFactory, cfg.IsolationLevel);
-            });
+            var configuration = new Configuration
+            {
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared", true),
+                IsolationLevel = System.Data.IsolationLevel.Serializable,
+                DocumentStorageFactory = new SqlDocumentStorageFactory()
+            };
+
+            _store = new Store(configuration);
 
             CleanDatabase();
             CreateTables();
@@ -49,18 +47,20 @@ namespace YesSql.Tests
             );
         }
     }
-    public class SqlServerTests : CoreTests
+    public abstract class SqlServerTests : CoreTests
     {
         public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
 
         public SqlServerTests()
         {
-            _store = new Store(cfg =>
+            var configuration = new Configuration
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
-                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
-                cfg.DocumentStorageFactory = new SqlDocumentStorageFactory(cfg.ConnectionFactory);
-            });
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString),
+                IsolationLevel = System.Data.IsolationLevel.ReadUncommitted,
+                DocumentStorageFactory = new SqlDocumentStorageFactory()
+            };
+
+            _store = new Store(configuration);
 
             CleanDatabase();
             CreateTables();
@@ -81,12 +81,14 @@ namespace YesSql.Tests
 
         public InMemoryTests()
         {
-            _store = new Store(cfg =>
+            var configuration = new Configuration
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
-                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
-                cfg.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
-            });
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString),
+                IsolationLevel = System.Data.IsolationLevel.ReadUncommitted,
+                DocumentStorageFactory = new InMemoryDocumentStorageFactory()
+            };
+
+            _store = new Store(configuration);
 
             CleanDatabase();
             CreateTables();
@@ -108,12 +110,14 @@ namespace YesSql.Tests
 
         public CacheTests()
         {
-            _store = new Store(cfg =>
+            var configuration = new Configuration
             {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
-                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
-                cfg.DocumentStorageFactory = new CacheDocumentStorageFactory(new SqlDocumentStorageFactory(cfg.ConnectionFactory));
-            });
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString),
+                IsolationLevel = System.Data.IsolationLevel.ReadUncommitted,
+                DocumentStorageFactory = new CacheDocumentStorageFactory(new SqlDocumentStorageFactory())
+            };
+
+            _store = new Store(configuration);
 
             CleanDatabase();
             CreateTables();
@@ -135,14 +139,16 @@ namespace YesSql.Tests
 
         public LightningDBTests()
         {
-            _store = new Store(cfg =>
-            {
-                cfg.ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString);
-                cfg.IsolationLevel = System.Data.IsolationLevel.ReadUncommitted;
+            _tempFolder = new TemporaryFolder();
 
-                _tempFolder = new TemporaryFolder();
-                cfg.DocumentStorageFactory = new LightningDocumentStorageFactory(_tempFolder.Folder);
-            });
+            var configuration = new Configuration
+            {
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString),
+                IsolationLevel = System.Data.IsolationLevel.ReadUncommitted,
+                DocumentStorageFactory = new LightningDocumentStorageFactory(_tempFolder.Folder)
+            };
+
+            _store = new Store(configuration);
 
             CleanDatabase();
             CreateTables();
