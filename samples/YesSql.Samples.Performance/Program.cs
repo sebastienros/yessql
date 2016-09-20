@@ -516,15 +516,6 @@ namespace YesSql.Samples.Performance
             }
 
             var sqlFactory = new SqlDocumentStorageFactory();
-            sqlFactory.InitializeAsync(configuration).Wait();
-
-            using (var session = store.CreateSession())
-            {
-                var sqlStorage = new SqlDocumentStorage(session, sqlFactory);
-                StoreUsers(sqlFactory, session, configuration).Wait();
-            }
-
-            return;
 
             var runMigrations = true;
 
@@ -543,6 +534,12 @@ namespace YesSql.Samples.Performance
                         )
                     );
                 }
+            }
+
+            using (var session = store.CreateSession())
+            {
+                var sqlStorage = new SqlDocumentStorage(session, sqlFactory);
+                StoreUsers(sqlFactory, session, configuration).Wait();
             }
 
             store.RegisterIndexes<UserIndexProvider>();

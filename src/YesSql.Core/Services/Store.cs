@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -77,7 +78,12 @@ namespace YesSql.Core.Services
 
         public ISession CreateSession()
         {
-            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this);
+            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this, Configuration.IsolationLevel);
+        }
+
+        public ISession CreateSession(IsolationLevel isolationLevel)
+        {
+            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this, isolationLevel);
         }
 
         public void Dispose()

@@ -18,27 +18,27 @@ namespace YesSql.Core.Services
 {
     public class Session : ISession
     {
-        private readonly DbConnection _connection;
         private DbTransaction _transaction;
-        private IsolationLevel _isolationLevel;
+
+        private readonly IdentityMap _identityMap = new IdentityMap();
+        private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
+        private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
+        private readonly HashSet<object> _saved = new HashSet<object>();
+        private readonly HashSet<object> _updated = new HashSet<object>();
+        private readonly HashSet<object> _deleted = new HashSet<object>();
+        private readonly IDocumentStorage _storage;
+        private readonly Store _store;
         private readonly ISqlDialect _dialect;
+        private readonly IsolationLevel _isolationLevel;
+        private readonly DbConnection _connection;
 
-        protected readonly IdentityMap _identityMap = new IdentityMap();
-        private List<IIndexCommand> _commands = new List<IIndexCommand>();
-        protected readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
-        protected readonly HashSet<object> _saved = new HashSet<object>();
-        protected readonly HashSet<object> _updated = new HashSet<object>();
-        protected readonly HashSet<object> _deleted = new HashSet<object>();
-        protected readonly IDocumentStorage _storage;
-
-        private Store _store;
         protected bool _cancel;
 
-        public Session(Func<ISession, IDocumentStorage> storage, Store store)
+        public Session(Func<ISession, IDocumentStorage> storage, Store store, IsolationLevel isolationLevel)
         {
             _storage = storage(this);
             _store = store;
-            _isolationLevel = store.Configuration.IsolationLevel;
+            _isolationLevel = isolationLevel;
 
             _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
 
@@ -635,12 +635,6 @@ namespace YesSql.Core.Services
         public void Cancel()
         {
             _cancel = true;
-        }
-
-        public ISession IsolationLevel(IsolationLevel isolationLevel)
-        {
-            _isolationLevel = isolationLevel;
-            return this;
         }
 
         public void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true)

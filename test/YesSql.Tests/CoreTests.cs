@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -17,7 +19,7 @@ namespace YesSql.Tests
     /// <summary>
     /// Run all tests with a SqlServer document storage
     /// </summary>
-    public class SqliteTests : CoreTests
+    public abstract class SqliteTests : CoreTests
     {
         private TemporaryFolder _tempFolder;
 
@@ -47,7 +49,7 @@ namespace YesSql.Tests
             );
         }
     }
-    public abstract class SqlServerTests : CoreTests
+    public class SqlServerTests : CoreTests
     {
         public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
 
@@ -1706,6 +1708,185 @@ namespace YesSql.Tests
                     .With<PersonByName>(x => x.Name.IsIn(new string[0]))
                     .Count());
             }
+        }
+
+        [Fact]
+        public async Task ShouldReadCommittedRecords()
+        {
+            /*
+             * session1 created
+             * session1 0 index found
+             * session1 save and commit person
+             * session1 1 index found (session1 statements flushed)
+             * session1 disposed
+             * session2 created
+             * session2 1 index found (session1 statements isolated)
+             * session2 save and commit person
+             * session2 2 index found (session2 statements flushed)
+             * session2 disposed (session2 transation committed)
+             * session2 2 index found
+             * session1 2 index found
+             */
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var session1IsDisposed = new ManualResetEvent(false);
+            var session2IsDisposed = new ManualResetEvent(false);
+
+            var task1 = Task.Run(async () =>
+            {
+                using (var session1 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                {
+                    Assert.Equal(0, await session1.QueryIndexAsync<PersonByName>().Count());
+
+                    var bill = new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Gates",
+                    };
+
+                    session1.Save(bill);
+                    await session1.CommitAsync();
+
+                    Assert.Equal(1, await session1.QueryIndexAsync<PersonByName>().Count());
+                }
+
+                session1IsDisposed.Set();
+
+                if (!session2IsDisposed.WaitOne(5000))
+                {
+                    Assert.True(false, "session2IsDisposed timeout");
+                }
+
+                using (var session1 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                {
+                    Assert.Equal(2, await session1.QueryIndexAsync<PersonByName>().Count());
+                }
+            });
+
+            var task2 = Task.Run(async () =>
+            {
+                if (!session1IsDisposed.WaitOne(5000))
+                {
+                    Assert.True(false, "session1IsDisposed timeout");
+                }
+
+                using (var session2 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                {
+                    Assert.Equal(1, await session2.QueryIndexAsync<PersonByName>().Count());
+
+                    var steve = new Person
+                    {
+                        Firstname = "Steve",
+                        Lastname = "Ballmer",
+                    };
+
+                    session2.Save(steve);
+
+                    await session2.CommitAsync();
+
+                    Assert.Equal(2, await session2.QueryIndexAsync<PersonByName>().Count());
+                }
+
+                using (var session2 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                {
+                    Assert.Equal(2, await session2.QueryIndexAsync<PersonByName>().Count());
+                }
+
+                session2IsDisposed.Set();
+
+            });
+
+            await Task.WhenAll(task1, task2);
+        }
+
+        [Fact]
+        public async Task ShouldReadUncommittedRecords()
+        {
+            /*
+             * session1 created
+             * session1 0 index found
+             * session1 save and commit person
+             * session1 1 index found (session1 statements flushed)
+             * session2 created
+             * session2 1 index found (session1 statements isolated)
+             * session2 save and commit person
+             * session2 2 index found (session2 statements flushed)
+             * session2 disposed (session2 transation committed)
+             * session2 2 index found
+             * session1 disposed
+             * session1 2 index found
+             */
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var session1IsFlushed = new ManualResetEvent(false);
+            var session2IsDisposed = new ManualResetEvent(false);
+
+            var task1 = Task.Run(async () =>
+            {
+                using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                {
+                    Assert.Equal(0, await session1.QueryIndexAsync<PersonByName>().Count());
+
+                    var bill = new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Gates",
+                    };
+
+                    session1.Save(bill);
+                    await session1.CommitAsync();
+
+                    Assert.Equal(1, await session1.QueryIndexAsync<PersonByName>().Count());
+
+                    session1IsFlushed.Set();
+                    if (!session2IsDisposed.WaitOne(5000))
+                    {
+                        Assert.True(false, "session2IsDisposed timeout");
+                    }
+                }
+
+                using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                {
+                    Assert.Equal(2, await session1.QueryIndexAsync<PersonByName>().Count());
+                }
+            });
+
+            var task2 = Task.Run(async () =>
+            {
+                if(!session1IsFlushed.WaitOne(5000))
+                {
+                    Assert.True(false, "session1IsFlushed timeout");
+                }
+
+                using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                {
+                    Assert.Equal(1, await session2.QueryIndexAsync<PersonByName>().Count());
+
+                    var steve = new Person
+                    {
+                        Firstname = "Steve",
+                        Lastname = "Ballmer",
+                    };
+
+                    session2.Save(steve);
+
+                    await session2.CommitAsync();
+
+                    Assert.Equal(2, await session2.QueryIndexAsync<PersonByName>().Count());
+                }
+
+                using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                {
+                    Assert.Equal(2, await session2.QueryIndexAsync<PersonByName>().Count());
+                }
+
+                session2IsDisposed.Set();
+
+            });
+
+            await Task.WhenAll(task1, task2);
         }
     }
 }
