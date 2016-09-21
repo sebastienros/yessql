@@ -3,7 +3,7 @@ YesSql
 
 A .NET document database interface for relational databases, because in SQL we (still) trust !
 
-[![Build status](https://ci.appveyor.com/api/projects/status/96n3byfpy0hnw87f)](https://ci.appveyor.com/project/SebastienRos/yessql)
+[![Build status](https://ci.appveyor.com/api/projects/status/847u2qswagvya2xd/branch/master?svg=true)](https://ci.appveyor.com/project/alexbocharov/yessql/branch/master)
 
 How does it work ?
 -------------------
