@@ -49,7 +49,7 @@ namespace YesSql.Storage.InMemory
                 throw new ArgumentException("Can't delete a document with a null id");
             }
 
-            foreach(var document in documents)
+            foreach (var document in documents)
             {
                 _documents.Remove(document.Id);
             }

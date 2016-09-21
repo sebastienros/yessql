@@ -16,7 +16,7 @@ namespace YesSql.Storage.Cache
 
         public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
         {
-            if(_storage == null)
+            if (_storage == null)
             {
                 _storage = new CacheDocumentStorage(_concreteStorageFactory.CreateDocumentStorage(session, configuration));
             }

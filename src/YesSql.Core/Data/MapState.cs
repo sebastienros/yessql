@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using YesSql.Core.Indexes;
 
-namespace YesSql.Core.Data {
-    public class MapState {
+namespace YesSql.Core.Data
+{
+    public class MapState
+    {
         public MapState(IIndex map, MapStates state)
         {
             Map = map;

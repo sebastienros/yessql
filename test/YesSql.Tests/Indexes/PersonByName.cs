@@ -14,7 +14,7 @@ namespace YesSql.Tests.Indexes
         {
             context
                 .For<PersonByName>()
-                .Map(person => new PersonByName {Name = person.Firstname});
+                .Map(person => new PersonByName { Name = person.Firstname });
         }
     }
 }

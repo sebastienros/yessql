@@ -44,9 +44,9 @@ namespace YesSql.Core.Indexes
         private IDescribeFor _reduceDescribeFor;
 
         public PropertyInfo GroupProperty { get; set; }
-        public Type IndexType { get { return typeof (TIndex); } }
+        public Type IndexType { get { return typeof(TIndex); } }
 
-        public IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map) 
+        public IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map)
         {
             _map = map;
             return this;
@@ -54,7 +54,7 @@ namespace YesSql.Core.Indexes
 
         public IGroupFor<TIndex> Map(Func<T, TIndex> map)
         {
-            _map = x => new [] { map(x) };
+            _map = x => new[] { map(x) };
             return this;
         }
 
@@ -62,33 +62,33 @@ namespace YesSql.Core.Indexes
         {
             var memberExpression = group.Body as MemberExpression;
 
-            if(memberExpression == null)
+            if (memberExpression == null)
             {
                 throw new ArgumentException("Group expression is not a valid member of: " + typeof(TIndex).Name);
             }
-            
+
             var property = memberExpression.Member as PropertyInfo;
 
             if (property == null)
             {
-                throw new ArgumentException("Group expression is not a valid property of: " + typeof (TIndex).Name);
+                throw new ArgumentException("Group expression is not a valid property of: " + typeof(TIndex).Name);
             }
 
             GroupProperty = property;
 
             var reduceDescibeFor = new IndexDescriptor<T, TIndex, TKeyG>();
-            _reduceDescribeFor = reduceDescibeFor ;
+            _reduceDescribeFor = reduceDescibeFor;
 
             return reduceDescibeFor;
         }
-        
-        public IDeleteFor<TIndex> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce) 
+
+        public IDeleteFor<TIndex> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce)
         {
             _reduce = reduce;
             return this;
         }
 
-        public void Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null) 
+        public void Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null)
         {
             _delete = delete;
         }
@@ -100,11 +100,11 @@ namespace YesSql.Core.Indexes
 
         Func<IGrouping<object, IIndex>, IIndex> IDescribeFor.GetReduce()
         {
-            if (_reduceDescribeFor != null) 
+            if (_reduceDescribeFor != null)
             {
                 return _reduceDescribeFor.GetReduce();
             }
-            
+
             if (_reduce == null)
             {
                 return null;
@@ -124,7 +124,7 @@ namespace YesSql.Core.Indexes
                 return _reduceDescribeFor.GetDelete();
             }
 
-            return (index, obj) => _delete((TIndex) index, obj.Cast<TIndex>());
+            return (index, obj) => _delete((TIndex)index, obj.Cast<TIndex>());
         }
 
     }

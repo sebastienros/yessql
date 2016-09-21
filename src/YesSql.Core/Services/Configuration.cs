@@ -49,7 +49,7 @@ namespace YesSql.Core.Services
 
         public DbConnection CreateConnection()
         {
-            if(_reuseConnection)
+            if (_reuseConnection)
             {
                 if (_reusedConnection == null)
                 {
@@ -68,7 +68,7 @@ namespace YesSql.Core.Services
 
         public void Dispose()
         {
-            if(_reuseConnection)
+            if (_reuseConnection)
             {
                 if (_reusedConnection != null)
                 {

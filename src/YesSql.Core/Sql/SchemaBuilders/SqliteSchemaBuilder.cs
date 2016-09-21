@@ -5,7 +5,8 @@ namespace YesSql.Core.Sql.SchemaBuilders
 {
     public class SqliteSchemaBuilder : BaseSchemaBuilder
     {
-        public SqliteSchemaBuilder(ISqlDialect dialect):base(dialect) {
+        public SqliteSchemaBuilder(ISqlDialect dialect) : base(dialect)
+        {
         }
 
         public override IEnumerable<string> Run(CreateForeignKeyCommand command)

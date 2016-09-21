@@ -1,7 +1,10 @@
-﻿namespace YesSql.Core.Sql.Schema {
-    public class DropTableCommand : SchemaCommand {
+﻿namespace YesSql.Core.Sql.Schema
+{
+    public class DropTableCommand : SchemaCommand
+    {
         public DropTableCommand(string name)
-            : base(name, SchemaCommandType.DropTable) {
+            : base(name, SchemaCommandType.DropTable)
+        {
         }
     }
 }

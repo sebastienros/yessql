@@ -1,6 +1,7 @@
 ﻿using System;
 
-namespace YesSql.Core.Data {
+namespace YesSql.Core.Data
+{
     public interface IIdAccessor<T>
     {
         T Get(object obj);

@@ -43,7 +43,7 @@ namespace YesSql.Core.Sql
         }
         public void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
         {
-            if(_join == null)
+            if (_join == null)
             {
                 _join = new StringBuilder();
             }
@@ -143,15 +143,15 @@ namespace YesSql.Core.Sql
                     sb.Append(" order by ").Append(_order);
                 }
 
-                if(!String.IsNullOrEmpty(Trail))
+                if (!String.IsNullOrEmpty(Trail))
                 {
                     sb.Append(" ").Append(Trail);
                 }
-                
+
                 return sb.ToString();
             }
 
             return "";
-        } 
+        }
     }
 }

@@ -14,7 +14,8 @@ using YesSql.Core.Sql;
 
 namespace YesSql.Core.Services
 {
-    public class DefaultQuery : IQuery {
+    public class DefaultQuery : IQuery
+    {
         private readonly Session _session;
 
         private List<Type> _bound = new List<Type>();
@@ -74,7 +75,8 @@ namespace YesSql.Core.Services
                 {
                     builder.Append(" 1 = 0");
                 }
-                else {
+                else
+                {
                     query.ConvertFragment(builder, expression.Arguments[0]);
                     builder.Append(" in (");
                     for (var i = 0; i < values.Length; i++)
@@ -102,7 +104,7 @@ namespace YesSql.Core.Services
 
         private void Bind<TIndex>() where TIndex : IIndex
         {
-            if(_bound.Contains(typeof(TIndex)))
+            if (_bound.Contains(typeof(TIndex)))
             {
                 return;
             }
@@ -295,7 +297,7 @@ namespace YesSql.Core.Services
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)expression;
 
-                    if(methodCallExpression.Object == null)
+                    if (methodCallExpression.Object == null)
                     {
                         // Static call
                         return IsParameterBased(methodCallExpression.Arguments[0]);
@@ -341,7 +343,7 @@ namespace YesSql.Core.Services
             // This is used when an OrderBy expression uses a ValueType but
             // it's automatically using unboxing conversion (to object)
 
-            if(e.NodeType == ExpressionType.Convert)
+            if (e.NodeType == ExpressionType.Convert)
             {
                 return ((UnaryExpression)e).Operand;
             }
@@ -429,7 +431,8 @@ namespace YesSql.Core.Services
         {
             protected readonly DefaultQuery _query;
 
-            public Query(DefaultQuery query) {
+            public Query(DefaultQuery query)
+            {
                 _query = query;
             }
 
@@ -609,7 +612,8 @@ namespace YesSql.Core.Services
             where TIndex : IIndex
         {
             public Query(DefaultQuery query)
-                : base(query) {
+                : base(query)
+            {
             }
 
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(string sql)

@@ -8,7 +8,7 @@ namespace YesSql.Core.Storage
         object Entity { get; set; }
         Type EntityType { get; set; }
     }
-    
+
     public class IdentityDocument : IIdentityEntity
     {
         public IdentityDocument(int id, object entity)

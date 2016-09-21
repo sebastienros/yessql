@@ -16,7 +16,7 @@ namespace YesSql.Core.Indexes
         {
             return _documentIds.TryGetValue(id, out document);
         }
-        
+
         public bool HasEntity(object entity)
         {
             return _entities.ContainsKey(entity);
@@ -33,7 +33,7 @@ namespace YesSql.Core.Indexes
             _entities.Remove(entity);
             _documentIds.Remove(id);
         }
-        
+
         public IEnumerable<object> GetAll()
         {
             return _entities.Keys;
@@ -43,6 +43,6 @@ namespace YesSql.Core.Indexes
         {
             _entities.Clear();
             _documentIds.Clear();
-        }        
+        }
     }
 }

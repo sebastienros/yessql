@@ -8,7 +8,8 @@ namespace YesSql.Core.Serialization
     /// <summary>
     /// Provides a set of extension methods on <see cref="Type"/>
     /// </summary>
-    public static class TypeExtensions {
+    public static class TypeExtensions
+    {
         private static ConcurrentDictionary<TypeInfo, string> _typeNames = new ConcurrentDictionary<TypeInfo, string>();
 
         /// <summary>
@@ -31,7 +32,7 @@ namespace YesSql.Core.Serialization
         public static string SimplifiedTypeName(this Type type)
         {
             var typeInfo = type.GetTypeInfo();
-            if(IsAnonymousType(typeInfo))
+            if (IsAnonymousType(typeInfo))
             {
                 return "dynamic";
             }

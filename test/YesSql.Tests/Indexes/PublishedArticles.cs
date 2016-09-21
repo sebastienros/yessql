@@ -14,8 +14,8 @@ namespace YesSql.Tests.Indexes
         {
             context
                 .For<PublishedArticle>()
-                .Map(article => 
-                    article.IsPublished ? new PublishedArticle() : null 
+                .Map(article =>
+                    article.IsPublished ? new PublishedArticle() : null
                 );
         }
     }

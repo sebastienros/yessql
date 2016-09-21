@@ -118,7 +118,7 @@ namespace YesSql.Core.Services
             {
                 // if the object is not new, reload to get the old map
                 int id;
-                if(_identityMap.TryGetDocumentId(entity, out id))
+                if (_identityMap.TryGetDocumentId(entity, out id))
                 {
                     if (update)
                     {
@@ -142,7 +142,7 @@ namespace YesSql.Core.Services
 
                     // Get the entity's Id if assigned
                     var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
-                    if(accessor != null)
+                    if (accessor != null)
                     {
                         doc.Id = accessor.Get(entity);
                     }
@@ -329,7 +329,7 @@ namespace YesSql.Core.Services
 
         public async Task CommitAsync(bool keepTracked = false)
         {
-            if(_saved.Count == 0 && _updated.Count == 0 && _deleted.Count == 0)
+            if (_saved.Count == 0 && _updated.Count == 0 && _deleted.Count == 0)
             {
                 return;
             }
@@ -358,14 +358,14 @@ namespace YesSql.Core.Services
             // compute all reduce indexes
             await ReduceAsync();
 
-            foreach(var command in _commands.OrderBy(x => x.ExecutionOrder))
+            foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
             {
                 await command.ExecuteAsync(_connection, _transaction);
             }
 
-            if(keepTracked)
+            if (keepTracked)
             {
-                foreach(var saved in _saved)
+                foreach (var saved in _saved)
                 {
                     _updated.Add(saved);
                 }
@@ -547,7 +547,7 @@ namespace YesSql.Core.Services
 
                 foreach (var index in mapped)
                 {
-                    if(index == null)
+                    if (index == null)
                     {
                         continue;
                     }

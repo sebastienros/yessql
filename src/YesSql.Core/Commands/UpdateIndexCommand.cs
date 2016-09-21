@@ -16,8 +16,8 @@ namespace YesSql.Core.Commands
         public override int ExecutionOrder { get; } = 3;
 
         public UpdateIndexCommand(
-            IIndex index, 
-            IEnumerable<int> addedDocumentIds, 
+            IIndex index,
+            IEnumerable<int> addedDocumentIds,
             IEnumerable<int> deletedDocumentIds,
             string tablePrefix) : base(index, tablePrefix)
         {

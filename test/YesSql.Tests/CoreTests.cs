@@ -1855,7 +1855,7 @@ namespace YesSql.Tests
 
             var task2 = Task.Run(async () =>
             {
-                if(!session1IsFlushed.WaitOne(5000))
+                if (!session1IsFlushed.WaitOne(5000))
                 {
                     Assert.True(false, "session1IsFlushed timeout");
                 }

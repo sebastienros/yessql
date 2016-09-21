@@ -16,16 +16,19 @@ namespace YesSql.Tests.Indexes
         {
             context
                 .For<ArticlesByDay, int>()
-                    .Map(article => new ArticlesByDay {
+                    .Map(article => new ArticlesByDay
+                    {
                         DayOfYear = article.PublishedUtc.DayOfYear,
                         Count = 1
                     })
                     .Group(article => article.DayOfYear)
-                    .Reduce(group => new ArticlesByDay {
+                    .Reduce(group => new ArticlesByDay
+                    {
                         DayOfYear = group.Key,
                         Count = group.Sum(y => y.Count)
                     })
-                    .Delete((index, map) => {
+                    .Delete((index, map) =>
+                    {
                         index.Count -= map.Sum(x => x.Count);
 
                         // if Count == 0 then delete the index

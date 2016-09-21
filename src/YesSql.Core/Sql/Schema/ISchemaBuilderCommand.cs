@@ -1,4 +1,5 @@
-﻿namespace YesSql.Core.Sql.Schema {
+﻿namespace YesSql.Core.Sql.Schema
+{
     public interface ISchemaBuilderCommand
     {
     }

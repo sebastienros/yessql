@@ -53,7 +53,7 @@ namespace YesSql.Storage.Cache
                 throw new ArgumentException("Can't delete a document with a null id");
             }
 
-            foreach(var document in documents)
+            foreach (var document in documents)
             {
                 _documents.Remove(document.Id);
             }
@@ -79,7 +79,7 @@ namespace YesSql.Storage.Cache
                 else
                 {
                     var concreteResults = await _concreteDocumentStorage.GetAsync<T>(ids);
-                    foreach(var concreteResult in concreteResults)
+                    foreach (var concreteResult in concreteResults)
                     {
                         result.Add(concreteResult);
                         _documents[id] = JsonConvert.SerializeObject(concreteResult, _jsonSettings);

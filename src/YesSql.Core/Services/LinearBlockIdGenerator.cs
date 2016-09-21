@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace YesSql.Core.Services
 {
@@ -12,7 +11,7 @@ namespace YesSql.Core.Services
     {
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
-         
+
         private readonly IConnectionFactory _connectionFactory;
         private readonly int _range;
         private bool _initialized;
@@ -31,11 +30,11 @@ namespace YesSql.Core.Services
             _tablePrefix = tablePrefix;
             _dimension = dimension;
         }
-        
+
         public long GetNextId()
         {
             // Initialize the range
-            if(_end == 0)
+            if (_end == 0)
             {
                 EnsureInitialized();
                 LeaseRange();
@@ -67,7 +66,7 @@ namespace YesSql.Core.Services
 
                     do
                     {
-                        // Ensure we overwrite the value that has been read by this 
+                        // Ensure we overwrite the value that has been read by this
                         // instance in case another client is trying to lease a range
                         // at the same time
 
@@ -109,14 +108,14 @@ namespace YesSql.Core.Services
                             transaction.Commit();
                         }
 
-                        if(retries++ > MaxRetries)
+                        if (retries++ > MaxRetries)
                         {
                             throw new Exception("Too many retries while trying to lease a range for: " + _dimension);
                         }
 
                     } while (affectedRows == 0);
 
-                    _increment = -1; // Start with -1 as it will be incremented 
+                    _increment = -1; // Start with -1 as it will be incremented
                     _start = nextval;
                     _end = nextval + _range - 1;
 
@@ -137,7 +136,7 @@ namespace YesSql.Core.Services
 
         private void EnsureInitialized()
         {
-            if(_initialized)
+            if (_initialized)
             {
                 return;
             }

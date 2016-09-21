@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using YesSql.Core.Sql.Schema;
 using YesSql.Core.Sql.SchemaBuilders;
@@ -37,7 +36,7 @@ namespace YesSql.Core.Sql
         {
             string connectionName = connection.GetType().Name.ToLower();
 
-            if(!SchemaBuilders.ContainsKey(connectionName))
+            if (!SchemaBuilders.ContainsKey(connectionName))
             {
                 throw new ArgumentException("Unknown connection name: " + connectionName);
             }

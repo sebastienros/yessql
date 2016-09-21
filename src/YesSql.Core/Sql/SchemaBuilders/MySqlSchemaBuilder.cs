@@ -6,9 +6,11 @@ using YesSql.Core.Sql.Schema;
 
 namespace YesSql.Core.Sql.SchemaBuilders
 {
-    public class MySqlSchemaBuilder : BaseSchemaBuilder {
+    public class MySqlSchemaBuilder : BaseSchemaBuilder
+    {
 
-        public MySqlSchemaBuilder(ISqlDialect dialect):base(dialect) {
+        public MySqlSchemaBuilder(ISqlDialect dialect) : base(dialect)
+        {
         }
 
         public override void Run(StringBuilder builder, AlterColumnCommand command)
@@ -19,11 +21,14 @@ namespace YesSql.Core.Sql.SchemaBuilders
             var initLength = builder.Length;
 
             // type
-            if (command.DbType != DbType.Object) {
+            if (command.DbType != DbType.Object)
+            {
                 builder.Append(_dialect.GetTypeName(command.DbType, command.Length, command.Precision, command.Scale));
             }
-            else {
-                if (command.Length > 0 || command.Precision > 0 || command.Scale > 0) {
+            else
+            {
+                if (command.Length > 0 || command.Precision > 0 || command.Scale > 0)
+                {
                     throw new Exception("Error while executing data migration: you need to specify the field's type in order to change its properties");
                 }
             }
@@ -36,7 +41,8 @@ namespace YesSql.Core.Sql.SchemaBuilders
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength2 = builder2.Length;
 
-            if (command.Default != null) {
+            if (command.Default != null)
+            {
                 builder2.Append(" set default ").Append(_dialect.GetSqlValue(command.Default)).Append(" ");
             }
 

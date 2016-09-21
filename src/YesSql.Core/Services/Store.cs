@@ -89,7 +89,7 @@ namespace YesSql.Core.Services
         public void Dispose()
         {
             var disposableFactory = Configuration.DocumentStorageFactory as IDisposable;
-            if(disposableFactory != null)
+            if (disposableFactory != null)
             {
                 disposableFactory.Dispose();
             }

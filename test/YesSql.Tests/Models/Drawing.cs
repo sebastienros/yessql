@@ -2,9 +2,9 @@
 
 namespace YesSql.Tests.Models
 {
-    public class Drawing 
+    public class Drawing
     {
-        public Drawing() 
+        public Drawing()
         {
             Shapes = new List<Shape>();
         }
@@ -12,14 +12,14 @@ namespace YesSql.Tests.Models
         public IList<Shape> Shapes { get; set; }
     }
 
-    public abstract class Shape 
+    public abstract class Shape
     {
         public int Id { get; set; }
     }
 
     public class Square : Shape
     {
-        public int Size { get; set;}
+        public int Size { get; set; }
     }
 
     public class Circle : Shape

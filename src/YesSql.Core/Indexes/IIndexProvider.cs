@@ -14,12 +14,12 @@ namespace YesSql.Core.Indexes
 
         void IIndexProvider.Describe(IDescriptor context)
         {
-            Describe((DescribeContext<T>) context);
+            Describe((DescribeContext<T>)context);
         }
 
         public Type ForType()
         {
-            return typeof (T);
+            return typeof(T);
         }
     }
 }

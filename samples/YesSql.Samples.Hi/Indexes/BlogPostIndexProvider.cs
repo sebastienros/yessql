@@ -33,8 +33,8 @@ namespace YesSql.Samples.Hi.Indexes
                    {
                        index.Count -= map.Sum(x => x.Count);
 
-                        // if Count == 0 then delete the index
-                        return index.Count > 0 ? index : null;
+                       // if Count == 0 then delete the index
+                       return index.Count > 0 ? index : null;
                    }
             );
         }

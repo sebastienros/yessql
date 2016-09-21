@@ -10,7 +10,7 @@ namespace YesSql.Storage.InMemory
 
         public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
         {
-            if(_storage == null)
+            if (_storage == null)
             {
                 _storage = new InMemoryDocumentStorage();
             }

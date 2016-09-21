@@ -24,7 +24,7 @@ namespace YesSql.Core.Sql
 
         private void Execute(IEnumerable<string> statements)
         {
-            foreach(var statement in statements)
+            foreach (var statement in statements)
             {
                 Connection.Execute(statement, null, Transaction);
             }
@@ -69,7 +69,7 @@ namespace YesSql.Core.Sql
             );
 
             CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { name + "Id" }, name, new[] { "Id" });
-            CreateForeignKey("FK_" + bridgeTableName + "DocumentId" , bridgeTableName, new[] { "DocumentId" }, "Document", new[] { "Id" });
+            CreateForeignKey("FK_" + bridgeTableName + "DocumentId", bridgeTableName, new[] { "DocumentId" }, "Document", new[] { "Id" });
             return this;
         }
 
@@ -151,6 +151,6 @@ namespace YesSql.Core.Sql
             Execute(_builder.CreateSql(command));
             return this;
         }
-        
+
     }
 }

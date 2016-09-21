@@ -689,7 +689,7 @@ namespace YesSql.Samples.Performance
 
         private static async Task StoreUsers(IDocumentStorageFactory storageFactory, ISession session, Configuration configuration)
         {
-            int batch = 0, batchSize = 128, i=0;
+            int batch = 0, batchSize = 128, i = 0;
             var storage = storageFactory.CreateDocumentStorage(session, configuration);
             var identities = new List<IdentityDocument>();
 

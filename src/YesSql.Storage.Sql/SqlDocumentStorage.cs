@@ -98,7 +98,8 @@ namespace YesSql.Storage.Sql
                     {
                         result[index] = JsonConvert.DeserializeObject<dynamic>(entity.Content, _jsonSettings);
                     }
-                    else {
+                    else
+                    {
                         result[index] = JsonConvert.DeserializeObject<T>(entity.Content, _jsonSettings);
                     }
                 }
@@ -113,7 +114,7 @@ namespace YesSql.Storage.Sql
 
             // Create an index to lookup the position of a specific document id
             var orderedLookup = new Dictionary<int, int>();
-            for(var i=0; i<documents.Length; i++)
+            for (var i = 0; i < documents.Length; i++)
             {
                 orderedLookup[documents[i].Id] = i;
             }
@@ -134,7 +135,7 @@ namespace YesSql.Storage.Sql
                     var selectCmd = $"select Id, Content from [{_factory.TablePrefix}Content] where Id {op} @Id;";
                     var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
 
-                    foreach(var entity in entities)
+                    foreach (var entity in entities)
                     {
                         var index = orderedLookup[entity.Id];
                         result[index] = JsonConvert.DeserializeObject(entity.Content, typeGroup.Key, _jsonSettings);
@@ -147,10 +148,10 @@ namespace YesSql.Storage.Sql
 
         private struct IdString
         {
-            #pragma warning disable 0649
+#pragma warning disable 0649
             public int Id;
             public string Content;
-            #pragma warning restore 0649
+#pragma warning restore 0649
         }
     }
 }
