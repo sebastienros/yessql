@@ -154,8 +154,7 @@ namespace YesSql.Core.Sql
                 return "null";
             }
 
-            TypeCode typeCode = value.GetType().GetTypeCode();
-            switch (typeCode)
+            switch (Convert.GetTypeCode(value))
             {
                 case TypeCode.Object:
                 case TypeCode.String:

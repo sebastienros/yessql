@@ -10,11 +10,11 @@ namespace YesSql.Core.Sql.Schema {
         public void AddColumn(string columnName, DbType dbType, Action<AddColumnCommand> column = null) {
             var command = new AddColumnCommand(Name, columnName);
             command.WithType(dbType);
-            
+
             if(column != null) {
                 column(command);
             }
-            
+
             TableCommands.Add(command);
         }
 

@@ -1,34 +1,43 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
-using YesSql.Core.Serialization;
 
-namespace YesSql.Core.Sql.Schema {
-    public static class SchemaUtils {
-        public static DbType ToDbType(Type type) {
+namespace YesSql.Core.Sql.Schema
+{
+    public static class SchemaUtils
+    {
+        private static Dictionary<Type, DbType> DbTypes = new Dictionary<Type, DbType>
+        {
+                {typeof(object), DbType.Binary},
+                {typeof(string), DbType.String},
+                {typeof(char), DbType.String},
+                {typeof(bool), DbType.Boolean},
+                {typeof(sbyte), DbType.SByte},
+                {typeof(short), DbType.Int16},
+                {typeof(ushort), DbType.UInt16},
+                {typeof(int), DbType.Int32},
+                {typeof(uint), DbType.UInt32},
+                {typeof(long), DbType.Int64},
+                {typeof(ulong), DbType.UInt64},
+                {typeof(float), DbType.Single},
+                {typeof(double), DbType.Double},
+                {typeof(decimal), DbType.Decimal},
+                {typeof(DateTime), DbType.DateTime2},
+                {typeof(DateTimeOffset), DbType.DateTimeOffset},
+                {typeof(Guid), DbType.DateTime}
+        };
+
+
+        public static DbType ToDbType(Type type)
+        {
             DbType dbType;
-            switch ( type.GetTypeCode() ) {
-                case TypeCode.String:
-                    dbType = DbType.String;
-                    break;
-                case TypeCode.Int32:
-                    dbType = DbType.Int32;
-                    break;
-                case TypeCode.DateTime:
-                    dbType = DbType.DateTime;
-                    break;
-                case TypeCode.Boolean:
-                    dbType = DbType.Boolean;
-                    break;
-                default:
-                    if(type == typeof(Guid)) 
-                        dbType = DbType.Guid;
-                    else
-                        Enum.TryParse(type.GetTypeCode().ToString(), true, out dbType);
-                    break;
+
+            if(DbTypes.TryGetValue(type, out dbType))
+            {
+                return dbType;
             }
 
-            return dbType;
+            return DbType.Object;
         }
-
     }
 }
