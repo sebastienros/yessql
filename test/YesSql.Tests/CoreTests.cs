@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Xunit;
+using YesSql.Core.Collections;
 using YesSql.Core.Services;
 using YesSql.Storage.Cache;
 using YesSql.Storage.InMemory;
@@ -47,6 +48,10 @@ namespace YesSql.Tests
             session.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropTable("Content"), false
             );
+
+            session.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropTable("Collection1_Content"), false
+            );
         }
     }
     public class SqlServerTests : CoreTests
@@ -74,6 +79,10 @@ namespace YesSql.Tests
 
             session.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropTable("Content"), false
+            );
+
+            session.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropTable("Collection1_Content"), false
             );
         }
     }
@@ -206,7 +215,11 @@ namespace YesSql.Tests
                 );
 
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropTable("Document"), false
+                    .DropTable(Store.DocumentTable), false
+                );
+
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropTable("Collection1_Document"), false
                 );
 
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
@@ -1887,6 +1900,48 @@ namespace YesSql.Tests
             });
 
             await Task.WhenAll(task1, task2);
+        }
+
+        [Fact]
+        public async Task ShouldSaveInCollections()
+        {
+            await _store.InitializeCollectionAsync("Collection1");
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryAsync().Any().Count());
+            }
+
+            using (new NamedCollection("Collection1"))
+            {
+                using (var session = _store.CreateSession())
+                {
+
+                    var steve = new
+                    {
+                        Firstname = "Steve",
+                        Lastname = "Balmer"
+                    };
+
+                    session.Save(steve);
+                }
+
+                using (var session = _store.CreateSession())
+                {
+                    Assert.Equal(1, await session.QueryAsync().Any().Count());
+                }
+            }
         }
     }
 }

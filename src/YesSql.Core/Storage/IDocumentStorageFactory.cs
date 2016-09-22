@@ -14,5 +14,11 @@ namespace YesSql.Core.Storage
         /// Initializes the storage, for instance creating required SQL tables.
         /// </summary>
         Task InitializeAsync(Configuration configuration);
+
+        /// <summary>
+        /// Initializes the storage , for instance creating required SQL tables.
+        /// </summary>
+        Task InitializeCollectionAsync(Configuration configuration, string collectionName);
+
     }
 }

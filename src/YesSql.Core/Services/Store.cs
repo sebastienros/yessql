@@ -40,7 +40,7 @@ namespace YesSql.Core.Services
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
         }
 
-        public async Task InitializeAsync()
+        public Task InitializeAsync()
         {
             using (var session = CreateSession())
             {
@@ -65,12 +65,12 @@ namespace YesSql.Core.Services
                 });
             }
 
-            await Configuration.DocumentStorageFactory.InitializeAsync(Configuration);
+            return Configuration.DocumentStorageFactory.InitializeAsync(Configuration);
         }
 
-        public void InitializeCollection(string collection)
+        public Task InitializeCollectionAsync(string collectionName)
         {
-            var documentTable = collection + "_" + "Document";
+            var documentTable = collectionName + "_" + "Document";
 
             using (var session = CreateSession())
             {
@@ -86,6 +86,8 @@ namespace YesSql.Core.Services
                     );
                 });
             }
+
+            return Configuration.DocumentStorageFactory.InitializeCollectionAsync(Configuration, collectionName);
         }
 
         private void ValidateConfiguration()

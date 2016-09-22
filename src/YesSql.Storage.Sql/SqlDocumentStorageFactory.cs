@@ -53,7 +53,7 @@ namespace YesSql.Storage.Sql
         /// <summary>
         /// Creates the necessary tables
         /// </summary>
-        public async Task InitializeCollection(Configuration configuration, string collection)
+        public async Task InitializeCollectionAsync(Configuration configuration, string collection)
         {
             var contentTable = collection + "_" + "Content";
             var connection = configuration.ConnectionFactory.CreateConnection();
@@ -67,7 +67,7 @@ namespace YesSql.Storage.Sql
                     schemaBuilder.CreateTable(contentTable, table => table
                         .Column<int>("Id", column => column
                             .PrimaryKey().NotNull())
-                        .Column<string>(contentTable, column => column
+                        .Column<string>("Content", column => column
                             .Unlimited()
                     ));
 

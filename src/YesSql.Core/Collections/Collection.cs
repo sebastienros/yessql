@@ -21,12 +21,15 @@ namespace YesSql.Core.Collections
             }
 
             var builder = new StringBuilder();
+            bool first = true;
             foreach (var c in name)
             {
-                if (Char.IsLetter(c))
+                if (Char.IsLetter(c) || (!first && Char.IsDigit(c)))
                 {
                     builder.Append(c);
                 }
+
+                first = false;
             }
 
             return builder.ToString();
