@@ -5,6 +5,8 @@ using Dapper;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Data.Common;
+using YesSql.Core.Collections;
+using YesSql.Core.Services;
 
 namespace YesSql.Core.Commands
 {
@@ -26,6 +28,7 @@ namespace YesSql.Core.Commands
         {
             var dialect = SqlDialectFactory.For(connection);
             var type = Index.GetType();
+            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
 
             if (Index is MapIndex)
             {
@@ -40,7 +43,7 @@ namespace YesSql.Core.Commands
                 var sql = Inserts(type) + $"; {dialect.IdentitySelectString} id";
                 Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
 
-                var bridgeTableName = type.Name + "_Document";
+                var bridgeTableName = type.Name + "_" + documentTable;
                 var columnList = $"[{type.Name}Id], [DocumentId]";
                 var parameterList = $"@Id, @DocumentId";
                 var bridgeSql = $"insert into [{_tablePrefix}{bridgeTableName}] ({columnList}) values ({parameterList});";

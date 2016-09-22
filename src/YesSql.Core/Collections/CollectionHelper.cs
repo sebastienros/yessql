@@ -8,7 +8,7 @@ using System.Runtime.Remoting.Messaging;
 
 namespace YesSql.Core.Collections
 {
-    internal class CollectionHelper
+    public class CollectionHelper
     {
 
 #if NETSTANDARD1_5
@@ -41,7 +41,7 @@ namespace YesSql.Core.Collections
             }
         }
 #endif
-        internal static Collection Current
+        public static Collection Current
         {
             get
             {

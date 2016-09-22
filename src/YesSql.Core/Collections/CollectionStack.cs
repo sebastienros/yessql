@@ -7,13 +7,9 @@ namespace YesSql.Core.Collections
         private readonly CollectionStack _previous;
         private readonly Collection _collection;
 
-        static CollectionStack()
-        {
-            Empty = new CollectionStack().Push(new DefaultCollection());
-        }
-
         private CollectionStack()
         {
+
         }
 
         private CollectionStack(CollectionStack previous, Collection collection)
@@ -27,7 +23,7 @@ namespace YesSql.Core.Collections
             _collection = collection;
         }
 
-        public readonly static CollectionStack Empty;
+        public static readonly CollectionStack Empty = new CollectionStack();
 
         public CollectionStack Push(Collection c)
         {
@@ -36,7 +32,7 @@ namespace YesSql.Core.Collections
 
         public Collection Peek()
         {
-            return _collection;
+            return _collection ?? new DefaultCollection();
         }
     }
 }

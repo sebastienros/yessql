@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using YesSql.Core.Collections;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
 
@@ -29,13 +30,14 @@ namespace YesSql.Core.Services
         internal readonly ConcurrentDictionary<Type, IIdAccessor<int>> _idAccessors =
             new ConcurrentDictionary<Type, IIdAccessor<int>>();
 
+        public const string DocumentTable = "Document";
 
         public Store(Configuration configuration)
         {
             Configuration = configuration;
             Indexes = new List<IIndexProvider>();
             ValidateConfiguration();
-            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, "index", Configuration.TablePrefix);
+            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
         }
 
         public async Task InitializeAsync()
@@ -56,11 +58,34 @@ namespace YesSql.Core.Services
                     builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
                         .Column<string>("dimension")
                         .Column<ulong>("nextval")
+                    )
+                    .AlterTable(LinearBlockIdGenerator.TableName, table => table
+                        .CreateIndex("IX_Dimension", "dimension")
                     );
                 });
             }
 
             await Configuration.DocumentStorageFactory.InitializeAsync(Configuration);
+        }
+
+        public void InitializeCollection(string collection)
+        {
+            var documentTable = collection + "_" + "Document";
+
+            using (var session = CreateSession())
+            {
+                session.ExecuteMigration(builder =>
+                {
+                    builder
+                        .CreateTable(documentTable, table => table
+                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                        .Column<string>("Type", column => column.NotNull())
+                    )
+                    .AlterTable(documentTable, table => table
+                        .CreateIndex("IX_Type", "Type")
+                    );
+                });
+            }
         }
 
         private void ValidateConfiguration()
@@ -105,6 +130,7 @@ namespace YesSql.Core.Services
             var index = Activator.CreateInstance(type) as IIndexProvider;
             if (index != null)
             {
+                index.CollectionName = CollectionHelper.Current.GetSafeName();
                 Indexes.Add(index);
             }
 
@@ -143,6 +169,8 @@ namespace YesSql.Core.Services
                 throw new ArgumentNullException();
             }
 
+            var collection = CollectionHelper.Current.GetSafeName();
+
             return Descriptors.GetOrAdd(target, key =>
             {
                 var contextType = typeof(DescribeContext<>).MakeGenericType(target);
@@ -150,7 +178,8 @@ namespace YesSql.Core.Services
 
                 foreach (var provider in Indexes)
                 {
-                    if (provider.ForType().IsAssignableFrom(target))
+                    if (provider.ForType().IsAssignableFrom(target) &&
+                        String.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
                     {
                         provider.Describe(context);
                     }
@@ -160,9 +189,9 @@ namespace YesSql.Core.Services
             });
         }
 
-        public int GetNextId()
+        public int GetNextId(string collection)
         {
-            return (int)IdGenerator.GetNextId();
+            return (int)IdGenerator.GetNextId(collection);
         }
     }
 }

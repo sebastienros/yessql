@@ -19,25 +19,23 @@ namespace YesSql.Core.Services
         private long _start;
         private int _increment;
         private long _end;
-        private string _dimension;
 
         private string _tablePrefix;
 
-        public LinearBlockIdGenerator(IConnectionFactory connectionFactory, int range, string dimension, string tablePrefix)
+        public LinearBlockIdGenerator(IConnectionFactory connectionFactory, int range, string tablePrefix)
         {
             _connectionFactory = connectionFactory;
             _range = range;
             _tablePrefix = tablePrefix;
-            _dimension = dimension;
         }
 
-        public long GetNextId()
+        public long GetNextId(string dimension)
         {
             // Initialize the range
             if (_end == 0)
             {
-                EnsureInitialized();
-                LeaseRange();
+                EnsureInitialized(dimension);
+                LeaseRange(dimension);
             }
 
             var newIncrement = Interlocked.Increment(ref _increment);
@@ -45,14 +43,14 @@ namespace YesSql.Core.Services
 
             if (nextId > _end)
             {
-                LeaseRange();
-                return GetNextId();
+                LeaseRange(dimension);
+                return GetNextId(dimension);
             }
 
             return nextId;
         }
 
-        private void LeaseRange()
+        private void LeaseRange(string dimension)
         {
             lock (this)
             {
@@ -76,7 +74,7 @@ namespace YesSql.Core.Services
                             selectCommand.CommandText = $"SELECT nextval FROM [{_tablePrefix}{TableName}] WHERE dimension = @dimension;";
 
                             var selectDimension = selectCommand.CreateParameter();
-                            selectDimension.Value = _dimension;
+                            selectDimension.Value = dimension;
                             selectDimension.ParameterName = "@dimension";
                             selectCommand.Parameters.Add(selectDimension);
 
@@ -88,7 +86,7 @@ namespace YesSql.Core.Services
                             updateCommand.CommandText = $"UPDATE [{_tablePrefix}{TableName}] SET nextval=@new WHERE nextval = @previous AND dimension = @dimension;";
 
                             var updateDimension = updateCommand.CreateParameter();
-                            updateDimension.Value = _dimension;
+                            updateDimension.Value = dimension;
                             updateDimension.ParameterName = "@dimension";
                             updateCommand.Parameters.Add(updateDimension);
 
@@ -110,7 +108,7 @@ namespace YesSql.Core.Services
 
                         if (retries++ > MaxRetries)
                         {
-                            throw new Exception("Too many retries while trying to lease a range for: " + _dimension);
+                            throw new Exception("Too many retries while trying to lease a range for: " + dimension);
                         }
 
                     } while (affectedRows == 0);
@@ -134,7 +132,7 @@ namespace YesSql.Core.Services
             }
         }
 
-        private void EnsureInitialized()
+        private void EnsureInitialized(string dimension)
         {
             if (_initialized)
             {
@@ -152,7 +150,7 @@ namespace YesSql.Core.Services
                     selectCommand.CommandText = $"SELECT nextval FROM [{_tablePrefix}{TableName}] WHERE dimension = @dimension;";
 
                     var selectDimension = selectCommand.CreateParameter();
-                    selectDimension.Value = _dimension;
+                    selectDimension.Value = dimension;
                     selectDimension.ParameterName = "@dimension";
                     selectCommand.Parameters.Add(selectDimension);
 
@@ -169,7 +167,7 @@ namespace YesSql.Core.Services
                     command.CommandText = $"INSERT INTO [{_tablePrefix}{TableName}] (dimension, nextval) VALUES(@dimension, @nextval);";
 
                     var dimensionParameter = command.CreateParameter();
-                    dimensionParameter.Value = _dimension;
+                    dimensionParameter.Value = dimension;
                     dimensionParameter.ParameterName = "@dimension";
                     command.Parameters.Add(dimensionParameter);
 

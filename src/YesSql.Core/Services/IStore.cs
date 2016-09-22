@@ -27,7 +27,7 @@ namespace YesSql.Core.Services
         Configuration Configuration { get; set; }
         Task InitializeAsync();
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
-        int GetNextId();
+        int GetNextId(string collection);
         IEnumerable<IndexDescriptor> Describe(Type target);
     }
 
