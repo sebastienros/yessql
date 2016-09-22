@@ -24,11 +24,14 @@ namespace YesSql.Core.Services
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
 
-        internal readonly ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>> Descriptors =
-            new ConcurrentDictionary<Type, IEnumerable<IndexDescriptor>>();
+        internal readonly ConcurrentDictionary<Tuple<Type, string>, IEnumerable<IndexDescriptor>> Descriptors =
+            new ConcurrentDictionary<Tuple<Type, string>, IEnumerable<IndexDescriptor>>();
 
         internal readonly ConcurrentDictionary<Type, IIdAccessor<int>> _idAccessors =
             new ConcurrentDictionary<Type, IIdAccessor<int>>();
+
+        internal readonly ConcurrentDictionary<Type, Type> ContextTypes =
+            new ConcurrentDictionary<Type, Type>();
 
         public const string DocumentTable = "Document";
 
@@ -173,15 +176,18 @@ namespace YesSql.Core.Services
 
             var collection = CollectionHelper.Current.GetSafeName();
 
-            return Descriptors.GetOrAdd(target, key =>
+            var tupe = new Tuple<Type, string>(target, collection);
+
+            return Descriptors.GetOrAdd(tupe, key =>
             {
-                var contextType = typeof(DescribeContext<>).MakeGenericType(target);
+                // TODO: Cache the context activator instead of the generic type
+                var contextType = ContextTypes.GetOrAdd(key.Item1, type => typeof(DescribeContext<>).MakeGenericType(type));
                 var context = Activator.CreateInstance(contextType) as IDescriptor;
 
                 foreach (var provider in Indexes)
                 {
                     if (provider.ForType().IsAssignableFrom(target) &&
-                        String.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
+                        String.Equals(key.Item2, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
                     {
                         provider.Describe(context);
                     }

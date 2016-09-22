@@ -206,6 +206,13 @@ namespace YesSql.Tests
                     .DropMapIndexTable(nameof(PersonByName)), false
                 );
 
+                using (new NamedCollection("Collection1"))
+                {
+                    session.ExecuteMigration(schemaBuilder => schemaBuilder
+                        .DropMapIndexTable(nameof(PersonByNameCol)), false
+                    );
+                }
+
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .DropMapIndexTable(nameof(PersonByAge)), false
                 );
@@ -1941,6 +1948,70 @@ namespace YesSql.Tests
                 {
                     Assert.Equal(1, await session.QueryAsync().Any().Count());
                 }
+            }
+        }
+
+        [Fact]
+        public async Task ShouldFilterMapIndexPerCollection()
+        {
+            await _store.InitializeCollectionAsync("Collection1");
+
+            using (new NamedCollection("Collection1"))
+            {
+                using (var session = _store.CreateSession())
+                {
+                    session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .CreateMapIndexTable(nameof(PersonByNameCol), column => column
+                        .Column<string>(nameof(PersonByNameCol.Name))
+                        )
+                    );
+                }
+
+                _store.RegisterIndexes<PersonIndexProviderCol>();
+
+                using (var session = _store.CreateSession())
+                {
+                    var bill = new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Gates",
+                    };
+
+                    var steve = new Person
+                    {
+                        Firstname = "Steve",
+                        Lastname = "Balmer"
+                    };
+
+                    session.Save(bill);
+                    session.Save(steve);
+                }
+
+                using (var session = _store.CreateSession())
+                {
+                    Assert.Equal(2, await session.QueryAsync<Person, PersonByNameCol>().Count());
+                    Assert.Equal(1, await session.QueryAsync<Person, PersonByNameCol>(x => x.Name == "Steve").Count());
+                    Assert.Equal(1, await session.QueryAsync<Person, PersonByNameCol>().Where(x => x.Name == "Steve").Count());
+                }
+            }
+
+            // Store a Person in the default collection
+            using (var session = _store.CreateSession())
+            {
+                var satya = new Person
+                {
+                    Firstname = "Satya",
+                    Lastname = "Nadella",
+                };
+
+                session.Save(satya);
+            }
+
+            // Ensure the index hasn't been altered
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryAsync<Person>().Count());
+                Assert.Equal(2, await session.QueryIndexAsync<PersonByNameCol>().Count());
             }
         }
     }
