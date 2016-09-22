@@ -26,8 +26,9 @@ namespace YesSql.Core.Services
         IStore RegisterIndexes(Assembly assembly);
         Configuration Configuration { get; set; }
         Task InitializeAsync();
+        Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
-        int GetNextId();
+        int GetNextId(string collection);
         IEnumerable<IndexDescriptor> Describe(Type target);
     }
 

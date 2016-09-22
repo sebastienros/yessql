@@ -11,6 +11,7 @@ using YesSql.Core.Indexes;
 using YesSql.Core.Query;
 using YesSql.Core.Serialization;
 using YesSql.Core.Sql;
+using YesSql.Core.Collections;
 
 namespace YesSql.Core.Services
 {
@@ -19,6 +20,7 @@ namespace YesSql.Core.Services
         private readonly Session _session;
 
         private List<Type> _bound = new List<Type>();
+        private readonly string _documentTable;
         private readonly DbConnection _connection;
         private readonly ISqlDialect _dialect;
         private readonly DbTransaction _transaction;
@@ -94,6 +96,7 @@ namespace YesSql.Core.Services
 
         public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix)
         {
+            _documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             _connection = connection;
             _transaction = transaction;
             _session = session;
@@ -115,14 +118,14 @@ namespace YesSql.Core.Services
             if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
             {
                 // inner join [PersonByName] on [PersonByName].[Id] = [Document].[Id]
-                _sqlBuilder.InnerJoin(name, name, "DocumentId", "Document", "Id");
+                _sqlBuilder.InnerJoin(name, name, "DocumentId", _documentTable, "Id");
             }
             else
             {
-                var bridgeName = name + "_Document";
+                var bridgeName = name + "_" + _documentTable;
 
                 // inner join [ArticlesByDay_Document] on [Document].[Id] = [ArticlesByDay_Document].[DocumentId]
-                _sqlBuilder.InnerJoin(bridgeName, "Document", "Id", bridgeName, "DocumentId");
+                _sqlBuilder.InnerJoin(bridgeName, _documentTable, "Id", bridgeName, "DocumentId");
 
                 // inner join [ArticlesByDay] on [ArticlesByDay_Document].[ArticlesByDayId] = [ArticlesByDay].[Id]
                 _sqlBuilder.InnerJoin(name, bridgeName, name + "Id", name, "Id");
@@ -395,11 +398,11 @@ namespace YesSql.Core.Services
             _bound.Add(typeof(Document));
 
             _sqlBuilder.Select();
-            _sqlBuilder.Table("Document");
+            _sqlBuilder.Table(_documentTable);
 
             if (filterType)
             {
-                _sqlBuilder.WhereAlso(_sqlBuilder.FormatColumn("Document", "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
+                _sqlBuilder.WhereAlso(_sqlBuilder.FormatColumn(_documentTable, "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
                 _sqlBuilder.Parameters["@Type"] = typeof(T).SimplifiedTypeName();
             }
 
@@ -422,7 +425,7 @@ namespace YesSql.Core.Services
             _bound.Add(typeof(Document));
 
             _sqlBuilder.Select();
-            _sqlBuilder.Table("Document");
+            _sqlBuilder.Table(_documentTable);
             _sqlBuilder.Selector("*");
             return new Query<object>(this);
         }
@@ -456,7 +459,7 @@ namespace YesSql.Core.Services
                 }
                 else
                 {
-                    _query._sqlBuilder.Selector("Document", "Id");
+                    _query._sqlBuilder.Selector(_query._documentTable, "Id");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var ids = (await _query._connection.QueryAsync<int>(sql, _query._sqlBuilder.Parameters, _query._transaction)).ToArray();
 
@@ -487,7 +490,7 @@ namespace YesSql.Core.Services
                 }
                 else
                 {
-                    _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn("Document", "*"));
+                    _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn(_query._documentTable, "*"));
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var documents = await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     return await _query._session.GetAsync<T>(documents.Select(x => x.Id));

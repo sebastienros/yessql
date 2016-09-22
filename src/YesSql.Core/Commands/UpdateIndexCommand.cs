@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
 using YesSql.Core.Sql;
+using YesSql.Core.Collections;
+using YesSql.Core.Services;
 
 namespace YesSql.Core.Commands
 {
@@ -37,7 +39,8 @@ namespace YesSql.Core.Commands
             var reduceIndex = Index as ReduceIndex;
             if (reduceIndex != null)
             {
-                var bridgeTableName = type.Name + "_Document";
+                var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+                var bridgeTableName = type.Name + "_" + documentTable;
                 var columnList = $"[{type.Name}Id], [DocumentId]";
                 var parameterList = $"@Id, @DocumentId";
                 var bridgeSqlAdd = $"insert into [{_tablePrefix}{bridgeTableName}] ({columnList}) values ({parameterList});";

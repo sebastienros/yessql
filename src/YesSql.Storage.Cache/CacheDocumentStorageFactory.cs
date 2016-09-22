@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using YesSql.Core.Services;
 using YesSql.Core.Storage;
 
@@ -29,5 +30,9 @@ namespace YesSql.Storage.Cache
             return _concreteStorageFactory.InitializeAsync(configuration);
         }
 
+        public Task InitializeCollectionAsync(Configuration configuration, string collectionName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

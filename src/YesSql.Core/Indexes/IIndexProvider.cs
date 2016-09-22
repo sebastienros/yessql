@@ -6,6 +6,7 @@ namespace YesSql.Core.Indexes
     {
         void Describe(IDescriptor context);
         Type ForType();
+        string CollectionName { get; set; }
     }
 
     public abstract class IndexProvider<T> : IIndexProvider
@@ -16,6 +17,8 @@ namespace YesSql.Core.Indexes
         {
             Describe((DescribeContext<T>)context);
         }
+
+        public string CollectionName { get; set; }
 
         public Type ForType()
         {

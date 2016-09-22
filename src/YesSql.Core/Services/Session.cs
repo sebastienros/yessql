@@ -13,6 +13,7 @@ using YesSql.Core.Query;
 using YesSql.Core.Serialization;
 using YesSql.Core.Sql;
 using YesSql.Core.Storage;
+using YesSql.Core.Collections;
 
 namespace YesSql.Core.Services
 {
@@ -82,7 +83,8 @@ namespace YesSql.Core.Services
                     else
                     {
                         // it's a new entity
-                        id = _store.GetNextId();
+                        var collection = CollectionHelper.Current.GetSafeName();
+                        id = _store.GetNextId(collection);
                         accessor.Set(entity, id);
                     }
                 }
@@ -148,7 +150,8 @@ namespace YesSql.Core.Services
                     }
                     else
                     {
-                        doc.Id = _store.GetNextId();
+                        var collection = CollectionHelper.Current.GetSafeName();
+                        doc.Id = _store.GetNextId(collection);
                     }
 
                     await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction);

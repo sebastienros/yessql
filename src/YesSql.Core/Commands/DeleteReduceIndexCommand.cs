@@ -2,6 +2,8 @@
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
+using YesSql.Core.Collections;
+using YesSql.Core.Services;
 
 namespace YesSql.Core.Commands
 {
@@ -17,7 +19,8 @@ namespace YesSql.Core.Commands
         {
             var name = Index.GetType().Name;
 
-            var bridgeTableName = name + "_Document";
+            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            var bridgeTableName = name + "_" + documentTable;
             var bridgeSql = $"delete from [{_tablePrefix}{bridgeTableName}] where {name}Id = @Id";
 
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);

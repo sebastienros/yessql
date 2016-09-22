@@ -49,5 +49,42 @@ namespace YesSql.Storage.Sql
                 }
             }
         }
+
+        /// <summary>
+        /// Creates the necessary tables
+        /// </summary>
+        public async Task InitializeCollectionAsync(Configuration configuration, string collection)
+        {
+            var contentTable = collection + "_" + "Content";
+            var connection = configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+            try
+            {
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+                {
+                    var schemaBuilder = new SchemaBuilder(connection, transaction, TablePrefix);
+
+                    schemaBuilder.CreateTable(contentTable, table => table
+                        .Column<int>("Id", column => column
+                            .PrimaryKey().NotNull())
+                        .Column<string>("Content", column => column
+                            .Unlimited()
+                    ));
+
+                    transaction.Commit();
+                }
+            }
+            finally
+            {
+                if (configuration.ConnectionFactory.Disposable)
+                {
+                    connection.Dispose();
+                }
+                else
+                {
+                    connection.Close();
+                }
+            }
+        }
     }
 }
