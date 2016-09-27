@@ -13,7 +13,7 @@ namespace YesSql.Core.Services
 {
     public class Store : IStore
     {
-        protected readonly IList<IIndexProvider> Indexes;
+        protected readonly List<IIndexProvider> Indexes;
         protected readonly LinearBlockIdGenerator IdGenerator;
 
         public Configuration Configuration
@@ -125,40 +125,6 @@ namespace YesSql.Core.Services
             }
         }
 
-        public IStore RegisterIndexes<T>() where T : IIndexProvider
-        {
-            return RegisterIndexes(typeof(T));
-        }
-
-        public IStore RegisterIndexes(Type type)
-        {
-            var index = Activator.CreateInstance(type) as IIndexProvider;
-            if (index != null)
-            {
-                index.CollectionName = CollectionHelper.Current.GetSafeName();
-                Indexes.Add(index);
-            }
-
-            return this;
-        }
-
-        public IStore RegisterIndexes(IEnumerable<Type> types)
-        {
-            foreach (var type in types)
-            {
-                RegisterIndexes(type);
-            }
-
-            return this;
-        }
-
-        public IStore RegisterIndexes(Assembly assembly)
-        {
-            var exportedTypes = assembly.GetExportedTypes();
-            var indexes = exportedTypes.Where(x => typeof(IIndexProvider).IsAssignableFrom(x));
-            return RegisterIndexes(indexes);
-        }
-
         public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)
         {
             return _idAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name));
@@ -207,6 +173,12 @@ namespace YesSql.Core.Services
         public int GetNextId(string collection)
         {
             return (int)IdGenerator.GetNextId(collection);
+        }
+
+        public IStore RegisterIndexes(params IIndexProvider[] indexProviders)
+        {
+            Indexes.AddRange(indexProviders);
+            return this;
         }
 
         internal class TypeCollectionTuple : Tuple<Type, string>

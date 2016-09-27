@@ -17,13 +17,12 @@ namespace YesSql.Core.Services
         ISession CreateSession(IsolationLevel isolationLevel);
 
         /// <summary>
-        /// Registers an index using an <see cref="IIndexProvider"/>
+        /// Registers the specified <see cref="IIndexProvider"/> instance.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        IStore RegisterIndexes<T>() where T : IIndexProvider;
-        IStore RegisterIndexes(Type type);
-        IStore RegisterIndexes(IEnumerable<Type> types);
-        IStore RegisterIndexes(Assembly assembly);
+        /// <param name="indexProviders">The <see cref="IIndexProvider"/> to register.</param>
+        /// <returns>The current <see cref="IStore"/>.</returns>
+        IStore RegisterIndexes(params IIndexProvider[] indexProviders);
+
         Configuration Configuration { get; set; }
         Task InitializeAsync();
         Task InitializeCollectionAsync(string collection);
