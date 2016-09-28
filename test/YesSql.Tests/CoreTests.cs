@@ -195,11 +195,15 @@ namespace YesSql.Tests
 
         protected virtual void CleanDatabase()
         {
+            // Remove existing tables
             using (var session = _store.CreateSession())
             {
-                // Remove existing tables
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .DropReduceIndexTable(nameof(ArticlesByDay)), false
+                );
+
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropMapIndexTable(nameof(ArticleByPublishedDate)), false
                 );
 
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
@@ -234,7 +238,6 @@ namespace YesSql.Tests
                 );
 
                 OnCleanDatabase(session);
-
             }
         }
 
@@ -254,6 +257,13 @@ namespace YesSql.Tests
                     .CreateReduceIndexTable(nameof(ArticlesByDay), column => column
                         .Column<int>(nameof(ArticlesByDay.Count))
                         .Column<int>(nameof(ArticlesByDay.DayOfYear))
+                    )
+                );
+
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
+                        .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
+                        .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
                     )
                 );
 
@@ -2012,6 +2022,50 @@ namespace YesSql.Tests
             {
                 Assert.Equal(1, await session.QueryAsync<Person>().Count());
                 Assert.Equal(2, await session.QueryIndexAsync<PersonByNameCol>().Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldIndexWithDateTime()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var dates = new[]
+                {
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 4, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)
+                };
+
+                var articles = dates.Select((x, i) => new Article
+                {
+                    IsPublished = i % 2 == 0, // half are published
+                    PublishedUtc = x
+                });
+
+                foreach (var article in articles)
+                {
+                    session.Save(article);
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(10, await session.QueryIndexAsync<ArticleByPublishedDate>().Count());
+
+                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
+                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
+
+                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).Count());
             }
         }
     }
