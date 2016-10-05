@@ -177,6 +177,14 @@ namespace YesSql.Core.Services
 
         public IStore RegisterIndexes(params IIndexProvider[] indexProviders)
         {
+            foreach(var indexProvider in indexProviders)
+            {
+                if(indexProvider.CollectionName == null)
+                {
+                    indexProvider.CollectionName = CollectionHelper.Current.GetSafeName();
+                }
+            }
+
             Indexes.AddRange(indexProviders);
             return this;
         }

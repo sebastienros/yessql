@@ -19,7 +19,6 @@ namespace YesSql.Core.Services
             var index = Activator.CreateInstance(type) as IIndexProvider;
             if (index != null)
             {
-                index.CollectionName = CollectionHelper.Current.GetSafeName();
                 store.RegisterIndexes(index);
             }
 
