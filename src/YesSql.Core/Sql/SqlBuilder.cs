@@ -50,9 +50,9 @@ namespace YesSql.Core.Sql
 
             _join.Append("inner join ").Append("[").Append(TablePrefix).Append(table)
                 .Append("] on [").Append(TablePrefix).Append(onTable)
-                .Append("].").Append(onColumn)
+                .Append("].[").Append(onColumn).Append("]")
                 .Append(" = [").Append(TablePrefix).Append(toTable)
-                .Append("].").Append(toColumn).Append(" ");
+                .Append("].[").Append(toColumn).Append("] ");
         }
 
         public void Select()
@@ -77,6 +77,11 @@ namespace YesSql.Core.Sql
 
         public string FormatColumn(string table, string column)
         {
+            if (column != "*")
+            {
+                column = "[" + column + "]";
+            }
+
             return "[" + TablePrefix + table + "]." + column;
         }
 
