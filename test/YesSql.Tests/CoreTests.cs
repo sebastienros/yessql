@@ -210,6 +210,10 @@ namespace YesSql.Tests
                     .DropMapIndexTable(nameof(PersonByName)), false
                 );
 
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .DropMapIndexTable(nameof(PersonIdentity)), false
+                );
+
                 using (new NamedCollection("Collection1"))
                 {
                     session.ExecuteMigration(schemaBuilder => schemaBuilder
@@ -270,6 +274,12 @@ namespace YesSql.Tests
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .CreateMapIndexTable(nameof(PersonByName), column => column
                         .Column<string>(nameof(PersonByName.Name))
+                    )
+                );
+
+                session.ExecuteMigration(schemaBuilder => schemaBuilder
+                    .CreateMapIndexTable(nameof(PersonIdentity), column => column
+                        .Column<string>(nameof(PersonIdentity.Identity))
                     )
                 );
 
@@ -515,6 +525,43 @@ namespace YesSql.Tests
             {
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill3").Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCreateSeveralMapIndexPerDocument()
+        {
+            // When an index returns multiple map indexes, they should all be stored
+            // and queryable.
+
+            // This test also ensure we can use a SQL keyword as the column name (Identity)
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman"
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                session.Save(hanselman);
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(4, await session.QueryIndexAsync<PersonIdentity>().Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonIdentity>().Where(x => x.Identity == "Hanselman").Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonIdentity>().Where(x => x.Identity == "Guthrie").Count());
+                Assert.Equal(2, await session.QueryIndexAsync<PersonIdentity>().Where(x => x.Identity == "Scott").Count());
             }
         }
 
