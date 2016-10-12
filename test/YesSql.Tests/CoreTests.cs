@@ -508,7 +508,7 @@ namespace YesSql.Tests
 
                 session.Save(bill);
 
-                // This query should force the index to be persisted
+                // This query triggers an auto-flush
 
                 Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Count());
 
@@ -519,6 +519,49 @@ namespace YesSql.Tests
                 bill.Firstname = "Bill3";
 
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill3").Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldAppendIndexOnUpdate()
+        {
+            // When an object is updated, its map indexes
+            // should be created a new records (to support append only scenarios)
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+
+                var p1 = await session.QueryIndexAsync<PersonByName>().FirstOrDefault();
+
+                Assert.Equal(1, p1.Id);
+
+                bill.Firstname = "Bill2";
+
+                var p2 = await session.QueryIndexAsync<PersonByName>().FirstOrDefault();
+
+                Assert.Equal(2, p2.Id);
+
+                bill.Firstname = "Bill3";
+
+                var p3 = await session.QueryIndexAsync<PersonByName>().FirstOrDefault();
+
+                Assert.Equal(3, p3.Id);
+
             }
 
             using (var session = _store.CreateSession())
