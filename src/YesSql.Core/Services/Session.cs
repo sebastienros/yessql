@@ -32,6 +32,7 @@ namespace YesSql.Core.Services
         private readonly ISqlDialect _dialect;
         private readonly IsolationLevel _isolationLevel;
         private readonly DbConnection _connection;
+        private volatile bool _disposed;
 
         protected bool _cancel;
 
@@ -58,6 +59,8 @@ namespace YesSql.Core.Services
 
         public void Save(object entity)
         {
+            CheckDisposed();
+
             // is it a new object?
             if (!_identityMap.HasEntity(entity))
             {
@@ -174,6 +177,8 @@ namespace YesSql.Core.Services
 
         public void Delete(object obj)
         {
+            CheckDisposed();
+
             _deleted.Add(obj);
         }
 
@@ -216,6 +221,8 @@ namespace YesSql.Core.Services
 
         public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids) where T : class
         {
+            CheckDisposed();
+
             // Auto-flush
             await CommitAsync(keepTracked: true);
 
@@ -286,8 +293,21 @@ namespace YesSql.Core.Services
             return new DefaultQuery(_connection, _transaction, this, _store.Configuration.TablePrefix);
         }
 
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(Session));
+            }
+        }
+
         public void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             try
             {
                 if (!_cancel)
@@ -310,6 +330,8 @@ namespace YesSql.Core.Services
             }
             finally
             {
+                _disposed = true;
+
                 if (_transaction != null)
                 {
                     _transaction.Dispose();
@@ -332,6 +354,8 @@ namespace YesSql.Core.Services
 
         public async Task CommitAsync(bool keepTracked = false)
         {
+            CheckDisposed();
+
             if (_saved.Count == 0 && _updated.Count == 0 && _deleted.Count == 0)
             {
                 return;
@@ -512,7 +536,7 @@ namespace YesSql.Core.Services
             }
         }
 
-        public async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey)
+        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey)
         {
             var name = _store.Configuration.TablePrefix + descriptor.IndexType.Name;
             var sql = $"select * from {name} where {descriptor.GroupKey.Name} = @currentKey";
@@ -622,6 +646,8 @@ namespace YesSql.Core.Services
         /// </summary>
         public DbTransaction Demand()
         {
+            CheckDisposed();
+
             if (_transaction == null)
             {
                 if (_connection.State == ConnectionState.Closed)
@@ -637,6 +663,8 @@ namespace YesSql.Core.Services
 
         public void Cancel()
         {
+            CheckDisposed();
+
             _cancel = true;
         }
 
@@ -657,7 +685,5 @@ namespace YesSql.Core.Services
                 }
             }
         }
-
     }
-
 }
