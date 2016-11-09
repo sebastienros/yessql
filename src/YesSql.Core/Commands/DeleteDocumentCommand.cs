@@ -21,7 +21,6 @@ namespace YesSql.Core.Commands
 
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
-            var dialect = SqlDialectFactory.For(connection);
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             var deleteCmd = $"delete from [{_tablePrefix}{documentTable}] where [Id] = @Id;";
             return connection.ExecuteAsync(deleteCmd, Document, transaction);

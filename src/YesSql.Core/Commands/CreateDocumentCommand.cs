@@ -21,7 +21,6 @@ namespace YesSql.Core.Commands
 
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
-            var dialect = SqlDialectFactory.For(connection);
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             var insertCmd = $"insert into [{_tablePrefix}{documentTable}] ([Id], [Type]) values (@Id, @Type);";
             return connection.ExecuteScalarAsync<int>(insertCmd, Document, transaction);

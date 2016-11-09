@@ -29,7 +29,6 @@ namespace YesSql.Core.Commands
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
         {
-            var dialect = SqlDialectFactory.For(connection);
             var type = Index.GetType();
 
             var sql = Updates(type);
