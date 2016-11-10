@@ -61,44 +61,52 @@ namespace YesSql.Core.Services
         {
             CheckDisposed();
 
-            // is it a new object?
-            if (!_identityMap.HasEntity(entity))
+            int id;
+
+            // already being saved or updated?
+            if (_saved.Contains(entity) || _updated.Contains(entity))
             {
-                // already beging saved?
-                if (_saved.Contains(entity))
+                return;
+            }
+
+            // is it a new object?
+            if (_identityMap.TryGetDocumentId(entity, out id))
+            {
+                // already being updated?
+                if (_updated.Contains(entity))
                 {
                     return;
                 }
 
-                // then assign it an identifier
-                var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
-                if (accessor != null)
-                {
-                    var id = accessor.Get(entity);
-
-                    // do we need to track the entity
-                    if (id > 0)
-                    {
-                        _identityMap.Add(id, entity);
-                        _updated.Add(entity);
-                        return;
-                    }
-                    else
-                    {
-                        // it's a new entity
-                        var collection = CollectionHelper.Current.GetSafeName();
-                        id = _store.GetNextId(collection);
-                        accessor.Set(entity, id);
-                    }
-                }
-
-                _saved.Add(entity);
-            }
-            else
-            {
-                // update it
                 _updated.Add(entity);
+                return;
             }
+
+            // Does it have a valid identifier?
+            var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+            if (accessor != null)
+            {
+                id = accessor.Get(entity);
+
+                if (id > 0)
+                {
+                    _identityMap.Add(id, entity);
+                    _updated.Add(entity);
+                    return;
+                }
+            }
+            
+            // Then assign a new identifier if it has one
+            if (accessor != null)
+            {
+                // it's a new entity
+                var collection = CollectionHelper.Current.GetSafeName();
+                id = _store.GetNextId(collection);
+                accessor.Set(entity, id);
+                _identityMap.Add(id, entity);
+            }
+
+            _saved.Add(entity);
         }
 
         private async Task SaveEntityAsync(object entity, bool update)
@@ -121,22 +129,25 @@ namespace YesSql.Core.Services
             }
             else
             {
-                // if the object is not new, reload to get the old map
+                // If the object is not new, reload to get the old map
                 int id;
-                if (_identityMap.TryGetDocumentId(entity, out id))
+
+                if (update)
                 {
-                    if (update)
+                    if (!_identityMap.TryGetDocumentId(entity, out id))
                     {
-                        var oldDoc = await GetDocumentByIdAsync(id);
-                        var oldObj = await _storage.GetAsync(id, entity.GetType());
-
-                        // Update map index
-                        MapDeleted(oldDoc, oldObj);
-                        MapNew(oldDoc, entity);
-
-                        // Save entity
-                        await _storage.UpdateAsync(new IdentityDocument(id, entity));
+                        throw new InvalidOperationException();
                     }
+
+                    var oldDoc = await GetDocumentByIdAsync(id);
+                    var oldObj = await _storage.GetAsync(id, entity.GetType());
+
+                    // Update map index
+                    MapDeleted(oldDoc, oldObj);
+                    MapNew(oldDoc, entity);
+
+                    // Save entity
+                    await _storage.UpdateAsync(new IdentityDocument(id, entity));
                 }
                 else
                 {
@@ -159,9 +170,6 @@ namespace YesSql.Core.Services
 
                     await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction);
                     await _storage.CreateAsync(new IdentityDocument(doc.Id, entity));
-
-                    // Track the newly created object
-                    _identityMap.Add(doc.Id, entity);
 
                     MapNew(doc, entity);
                 }
@@ -224,7 +232,7 @@ namespace YesSql.Core.Services
             CheckDisposed();
 
             // Auto-flush
-            await CommitAsync(keepTracked: true);
+            await CommitAsync();
 
             var result = new List<T>();
 
@@ -352,7 +360,7 @@ namespace YesSql.Core.Services
             }
         }
 
-        public async Task CommitAsync(bool keepTracked = false)
+        public async Task CommitAsync()
         {
             CheckDisposed();
 
@@ -390,18 +398,7 @@ namespace YesSql.Core.Services
                 await command.ExecuteAsync(_connection, _transaction);
             }
 
-            if (keepTracked)
-            {
-                foreach (var saved in _saved)
-                {
-                    _updated.Add(saved);
-                }
-            }
-            else
-            {
-                _updated.Clear();
-            }
-
+            _updated.Clear();
             _saved.Clear();
             _deleted.Clear();
             _commands.Clear();

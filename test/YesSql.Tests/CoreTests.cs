@@ -513,10 +513,12 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Count());
 
                 bill.Firstname = "Bill2";
+                session.Save(bill);
 
                 Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Where(x => x.Name == "Bill2").Count());
 
                 bill.Firstname = "Bill3";
+                session.Save(bill);
 
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
             }
@@ -551,12 +553,14 @@ namespace YesSql.Tests
                 Assert.Equal(1, p1.Id);
 
                 bill.Firstname = "Bill2";
+                session.Save(bill);
 
                 var p2 = await session.QueryIndexAsync<PersonByName>().FirstOrDefault();
 
                 Assert.Equal(2, p2.Id);
 
                 bill.Firstname = "Bill3";
+                session.Save(bill);
 
                 var p3 = await session.QueryIndexAsync<PersonByName>().FirstOrDefault();
 
@@ -1326,7 +1330,6 @@ namespace YesSql.Tests
 
                     session.Save(person);
                 }
-
             }
 
             using (var session = _store.CreateSession())
@@ -2156,6 +2159,35 @@ namespace YesSql.Tests
                 Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
 
                 Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldUpdateEntitiesFromSeparateSessions()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(bill);
+                Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill").Count());
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                bill.Firstname = "Bill2";
+                session.Save(bill);
+
+                Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Count());
+                Assert.Equal(0, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill").Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill2").Count());
             }
         }
     }
