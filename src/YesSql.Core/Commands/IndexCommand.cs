@@ -48,64 +48,64 @@ namespace YesSql.Core.Commands
         protected string Inserts(Type type)
         {
             string result;
-            if (InsertsList.TryGetValue(type.TypeHandle, out result))
+
+            if (!InsertsList.TryGetValue(type.TypeHandle, out result))
             {
-                return result;
-            }
+                string values = "DEFAULT VALUES";
 
-            string values = "DEFAULT VALUES";
+                var allProperties = TypePropertiesCache(type);
 
-            var allProperties = TypePropertiesCache(type);
-
-            if (allProperties.Any())
-            {
-                var sbColumnList = new StringBuilder(null);
-
-                for (var i = 0; i < allProperties.Count(); i++)
+                if (allProperties.Any())
                 {
-                    var property = allProperties.ElementAt(i);
-                    sbColumnList.Append($"[{property.Name}]");
-                    if (i < allProperties.Count() - 1)
-                        sbColumnList.Append(", ");
+                    var sbColumnList = new StringBuilder(null);
+
+                    for (var i = 0; i < allProperties.Count(); i++)
+                    {
+                        var property = allProperties.ElementAt(i);
+                        sbColumnList.Append($"[{property.Name}]");
+                        if (i < allProperties.Count() - 1)
+                            sbColumnList.Append(", ");
+                    }
+
+                    var sbParameterList = new StringBuilder(null);
+                    for (var i = 0; i < allProperties.Count(); i++)
+                    {
+                        var property = allProperties.ElementAt(i);
+                        sbParameterList.Append($"@{property.Name}");
+                        if (i < allProperties.Count() - 1)
+                            sbParameterList.Append(", ");
+                    }
+
+                    values = $"({sbColumnList}) values ({sbParameterList})";
                 }
 
-                var sbParameterList = new StringBuilder(null);
-                for (var i = 0; i < allProperties.Count(); i++)
-                {
-                    var property = allProperties.ElementAt(i);
-                    sbParameterList.Append($"@{property.Name}");
-                    if (i < allProperties.Count() - 1)
-                        sbParameterList.Append(", ");
-                }
-
-                values = $"({sbColumnList}) values ({sbParameterList})";
+                InsertsList[type.TypeHandle] = result = $"insert into [{{0}}{type.Name}] {values};";
             }
 
-            InsertsList[type.TypeHandle] = result = $"insert into [{_tablePrefix}{type.Name}] {values};";
-            return result;
+            return String.Format(result, _tablePrefix);
         }
 
         protected string Updates(Type type)
         {
             string result;
-            if (UpdatesList.TryGetValue(type.TypeHandle, out result))
+            if (!UpdatesList.TryGetValue(type.TypeHandle, out result))
             {
-                return result;
+
+                var allProperties = TypePropertiesCache(type);
+                var values = new StringBuilder(null);
+
+                for (var i = 0; i < allProperties.Length; i++)
+                {
+                    var property = allProperties[i];
+                    values.Append($"[{property.Name}]=@{property.Name}");
+                    if (i < allProperties.Length - 1)
+                        values.Append(", ");
+                }
+
+                UpdatesList[type.TypeHandle] = result = $"update [{{0}}{type.Name}] set {values} where Id = @Id;";
             }
 
-            var allProperties = TypePropertiesCache(type);
-            var values = new StringBuilder(null);
-
-            for (var i = 0; i < allProperties.Length; i++)
-            {
-                var property = allProperties[i];
-                values.Append($"[{property.Name}]=@{property.Name}");
-                if (i < allProperties.Length - 1)
-                    values.Append(", ");
-            }
-
-            UpdatesList[type.TypeHandle] = result = $"update [{_tablePrefix}{type.Name}] set {values} where Id = @Id;";
-            return result;
+            return String.Format(result, _tablePrefix);
         }
 
         private static bool IsWriteable(PropertyInfo pi)
