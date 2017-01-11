@@ -15,6 +15,8 @@ using YesSql.Core.Storage;
 using YesSql.Storage.InMemory;
 using YesSql.Storage.LightningDB;
 using YesSql.Storage.Sql;
+using Microsoft.EntityFrameworkCore;
+using MySql.Data.MySqlClient;
 
 namespace YesSql.Samples.Performance
 {
@@ -488,9 +490,7 @@ namespace YesSql.Samples.Performance
 
             var configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"),
-                //ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared"),
-
+                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(@"server=127.0.0.1,3306;uid=root;pwd=920624ppN_;database=dbSample2;", true),
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
                 IsolationLevel = IsolationLevel.ReadUncommitted
             };
@@ -516,13 +516,13 @@ namespace YesSql.Samples.Performance
             }
 
             var sqlFactory = new SqlDocumentStorageFactory();
-
+            
             var runMigrations = true;
 
             if (runMigrations)
             {
                 store.InitializeAsync().Wait();
-
+                sqlFactory.InitializeAsync(configuration).Wait();
                 using (var session = store.CreateSession())
                 {
                     session.ExecuteMigration(builder => builder

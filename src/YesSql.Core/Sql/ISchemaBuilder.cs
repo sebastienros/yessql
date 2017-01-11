@@ -23,7 +23,8 @@ namespace YesSql.Core.Sql
         private static readonly Dictionary<string, Func<ISqlDialect, ISchemaBuilder>> SchemaBuilders = new Dictionary<string, Func<ISqlDialect, ISchemaBuilder>>
         {
             {"sqliteconnection", d => new SqliteSchemaBuilder(d)},
-            {"sqlconnection", d => new SqlServerSchemaBuilder(d)}
+            {"sqlconnection", d => new SqlServerSchemaBuilder(d)},
+            {"mysqlconnection", d => new MySqlSchemaBuilder(d)}
 
         };
 

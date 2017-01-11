@@ -14,6 +14,7 @@ using YesSql.Storage.LightningDB;
 using YesSql.Storage.Sql;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
+using MySql.Data.MySqlClient;
 
 namespace YesSql.Tests
 {
@@ -86,6 +87,39 @@ namespace YesSql.Tests
             );
         }
     }
+
+    public class MySqlTests : CoreTests
+    {
+        public static string ConnectionString => @"server=,;uid=;pwd=;database=;";
+        public MySqlTests()
+        {
+            var configuration = new Configuration
+            {
+                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(ConnectionString),
+                IsolationLevel = IsolationLevel.ReadUncommitted,
+                DocumentStorageFactory = new SqlDocumentStorageFactory()
+            };
+
+            _store = new Store(configuration);
+
+            CleanDatabase();
+            CreateTables();
+        }
+
+        protected override void OnCleanDatabase(ISession session)
+        {
+            base.OnCleanDatabase(session);
+
+            session.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropTable("Content"), false
+            );
+
+            session.ExecuteMigration(schemaBuilder => schemaBuilder
+                .DropTable("Collection1_Content"), false
+            );
+        }
+    }
+
     public abstract class InMemoryTests : CoreTests
     {
         public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
