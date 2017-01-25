@@ -18,7 +18,7 @@ namespace YesSql.Core.Services
         /// the corresponding indexes.
         /// </summary>
         void Save(object obj);
-        
+
         /// <summary>
         /// Deletes an object from the store and its indexes.
         /// </summary>

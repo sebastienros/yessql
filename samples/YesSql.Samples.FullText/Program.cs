@@ -4,6 +4,7 @@ using YesSql.Core.Services;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
 using YesSql.Storage.InMemory;
+using MySql.Data.MySqlClient;
 
 namespace YesSql.Samples.FullText
 {
@@ -13,7 +14,7 @@ namespace YesSql.Samples.FullText
         {
             var configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true),
+                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(@"server=127.0.0.1,3306;uid=root;pwd=920624ppN_;database=dbSample2;", true),
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory()
             };
 

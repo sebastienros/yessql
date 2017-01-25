@@ -6,7 +6,9 @@
     "YesSql.Storage.InMemory": "1.0.0-*",
     "YesSql.Storage.LightningDB": "1.0.0-*",
     "YesSql.Storage.Sql": "1.0.0-*",
-    "xunit": "2.2.0-*"
+    "xunit": "2.2.0-*",
+    "Pomelo.EntityFrameworkCore.MySql": "1.0.1-*",
+    "CreateNewNuGetPackageFromProjectAfterEachBuild": "1.8.9"
   },
   "buildOptions": {
     "emitEntryPoint": true,

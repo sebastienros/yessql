@@ -4,7 +4,8 @@
     "Microsoft.Data.Sqlite": "1.0.0-*",
     "YesSql.Core": "2.0.0-*",
     "YesSql.Storage.InMemory": "1.0.0-*",
-    "xunit": "2.2.0-*"
+    "xunit": "2.2.0-*",
+    "Pomelo.EntityFrameworkCore.MySql": "1.0.1-*"
   },
   "buildOptions": {
     "emitEntryPoint": true,
