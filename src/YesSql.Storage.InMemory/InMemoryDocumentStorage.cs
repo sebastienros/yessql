@@ -71,8 +71,7 @@ namespace YesSql.Storage.InMemory
             var result = new List<T>();
             foreach (var id in ids)
             {
-                string document;
-                if (_documents.TryGetValue(id, out document))
+                if (_documents.TryGetValue(id, out string document))
                 {
                     result.Add(JsonConvert.DeserializeObject<T>(document, _jsonSettings));
                 }
@@ -91,8 +90,7 @@ namespace YesSql.Storage.InMemory
             var result = new List<object>();
             foreach (var document in documents)
             {
-                string content; ;
-                if (_documents.TryGetValue(document.Id, out content))
+                if (_documents.TryGetValue(document.Id, out string content))
                 {
                     result.Add(JsonConvert.DeserializeObject(content, _jsonSettings));
                 }

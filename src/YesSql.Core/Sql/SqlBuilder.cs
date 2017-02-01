@@ -25,6 +25,11 @@ namespace YesSql.Core.Sql
             Parameters = new Dictionary<string, object>();
         }
 
+        public SqlBuilder(string tablePrefix) : this()
+        {
+            TablePrefix = tablePrefix;
+        }
+
         public string Clause { get { return _clause; } }
 
         public void Table(string table)

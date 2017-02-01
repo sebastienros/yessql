@@ -34,8 +34,7 @@ namespace YesSql.Core.Commands
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
-            PropertyInfo[] pis;
-            if (TypeProperties.TryGetValue(type.TypeHandle, out pis))
+            if (TypeProperties.TryGetValue(type.TypeHandle, out PropertyInfo[] pis))
             {
                 return pis;
             }
@@ -47,9 +46,8 @@ namespace YesSql.Core.Commands
 
         protected string Inserts(Type type)
         {
-            string result;
 
-            if (!InsertsList.TryGetValue(type.TypeHandle, out result))
+            if (!InsertsList.TryGetValue(type.TypeHandle, out string result))
             {
                 string values = "DEFAULT VALUES";
 
@@ -87,8 +85,7 @@ namespace YesSql.Core.Commands
 
         protected string Updates(Type type)
         {
-            string result;
-            if (!UpdatesList.TryGetValue(type.TypeHandle, out result))
+            if (!UpdatesList.TryGetValue(type.TypeHandle, out string result))
             {
 
                 var allProperties = TypePropertiesCache(type);

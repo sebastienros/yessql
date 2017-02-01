@@ -101,8 +101,7 @@ namespace YesSql.Core.Services
             _transaction = transaction;
             _session = session;
             _dialect = SqlDialectFactory.For(connection);
-            _sqlBuilder = new SqlBuilder();
-            _sqlBuilder.TablePrefix = tablePrefix;
+            _sqlBuilder = new SqlBuilder(tablePrefix);
         }
 
         private void Bind<TIndex>() where TIndex : IIndex
