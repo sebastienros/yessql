@@ -65,8 +65,6 @@ namespace YesSql.Core.Services
         {
             CheckDisposed();
 
-            int id;
-
             // already being saved or updated?
             if (_saved.Contains(entity) || _updated.Contains(entity))
             {
@@ -74,7 +72,7 @@ namespace YesSql.Core.Services
             }
 
             // is it a new object?
-            if (_identityMap.TryGetDocumentId(entity, out id))
+            if (_identityMap.TryGetDocumentId(entity, out int id))
             {
                 // already being updated?
                 if (_updated.Contains(entity))
@@ -121,9 +119,8 @@ namespace YesSql.Core.Services
             }
 
             var index = entity as IIndex;
-            var document = entity as Document;
 
-            if (document != null)
+            if (entity is Document document)
             {
                 throw new ArgumentException("A document should not be saved explicitely");
             }
@@ -134,11 +131,10 @@ namespace YesSql.Core.Services
             else
             {
                 // If the object is not new, reload to get the old map
-                int id;
 
                 if (update)
                 {
-                    if (!_identityMap.TryGetDocumentId(entity, out id))
+                    if (!_identityMap.TryGetDocumentId(entity, out int id))
                     {
                         throw new InvalidOperationException();
                     }
@@ -248,8 +244,7 @@ namespace YesSql.Core.Services
             // Are all the objects already in cache?
             IEnumerable<object> cached = ids.Select(id =>
             {
-                object entity;
-                if (_identityMap.TryGetEntityById(id, out entity))
+                if (_identityMap.TryGetEntityById(id, out object entity))
                 {
                     return entity;
                 }
@@ -275,9 +270,7 @@ namespace YesSql.Core.Services
                 var item = items[i];
                 var id = ids.ElementAt(i);
 
-                object entity;
-
-                if (_identityMap.TryGetEntityById(id, out entity))
+                if (_identityMap.TryGetEntityById(id, out object entity))
                 {
                     result.Add((T)entity);
                 }
@@ -598,8 +591,7 @@ namespace YesSql.Core.Services
                     else
                     {
                         // save for later reducing
-                        IList<MapState> listmap;
-                        if (!_maps.TryGetValue(descriptor, out listmap))
+                        if (!_maps.TryGetValue(descriptor, out IList<MapState> listmap))
                         {
                             _maps.Add(descriptor, listmap = new List<MapState>());
                         }
@@ -628,8 +620,7 @@ namespace YesSql.Core.Services
                     foreach (var index in mapped)
                     {
                         // save for later reducing
-                        IList<MapState> listmap;
-                        if (!_maps.TryGetValue(descriptor, out listmap))
+                        if (!_maps.TryGetValue(descriptor, out IList<MapState> listmap))
                         {
                             _maps.Add(descriptor, listmap = new List<MapState>());
                         }

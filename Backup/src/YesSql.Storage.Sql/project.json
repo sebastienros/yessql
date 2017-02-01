@@ -14,7 +14,7 @@
     "net451": { },
     "netstandard1.5": {
       "dependencies": {
-        "NETStandard.Library": "1.6.0"
+        "NETStandard.Library": "1.6.1"
       }
     }
   }
