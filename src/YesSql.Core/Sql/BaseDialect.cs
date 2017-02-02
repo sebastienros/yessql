@@ -81,6 +81,9 @@ namespace YesSql.Core.Sql
         public virtual string DoubleQuoteString => "\"\"";
         public virtual string SingleQuoteString => "'";
         public virtual string DoubleSingleQuoteString => "''";
+
+        public virtual string DefaultValuesInsert => "DEFAULT VALUES";
+
         protected abstract string Quote(string value);
         public abstract string GetTypeName(DbType dbType, int? length, byte precision, byte scale);
 

@@ -31,7 +31,7 @@ namespace YesSql.Core.Commands
 
             if (Index is MapIndex)
             {
-                var sql = Inserts(type, dialect) + " " + dialect.IdentitySelectString + " id";
+                var sql = Inserts(type, dialect) + " " + dialect.IdentitySelectString + " " + dialect.QuoteForColumnName("id");
                 Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
                 await connection.ExecuteAsync("update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + dialect.QuoteForColumnName("DocumentId") + " = @mapid where " + dialect.QuoteForColumnName("Id") + " = @Id", new { mapid = Index.GetAddedDocuments().Single().Id, Id = Index.Id }, transaction);
             }
@@ -39,7 +39,7 @@ namespace YesSql.Core.Commands
             {
                 var reduceIndex = Index as ReduceIndex;
 
-                var sql = Inserts(type, dialect) + " " + dialect.IdentitySelectString + " id";
+                var sql = Inserts(type, dialect) + " " + dialect.IdentitySelectString + " " + dialect.QuoteForColumnName("id");
                 Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
 
                 var bridgeTableName = type.Name + "_" + documentTable;

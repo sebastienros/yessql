@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Data.SqlClient;
 using YesSql.Core.Services;
 using YesSql.Storage.Sql;
@@ -7,7 +8,7 @@ namespace YesSql.Tests
 {
     public class SqlServerTests : CoreTests
     {
-        public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING") ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
 
         public SqlServerTests()
         {

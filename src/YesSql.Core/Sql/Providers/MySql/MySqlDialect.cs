@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 
 namespace YesSql.Core.Sql.Providers.MySql
 {
@@ -43,21 +44,40 @@ namespace YesSql.Core.Sql.Providers.MySql
         {
             if (length.HasValue)
             {
-                if (dbType == DbType.String)
+                if (length.Value > 4000)
                 {
-                    return "varchar(" + length + ")";
-                }
+                    if (dbType == DbType.String)
+                    {
+                        return "TEXT";
+                    }
 
-                if (dbType == DbType.AnsiString)
+                    if (dbType == DbType.AnsiString)
+                    {
+                        return "TEXT";
+                    }
+
+                    if (dbType == DbType.Binary)
+                    {
+                        return "BLOB";
+                    }
+                }
+                else
                 {
-                    return "varchar(" + length + ")";
-                }
+                    if (dbType == DbType.String)
+                    {
+                        return "varchar(" + length + ")";
+                    }
 
-                if (dbType == DbType.Binary)
-                {
-                    return "varbinary(" + length + ")";
-                }
+                    if (dbType == DbType.AnsiString)
+                    {
+                        return "varchar(" + length + ")";
+                    }
 
+                    if (dbType == DbType.Binary)
+                    {
+                        return "varbinary(" + length + ")";
+                    }
+                }
             }
 
             if (ColumnTypes.TryGetValue(dbType, out string value))
@@ -67,6 +87,13 @@ namespace YesSql.Core.Sql.Providers.MySql
 
             throw new Exception("DbType not found for: " + dbType);
         }
+
+        public override string GetDropForeignKeyConstraintString(string name)
+        {
+            return " drop foreign key " + name;
+        }
+
+        public override string DefaultValuesInsert => "VALUES()";
 
         public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
         {

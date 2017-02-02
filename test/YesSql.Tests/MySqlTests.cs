@@ -2,12 +2,13 @@
 using YesSql.Core.Services;
 using YesSql.Storage.Sql;
 using MySql.Data.MySqlClient;
+using System;
 
 namespace YesSql.Tests
 {
     public class MySqlTests : CoreTests
     {
-        public static string ConnectionString => @"server=127.0.0.1;uid=root;pwd=Password12!;database=yessql;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=root;pwd=Password12!;database=yessql;";
         public MySqlTests()
         {
             var configuration = new Configuration

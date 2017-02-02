@@ -25,6 +25,7 @@ namespace YesSql.Core.Sql
         string QuoteForColumnName(string columnName);
         string GetDropForeignKeyConstraintString(string name);
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
+        string DefaultValuesInsert { get; }
         void Page(SqlBuilder sqlBuilder, int offset, int limit);
         ISqlBuilder CreateBuilder(string tablePrefix);
     }

@@ -49,7 +49,7 @@ namespace YesSql.Core.Commands
         {
             if (!InsertsList.TryGetValue(type.TypeHandle, out string result))
             {
-                string values = "DEFAULT VALUES";
+                string values = dialect.DefaultValuesInsert + ";";
 
                 var allProperties = TypePropertiesCache(type);
 
