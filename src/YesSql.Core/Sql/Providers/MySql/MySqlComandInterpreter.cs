@@ -4,12 +4,11 @@ using System.Data;
 using System.Text;
 using YesSql.Core.Sql.Schema;
 
-namespace YesSql.Core.Sql.SchemaBuilders
+namespace YesSql.Core.Sql.Providers.MySql
 {
-    public class MySqlSchemaBuilder : BaseSchemaBuilder
+    public class MySqlComandInterpreter : BaseComandInterpreter
     {
-
-        public MySqlSchemaBuilder(ISqlDialect dialect) : base(dialect)
+        public MySqlComandInterpreter(ISqlDialect dialect) : base(dialect)
         {
         }
 

@@ -1,35 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 
 namespace YesSql.Core.Sql
 {
-    public class SqlBuilder
+    public abstract class SqlBuilder : ISqlBuilder
     {
-        private string _clause;
-        private string _table;
-        private string _selector;
+        protected ISqlDialect _dialect;
+        protected string _tablePrefix;
 
-        private StringBuilder _join;
-        private string _where;
-        private string _order;
+        protected string _clause;
+        protected string _table;
+        protected string _selector;
 
-        private int _skip;
-        private int _count;
-        private char _openQuoteDialect;
-        private char _closeQuoteDialect;
+        protected StringBuilder _join;
+        protected string _where;
+        protected string _order;
 
-        public Dictionary<string, object> Parameters { get; }
-        public string TablePrefix { get; set; }
+        protected int _skip;
+        protected int _count;
 
-        public SqlBuilder()
+        public Dictionary<string, object> Parameters { get; } = new Dictionary<string, object>();
+
+        public SqlBuilder(string tablePrefix, ISqlDialect dialect)
         {
-            Parameters = new Dictionary<string, object>();
-        }
-
-        public SqlBuilder(string tablePrefix) : this()
-        {
-            TablePrefix = tablePrefix;
+            _tablePrefix = tablePrefix;
+            _dialect = dialect;
         }
 
         public string Clause { get { return _clause; } }
@@ -48,26 +43,21 @@ namespace YesSql.Core.Sql
         {
             _count = take;
         }
-        public void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
+
+        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
         {
             if (_join == null)
             {
                 _join = new StringBuilder();
             }
 
-            _join.Append("inner join ").Append(_openQuoteDialect).Append(TablePrefix).Append(table)
-                .Append(_closeQuoteDialect + " on " + _openQuoteDialect).Append(TablePrefix).Append(onTable)
-                .Append(_closeQuoteDialect + "." + _openQuoteDialect).Append(onColumn).Append(_closeQuoteDialect)
-                .Append(" = " + _openQuoteDialect).Append(TablePrefix).Append(toTable)
-                .Append(_closeQuoteDialect + "." + _openQuoteDialect).Append(toColumn).Append(_closeQuoteDialect + " ");
+            _join.Append("inner join ").Append(_dialect.QuoteForTableName(_tablePrefix + table))
+                .Append(" on ").Append(_dialect.QuoteForTableName(_tablePrefix + onTable))
+                .Append(".").Append(_dialect.QuoteForColumnName(onColumn))
+                .Append(" = ").Append(_dialect.QuoteForTableName(_tablePrefix + toTable))
+                .Append(".").Append(_dialect.QuoteForColumnName(toColumn)).Append(" ");
         }
-
-        public void QuoteDialect(char openQuote, char closeQuote)
-        {
-            _openQuoteDialect = openQuote;
-            _closeQuoteDialect = closeQuote;
-        }
-
+        
         public void Select()
         {
             _clause = "select";
@@ -88,17 +78,17 @@ namespace YesSql.Core.Sql
             return _selector;
         }
 
-        public string FormatColumn(string table, string column)
+        public virtual string FormatColumn(string table, string column)
         {
             if (column != "*")
             {
-                column = _openQuoteDialect + column + _closeQuoteDialect;
+                column = _dialect.QuoteForColumnName(column);
             }
 
-            return _openQuoteDialect + TablePrefix + table + _closeQuoteDialect + "." + column;
+            return _dialect.QuoteForTableName(_tablePrefix + table) + "." + column;
         }
 
-        public void WhereAlso(string where)
+        public virtual void WhereAlso(string where)
         {
             if (_where == null)
             {
@@ -110,73 +100,29 @@ namespace YesSql.Core.Sql
             }
         }
 
-        public void OrderBy(string orderBy)
+        public virtual void OrderBy(string orderBy)
         {
             _order = orderBy;
         }
 
-        public void OrderByDescending(string orderBy)
+        public virtual void OrderByDescending(string orderBy)
         {
             _order = orderBy + " desc";
         }
 
-        public void ThenOrderBy(string orderBy)
+        public virtual void ThenOrderBy(string orderBy)
         {
             _order += ", " + orderBy;
         }
 
-        public void ThenOrderByDescending(string orderBy)
+        public virtual void ThenOrderByDescending(string orderBy)
         {
             _order += ", " + orderBy + " desc";
         }
 
         public string Trail { get; set; }
 
-        public string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false)
-        {
-            if (_clause == "select")
-            {
-                if ((_skip != 0 || _count != 0) && (dialect is SqlServerDialect || dialect is SqliteDialect))
-                {
-                    dialect.Page(this, _skip, _count);
-                }
-
-                var sb = new StringBuilder();
-                sb
-                    .Append(_clause).Append(" ").Append(_selector)
-                    .Append(" from " + _openQuoteDialect).Append(TablePrefix).Append(_table).Append(_closeQuoteDialect);
-
-                if (_join != null)
-                {
-                    sb.Append(" ").Append(_join.ToString());
-                }
-
-                if (_where != null)
-                {
-                    sb.Append(" where ").Append(_where);
-                }
-
-                if (_order != null && !ignoreOrderBy)
-                {
-                    sb.Append(" order by ").Append(_order);
-                }
-
-                if (!String.IsNullOrEmpty(Trail))
-                {
-                    sb.Append(" ").Append(Trail);
-                }
-
-                if ((_skip != 0 || _count != 0) && dialect is MySqlDialect)
-                {
-                    _selector = sb.ToString();
-                    dialect.Page(this, _skip, _count);
-                    sb.Clear();
-                    sb.Append(_selector);
-                }
-                return sb.ToString();
-            }
-
-            return "";
-        }
+        public abstract string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false);
+       
     }
 }

@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Dapper;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using Dapper;
 using YesSql.Core.Collections;
 using YesSql.Core.Services;
 using YesSql.Core.Sql.Schema;
@@ -10,7 +10,7 @@ namespace YesSql.Core.Sql
 {
     public class SchemaBuilder
     {
-        private ISchemaBuilder _builder;
+        private ICommandInterpreter _builder;
         private string _tablePrefix;
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }

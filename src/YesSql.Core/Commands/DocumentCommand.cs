@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
+using YesSql.Core.Sql;
 
 namespace YesSql.Core.Commands
 {
@@ -26,6 +27,6 @@ namespace YesSql.Core.Commands
 
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
     }
 }

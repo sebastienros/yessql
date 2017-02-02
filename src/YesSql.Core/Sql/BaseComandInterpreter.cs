@@ -5,19 +5,19 @@ using System.Linq;
 using System.Text;
 using YesSql.Core.Sql.Schema;
 
-namespace YesSql.Core.Sql.SchemaBuilders
+namespace YesSql.Core.Sql
 {
-    public abstract class BaseSchemaBuilder : ISchemaBuilder
+    public abstract class BaseComandInterpreter : ICommandInterpreter
     {
         protected readonly ISqlDialect _dialect;
         private const char Space = ' ';
 
-        public BaseSchemaBuilder(ISqlDialect dialect)
+        public BaseComandInterpreter(ISqlDialect dialect)
         {
             _dialect = dialect;
         }
 
-        public IEnumerable<string> CreateSql(IEnumerable<ISchemaBuilderCommand> commands)
+        public IEnumerable<string> CreateSql(IEnumerable<ISchemaCommand> commands)
         {
 
             var sqlCommands = new List<string>();

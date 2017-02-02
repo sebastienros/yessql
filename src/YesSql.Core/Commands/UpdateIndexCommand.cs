@@ -14,8 +14,6 @@ namespace YesSql.Core.Commands
     {
         private readonly IEnumerable<int> _addedDocumentIds;
         private readonly IEnumerable<int> _deletedDocumentIds;
-        private char _openQuoteDialect;
-        private char _closeQuoteDialect;
 
         public override int ExecutionOrder { get; } = 3;
 
@@ -23,31 +21,27 @@ namespace YesSql.Core.Commands
             IIndex index,
             IEnumerable<int> addedDocumentIds,
             IEnumerable<int> deletedDocumentIds,
-            string tablePrefix, ISqlDialect dialect) : base(index, tablePrefix, dialect)
+            string tablePrefix) : base(index, tablePrefix)
         {
             _addedDocumentIds = addedDocumentIds;
             _deletedDocumentIds = deletedDocumentIds;
-            _openQuoteDialect = dialect.OpenQuote;
-            _closeQuoteDialect = dialect.CloseQuote;
         }
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
         {
             var type = Index.GetType();
 
-            var sql = Updates(type);
+            var sql = Updates(type, dialect);
             await connection.ExecuteAsync(sql, Index, transaction);
 
             // Update the documents list
-            var reduceIndex = Index as ReduceIndex;
-            if (reduceIndex != null)
+            if (Index is ReduceIndex reduceIndex)
             {
                 var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
                 var bridgeTableName = type.Name + "_" + documentTable;
-                var columnList = $"{_openQuoteDialect}{type.Name}Id{_closeQuoteDialect}, {_openQuoteDialect}DocumentId{_closeQuoteDialect}";
-                var parameterList = $"@Id, @DocumentId";
-                var bridgeSqlAdd = $"insert into {_openQuoteDialect}{_tablePrefix}{bridgeTableName}{_closeQuoteDialect} ({columnList}) values ({parameterList});";
-                var bridgeSqlRemove = $"delete from {_openQuoteDialect}{_tablePrefix}{bridgeTableName}{_closeQuoteDialect} where DocumentId = @DocumentId and {type.Name}Id = @Id;";
+                var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
+                var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
+                var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
 
                 await connection.ExecuteAsync(bridgeSqlAdd, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
                 await connection.ExecuteAsync(bridgeSqlRemove, _deletedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);

@@ -1,13 +1,11 @@
-﻿using System;
+﻿using Microsoft.Data.Sqlite;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Xunit;
 using YesSql.Core.Indexes;
 using YesSql.Core.Services;
@@ -15,8 +13,6 @@ using YesSql.Core.Storage;
 using YesSql.Storage.InMemory;
 using YesSql.Storage.LightningDB;
 using YesSql.Storage.Sql;
-using Microsoft.EntityFrameworkCore;
-using MySql.Data.MySqlClient;
 
 namespace YesSql.Samples.Performance
 {
@@ -490,7 +486,7 @@ namespace YesSql.Samples.Performance
 
             var configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(@"server=127.0.0.1,3306;uid=root;pwd=920624ppN_;database=dbSample2;", true),
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"),
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
                 IsolationLevel = IsolationLevel.ReadUncommitted
             };

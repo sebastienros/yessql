@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using YesSql.Core.Sql.Schema;
 
-namespace YesSql.Core.Sql.SchemaBuilders
+namespace YesSql.Core.Sql.Providers.Sqlite
 {
-    public class SqliteSchemaBuilder : BaseSchemaBuilder
+    public class SqliteComandInterpreter : BaseComandInterpreter
     {
-        public SqliteSchemaBuilder(ISqlDialect dialect) : base(dialect)
+        public SqliteComandInterpreter(ISqlDialect dialect) : base(dialect)
         {
         }
 

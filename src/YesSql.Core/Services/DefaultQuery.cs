@@ -25,7 +25,7 @@ namespace YesSql.Core.Services
         private readonly ISqlDialect _dialect;
         private readonly DbTransaction _transaction;
         private string _lastParameterName;
-        private SqlBuilder _sqlBuilder;
+        private ISqlBuilder _sqlBuilder;
         private StringBuilder _builder = new StringBuilder();
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings =
@@ -101,8 +101,7 @@ namespace YesSql.Core.Services
             _transaction = transaction;
             _session = session;
             _dialect = SqlDialectFactory.For(connection);
-            _sqlBuilder = new SqlBuilder(tablePrefix);
-            _sqlBuilder.QuoteDialect(_dialect.OpenQuote, _dialect.CloseQuote);
+            _sqlBuilder = _dialect.CreateBuilder(tablePrefix);
         }
 
         private void Bind<TIndex>() where TIndex : IIndex

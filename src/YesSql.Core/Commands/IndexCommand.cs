@@ -17,25 +17,21 @@ namespace YesSql.Core.Commands
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> InsertsList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> UpdatesList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
-        private char _openQuoteDialect;
-        private char _closeQuoteDialect;
 
         protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, string tablePrefix, ISqlDialect dialect)
+        public IndexCommand(IIndex index, string tablePrefix)
         {
             Index = index;
             _tablePrefix = tablePrefix;
-            _openQuoteDialect = dialect.OpenQuote;
-            _closeQuoteDialect = dialect.CloseQuote;
         }
 
         public IIndex Index { get; }
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
@@ -49,9 +45,8 @@ namespace YesSql.Core.Commands
             return properties;
         }
 
-        protected string Inserts(Type type)
+        protected string Inserts(Type type, ISqlDialect dialect)
         {
-
             if (!InsertsList.TryGetValue(type.TypeHandle, out string result))
             {
                 string values = "DEFAULT VALUES";
@@ -65,7 +60,7 @@ namespace YesSql.Core.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbColumnList.Append($"{_openQuoteDialect}{property.Name}{_closeQuoteDialect}");
+                        sbColumnList.Append(dialect.QuoteForColumnName(property.Name));
                         if (i < allProperties.Count() - 1)
                             sbColumnList.Append(", ");
                     }
@@ -74,21 +69,21 @@ namespace YesSql.Core.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbParameterList.Append($"@{property.Name}");
+                        sbParameterList.Append("@" + property.Name);
                         if (i < allProperties.Count() - 1)
                             sbParameterList.Append(", ");
                     }
 
-                    values = $"({sbColumnList}) values ({sbParameterList})";
+                    values = " (" + sbColumnList + ") values (" + sbParameterList + ");";
                 }
 
-                InsertsList[type.TypeHandle] = result = $"insert into {_openQuoteDialect}{{0}}{type.Name}{_closeQuoteDialect} {values};";
+                InsertsList[type.TypeHandle] = result = "insert into " + dialect.QuoteForTableName(_tablePrefix + type.Name) + values;
             }
 
             return String.Format(result, _tablePrefix);
         }
 
-        protected string Updates(Type type)
+        protected string Updates(Type type, ISqlDialect dialect)
         {
             if (!UpdatesList.TryGetValue(type.TypeHandle, out string result))
             {
@@ -99,12 +94,12 @@ namespace YesSql.Core.Commands
                 for (var i = 0; i < allProperties.Length; i++)
                 {
                     var property = allProperties[i];
-                    values.Append($"{_openQuoteDialect}{property.Name}{_closeQuoteDialect}=@{property.Name}");
+                    values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name);
                     if (i < allProperties.Length - 1)
                         values.Append(", ");
                 }
 
-                UpdatesList[type.TypeHandle] = result = $"update {_openQuoteDialect}{{0}}{type.Name}{_closeQuoteDialect} set {values} where Id = @Id;";
+                UpdatesList[type.TypeHandle] = result = "update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + values + " where Id = @Id;";
             }
 
             return String.Format(result, _tablePrefix);
