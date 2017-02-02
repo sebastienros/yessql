@@ -1,13 +1,12 @@
 init:
   - git config --global core.autocrlf true
-before_test:
-  - echo script1
-  - ps: $cmd = '"C:\Program Files\MySQL\MySQL Server 5.7\bin\mysql" -e "create database yessql;" --user=root'
-  - ps: iex "& $cmd"
 services:
   - mssql2014
   - mysql
 build_script:
+  - ps: $env:MYSQL_PWD="Password12!"
+  - ps: $cmd = '"C:\Program Files\MySQL\MySQL Server 5.7\bin\mysql" -e "create database yessql;" --user=root'
+  - ps: iex "& $cmd"
   - build.cmd verify
 clone_depth: 1
 test: off
