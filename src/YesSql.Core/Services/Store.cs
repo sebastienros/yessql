@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dapper;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
@@ -34,6 +35,11 @@ namespace YesSql.Core.Services
             new ConcurrentDictionary<Type, Func<IDescriptor>>();
 
         public const string DocumentTable = "Document";
+
+        static Store()
+        {
+            SqlMapper.AddTypeHandler(DateTimeOffsetHandler.Default);
+        }
 
         public Store(Configuration configuration)
         {
@@ -85,7 +91,7 @@ namespace YesSql.Core.Services
                         .Column<string>("Type", column => column.NotNull())
                     )
                     .AlterTable(documentTable, table => table
-                        .CreateIndex("IX_Type", "Type")
+                        .CreateIndex("IX_" + documentTable + "_Type", "Type")
                     );
                 });
             }

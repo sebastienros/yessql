@@ -1,14 +1,16 @@
 ﻿using System.Data;
+using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using YesSql.Core.Services;
 using YesSql.Storage.Sql;
+using Xunit;
 
 namespace YesSql.Tests
 {
     /// <summary>
     /// Run all tests with a SqlServer document storage
     /// </summary>
-    public abstract class SqliteTests : CoreTests
+    public class SqliteTests : CoreTests
     {
         private TemporaryFolder _tempFolder;
 
@@ -40,6 +42,12 @@ namespace YesSql.Tests
             session.ExecuteMigration(schemaBuilder => schemaBuilder
                 .DropTable("Collection1_Content"), false
             );
+        }
+
+        [Fact(Skip = "ReadCommitted is not supported by Sqlite")]
+        public override Task ShouldReadCommittedRecords()
+        {
+            return base.ShouldReadCommittedRecords();
         }
     }
 }

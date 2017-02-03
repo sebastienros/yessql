@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dapper;
+using System;
 using System.Data;
 using System.Linq;
 using System.Threading;
@@ -1674,7 +1675,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldReadCommittedRecords()
+        public virtual async Task ShouldReadCommittedRecords()
         {
             /*
              * session1 created

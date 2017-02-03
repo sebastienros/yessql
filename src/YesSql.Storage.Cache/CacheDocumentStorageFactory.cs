@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Core.Services;
 using YesSql.Core.Storage;
@@ -7,7 +9,7 @@ namespace YesSql.Storage.Cache
 {
     public class CacheDocumentStorageFactory : IDocumentStorageFactory
     {
-        private CacheDocumentStorage _storage;
+        private ConcurrentDictionary<int, string> _documents = new ConcurrentDictionary<int, string>();
         private readonly IDocumentStorageFactory _concreteStorageFactory;
 
         public CacheDocumentStorageFactory(IDocumentStorageFactory concreteStorageFactory)
@@ -17,12 +19,7 @@ namespace YesSql.Storage.Cache
 
         public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
         {
-            if (_storage == null)
-            {
-                _storage = new CacheDocumentStorage(_concreteStorageFactory.CreateDocumentStorage(session, configuration));
-            }
-
-            return _storage;
+            return new CacheDocumentStorage(_documents, _concreteStorageFactory.CreateDocumentStorage(session, configuration));
         }
 
         public Task InitializeAsync(Configuration configuration)
@@ -32,7 +29,11 @@ namespace YesSql.Storage.Cache
 
         public Task InitializeCollectionAsync(Configuration configuration, string collectionName)
         {
-            throw new NotImplementedException();
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
     }
 }

@@ -5,7 +5,7 @@ using YesSql.Storage.InMemory;
 
 namespace YesSql.Tests
 {
-    public abstract class InMemoryTests : CoreTests
+    public class InMemoryTests : CoreTests
     {
         public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
 

@@ -1,15 +1,15 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Core.Storage;
-using YesSql.Core.Services;
 
 namespace YesSql.Storage.Cache
 {
     public class CacheDocumentStorage : IDocumentStorage
     {
-        public Dictionary<int, string> _documents = new Dictionary<int, string>();
+        public ConcurrentDictionary<int, string> _documents;
         private readonly static JsonSerializerSettings _jsonSettings;
 
         static CacheDocumentStorage()
@@ -19,10 +19,9 @@ namespace YesSql.Storage.Cache
 
         private readonly IDocumentStorage _concreteDocumentStorage;
 
-        public ISession Session { get; set; }
-
-        public CacheDocumentStorage(IDocumentStorage concreteDocumentStorage)
+        public CacheDocumentStorage(ConcurrentDictionary<int, string> documents, IDocumentStorage concreteDocumentStorage)
         {
+            _documents = documents;
             _concreteDocumentStorage = concreteDocumentStorage;
         }
 
@@ -55,7 +54,7 @@ namespace YesSql.Storage.Cache
 
             foreach (var document in documents)
             {
-                _documents.Remove(document.Id);
+                _documents.TryRemove(document.Id, out string value);
             }
 
             return _concreteDocumentStorage.DeleteAsync(documents);

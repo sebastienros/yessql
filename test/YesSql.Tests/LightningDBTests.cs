@@ -5,7 +5,7 @@ using YesSql.Storage.LightningDB;
 
 namespace YesSql.Tests
 {
-    public abstract class LightningDBTests : CoreTests
+    public class LightningDBTests : CoreTests
     {
         private TemporaryFolder _tempFolder;
         public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";

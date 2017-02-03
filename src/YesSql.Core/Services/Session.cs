@@ -164,6 +164,8 @@ namespace YesSql.Core.Services
                         doc.Id = _store.GetNextId(collection);
                     }
 
+                    Demand();
+
                     await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
                     await _storage.CreateAsync(new IdentityDocument(doc.Id, entity));
 
