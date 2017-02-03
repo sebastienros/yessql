@@ -108,7 +108,7 @@ namespace YesSql.Tests
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
                         .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                        .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
+                        //.Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
                     )
                 );
 
@@ -1765,7 +1765,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldReadUncommittedRecords()
+        public virtual async Task ShouldReadUncommittedRecords()
         {
             /*
              * session1 created
@@ -1986,6 +1986,7 @@ namespace YesSql.Tests
                     PublishedUtc = x
                 });
 
+                
                 foreach (var article in articles)
                 {
                     session.Save(article);
@@ -1997,9 +1998,9 @@ namespace YesSql.Tests
                 Assert.Equal(10, await session.QueryIndexAsync<ArticleByPublishedDate>().Count());
 
                 Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
-                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
+                //Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
 
-                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).Count());
+                //Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).Count());
             }
         }
 

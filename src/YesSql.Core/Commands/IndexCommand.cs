@@ -33,6 +33,12 @@ namespace YesSql.Core.Commands
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
 
+        public static void ResetQueryCache()
+        {
+            InsertsList.Clear();
+            UpdatesList.Clear();
+        }
+
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
             if (TypeProperties.TryGetValue(type.TypeHandle, out PropertyInfo[] pis))

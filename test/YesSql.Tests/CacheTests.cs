@@ -6,7 +6,8 @@ using YesSql.Storage.Sql;
 
 namespace YesSql.Tests
 {
-    public class CacheTests : CoreTests
+
+    public abstract class CacheTests : CoreTests
     {
         public static string ConnectionString => @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
 

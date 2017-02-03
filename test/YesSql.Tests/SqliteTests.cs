@@ -49,5 +49,11 @@ namespace YesSql.Tests
         {
             return base.ShouldReadCommittedRecords();
         }
+
+        [Fact(Skip = "Not supported by Sqlite")]
+        public override Task ShouldReadUncommittedRecords()
+        {
+            return base.ShouldReadUncommittedRecords();
+        }
     }
 }

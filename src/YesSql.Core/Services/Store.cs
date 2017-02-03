@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Core.Collections;
+using YesSql.Core.Commands;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
 
@@ -38,11 +39,14 @@ namespace YesSql.Core.Services
 
         static Store()
         {
+            SqlMapper.ResetTypeHandlers();
             SqlMapper.AddTypeHandler(DateTimeOffsetHandler.Default);
         }
 
         public Store(Configuration configuration)
         {
+            IndexCommand.ResetQueryCache();
+
             Configuration = configuration;
             Indexes = new List<IIndexProvider>();
             ValidateConfiguration();
