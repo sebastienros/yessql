@@ -3,10 +3,9 @@ init:
 services:
   - mssql2014
   - mysql
-environment:
-  SQLSERVER_CONNECTION_STRING: Data Source=.;Initial Catalog=tempdb;Integrated Security=True
-  MYSQL_CONNECTION_STRING: server=localhost;uid=root;pwd=Password12!;database=yessql;
 build_script:
+  - SET SQLSERVER_CONNECTION_STRING="Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
+  - SET MYSQL_CONNECTION_STRING="server=127.0.0.1;uid=root;pwd=Password12!;database=yessql;"
   - SET MYSQL_PWD=Password12!
   - '"C:/Program Files/MySQL/MySQL Server 5.7/bin/mysql" -e "create database yessql;" --user=root'
   - build.cmd verify
