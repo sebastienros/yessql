@@ -4,6 +4,7 @@ services:
   - mssql2014
   - mysql
 build_script:
+  - SET DOTNET_CLI_TELEMETRY_OPTOUT=1
   - SET SQLSERVER_CONNECTION_STRING="Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
   - SET MYSQL_CONNECTION_STRING="server=127.0.0.1;uid=root;pwd=Password12!;database=yessql;"
   - SET MYSQL_PWD=Password12!
