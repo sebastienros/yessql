@@ -22,9 +22,9 @@ namespace YesSql.Core.Sql.Schema
             { typeof(float), DbType.Single },
             { typeof(double), DbType.Double },
             { typeof(decimal), DbType.Decimal },
-            { typeof(DateTime), DbType.DateTime2 },
-            { typeof(DateTimeOffset), DbType.DateTimeOffset },
-            { typeof(Guid), DbType.DateTime }
+            { typeof(DateTime), DbType.DateTime },
+            { typeof(DateTimeOffset), DbType.DateTime },
+            { typeof(Guid), DbType.String }
         };
 
 

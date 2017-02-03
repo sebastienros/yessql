@@ -54,7 +54,11 @@ namespace YesSql.Storage.LightningDB
 
         public Task InitializeCollectionAsync(Configuration configuration, string collectionName)
         {
-            throw new NotImplementedException();
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
+        }
         }
     }
-}

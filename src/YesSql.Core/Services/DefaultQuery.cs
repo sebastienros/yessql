@@ -25,7 +25,7 @@ namespace YesSql.Core.Services
         private readonly ISqlDialect _dialect;
         private readonly DbTransaction _transaction;
         private string _lastParameterName;
-        private SqlBuilder _sqlBuilder;
+        private ISqlBuilder _sqlBuilder;
         private StringBuilder _builder = new StringBuilder();
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings =
@@ -70,28 +70,28 @@ namespace YesSql.Core.Services
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(string), typeof(IEnumerable<string>) })] =
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(int), typeof(IEnumerable<int>) })] =
                 (query, builder, expression) =>
-            {
-                var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
+                {
+                    var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
 
-                if (values.Length == 0)
-                {
-                    builder.Append(" 1 = 0");
-                }
-                else
-                {
-                    query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(" in (");
-                    for (var i = 0; i < values.Length; i++)
+                    if (values.Length == 0)
                     {
-                        query.ConvertFragment(builder, Expression.Constant(values[i]));
-                        if (i < values.Length - 1)
-                        {
-                            builder.Append(", ");
-                        }
+                        builder.Append(" 1 = 0");
                     }
-                    builder.Append(")");
-                }
-            };
+                    else
+                    {
+                        query.ConvertFragment(builder, expression.Arguments[0]);
+                        builder.Append(" in (");
+                        for (var i = 0; i < values.Length; i++)
+                        {
+                            query.ConvertFragment(builder, Expression.Constant(values[i]));
+                            if (i < values.Length - 1)
+                            {
+                                builder.Append(", ");
+                            }
+                        }
+                        builder.Append(")");
+                    }
+                };
         }
 
         public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix)
@@ -101,7 +101,7 @@ namespace YesSql.Core.Services
             _transaction = transaction;
             _session = session;
             _dialect = SqlDialectFactory.For(connection);
-            _sqlBuilder = new SqlBuilder(tablePrefix);
+            _sqlBuilder = _dialect.CreateBuilder(tablePrefix);
         }
 
         private void Bind<TIndex>() where TIndex : IIndex

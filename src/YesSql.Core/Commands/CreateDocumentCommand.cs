@@ -17,12 +17,13 @@ namespace YesSql.Core.Commands
         public CreateDocumentCommand(Document document, string tablePrefix) : base(document)
         {
             _tablePrefix = tablePrefix;
+
         }
 
-        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
+        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
         {
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-            var insertCmd = $"insert into [{_tablePrefix}{documentTable}] ([Id], [Type]) values (@Id, @Type);";
+            var insertCmd = "insert into " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " (" + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Type") + ") values (@Id, @Type);";
             return connection.ExecuteScalarAsync<int>(insertCmd, Document, transaction);
         }
     }

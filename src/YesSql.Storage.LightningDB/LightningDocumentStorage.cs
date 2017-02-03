@@ -12,7 +12,6 @@ namespace YesSql.Storage.LightningDB
 {
     public class LightningDocumentStorage : IDocumentStorage, IDisposable
     {
-        public Dictionary<int, string> _documents = new Dictionary<int, string>();
         private readonly static JsonSerializerSettings _jsonSettings;
         private readonly LightningEnvironment _env;
 

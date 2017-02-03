@@ -11,7 +11,6 @@ namespace YesSql.Core.Commands
     public class DeleteDocumentCommand : DocumentCommand
     {
         private readonly string _tablePrefix;
-
         public override int ExecutionOrder { get; } = 4;
 
         public DeleteDocumentCommand(Document document, string tablePrefix) : base(document)
@@ -19,10 +18,10 @@ namespace YesSql.Core.Commands
             _tablePrefix = tablePrefix;
         }
 
-        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
+        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
         {
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-            var deleteCmd = $"delete from [{_tablePrefix}{documentTable}] where [Id] = @Id;";
+            var deleteCmd = "delete from " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
             return connection.ExecuteAsync(deleteCmd, Document, transaction);
         }
     }

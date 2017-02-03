@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Dapper;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
-using Newtonsoft.Json;
 using YesSql.Core.Collections;
 using YesSql.Core.Services;
 using YesSql.Core.Sql;
@@ -39,7 +39,7 @@ namespace YesSql.Storage.Sql
                 var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var insertCmd = $"insert into [{_factory.TablePrefix}{contentTable}] ([Id], [Content]) values (@Id, @Content);";
+                var insertCmd = "insert into " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " (" + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + ") values (@Id, @Content);";
                 await tx.Connection.ExecuteScalarAsync<int>(insertCmd, new { Id = document.Id, Content = content }, tx);
             }
         }
@@ -54,7 +54,7 @@ namespace YesSql.Storage.Sql
                 var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var updateCmd = $"update [{_factory.TablePrefix}{contentTable}] set Content = @Content where Id = @Id;";
+                var updateCmd = "update " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " set " + dialect.QuoteForColumnName("Content") + " = @Content where " + dialect.QuoteForColumnName("Id") + " = @Id;";
                 await tx.Connection.ExecuteScalarAsync<int>(updateCmd, new { Id = document.Id, Content = content }, tx);
             }
         }
@@ -67,7 +67,7 @@ namespace YesSql.Storage.Sql
             foreach (var documentsPage in documents.PagesOf(128))
             {
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var deleteCmd = $"delete from [{_factory.TablePrefix}{contentTable}] where Id IN @Id;";
+                var deleteCmd = "delete from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " IN @Id;";
                 await tx.Connection.ExecuteScalarAsync<int>(deleteCmd, new { Id = documentsPage.Select(x => x.Id).ToArray() }, tx);
             }
         }
@@ -91,10 +91,11 @@ namespace YesSql.Storage.Sql
 
             var tx = _session.Demand();
 
+            var dialect = SqlDialectFactory.For(tx.Connection);
+            var selectCmd = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " IN @Id;";
+
             foreach (var idPages in ids.PagesOf(128))
             {
-                var dialect = SqlDialectFactory.For(tx.Connection);
-                var selectCmd = $"select Id, Content from [{_factory.TablePrefix}{contentTable}] where Id IN @Id;";
                 var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = idPages.ToArray() }, tx);
 
                 foreach (var entity in entities)
@@ -139,7 +140,7 @@ namespace YesSql.Storage.Sql
                     var ids = documentsPage.Select(x => x.Id).ToArray();
                     var dialect = SqlDialectFactory.For(tx.Connection);
                     var op = ids.Length == 1 ? "=" : "IN";
-                    var selectCmd = $"select Id, Content from [{_factory.TablePrefix}{contentTable}] where Id {op} @Id;";
+                    var selectCmd = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " " + op + " @Id;";
                     var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
 
                     foreach (var entity in entities)

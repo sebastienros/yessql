@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
+using YesSql.Core.Sql;
 
 namespace YesSql.Core.Commands
 {
@@ -30,7 +31,13 @@ namespace YesSql.Core.Commands
         public IIndex Index { get; }
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
+
+        public static void ResetQueryCache()
+        {
+            InsertsList.Clear();
+            UpdatesList.Clear();
+        }
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
@@ -44,12 +51,11 @@ namespace YesSql.Core.Commands
             return properties;
         }
 
-        protected string Inserts(Type type)
+        protected string Inserts(Type type, ISqlDialect dialect)
         {
-
             if (!InsertsList.TryGetValue(type.TypeHandle, out string result))
             {
-                string values = "DEFAULT VALUES";
+                string values = dialect.DefaultValuesInsert + ";";
 
                 var allProperties = TypePropertiesCache(type);
 
@@ -60,7 +66,7 @@ namespace YesSql.Core.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbColumnList.Append($"[{property.Name}]");
+                        sbColumnList.Append(dialect.QuoteForColumnName(property.Name));
                         if (i < allProperties.Count() - 1)
                             sbColumnList.Append(", ");
                     }
@@ -69,21 +75,21 @@ namespace YesSql.Core.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbParameterList.Append($"@{property.Name}");
+                        sbParameterList.Append("@" + property.Name);
                         if (i < allProperties.Count() - 1)
                             sbParameterList.Append(", ");
                     }
 
-                    values = $"({sbColumnList}) values ({sbParameterList})";
+                    values = " (" + sbColumnList + ") values (" + sbParameterList + ");";
                 }
 
-                InsertsList[type.TypeHandle] = result = $"insert into [{{0}}{type.Name}] {values};";
+                InsertsList[type.TypeHandle] = result = "insert into " + dialect.QuoteForTableName(_tablePrefix + type.Name) + values;
             }
 
             return String.Format(result, _tablePrefix);
         }
 
-        protected string Updates(Type type)
+        protected string Updates(Type type, ISqlDialect dialect)
         {
             if (!UpdatesList.TryGetValue(type.TypeHandle, out string result))
             {
@@ -94,12 +100,12 @@ namespace YesSql.Core.Commands
                 for (var i = 0; i < allProperties.Length; i++)
                 {
                     var property = allProperties[i];
-                    values.Append($"[{property.Name}]=@{property.Name}");
+                    values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name);
                     if (i < allProperties.Length - 1)
                         values.Append(", ");
                 }
 
-                UpdatesList[type.TypeHandle] = result = $"update [{{0}}{type.Name}] set {values} where Id = @Id;";
+                UpdatesList[type.TypeHandle] = result = "update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + values + " where Id = @Id;";
             }
 
             return String.Format(result, _tablePrefix);

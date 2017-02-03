@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dapper;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Core.Collections;
+using YesSql.Core.Commands;
 using YesSql.Core.Data;
 using YesSql.Core.Indexes;
 
@@ -35,8 +37,16 @@ namespace YesSql.Core.Services
 
         public const string DocumentTable = "Document";
 
+        static Store()
+        {
+            SqlMapper.ResetTypeHandlers();
+            SqlMapper.AddTypeHandler(DateTimeOffsetHandler.Default);
+        }
+
         public Store(Configuration configuration)
         {
+            IndexCommand.ResetQueryCache();
+
             Configuration = configuration;
             Indexes = new List<IIndexProvider>();
             ValidateConfiguration();
@@ -85,7 +95,7 @@ namespace YesSql.Core.Services
                         .Column<string>("Type", column => column.NotNull())
                     )
                     .AlterTable(documentTable, table => table
-                        .CreateIndex("IX_Type", "Type")
+                        .CreateIndex("IX_" + documentTable + "_Type", "Type")
                     );
                 });
             }

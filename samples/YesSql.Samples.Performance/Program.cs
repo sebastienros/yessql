@@ -1,13 +1,11 @@
-﻿using System;
+﻿using Microsoft.Data.Sqlite;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Xunit;
 using YesSql.Core.Indexes;
 using YesSql.Core.Services;
@@ -489,8 +487,6 @@ namespace YesSql.Samples.Performance
             var configuration = new Configuration
             {
                 ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"),
-                //ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + dbFileName + ";Cache=Shared"),
-
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
                 IsolationLevel = IsolationLevel.ReadUncommitted
             };
@@ -516,13 +512,13 @@ namespace YesSql.Samples.Performance
             }
 
             var sqlFactory = new SqlDocumentStorageFactory();
-
+            
             var runMigrations = true;
 
             if (runMigrations)
             {
                 store.InitializeAsync().Wait();
-
+                sqlFactory.InitializeAsync(configuration).Wait();
                 using (var session = store.CreateSession())
                 {
                     session.ExecuteMigration(builder => builder

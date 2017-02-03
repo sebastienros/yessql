@@ -1,6 +1,6 @@
 ﻿namespace YesSql.Core.Sql.Schema
 {
-    public class TableCommand : ISchemaBuilderCommand
+    public class TableCommand : ISchemaCommand
     {
         public string TableName { get; private set; }
 

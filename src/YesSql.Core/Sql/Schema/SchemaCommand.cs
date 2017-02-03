@@ -2,7 +2,7 @@
 
 namespace YesSql.Core.Sql.Schema
 {
-    public abstract class SchemaCommand : ISchemaBuilderCommand
+    public abstract class SchemaCommand : ISchemaCommand
     {
         protected SchemaCommand(string name, SchemaCommandType type)
         {

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using YesSql.Core.Indexes;
 using YesSql.Core.Collections;
 using YesSql.Core.Services;
+using YesSql.Core.Sql;
 
 namespace YesSql.Core.Commands
 {
@@ -15,17 +16,17 @@ namespace YesSql.Core.Commands
 
         public override int ExecutionOrder { get; } = 1;
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
         {
             var name = Index.GetType().Name;
 
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             var bridgeTableName = name + "_" + documentTable;
-            var bridgeSql = $"delete from [{_tablePrefix}{bridgeTableName}] where {name}Id = @Id";
+            var bridgeSql = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = @Id";
 
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
 
-            await connection.ExecuteAsync($"delete from [{_tablePrefix}{name}] where Id = @Id", new { Id = Index.Id }, transaction);
+            await connection.ExecuteAsync("delete from " + dialect.QuoteForTableName(_tablePrefix + name) + " where " + dialect.QuoteForColumnName("Id") + " = @Id", new { Id = Index.Id }, transaction);
         }
     }
 }

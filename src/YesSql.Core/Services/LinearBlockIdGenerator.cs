@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using YesSql.Core.Sql;
 
 namespace YesSql.Core.Services
 {
@@ -15,7 +16,7 @@ namespace YesSql.Core.Services
         private readonly IConnectionFactory _connectionFactory;
         private readonly int _range;
         private bool _initialized;
-
+        private readonly ISqlDialect _dialect;
         private long _start;
         private int _increment;
         private long _end;
@@ -25,6 +26,7 @@ namespace YesSql.Core.Services
         public LinearBlockIdGenerator(IConnectionFactory connectionFactory, int range, string tablePrefix)
         {
             _connectionFactory = connectionFactory;
+            _dialect = SqlDialectFactory.For(connectionFactory.CreateConnection());
             _range = range;
             _tablePrefix = tablePrefix;
         }
@@ -71,7 +73,7 @@ namespace YesSql.Core.Services
                         using (var transaction = connection.BeginTransaction())
                         {
                             var selectCommand = connection.CreateCommand();
-                            selectCommand.CommandText = $"SELECT nextval FROM [{_tablePrefix}{TableName}] WHERE dimension = @dimension;";
+                            selectCommand.CommandText = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
 
                             var selectDimension = selectCommand.CreateParameter();
                             selectDimension.Value = dimension;
@@ -83,7 +85,7 @@ namespace YesSql.Core.Services
                             nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
                             var updateCommand = connection.CreateCommand();
-                            updateCommand.CommandText = $"UPDATE [{_tablePrefix}{TableName}] SET nextval=@new WHERE nextval = @previous AND dimension = @dimension;";
+                            updateCommand.CommandText = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
 
                             var updateDimension = updateCommand.CreateParameter();
                             updateDimension.Value = dimension;
@@ -147,7 +149,7 @@ namespace YesSql.Core.Services
                 {
                     // Does the record already exist?
                     var selectCommand = connection.CreateCommand();
-                    selectCommand.CommandText = $"SELECT nextval FROM [{_tablePrefix}{TableName}] WHERE dimension = @dimension;";
+                    selectCommand.CommandText = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE dimension = @dimension;";
 
                     var selectDimension = selectCommand.CreateParameter();
                     selectDimension.Value = dimension;
@@ -164,7 +166,7 @@ namespace YesSql.Core.Services
                     }
 
                     var command = connection.CreateCommand();
-                    command.CommandText = $"INSERT INTO [{_tablePrefix}{TableName}] (dimension, nextval) VALUES(@dimension, @nextval);";
+                    command.CommandText = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
                     var dimensionParameter = command.CreateParameter();
                     dimensionParameter.Value = dimension;

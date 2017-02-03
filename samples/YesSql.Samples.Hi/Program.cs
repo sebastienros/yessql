@@ -14,7 +14,7 @@ namespace YesSql.Samples.Hi
         {
             var configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=yessql.db;Cache=Shared", true),
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true),
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
                 IsolationLevel = IsolationLevel.Serializable
             };

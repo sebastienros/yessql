@@ -21,7 +21,6 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="1.0.1" />
     <PackageReference Include="YesSql.Core" Version="2.0.0-*" />
     <PackageReference Include="YesSql.Storage.InMemory" Version="1.0.0-*" />
-    <PackageReference Include="xunit" Version="2.2.0-beta5-build3474" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
     <Reference Include="System.Runtime" />
