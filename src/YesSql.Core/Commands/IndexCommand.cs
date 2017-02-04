@@ -55,7 +55,7 @@ namespace YesSql.Core.Commands
         {
             if (!InsertsList.TryGetValue(dialect.Name + type.FullName, out string result))
             {
-                string values = dialect.DefaultValuesInsert + ";";
+                string values = dialect.DefaultValuesInsert;
 
                 var allProperties = TypePropertiesCache(type);
 
@@ -80,10 +80,10 @@ namespace YesSql.Core.Commands
                             sbParameterList.Append(", ");
                     }
 
-                    values = " (" + sbColumnList + ") VALUES (" + sbParameterList + ");";
+                    values = " (" + sbColumnList + ") VALUES (" + sbParameterList + ")";
                 }
 
-                InsertsList[type.FullName] = result = "INSERT INTO " + dialect.QuoteForTableName(_tablePrefix + type.Name) + values;
+                InsertsList[type.FullName] = result = "INSERT INTO " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " " + values;
             }
 
             return String.Format(result, _tablePrefix);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using YesSql.Core.Sql.Providers.MySql;
+using YesSql.Core.Sql.Providers.PostgreSql;
 using YesSql.Core.Sql.Providers.Sqlite;
 using YesSql.Core.Sql.Providers.SqlServer;
 
@@ -11,6 +12,7 @@ namespace YesSql.Core.Sql
     public interface ISqlDialect
     {
         string Name { get; }
+        string CascadeConstraintsString { get; }
         string CreateTableString { get; }
         string PrimaryKeyString { get; }
         string NullColumnString { get; }
@@ -24,6 +26,7 @@ namespace YesSql.Core.Sql
         string QuoteForTableName(string v);
         string GetDropTableString(string name);
         string QuoteForColumnName(string columnName);
+        string InOperator(string values);
         string GetDropForeignKeyConstraintString(string name);
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
         string DefaultValuesInsert { get; }
@@ -37,7 +40,8 @@ namespace YesSql.Core.Sql
         {
             {"sqliteconnection", new SqliteDialect()},
             {"sqlconnection", new SqlServerDialect()},
-            {"mysqlconnection", new MySqlDialect() }
+            {"mysqlconnection", new MySqlDialect()},
+            {"npgsqlconnection", new PostgreSqlDialect()}
         };
 
         public static void RegisterSqlDialect(string connectionName, ISqlDialect sqlTypeAdapter)

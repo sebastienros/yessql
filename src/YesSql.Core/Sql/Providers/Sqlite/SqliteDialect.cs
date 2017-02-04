@@ -40,7 +40,7 @@ namespace YesSql.Core.Sql.Providers.Sqlite
 
         public override string IdentityColumnString => "integer primary key autoincrement";
 
-        public override string IdentitySelectString => "select last_insert_rowid()";
+        public override string IdentitySelectString => "; select last_insert_rowid()";
 
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {

@@ -34,7 +34,7 @@ namespace YesSql.Core.Sql.Providers.SqlServer
         };
 
         public override string Name => "SqlServer";
-        public override string IdentitySelectString => "select SCOPE_IDENTITY()";
+        public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
 
         public override ISqlBuilder CreateBuilder(string tablePrefix)
         {

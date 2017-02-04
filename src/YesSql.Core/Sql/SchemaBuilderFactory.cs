@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using YesSql.Core.Sql.Providers.MySql;
+using YesSql.Core.Sql.Providers.PostgreSql;
 using YesSql.Core.Sql.Providers.Sqlite;
 using YesSql.Core.Sql.Providers.SqlServer;
 
@@ -13,7 +14,8 @@ namespace YesSql.Core.Sql
         {
             {"sqliteconnection", d => new SqliteComandInterpreter(d)},
             {"sqlconnection", d => new SqlServerComandInterpreter(d)},
-            {"mysqlconnection", d => new MySqlComandInterpreter(d)}
+            {"mysqlconnection", d => new MySqlComandInterpreter(d)},
+            {"npgsqlconnection", d => new PostgreSqlComandInterpreter(d)}
 
         };
 

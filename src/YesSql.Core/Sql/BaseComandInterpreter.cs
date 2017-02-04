@@ -79,7 +79,7 @@ namespace YesSql.Core.Sql
                 Run(builder, createColumn);
             }
 
-            var primaryKeys = command.TableCommands.OfType<CreateColumnCommand>().Where(ccc => ccc.IsPrimaryKey && !ccc.IsIdentity).Select(ccc => ccc.ColumnName).ToArray();
+            var primaryKeys = command.TableCommands.OfType<CreateColumnCommand>().Where(ccc => ccc.IsPrimaryKey && !ccc.IsIdentity).Select(ccc => _dialect.QuoteForColumnName(ccc.ColumnName)).ToArray();
             if (primaryKeys.Any())
             {
                 if (appendComma)
@@ -198,7 +198,7 @@ namespace YesSql.Core.Sql
             builder.AppendFormat("create index {1} on {0} ({2}) ",
                 _dialect.QuoteForTableName(command.TableName),
                 _dialect.QuoteForColumnName(command.IndexName),
-                String.Join(", ", command.ColumnNames));
+                String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray()));
         }
 
         public virtual void Run(StringBuilder builder, DropIndexCommand command)
@@ -226,9 +226,9 @@ namespace YesSql.Core.Sql
                 .Append(_dialect.QuoteForTableName(command.SrcTable));
 
             builder.Append(_dialect.GetAddForeignKeyConstraintString(command.Name,
-                command.SrcColumns,
+                command.SrcColumns.Select(x => _dialect.QuoteForColumnName(x)).ToArray(),
                 _dialect.QuoteForTableName(command.DestTable),
-                command.DestColumns,
+                command.DestColumns.Select(x => _dialect.QuoteForColumnName(x)).ToArray(),
                 false));
 
             yield return builder.ToString();

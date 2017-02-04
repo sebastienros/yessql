@@ -3,43 +3,46 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace YesSql.Core.Sql.Providers.MySql
+namespace YesSql.Core.Sql.Providers.PostgreSql
 {
-    public class MySqlDialect : BaseDialect
+    public class PostgreSqlDialect : BaseDialect
     {
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
             {DbType.Binary, "varbinary"},
+            {DbType.Date, "date"},
             {DbType.Time, "time"},
-            {DbType.Date, "datetime"},
-            {DbType.DateTime, "datetime" },
+            {DbType.DateTime, "timestamp" },
             {DbType.DateTime2, "datetime" },
             {DbType.DateTimeOffset, "datetime" },
-            {DbType.Boolean, "bit"},
-            {DbType.Byte, "tinyint unsigned"},
-            {DbType.Decimal, "decimal(65, 30)"},
-            {DbType.Double, "double"},
-            {DbType.Int16, "smallint"},
-            {DbType.UInt16, "smallint unsigned"},
-            {DbType.Int32, "int"},
-            {DbType.UInt32, "int unsigned"},
-            {DbType.Int64, "bigint"},
-            {DbType.UInt64, "bigint unsigned"},
+            {DbType.Boolean, "boolean"},
+            {DbType.Byte, "int2"},
+            {DbType.Decimal, "decimal(19, 5)"},
+            {DbType.Single, "float4"},
+            {DbType.Double, "float8"},
+            {DbType.Int16, "int2"},
+            {DbType.Int32, "int4"},
+            {DbType.Int64, "int8"},
+            {DbType.UInt16, "int2"},
+            {DbType.UInt32, "int4"},
+            {DbType.UInt64, "int8"},
             {DbType.AnsiStringFixedLength, "char"},
-            {DbType.AnsiString, "varchar(127)"},
-            {DbType.StringFixedLength, "varchar"},
+            {DbType.AnsiString, "varchar(255)"},
+            {DbType.StringFixedLength, "char(255)"},
             {DbType.String, "varchar(255)"},
+            {DbType.Currency, "decimal(16,4)"}
         };
 
-        public override string Name => "MySql";
-        public override string IdentitySelectString => "; select LAST_INSERT_ID()";
-        public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
+        public override string Name => "PostgreSql";
+        public override string InOperator(string values) => " = any(array[" + values + "])";
+        public override string IdentitySelectString => "RETURNING ";
+        public override string IdentityColumnString => "SERIAL PRIMARY KEY";
         public override bool SupportsIfExistsBeforeTableName => true;
 
         public override ISqlBuilder CreateBuilder(string tablePrefix)
         {
-            return new MySqlSqlBuilder(tablePrefix, this);
+            return new PostgreSqlSqlBuilder(tablePrefix, this);
         }
 
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
@@ -50,17 +53,17 @@ namespace YesSql.Core.Sql.Providers.MySql
                 {
                     if (dbType == DbType.String)
                     {
-                        return "TEXT";
+                        return "text";
                     }
 
                     if (dbType == DbType.AnsiString)
                     {
-                        return "TEXT";
+                        return "text";
                     }
 
                     if (dbType == DbType.Binary)
                     {
-                        return "BLOB";
+                        return "bytea";
                     }
                 }
                 else
@@ -77,7 +80,7 @@ namespace YesSql.Core.Sql.Providers.MySql
 
                     if (dbType == DbType.Binary)
                     {
-                        return "varbinary(" + length + ")";
+                        return "bytea";
                     }
                 }
             }
@@ -95,36 +98,43 @@ namespace YesSql.Core.Sql.Providers.MySql
             return " drop foreign key " + name;
         }
 
-        public override string DefaultValuesInsert => "VALUES()";
+        public override string DefaultValuesInsert => "DEFAULT VALUES";
 
         public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
         {
-            if (offset == 0 && limit != 0)
+            var sb = new StringBuilder();
+
+            sb.Append(" limit ");
+
+            if (limit != 0)
             {
-                // Insert LIMIT clause after the select
-                var selector = sqlBuilder.GetSelector();
-                selector = " " + selector + " limit " + limit;
-                sqlBuilder.Selector(selector);
+                sb.Append(limit);
             }
-            else if (offset != 0 || limit != 0)
+
+            if (offset != 0)
             {
-                sqlBuilder.Trail = "OFFSET " + offset + " ROWS FETCH FIRST " + limit + " ROWS ONLY";
+                sb.Append(" offset ");
+                sb.Append(offset);
             }
+
+            sqlBuilder.Trail = sb.ToString();
         }
 
         public override string QuoteForColumnName(string columnName)
         {
-            return "`" + columnName + "`";
+            return QuoteString + columnName + QuoteString;
         }
 
         public override string QuoteForTableName(string tableName)
         {
-            return "`" + tableName + "`";
+            return QuoteString + tableName + QuoteString;
         }
 
         protected override string Quote(string value)
         {
-            return QuoteString + value.Replace(QuoteString, DoubleQuoteString) + QuoteString;
+            return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
         }
+
+        public override string CascadeConstraintsString => " cascade ";
     }
 }

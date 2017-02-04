@@ -8,6 +8,16 @@ namespace YesSql.Core.Sql
     public abstract class BaseDialect : ISqlDialect
     {
         public abstract string Name { get; }
+        public virtual string InOperator(string values) {
+            if (values.StartsWith("@") && !values.Contains(","))
+            {
+                return " IN " + values;
+            }
+            else
+            {
+                return " IN (" + values + ") ";
+            }
+        }
         public virtual string CreateTableString => "create table";
 
         public virtual bool HasDataTypeInIdentityColumn => false;
@@ -66,7 +76,7 @@ namespace YesSql.Core.Sql
                 sb.Append("if exists ");
             }
 
-            sb.Append(name).Append(CascadeConstraintsString);
+            sb.Append(QuoteForTableName(name)).Append(CascadeConstraintsString);
 
             if (SupportsIfExistsAfterTableName)
             {

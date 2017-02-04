@@ -28,12 +28,12 @@ namespace YesSql.Core.Services
         private ISqlBuilder _sqlBuilder;
         private StringBuilder _builder = new StringBuilder();
 
-        public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>> MethodMappings =
-            new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, MethodCallExpression>>();
+        public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
+            new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>>();
 
         static DefaultQuery()
         {
-            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(string) })] = (query, builder, expression) =>
+            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(string) })] = (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Object);
@@ -44,7 +44,7 @@ namespace YesSql.Core.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(string) })] = (query, builder, expression) =>
+            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(string) })] = (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Object);
@@ -56,7 +56,7 @@ namespace YesSql.Core.Services
 
             };
 
-            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(string) })] = (query, builder, expression) =>
+            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(string) })] = (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Object);
@@ -69,7 +69,7 @@ namespace YesSql.Core.Services
 
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(string), typeof(IEnumerable<string>) })] =
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(int), typeof(IEnumerable<int>) })] =
-                (query, builder, expression) =>
+                (query, builder, dialect, expression) =>
                 {
                     var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
 
@@ -80,16 +80,17 @@ namespace YesSql.Core.Services
                     else
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
-                        builder.Append(" in (");
+                        var elements = new StringBuilder();
                         for (var i = 0; i < values.Length; i++)
                         {
-                            query.ConvertFragment(builder, Expression.Constant(values[i]));
+                            query.ConvertFragment(elements, Expression.Constant(values[i]));
                             if (i < values.Length - 1)
                             {
-                                builder.Append(", ");
+                                elements.Append(", ");
                             }
                         }
-                        builder.Append(")");
+
+                        builder.Append(dialect.InOperator(elements.ToString()));
                     }
                 };
         }
@@ -211,10 +212,10 @@ namespace YesSql.Core.Services
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)expression;
                     var methodInfo = methodCallExpression.Method;
-                    Action<DefaultQuery, StringBuilder, MethodCallExpression> action;
+                    Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression> action;
                     if (MethodMappings.TryGetValue(methodInfo, out action))
                     {
-                        action(this, builder, methodCallExpression);
+                        action(this, builder, _dialect, methodCallExpression);
                     }
                     else
                     {

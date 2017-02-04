@@ -67,7 +67,7 @@ namespace YesSql.Storage.Sql
             foreach (var documentsPage in documents.PagesOf(128))
             {
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var deleteCmd = "delete from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " IN @Id;";
+                var deleteCmd = "delete from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + dialect.InOperator("@Id") + ";";
                 await tx.Connection.ExecuteScalarAsync<int>(deleteCmd, new { Id = documentsPage.Select(x => x.Id).ToArray() }, tx);
             }
         }
@@ -92,7 +92,7 @@ namespace YesSql.Storage.Sql
             var tx = _session.Demand();
 
             var dialect = SqlDialectFactory.For(tx.Connection);
-            var selectCmd = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " IN @Id;";
+            var selectCmd = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + dialect.InOperator("@Id") + ";";
 
             foreach (var idPages in ids.PagesOf(128))
             {
@@ -139,10 +139,18 @@ namespace YesSql.Storage.Sql
                 {
                     var ids = documentsPage.Select(x => x.Id).ToArray();
                     var dialect = SqlDialectFactory.For(tx.Connection);
-                    var op = ids.Length == 1 ? "=" : "IN";
-                    var selectCmd = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " " + op + " @Id;";
-                    var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
-
+                    IEnumerable<IdString> entities;
+                    if (ids.Length == 1)
+                    {
+                        var single = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
+                        entities = await tx.Connection.QueryAsync<IdString>(single, new { Id = ids[0] }, tx);
+                    }
+                    else
+                    {
+                        var single = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(_factory.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + dialect.InOperator("@Id");
+                        entities = await tx.Connection.QueryAsync<IdString>(single, new { Id = ids }, tx);
+                    }                        
+                    
                     foreach (var entity in entities)
                     {
                         var index = orderedLookup[entity.Id];

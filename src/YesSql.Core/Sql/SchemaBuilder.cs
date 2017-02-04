@@ -12,12 +12,14 @@ namespace YesSql.Core.Sql
     {
         private ICommandInterpreter _builder;
         private string _tablePrefix;
+        private ISqlDialect _dialect;
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
 
         public SchemaBuilder(DbConnection connection, DbTransaction transaction, string tablePrefix)
         {
             _builder = SchemaBuilderFactory.For(connection);
+            _dialect = SqlDialectFactory.For(connection);
             _tablePrefix = tablePrefix;
             Connection = connection;
             Transaction = transaction;
@@ -85,8 +87,11 @@ namespace YesSql.Core.Sql
 
             var bridgeTableName = name + "_" + documentTable;
 
-            DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_Id");
-            DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_DocumentId");
+            if (String.IsNullOrEmpty(_dialect.CascadeConstraintsString))
+            {
+                DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_Id");
+                DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_DocumentId");
+            }
 
             DropTable(bridgeTableName);
             DropTable(name);
@@ -96,7 +101,11 @@ namespace YesSql.Core.Sql
 
         public SchemaBuilder DropMapIndexTable(string name)
         {
-            DropForeignKey(name, "FK_" + name);
+            if (String.IsNullOrEmpty(_dialect.CascadeConstraintsString))
+            {
+                DropForeignKey(name, "FK_" + name);
+            }
+
             DropTable(name);
 
             return this;
