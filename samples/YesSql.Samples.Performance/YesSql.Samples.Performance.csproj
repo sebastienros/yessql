@@ -19,10 +19,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="1.0.1" />
-    <PackageReference Include="YesSql.Core" Version="2.0.0-*" />
-    <PackageReference Include="YesSql.Storage.InMemory" Version="1.0.0-*" />
-    <PackageReference Include="YesSql.Storage.LightningDB" Version="1.0.0-*" />
-    <PackageReference Include="YesSql.Storage.Sql" Version="1.0.0-*" />
     <PackageReference Include="xunit" Version="2.2.0-beta5-build3474" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
@@ -33,5 +29,12 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
+    <ProjectReference Include="..\..\src\YesSql.Storage.Cache\YesSql.Storage.Cache.csproj" />
+    <ProjectReference Include="..\..\src\YesSql.Storage.InMemory\YesSql.Storage.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\YesSql.Storage.LightningDB\YesSql.Storage.LightningDB.csproj" />
+    <ProjectReference Include="..\..\src\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj" />
   </ItemGroup>
 </Project>
