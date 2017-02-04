@@ -14,9 +14,9 @@ namespace YesSql.Core.Commands
     {
         protected readonly string _tablePrefix;
 
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]>();
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> InsertsList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> UpdatesList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
+        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<string, PropertyInfo[]>();
+        private static readonly ConcurrentDictionary<string, string> InsertsList = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> UpdatesList = new ConcurrentDictionary<string, string>();
 
         protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
@@ -41,19 +41,19 @@ namespace YesSql.Core.Commands
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
-            if (TypeProperties.TryGetValue(type.TypeHandle, out PropertyInfo[] pis))
+            if (TypeProperties.TryGetValue(type.FullName, out PropertyInfo[] pis))
             {
                 return pis;
             }
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type.TypeHandle] = properties;
+            TypeProperties[type.FullName] = properties;
             return properties;
         }
 
         protected string Inserts(Type type, ISqlDialect dialect)
         {
-            if (!InsertsList.TryGetValue(type.TypeHandle, out string result))
+            if (!InsertsList.TryGetValue(dialect.Name + type.FullName, out string result))
             {
                 string values = dialect.DefaultValuesInsert + ";";
 
@@ -80,10 +80,10 @@ namespace YesSql.Core.Commands
                             sbParameterList.Append(", ");
                     }
 
-                    values = " (" + sbColumnList + ") values (" + sbParameterList + ");";
+                    values = " (" + sbColumnList + ") VALUES (" + sbParameterList + ");";
                 }
 
-                InsertsList[type.TypeHandle] = result = "insert into " + dialect.QuoteForTableName(_tablePrefix + type.Name) + values;
+                InsertsList[type.FullName] = result = "INSERT INTO " + dialect.QuoteForTableName(_tablePrefix + type.Name) + values;
             }
 
             return String.Format(result, _tablePrefix);
@@ -91,9 +91,8 @@ namespace YesSql.Core.Commands
 
         protected string Updates(Type type, ISqlDialect dialect)
         {
-            if (!UpdatesList.TryGetValue(type.TypeHandle, out string result))
+            if (!UpdatesList.TryGetValue(dialect.Name + type.FullName, out string result))
             {
-
                 var allProperties = TypePropertiesCache(type);
                 var values = new StringBuilder(null);
 
@@ -105,7 +104,7 @@ namespace YesSql.Core.Commands
                         values.Append(", ");
                 }
 
-                UpdatesList[type.TypeHandle] = result = "update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + values + " where Id = @Id;";
+                UpdatesList[type.FullName] = result = "UPDATE " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " SET " + values + " WHERE " + dialect.QuoteForColumnName("Id") + " = @Id;";
             }
 
             return String.Format(result, _tablePrefix);

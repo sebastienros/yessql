@@ -33,6 +33,7 @@ namespace YesSql.Core.Sql.Providers.SqlServer
             {DbType.String, "NVARCHAR(255)"},
         };
 
+        public override string Name => "SqlServer";
         public override string IdentitySelectString => "select SCOPE_IDENTITY()";
 
         public override ISqlBuilder CreateBuilder(string tablePrefix)

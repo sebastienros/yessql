@@ -120,8 +120,15 @@ namespace YesSql.Core.Sql
 
         public SchemaBuilder DropTable(string name)
         {
-            var deleteTable = new DropTableCommand(FormatTable(name));
-            Execute(_builder.CreateSql(deleteTable));
+            try
+            {
+                var deleteTable = new DropTableCommand(FormatTable(name));
+                Execute(_builder.CreateSql(deleteTable));
+            }
+            catch
+            {
+            }
+
             return this;
         }
 
@@ -155,10 +162,16 @@ namespace YesSql.Core.Sql
 
         public SchemaBuilder DropForeignKey(string srcTable, string name)
         {
-            var command = new DropForeignKeyCommand(FormatTable(srcTable), name);
-            Execute(_builder.CreateSql(command));
+            try
+            {
+                var command = new DropForeignKeyCommand(FormatTable(srcTable), name);
+                Execute(_builder.CreateSql(command));
+            }
+            catch
+            {
+            }
+
             return this;
         }
-
     }
 }

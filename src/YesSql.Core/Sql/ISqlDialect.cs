@@ -10,6 +10,7 @@ namespace YesSql.Core.Sql
 {
     public interface ISqlDialect
     {
+        string Name { get; }
         string CreateTableString { get; }
         string PrimaryKeyString { get; }
         string NullColumnString { get; }

@@ -7,6 +7,7 @@ namespace YesSql.Core.Sql
 {
     public abstract class BaseDialect : ISqlDialect
     {
+        public abstract string Name { get; }
         public virtual string CreateTableString => "create table";
 
         public virtual bool HasDataTypeInIdentityColumn => false;

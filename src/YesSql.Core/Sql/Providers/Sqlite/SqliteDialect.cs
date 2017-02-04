@@ -36,6 +36,8 @@ namespace YesSql.Core.Sql.Providers.Sqlite
             { DbType.Guid, "UNIQUEIDENTIFIER" }
         };
 
+        public override string Name => "Sqlite";
+
         public override string IdentityColumnString => "integer primary key autoincrement";
 
         public override string IdentitySelectString => "select last_insert_rowid()";

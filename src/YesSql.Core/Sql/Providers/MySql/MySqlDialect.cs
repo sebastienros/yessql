@@ -32,8 +32,10 @@ namespace YesSql.Core.Sql.Providers.MySql
             {DbType.String, "varchar(255)"},
         };
 
+        public override string Name => "MySql";
         public override string IdentitySelectString => "select LAST_INSERT_ID()";
         public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
+        public override bool SupportsIfExistsBeforeTableName => true;
 
         public override ISqlBuilder CreateBuilder(string tablePrefix)
         {
