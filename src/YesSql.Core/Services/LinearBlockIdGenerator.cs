@@ -31,13 +31,13 @@ namespace YesSql.Core.Services
             _tablePrefix = tablePrefix;
         }
 
-        public long GetNextId(string dimension)
+        public long GetNextId(ISession session, string dimension)
         {
             // Initialize the range
             if (_end == 0)
             {
-                EnsureInitialized(dimension);
-                LeaseRange(dimension);
+                EnsureInitialized(session, dimension);
+                LeaseRange(session, dimension);
             }
 
             var newIncrement = Interlocked.Increment(ref _increment);
@@ -45,111 +45,31 @@ namespace YesSql.Core.Services
 
             if (nextId > _end)
             {
-                LeaseRange(dimension);
-                return GetNextId(dimension);
+                LeaseRange(session, dimension);
+                return GetNextId(session, dimension);
             }
 
             return nextId;
         }
 
-        private void LeaseRange(string dimension)
+        private void LeaseRange(ISession session, string dimension)
         {
             lock (this)
             {
-                var connection = _connectionFactory.CreateConnection();
-                connection.Open();
-                try
+                var affectedRows = 0;
+                long nextval;
+                int retries = 0;
+
+                do
                 {
-                    var affectedRows = 0;
-                    long nextval;
-                    int retries = 0;
+                    // Ensure we overwrite the value that has been read by this
+                    // instance in case another client is trying to lease a range
+                    // at the same time
 
-                    do
-                    {
-                        // Ensure we overwrite the value that has been read by this
-                        // instance in case another client is trying to lease a range
-                        // at the same time
-
-                        using (var transaction = connection.BeginTransaction())
-                        {
-                            var selectCommand = connection.CreateCommand();
-                            selectCommand.CommandText = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
-
-                            var selectDimension = selectCommand.CreateParameter();
-                            selectDimension.Value = dimension;
-                            selectDimension.ParameterName = "@dimension";
-                            selectCommand.Parameters.Add(selectDimension);
-
-                            selectCommand.Transaction = transaction;
-
-                            nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
-
-                            var updateCommand = connection.CreateCommand();
-                            updateCommand.CommandText = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
-
-                            var updateDimension = updateCommand.CreateParameter();
-                            updateDimension.Value = dimension;
-                            updateDimension.ParameterName = "@dimension";
-                            updateCommand.Parameters.Add(updateDimension);
-
-                            var newValue = updateCommand.CreateParameter();
-                            newValue.Value = nextval + _range;
-                            newValue.ParameterName = "@new";
-                            updateCommand.Parameters.Add(newValue);
-
-                            var previousValue = updateCommand.CreateParameter();
-                            previousValue.Value = nextval;
-                            previousValue.ParameterName = "@previous";
-                            updateCommand.Parameters.Add(previousValue);
-
-                            updateCommand.Transaction = transaction;
-
-                            affectedRows = updateCommand.ExecuteNonQuery();
-                            transaction.Commit();
-                        }
-
-                        if (retries++ > MaxRetries)
-                        {
-                            throw new Exception("Too many retries while trying to lease a range for: " + dimension);
-                        }
-
-                    } while (affectedRows == 0);
-
-                    _increment = -1; // Start with -1 as it will be incremented
-                    _start = nextval;
-                    _end = nextval + _range - 1;
-
-                }
-                finally
-                {
-                    if (_connectionFactory.Disposable)
-                    {
-                        connection.Dispose();
-                    }
-                    else
-                    {
-                        connection.Close();
-                    }
-                }
-            }
-        }
-
-        private void EnsureInitialized(string dimension)
-        {
-            if (_initialized)
-            {
-                return;
-            }
-
-            var connection = _connectionFactory.CreateConnection();
-            connection.Open();
-            try
-            {
-                using (var transaction = connection.BeginTransaction())
-                {
-                    // Does the record already exist?
-                    var selectCommand = connection.CreateCommand();
-                    selectCommand.CommandText = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE dimension = @dimension;";
+                    var transaction = session.Demand();
+                    
+                    var selectCommand = transaction.Connection.CreateCommand();
+                    selectCommand.CommandText = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
 
                     var selectDimension = selectCommand.CreateParameter();
                     selectDimension.Value = dimension;
@@ -158,45 +78,89 @@ namespace YesSql.Core.Services
 
                     selectCommand.Transaction = transaction;
 
-                    var nextVal = selectCommand.ExecuteScalar();
+                    nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
-                    if (null != nextVal)
+                    var updateCommand = transaction.Connection.CreateCommand();
+                    updateCommand.CommandText = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
+
+                    var updateDimension = updateCommand.CreateParameter();
+                    updateDimension.Value = dimension;
+                    updateDimension.ParameterName = "@dimension";
+                    updateCommand.Parameters.Add(updateDimension);
+
+                    var newValue = updateCommand.CreateParameter();
+                    newValue.Value = nextval + _range;
+                    newValue.ParameterName = "@new";
+                    updateCommand.Parameters.Add(newValue);
+
+                    var previousValue = updateCommand.CreateParameter();
+                    previousValue.Value = nextval;
+                    previousValue.ParameterName = "@previous";
+                    updateCommand.Parameters.Add(previousValue);
+
+                    updateCommand.Transaction = transaction;
+
+                    affectedRows = updateCommand.ExecuteNonQuery();
+
+                    if (retries++ > MaxRetries)
                     {
-                        return;
+                        throw new Exception("Too many retries while trying to lease a range for: " + dimension);
                     }
 
-                    var command = connection.CreateCommand();
-                    command.CommandText = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
+                } while (affectedRows == 0);
 
-                    var dimensionParameter = command.CreateParameter();
-                    dimensionParameter.Value = dimension;
-                    dimensionParameter.ParameterName = "@dimension";
-                    command.Parameters.Add(dimensionParameter);
-
-                    var nextValParameter = command.CreateParameter();
-                    nextValParameter.Value = 1;
-                    nextValParameter.ParameterName = "@nextval";
-                    command.Parameters.Add(nextValParameter);
-
-                    command.Transaction = transaction;
-
-                    command.ExecuteNonQuery();
-                    transaction.Commit();
-                }
-
-                _initialized = true;
+                _increment = -1; // Start with -1 as it will be incremented
+                _start = nextval;
+                _end = nextval + _range - 1;
+                
             }
-            finally
+        }
+
+        private void EnsureInitialized(ISession session, string dimension)
+        {
+            if (_initialized)
             {
-                if (_connectionFactory.Disposable)
-                {
-                    connection.Dispose();
-                }
-                else
-                {
-                    connection.Close();
-                }
+                return;
             }
+
+            var transaction = session.Demand();
+            
+            // Does the record already exist?
+            var selectCommand = transaction.Connection.CreateCommand();
+            selectCommand.CommandText = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE dimension = @dimension;";
+
+            var selectDimension = selectCommand.CreateParameter();
+            selectDimension.Value = dimension;
+            selectDimension.ParameterName = "@dimension";
+            selectCommand.Parameters.Add(selectDimension);
+
+            selectCommand.Transaction = transaction;
+
+            var nextVal = selectCommand.ExecuteScalar();
+
+            if (null != nextVal)
+            {
+                return;
+            }
+
+            var command = transaction.Connection.CreateCommand();
+            command.CommandText = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
+
+            var dimensionParameter = command.CreateParameter();
+            dimensionParameter.Value = dimension;
+            dimensionParameter.ParameterName = "@dimension";
+            command.Parameters.Add(dimensionParameter);
+
+            var nextValParameter = command.CreateParameter();
+            nextValParameter.Value = 1;
+            nextValParameter.ParameterName = "@nextval";
+            command.Parameters.Add(nextValParameter);
+
+            command.Transaction = transaction;
+
+            command.ExecuteNonQuery();
+
+            _initialized = true;
         }
     }
 }

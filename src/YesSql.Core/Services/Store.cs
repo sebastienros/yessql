@@ -180,9 +180,9 @@ namespace YesSql.Core.Services
             return () => Activator.CreateInstance(contextType) as IDescriptor;
         }
 
-        public int GetNextId(string collection)
+        public int GetNextId(ISession session, string collection)
         {
-            return (int)IdGenerator.GetNextId(collection);
+            return (int)IdGenerator.GetNextId(session, collection);
         }
 
         public IStore RegisterIndexes(params IIndexProvider[] indexProviders)

@@ -27,7 +27,7 @@ namespace YesSql.Core.Services
         Task InitializeAsync();
         Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
-        int GetNextId(string collection);
+        int GetNextId(ISession session, string collection);
         IEnumerable<IndexDescriptor> Describe(Type target);
     }
 

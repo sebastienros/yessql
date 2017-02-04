@@ -20,7 +20,7 @@ namespace YesSql.Tests
 
             var configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared", true),
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared", false),
                 IsolationLevel = IsolationLevel.Serializable,
                 DocumentStorageFactory = new SqlDocumentStorageFactory()
             };
@@ -50,7 +50,7 @@ namespace YesSql.Tests
             return base.ShouldReadCommittedRecords();
         }
 
-        [Fact(Skip = "Not supported by Sqlite")]
+        [Fact(Skip = "Sqlite doesn't support concurrent writers")]
         public override Task ShouldReadUncommittedRecords()
         {
             return base.ShouldReadUncommittedRecords();
