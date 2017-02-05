@@ -200,6 +200,9 @@ namespace YesSql.Core.Services
                     builder.Append(" not ");
                     ConvertFragment(builder, ((UnaryExpression)expression).Operand);
                     break;
+                case ExpressionType.Not:
+                    ConvertFragment(builder, Expression.MakeBinary(ExpressionType.NotEqual, ((UnaryExpression)expression).Operand, Expression.Constant(true)));
+                    break;
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)expression;
                     builder.Append(_sqlBuilder.FormatColumn(_bound.Last().Name, memberExpression.Member.Name));
@@ -244,6 +247,7 @@ namespace YesSql.Core.Services
                 case ExpressionType.Or:
                 case ExpressionType.OrElse:
                 case ExpressionType.Equal:
+                case ExpressionType.Not:
                 case ExpressionType.NotEqual:
                     ConvertFragment(builder, expression);
                     break;
@@ -280,6 +284,8 @@ namespace YesSql.Core.Services
                         return false;
                     }
 
+                    return true;
+                case ExpressionType.Not:
                     return true;
                 case ExpressionType.GreaterThan:
                 case ExpressionType.GreaterThanOrEqual:

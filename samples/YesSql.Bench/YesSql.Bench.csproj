@@ -30,4 +30,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
+    <ProjectReference Include="..\..\src\YesSql.Storage.LightningDB\YesSql.Storage.LightningDB.csproj" />
+  </ItemGroup>
 </Project>

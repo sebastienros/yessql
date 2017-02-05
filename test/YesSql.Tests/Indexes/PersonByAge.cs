@@ -6,6 +6,7 @@ namespace YesSql.Tests.Indexes
     public class PersonByAge : MapIndex
     {
         public int Age { get; set; }
+        public bool Adult { get; set; }
     }
 
     public class PersonAgeIndexProvider : IndexProvider<Person>
@@ -14,7 +15,7 @@ namespace YesSql.Tests.Indexes
         {
             context
                 .For<PersonByAge>()
-                .Map(person => new PersonByAge { Age = person.Age });
+                .Map(person => new PersonByAge { Age = person.Age, Adult = person.Age >= 18 });
         }
     }
 }

@@ -127,6 +127,7 @@ namespace YesSql.Tests
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .CreateMapIndexTable(nameof(PersonByAge), column => column
                         .Column<int>(nameof(PersonByAge.Age))
+                        .Column<bool>(nameof(PersonByAge.Adult))
                     )
                 );
 
@@ -368,6 +369,40 @@ namespace YesSql.Tests
             {
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill3").Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryBoolean()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult == true).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => !x.Adult).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult == false).Count());
             }
         }
 

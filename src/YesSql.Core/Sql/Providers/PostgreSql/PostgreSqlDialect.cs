@@ -136,5 +136,22 @@ namespace YesSql.Core.Sql.Providers.PostgreSql
         }
 
         public override string CascadeConstraintsString => " cascade ";
+
+        public override string GetSqlValue(object value)
+        {
+            if (value == null)
+            {
+                return "null";
+            }
+
+            switch (Convert.GetTypeCode(value))
+            {
+                case TypeCode.Boolean:
+                    return (bool)value ? "TRUE" : "FALSE";
+                default:
+                    return base.GetSqlValue(value);
+            }
+        }
+
     }
 }
