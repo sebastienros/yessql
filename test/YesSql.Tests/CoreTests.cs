@@ -128,6 +128,7 @@ namespace YesSql.Tests
                     .CreateMapIndexTable(nameof(PersonByAge), column => column
                         .Column<int>(nameof(PersonByAge.Age))
                         .Column<bool>(nameof(PersonByAge.Adult))
+                        .Column<string>(nameof(PersonByAge.Name))
                     )
                 );
 
@@ -399,10 +400,16 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult && true).Count());
+                Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult && x.Adult).Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult).Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult == true).Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => !x.Adult).Count());
                 Assert.Equal(1, await session.QueryIndexAsync<PersonByAge>(x => x.Adult == false).Count());
+
+                var firstname = "Bill";
+                Assert.NotNull(await session.QueryAsync<Person, PersonByAge>().Where(x => x.Name == "Bill" && x.Adult == true).FirstOrDefault());
+                Assert.NotNull(await session.QueryAsync<Person, PersonByAge>().Where(x => x.Name == firstname && x.Adult == true).FirstOrDefault());
             }
         }
 
