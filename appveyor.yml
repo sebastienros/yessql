@@ -23,7 +23,7 @@ before_test:
   - PATH=C:\Program Files\PostgreSQL\9.4\bin\;%PATH%
   - createdb yessql
 test_script:
-  - dotnet test --filter "FullyQualifiedName~YesSql.Tests.SqlServerTests" --configuration Release
+  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServerTests" --configuration Release
 clone_depth: 1
 test: off
 deploy: off
