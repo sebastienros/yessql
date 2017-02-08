@@ -9,7 +9,7 @@ install:
   - ECHO %APPVEYOR_BUILD_WORKER_IMAGE%
   - dotnet --version
   - dotnet restore
-  - msbuild /t:restore
+  - msbuild
 build_script:
   - dotnet build
 before_test:
