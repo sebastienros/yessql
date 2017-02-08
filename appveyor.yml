@@ -6,6 +6,7 @@ services:
   - mysql
   - postgresql
 install:
+  - dir
   - dotnet restore
 build_script:
   - dotnet build
