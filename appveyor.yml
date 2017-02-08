@@ -24,6 +24,3 @@ before_test:
   - createdb yessql
 test_script:
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServerTests" --configuration Release
-clone_depth: 1
-test: off
-deploy: off
