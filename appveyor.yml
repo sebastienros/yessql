@@ -5,7 +5,7 @@ services:
   - mysql
   - postgresql
 install:
-  - ECHO %APPVEYOR_BUILD_WORKER_IMAGE%
+  - SET APPVEYOR_BUILD_WORKER_IMAGE
   - dotnet --version
   - dotnet restore
   - msbuild
