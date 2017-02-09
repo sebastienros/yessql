@@ -40,7 +40,8 @@ namespace YesSql.Core.Services
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
-            SqlMapper.AddTypeHandler(DateTimeOffsetHandler.Default);
+            
+            // Add Type Handlers here
         }
 
         public Store(Configuration configuration)
