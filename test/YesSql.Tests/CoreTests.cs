@@ -409,6 +409,11 @@ namespace YesSql.Tests
                 var firstname = "Bill";
                 Assert.NotNull(await session.QueryAsync<Person, PersonByAge>().Where(x => x.Name == "Bill" && x.Adult == true).FirstOrDefault());
                 Assert.NotNull(await session.QueryAsync<Person, PersonByAge>().Where(x => x.Name == firstname && x.Adult == true).FirstOrDefault());
+
+                // bool && IsIn
+                Assert.Null(await session.QueryAsync<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new string[0])).FirstOrDefault());
+                Assert.NotNull(await session.QueryAsync<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill" })).FirstOrDefault());
+                Assert.NotNull(await session.QueryAsync<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill", "Steve" })).FirstOrDefault());
             }
         }
 

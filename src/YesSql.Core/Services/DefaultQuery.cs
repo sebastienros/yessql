@@ -77,6 +77,12 @@ namespace YesSql.Core.Services
                     {
                         builder.Append(" 1 = 0");
                     }
+                    else if (values.Length == 1)
+                    {
+                        query.ConvertFragment(builder, expression.Arguments[0]);
+                        builder.Append(" = " );
+                        query.ConvertFragment(builder, Expression.Constant(values[0]));
+                    }
                     else
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
