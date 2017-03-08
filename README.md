@@ -3,7 +3,8 @@ YesSql
 
 A .NET document database interface for relational databases, because in SQL we (still) trust !
 
-[![Build status](https://ci.appveyor.com/api/projects/status/847u2qswagvya2xd/branch/master?svg=true)](https://ci.appveyor.com/project/alexbocharov/yessql/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/38x1yf40wbefpvo5?svg=true)](https://ci.appveyor.com/project/SebastienRos/yessql-un1yf)
+
 
 How does it work ?
 -------------------
@@ -11,6 +12,8 @@ How does it work ?
 YesSql is a .NET Core document database interface over relational databases which allows you to define documents and indexes using plain old CLR objects. The main difference
 with document databases is that it uses any RDBMS to store them, which gives you all the power of SQL databases
 like transactions, replication, reporting, ... But the main advantage might be that there is no magic involved, it's pure SQL !
+
+A video about YesSql was recorded and is available here https://www.youtube.com/watch?v=D42eK6CJjF4 
 
 FAQ
 -------------------
