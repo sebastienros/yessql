@@ -2028,7 +2028,6 @@ namespace YesSql.Tests
 
                 var articles = dates.Select((x, i) => new Article
                 {
-                    IsPublished = i % 2 == 0, // half are published
                     PublishedUtc = x
                 });
 
@@ -2070,7 +2069,6 @@ namespace YesSql.Tests
 
                 var articles = dates.Select((x, i) => new Article
                 {
-                    IsPublished = i % 2 == 0, // half are published
                     PublishedUtc = x
                 });
 
