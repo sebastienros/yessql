@@ -9,6 +9,7 @@ using YesSql.Core.Collections;
 using YesSql.Core.Services;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
+using System.Text;
 
 namespace YesSql.Tests
 {
@@ -108,7 +109,7 @@ namespace YesSql.Tests
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
                         .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                        .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
+                        .Column<DateTimeOffset>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
                     )
                 );
 
@@ -2006,7 +2007,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldIndexWithDateTime()
+        public virtual async Task ShouldIndexWithDateTime()
         {
             _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
 
@@ -2028,11 +2029,10 @@ namespace YesSql.Tests
 
                 var articles = dates.Select((x, i) => new Article
                 {
-                    IsPublished = i % 2 == 0, // half are published
                     PublishedUtc = x
                 });
 
-                
+
                 foreach (var article in articles)
                 {
                     session.Save(article);
@@ -2070,7 +2070,6 @@ namespace YesSql.Tests
 
                 var articles = dates.Select((x, i) => new Article
                 {
-                    IsPublished = i % 2 == 0, // half are published
                     PublishedUtc = x
                 });
 
