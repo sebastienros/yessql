@@ -6,7 +6,7 @@ namespace YesSql.Tests.Indexes
 {
     public class ArticleByPublishedDate : MapIndex
     {
-        public DateTimeOffset PublishedDateTime { get; set; }
+        public DateTime PublishedDateTime { get; set; }
         public DateTimeOffset PublishedDateTimeOffset { get; set; }
     }
 
