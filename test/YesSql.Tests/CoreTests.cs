@@ -9,6 +9,7 @@ using YesSql.Core.Collections;
 using YesSql.Core.Services;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
+using System.Text;
 
 namespace YesSql.Tests
 {
@@ -2042,6 +2043,14 @@ namespace YesSql.Tests
             {
                 Assert.Equal(10, await session.QueryIndexAsync<ArticleByPublishedDate>().Count());
 
+                var sb = new StringBuilder();
+                foreach(var index in await session.QueryIndexAsync<ArticleByPublishedDate>().List())
+                {
+                    sb.AppendLine(index.PublishedDateTime.ToString("u"));
+                }
+
+                throw new Exception(sb.ToString());
+                
                 Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
             }
         }
