@@ -2007,47 +2007,6 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldIndexWithDateTime()
-        {
-            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
-
-            using (var session = _store.CreateSession())
-            {
-                var dates = new[]
-                {
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 4, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-
-                var articles = dates.Select((x, i) => new Article
-                {
-                    PublishedUtc = x
-                });
-
-                
-                foreach (var article in articles)
-                {
-                    session.Save(article);
-                }
-            }
-
-            using (var session = _store.CreateSession())
-            {
-                Assert.Equal(10, await session.QueryIndexAsync<ArticleByPublishedDate>().Count());
-
-                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
-            }
-        }
-
-        [Fact]
         public async Task ShouldIndexWithDateTimeOffset()
         {
             _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
@@ -2085,6 +2044,7 @@ namespace YesSql.Tests
                 Assert.Equal(10, await session.QueryIndexAsync<ArticleByPublishedDate>().Count());
 
                 Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
+                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
                 Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).Count());
             }
         }
