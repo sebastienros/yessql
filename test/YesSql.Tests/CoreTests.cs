@@ -109,7 +109,7 @@ namespace YesSql.Tests
                 session.ExecuteMigration(schemaBuilder => schemaBuilder
                     .CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
                         .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                        .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
+                        .Column<DateTimeOffset>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
                     )
                 );
 
