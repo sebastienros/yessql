@@ -20,7 +20,7 @@ namespace YesSql.Tests
 
             var configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared", false),
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared"),
                 IsolationLevel = IsolationLevel.Serializable,
                 DocumentStorageFactory = new SqlDocumentStorageFactory()
             };
