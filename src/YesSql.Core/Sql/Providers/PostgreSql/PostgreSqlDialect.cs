@@ -13,7 +13,7 @@ namespace YesSql.Core.Sql.Providers.PostgreSql
             {DbType.Binary, "varbinary"},
             {DbType.Date, "date"},
             {DbType.Time, "time"},
-            {DbType.DateTime, "timestamp" },
+            {DbType.DateTime, "datetime" },
             {DbType.DateTime2, "datetime" },
             {DbType.DateTimeOffset, "datetime" },
             {DbType.Boolean, "boolean"},
