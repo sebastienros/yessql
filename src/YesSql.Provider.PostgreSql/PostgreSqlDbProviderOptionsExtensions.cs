@@ -13,6 +13,14 @@ namespace YesSql.Provider.PostgreSql
             this IDbProviderOptions options,
             string connectionString)
         {
+            UsePostgreSql(options, connectionString, IsolationLevel.ReadUncommitted);
+        }
+
+        public static void UsePostgreSql(
+            this IDbProviderOptions options,
+            string connectionString,
+            IsolationLevel isolationLevel)
+        {
             if (options == null)
             {
                 throw new ArgumentNullException(nameof(options));
@@ -27,7 +35,7 @@ namespace YesSql.Provider.PostgreSql
             {
                 ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString, true),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
-                IsolationLevel = IsolationLevel.ReadUncommitted
+                IsolationLevel = isolationLevel
             };
 
             options.ProviderName = "PostgreSQL";

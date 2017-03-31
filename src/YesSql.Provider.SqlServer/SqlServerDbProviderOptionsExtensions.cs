@@ -13,6 +13,14 @@ namespace YesSql.Provider.SqlServer
             this IDbProviderOptions options,
             string connectionString)
         {
+            UseSqlServer(options, connectionString, IsolationLevel.ReadUncommitted);
+        }
+
+        public static void UseSqlServer(
+            this IDbProviderOptions options,
+            string connectionString,
+            IsolationLevel isolationLevel)
+        {
             if (options == null)
             {
                 throw new ArgumentNullException(nameof(options));
@@ -27,7 +35,7 @@ namespace YesSql.Provider.SqlServer
             {
                 ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString, true),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
-                IsolationLevel = IsolationLevel.ReadUncommitted
+                IsolationLevel = isolationLevel
             };
 
             options.ProviderName = "SQL Server";

@@ -13,6 +13,14 @@ namespace YesSql.Provider.MySql
             this IDbProviderOptions options,
             string connectionString)
         {
+            UseMySql(options, connectionString, IsolationLevel.ReadUncommitted);
+        }
+
+        public static void UseMySql(
+            this IDbProviderOptions options,
+            string connectionString,
+            IsolationLevel isolationLevel)
+        {
             if (options == null)
             {
                 throw new ArgumentNullException(nameof(options));
@@ -27,7 +35,7 @@ namespace YesSql.Provider.MySql
             {
                 ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString, true),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
-                IsolationLevel = IsolationLevel.ReadUncommitted
+                IsolationLevel = isolationLevel
             };
 
             options.ProviderName = "MySQL";

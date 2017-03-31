@@ -13,6 +13,14 @@ namespace YesSql.Provider.Sqlite
             this IDbProviderOptions options,
             string connectionString)
         {
+            UseSqLite(options, connectionString, IsolationLevel.Serializable);
+        }
+
+        public static void UseSqLite(
+            this IDbProviderOptions options,
+            string connectionString,
+            IsolationLevel isolationLevel)
+        {
             if (options == null)
             {
                 throw new ArgumentNullException(nameof(options));
@@ -27,7 +35,7 @@ namespace YesSql.Provider.Sqlite
             {
                 ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString, true),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
-                IsolationLevel = IsolationLevel.Serializable
+                IsolationLevel = isolationLevel
             };
 
             options.ProviderName = "SQLite";
