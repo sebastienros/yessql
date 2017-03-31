@@ -2047,7 +2047,7 @@ namespace YesSql.Tests
                 Assert.Equal(4, await tx.Connection.ExecuteScalarAsync<int>("select count(*) from \"ArticleByPublishedDate\" where (\"ArticleByPublishedDate\".\"PublishedDateTime\" = @p0)", new { p0 = new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc) }, tx));
                 Assert.Equal(4, await tx.Connection.ExecuteScalarAsync<int>("select count(*) from \"ArticleByPublishedDate\" where (\"ArticleByPublishedDate\".\"PublishedDateTime\" = '2011-11-01T00:00:00Z')", new { p0 = new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc) }, tx));
 
-                //Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
+                Assert.Equal(4, await session.QueryIndexAsync<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).Count());
             }
         }
 
