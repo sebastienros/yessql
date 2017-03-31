@@ -1,7 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Data;
-using YesSql.Core.Provider;
 using YesSql.Core.Services;
 using YesSql.Storage.Sql;
 
@@ -10,20 +9,20 @@ namespace YesSql.Provider.MySql
     public static class MySqlDbProviderOptionsExtensions
     {
         public static void UseMySql(
-            this IDbProviderOptions options,
+            this Configuration configuration,
             string connectionString)
         {
-            UseMySql(options, connectionString, IsolationLevel.ReadUncommitted);
+            UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
         public static void UseMySql(
-            this IDbProviderOptions options,
+            this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
         {
-            if (options == null)
+            if (configuration == null)
             {
-                throw new ArgumentNullException(nameof(options));
+                throw new ArgumentNullException(nameof(configuration));
             }
 
             if (String.IsNullOrWhiteSpace(connectionString))
@@ -31,15 +30,12 @@ namespace YesSql.Provider.MySql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            var configuration = new Configuration
+            configuration = new Configuration
             {
                 ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString, true),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
                 IsolationLevel = isolationLevel
             };
-
-            options.ProviderName = "MySQL";
-            options.Configuration = configuration;
         }
     }
 }

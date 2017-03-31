@@ -1,5 +1,4 @@
 ﻿using System;
-using YesSql.Core.Provider;
 using YesSql.Core.Services;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -8,7 +7,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddDbProvider(
             this IServiceCollection services,
-            Action<IDbProviderOptions> setupAction)
+            Action<Configuration> setupAction)
         {
             if (services == null)
             {
@@ -20,9 +19,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(setupAction));
             }
 
-            var options = new DbProviderOptions();
-            setupAction.Invoke(options);
-            services.AddSingleton<IStore>(new Store(options.Configuration));
+            var config = new Configuration();
+            setupAction.Invoke(config);
+            services.AddSingleton<IStore>(new Store(config));
 
             return services;
         }

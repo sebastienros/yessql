@@ -1,7 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Data;
-using YesSql.Core.Provider;
 using YesSql.Core.Services;
 using YesSql.Storage.Sql;
 
@@ -10,20 +9,20 @@ namespace YesSql.Provider.Sqlite
     public static class SqliteDbProviderOptionsExtensions
     {
         public static void UseSqLite(
-            this IDbProviderOptions options,
+            this Configuration configuration,
             string connectionString)
         {
-            UseSqLite(options, connectionString, IsolationLevel.Serializable);
+            UseSqLite(configuration, connectionString, IsolationLevel.Serializable);
         }
 
         public static void UseSqLite(
-            this IDbProviderOptions options,
+            this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
         {
-            if (options == null)
+            if (configuration == null)
             {
-                throw new ArgumentNullException(nameof(options));
+                throw new ArgumentNullException(nameof(configuration));
             }
 
             if (String.IsNullOrWhiteSpace(connectionString))
@@ -31,15 +30,12 @@ namespace YesSql.Provider.Sqlite
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            var configuration = new Configuration
+            configuration = new Configuration
             {
                 ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString, true),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
                 IsolationLevel = isolationLevel
             };
-
-            options.ProviderName = "SQLite";
-            options.Configuration = configuration;
         }
     }
 }

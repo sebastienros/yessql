@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
-using YesSql.Core.Provider;
 using YesSql.Core.Services;
 using YesSql.Storage.Sql;
 
@@ -10,20 +9,20 @@ namespace YesSql.Provider.SqlServer
     public static class SqlServerDbProviderOptionsExtensions
     {
         public static void UseSqlServer(
-            this IDbProviderOptions options,
+            this Configuration configuration,
             string connectionString)
         {
-            UseSqlServer(options, connectionString, IsolationLevel.ReadUncommitted);
+            UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
         public static void UseSqlServer(
-            this IDbProviderOptions options,
+            this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
         {
-            if (options == null)
+            if (configuration == null)
             {
-                throw new ArgumentNullException(nameof(options));
+                throw new ArgumentNullException(nameof(configuration));
             }
 
             if (String.IsNullOrWhiteSpace(connectionString))
@@ -31,15 +30,12 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            var configuration = new Configuration
+            configuration = new Configuration
             {
                 ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString, true),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
                 IsolationLevel = isolationLevel
             };
-
-            options.ProviderName = "SQL Server";
-            options.Configuration = configuration;
         }
     }
 }

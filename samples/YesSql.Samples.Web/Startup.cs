@@ -10,8 +10,8 @@ namespace YesSql.Samples.Web
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbProvider(options =>
-                options.UseSqlServer("Server=.;Database=YesSqlDb;Integrated Security=True"));
+            services.AddDbProvider(config =>
+                config.UseSqlServer("Server=.;Database=YesSqlDb;Integrated Security=True"));
 
             services.AddMvc();
         }
