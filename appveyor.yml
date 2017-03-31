@@ -5,7 +5,7 @@ init:
 services:
   - mssql2016
   - mysql
-  - postgresql
+  - postgresql96
 install:
   - dotnet --version
   - dotnet restore
