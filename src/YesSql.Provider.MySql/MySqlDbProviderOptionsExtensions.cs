@@ -32,7 +32,7 @@ namespace YesSql.Provider.MySql
 
             configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString, true),
+                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
                 IsolationLevel = isolationLevel
             };

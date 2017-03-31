@@ -32,7 +32,7 @@ namespace YesSql.Provider.SqlServer
 
             configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString, true),
+                ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
                 IsolationLevel = isolationLevel
             };

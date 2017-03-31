@@ -32,7 +32,7 @@ namespace YesSql.Provider.Sqlite
 
             configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString, true),
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
                 IsolationLevel = isolationLevel
             };

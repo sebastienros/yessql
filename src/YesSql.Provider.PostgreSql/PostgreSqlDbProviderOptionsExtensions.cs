@@ -32,7 +32,7 @@ namespace YesSql.Provider.PostgreSql
 
             configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString, true),
+                ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString),
                 DocumentStorageFactory = new SqlDocumentStorageFactory(),
                 IsolationLevel = isolationLevel
             };

@@ -20,7 +20,7 @@ namespace YesSql.Provider.InMemory
 
             configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(ConnectionString, true),
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(ConnectionString),
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
                 IsolationLevel = IsolationLevel.Serializable
             };
