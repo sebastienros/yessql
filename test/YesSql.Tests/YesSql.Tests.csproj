@@ -14,6 +14,9 @@
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0-*" />
     <PackageReference Include="MySqlConnector" Version="0.15.1" />
     <PackageReference Include="Npgsql" Version="3.2.2" />
@@ -29,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
+    <ProjectReference Include="..\..\src\YesSql.Provider.InMemory\YesSql.Provider.InMemory.csproj" />
     <ProjectReference Include="..\..\src\YesSql.Storage.Cache\YesSql.Storage.Cache.csproj" />
     <ProjectReference Include="..\..\src\YesSql.Storage.InMemory\YesSql.Storage.InMemory.csproj" />
     <ProjectReference Include="..\..\src\YesSql.Storage.LightningDB\YesSql.Storage.LightningDB.csproj" />
