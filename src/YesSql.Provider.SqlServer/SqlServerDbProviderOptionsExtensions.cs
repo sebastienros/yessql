@@ -2,6 +2,7 @@
 using System.Data;
 using System.Data.SqlClient;
 using YesSql.Core.Services;
+using YesSql.Storage.Cache;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.SqlServer
@@ -10,15 +11,25 @@ namespace YesSql.Provider.SqlServer
     {
         public static void UseSqlServer(
             this Configuration configuration,
-            string connectionString)
+            string connectionString,
+            bool cached = false)
         {
-            UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted, cached);
         }
 
         public static void UseSqlServer(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
+        {
+            UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted, cached: false);
+        }
+
+        public static void UseSqlServer(
+            this Configuration configuration,
+            string connectionString,
+            IsolationLevel isolationLevel,
+            bool cached = false)
         {
             if (configuration == null)
             {
@@ -31,8 +42,18 @@ namespace YesSql.Provider.SqlServer
             }
 
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            if (cached)
+            {
+                configuration.DocumentStorageFactory =
+                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+            }
+            else
+            {
+                configuration.DocumentStorageFactory =
+                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+            }
         }
     }
 }

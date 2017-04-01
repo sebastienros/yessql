@@ -2,6 +2,7 @@
 using System;
 using System.Data;
 using YesSql.Core.Services;
+using YesSql.Storage.Cache;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.PostgreSql
@@ -10,15 +11,25 @@ namespace YesSql.Provider.PostgreSql
     {
         public static void UsePostgreSql(
             this Configuration configuration,
-            string connectionString)
+            string connectionString,
+            bool cached = false)
         {
-            UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted, cached);
         }
 
         public static void UsePostgreSql(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
+        {
+            UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted, cached: false);
+        }
+
+        public static void UsePostgreSql(
+            this Configuration configuration,
+            string connectionString,
+            IsolationLevel isolationLevel,
+            bool cached)
         {
             if (configuration == null)
             {
@@ -31,8 +42,18 @@ namespace YesSql.Provider.PostgreSql
             }
 
             configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            if (cached)
+            {
+                configuration.DocumentStorageFactory =
+                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+            }
+            else
+            {
+                configuration.DocumentStorageFactory =
+                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+            }
         }
     }
 }

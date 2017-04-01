@@ -2,6 +2,7 @@
 using System;
 using System.Data;
 using YesSql.Core.Services;
+using YesSql.Storage.Cache;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.MySql
@@ -10,15 +11,25 @@ namespace YesSql.Provider.MySql
     {
         public static void UseMySql(
             this Configuration configuration,
-            string connectionString)
+            string connectionString,
+            bool cached = false)
         {
-            UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted, cached);
         }
 
         public static void UseMySql(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
+        {
+            UseMySql(configuration, connectionString, isolationLevel, cached: false);
+        }
+
+        public static void UseMySql(
+            this Configuration configuration,
+            string connectionString,
+            IsolationLevel isolationLevel,
+            bool cached = false)
         {
             if (configuration == null)
             {
@@ -31,8 +42,18 @@ namespace YesSql.Provider.MySql
             }
 
             configuration.ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            if (cached)
+            {
+                configuration.DocumentStorageFactory = 
+                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+            }
+            else
+            {
+                configuration.DocumentStorageFactory = 
+                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+            }
         }
     }
 }

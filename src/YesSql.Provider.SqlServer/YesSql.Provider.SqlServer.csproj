@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
+    <ProjectReference Include="..\YesSql.Storage.Cache\YesSql.Storage.Cache.csproj" />
     <ProjectReference Include="..\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj" />
   </ItemGroup>
 
