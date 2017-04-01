@@ -30,12 +30,9 @@ namespace YesSql.Provider.PostgreSql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString),
-                DocumentStorageFactory = new SqlDocumentStorageFactory(),
-                IsolationLevel = isolationLevel
-            };
+            configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
+            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
+            configuration.IsolationLevel = isolationLevel;
         }
     }
 }

@@ -30,12 +30,9 @@ namespace YesSql.Provider.Sqlite
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString),
-                DocumentStorageFactory = new SqlDocumentStorageFactory(),
-                IsolationLevel = isolationLevel
-            };
+            configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
+            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
+            configuration.IsolationLevel = isolationLevel;
         }
     }
 }

@@ -30,12 +30,9 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString),
-                DocumentStorageFactory = new SqlDocumentStorageFactory(),
-                IsolationLevel = isolationLevel
-            };
+            configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
+            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
+            configuration.IsolationLevel = isolationLevel;
         }
     }
 }

@@ -18,12 +18,9 @@ namespace YesSql.Provider.InMemory
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(ConnectionString),
-                DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
-                IsolationLevel = IsolationLevel.Serializable
-            };
+            configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(ConnectionString);
+            configuration.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
+            configuration.IsolationLevel = IsolationLevel.Serializable;
         }
     }
 }
