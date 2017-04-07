@@ -2,6 +2,7 @@
 using System;
 using System.Data;
 using YesSql.Core.Services;
+using YesSql.Storage.Cache;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.Sqlite
@@ -10,15 +11,25 @@ namespace YesSql.Provider.Sqlite
     {
         public static void UseSqLite(
             this Configuration configuration,
-            string connectionString)
+            string connectionString,
+            bool cached = false)
         {
-            UseSqLite(configuration, connectionString, IsolationLevel.Serializable);
+            UseSqLite(configuration, connectionString, IsolationLevel.Serializable, cached);
         }
 
         public static void UseSqLite(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
+        {
+            UseSqLite(configuration, connectionString, IsolationLevel.Serializable, cached: false);
+        }
+
+        public static void UseSqLite(
+            this Configuration configuration,
+            string connectionString,
+            IsolationLevel isolationLevel,
+            bool cached = false)
         {
             if (configuration == null)
             {
@@ -31,8 +42,17 @@ namespace YesSql.Provider.Sqlite
             }
 
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            if (cached)
+            {
+                configuration.DocumentStorageFactory =
+                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+            }
+            else
+            {
+                configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
+            }
         }
     }
 }
