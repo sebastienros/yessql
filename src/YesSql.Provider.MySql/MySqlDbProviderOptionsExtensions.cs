@@ -51,8 +51,7 @@ namespace YesSql.Provider.MySql
             }
             else
             {
-                configuration.DocumentStorageFactory = 
-                    new CacheDocumentStorageFactory(new SqlDocumentStorageFactory());
+                configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             }
         }
     }
