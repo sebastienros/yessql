@@ -59,7 +59,7 @@ namespace YesSql.Core.Services
                     );
 
                     builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
-                        .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                        .Column<string>("dimension")
                         .Column<ulong>("nextval")
                     )
                     .AlterTable(LinearBlockIdGenerator.TableName, table => table
