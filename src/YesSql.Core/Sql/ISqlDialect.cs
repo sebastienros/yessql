@@ -18,8 +18,7 @@ namespace YesSql.Core.Sql
         bool SupportsIdentityColumns { get; }
         string IdentityColumnString { get; }
         string IdentitySelectString { get; }
-        char OpenQuote { get; }
-        char CloseQuote { get; }
+
         string GetTypeName(DbType dbType, int? length, byte precision, byte scale);
         string GetSqlValue(object value);
         string QuoteForTableName(string v);
@@ -35,8 +34,7 @@ namespace YesSql.Core.Sql
         private static readonly Dictionary<string, ISqlDialect> SqlDialects = new Dictionary<string, ISqlDialect>
         {
             {"sqliteconnection", new SqliteDialect()},
-            {"sqlconnection", new SqlServerDialect()},
-            {"mysqlconnection", new MySqlDialect() }
+            {"sqlconnection", new SqlServerDialect()}
         };
 
         public static void RegisterSqlDialect(string connectionName, ISqlDialect sqlTypeAdapter)
@@ -73,9 +71,6 @@ namespace YesSql.Core.Sql
         public virtual string NullColumnString => String.Empty;
 
         public virtual string PrimaryKeyString => "primary key";
-
-        public virtual char OpenQuote => '[';
-        public virtual char CloseQuote => ']';
 
         public virtual bool SupportsIdentityColumns => true;
 
@@ -350,96 +345,9 @@ namespace YesSql.Core.Sql
             }
         }
 
+        private const char OpenQuote = '[';
 
-        public override string QuoteForColumnName(string columnName)
-        {
-            return OpenQuote + columnName + CloseQuote;
-        }
-
-        public override string QuoteForTableName(string tableName)
-        {
-            return OpenQuote + tableName + CloseQuote;
-        }
-
-
-    }
-
-    public class MySqlDialect : BaseDialect
-    {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
-        {
-            {DbType.Guid, "char(36)"},
-            {DbType.Binary, "varbinary"},
-            {DbType.Time, "time"},
-            {DbType.Date, "datetime"},
-            {DbType.DateTime, "datetime" },
-            {DbType.DateTime2, "datetime" },
-            {DbType.DateTimeOffset, "datetime" },
-            {DbType.Boolean, "bit"},
-            {DbType.Byte, "tinyint unsigned"},
-            {DbType.Decimal, "decimal(65, 30)"},
-            {DbType.Double, "double"},
-            {DbType.Int16, "smallint"},
-            {DbType.UInt16, "smallint unsigned"},
-            {DbType.Int32, "int"},
-            {DbType.UInt32, "int unsigned"},
-            {DbType.Int64, "bigint"},
-            {DbType.UInt64, "bigint unsigned"},
-            {DbType.AnsiStringFixedLength, "char"},
-            {DbType.AnsiString, "varchar(127)"},
-            {DbType.StringFixedLength, "varchar"},
-            {DbType.String, "varchar(255)"},
-        };
-
-        public override string IdentitySelectString => "select LAST_INSERT_ID()";
-        public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
-
-        public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
-        {
-            if (length.HasValue)
-            {
-                if (dbType == DbType.String)
-                {
-                    return $"varchar({length})";
-                }
-
-                if (dbType == DbType.AnsiString)
-                {
-                    return $"varchar({length})";
-                }
-
-                if (dbType == DbType.Binary)
-                {
-                    return $"varbinary({length})";
-                }
-
-            }
-            string value;
-            if (ColumnTypes.TryGetValue(dbType, out value))
-            {
-                return value;
-            }
-            throw new Exception("DbType not found for: " + dbType);
-        }
-
-        public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
-        {
-            if (offset == 0 && limit != 0)
-            {
-                // Insert LIMIT clause after the select
-                var selector = sqlBuilder.GetSelector();
-                selector = " " + selector + " limit " + limit;
-                sqlBuilder.Selector(selector);
-            }
-            else if (offset != 0 || limit != 0)
-            {
-                sqlBuilder.Trail = "OFFSET " + offset + " ROWS FETCH FIRST " + limit + " ROWS ONLY";
-            }
-        }
-
-        public override char OpenQuote => '`';
-
-        public override char CloseQuote => '`';
+        private const char CloseQuote = ']';
 
         public override string QuoteForColumnName(string columnName)
         {

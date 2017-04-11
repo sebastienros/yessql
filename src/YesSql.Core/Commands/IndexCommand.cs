@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Core.Indexes;
-using YesSql.Core.Sql;
 
 namespace YesSql.Core.Commands
 {
@@ -17,19 +16,15 @@ namespace YesSql.Core.Commands
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> InsertsList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> UpdatesList = new ConcurrentDictionary<RuntimeTypeHandle, string>();
-        private char _openQuoteDialect;
-        private char _closeQuoteDialect;
 
         protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, string tablePrefix, ISqlDialect dialect)
+        public IndexCommand(IIndex index, string tablePrefix)
         {
             Index = index;
             _tablePrefix = tablePrefix;
-            _openQuoteDialect = dialect.OpenQuote;
-            _closeQuoteDialect = dialect.CloseQuote;
         }
 
         public IIndex Index { get; }
@@ -67,7 +62,7 @@ namespace YesSql.Core.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbColumnList.Append($"{_openQuoteDialect}{property.Name}{_closeQuoteDialect}");
+                        sbColumnList.Append($"[{property.Name}]");
                         if (i < allProperties.Count() - 1)
                             sbColumnList.Append(", ");
                     }
@@ -84,7 +79,7 @@ namespace YesSql.Core.Commands
                     values = $"({sbColumnList}) values ({sbParameterList})";
                 }
 
-                InsertsList[type.TypeHandle] = result = $"insert into {_openQuoteDialect}{{0}}{type.Name}{_closeQuoteDialect} {values};";
+                InsertsList[type.TypeHandle] = result = $"insert into [{{0}}{type.Name}] {values};";
             }
 
             return String.Format(result, _tablePrefix);
@@ -102,12 +97,12 @@ namespace YesSql.Core.Commands
                 for (var i = 0; i < allProperties.Length; i++)
                 {
                     var property = allProperties[i];
-                    values.Append($"{_openQuoteDialect}{property.Name}{_closeQuoteDialect}=@{property.Name}");
+                    values.Append($"[{property.Name}]=@{property.Name}");
                     if (i < allProperties.Length - 1)
                         values.Append(", ");
                 }
 
-                UpdatesList[type.TypeHandle] = result = $"update {_openQuoteDialect}{{0}}{type.Name}{_closeQuoteDialect} set {values} where Id = @Id;";
+                UpdatesList[type.TypeHandle] = result = $"update [{{0}}{type.Name}] set {values} where Id = @Id;";
             }
 
             return String.Format(result, _tablePrefix);

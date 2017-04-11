@@ -39,7 +39,7 @@ namespace YesSql.Storage.Sql
                 var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var insertCmd = $"insert into {dialect.OpenQuote}{_factory.TablePrefix}{contentTable}{dialect.CloseQuote} ({dialect.OpenQuote}Id{dialect.CloseQuote}, {dialect.OpenQuote}Content{dialect.CloseQuote}) values (@Id, @Content);";
+                var insertCmd = $"insert into [{_factory.TablePrefix}{contentTable}] ([Id], [Content]) values (@Id, @Content);";
                 await tx.Connection.ExecuteScalarAsync<int>(insertCmd, new { Id = document.Id, Content = content }, tx);
             }
         }
@@ -54,7 +54,7 @@ namespace YesSql.Storage.Sql
                 var content = JsonConvert.SerializeObject(document.Entity, _jsonSettings);
 
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var updateCmd = $"update {dialect.OpenQuote}{_factory.TablePrefix}{contentTable}{dialect.CloseQuote} set Content = @Content where Id = @Id;";
+                var updateCmd = $"update [{_factory.TablePrefix}{contentTable}] set Content = @Content where Id = @Id;";
                 await tx.Connection.ExecuteScalarAsync<int>(updateCmd, new { Id = document.Id, Content = content }, tx);
             }
         }
@@ -67,7 +67,7 @@ namespace YesSql.Storage.Sql
             foreach (var documentsPage in documents.PagesOf(128))
             {
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var deleteCmd = $"delete from {dialect.OpenQuote}{_factory.TablePrefix}{contentTable}{dialect.CloseQuote} where Id IN @Id;";
+                var deleteCmd = $"delete from [{_factory.TablePrefix}{contentTable}] where Id IN @Id;";
                 await tx.Connection.ExecuteScalarAsync<int>(deleteCmd, new { Id = documentsPage.Select(x => x.Id).ToArray() }, tx);
             }
         }
@@ -94,7 +94,7 @@ namespace YesSql.Storage.Sql
             foreach (var idPages in ids.PagesOf(128))
             {
                 var dialect = SqlDialectFactory.For(tx.Connection);
-                var selectCmd = $"select Id, Content from {dialect.OpenQuote}{_factory.TablePrefix}{contentTable}{dialect.CloseQuote} where Id IN @Id;";
+                var selectCmd = $"select Id, Content from [{_factory.TablePrefix}{contentTable}] where Id IN @Id;";
                 var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = idPages.ToArray() }, tx);
 
                 foreach (var entity in entities)
@@ -139,7 +139,7 @@ namespace YesSql.Storage.Sql
                     var ids = documentsPage.Select(x => x.Id).ToArray();
                     var dialect = SqlDialectFactory.For(tx.Connection);
                     var op = ids.Length == 1 ? "=" : "IN";
-                    var selectCmd = $"select Id, Content from {dialect.OpenQuote}{_factory.TablePrefix}{contentTable}{dialect.CloseQuote} where Id {op} @Id;";
+                    var selectCmd = $"select Id, Content from [{_factory.TablePrefix}{contentTable}] where Id {op} @Id;";
                     var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = ids }, tx);
 
                     foreach (var entity in entities)

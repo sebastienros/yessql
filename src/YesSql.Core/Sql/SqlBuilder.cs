@@ -16,8 +16,6 @@ namespace YesSql.Core.Sql
 
         private int _skip;
         private int _count;
-        private char _openQuoteDialect;
-        private char _closeQuoteDialect;
 
         public Dictionary<string, object> Parameters { get; }
         public string TablePrefix { get; set; }
@@ -50,17 +48,11 @@ namespace YesSql.Core.Sql
                 _join = new StringBuilder();
             }
 
-            _join.Append("inner join ").Append(_openQuoteDialect).Append(TablePrefix).Append(table)
-                .Append(_closeQuoteDialect + " on " + _openQuoteDialect).Append(TablePrefix).Append(onTable)
-                .Append(_closeQuoteDialect + "." + _openQuoteDialect).Append(onColumn).Append(_closeQuoteDialect)
-                .Append(" = " + _openQuoteDialect).Append(TablePrefix).Append(toTable)
-                .Append(_closeQuoteDialect + "." + _openQuoteDialect).Append(toColumn).Append(_closeQuoteDialect + " ");
-        }
-
-        public void QuoteDialect(char openQuote, char closeQuote)
-        {
-            _openQuoteDialect = openQuote;
-            _closeQuoteDialect = closeQuote;
+            _join.Append("inner join ").Append("[").Append(TablePrefix).Append(table)
+                .Append("] on [").Append(TablePrefix).Append(onTable)
+                .Append("].[").Append(onColumn).Append("]")
+                .Append(" = [").Append(TablePrefix).Append(toTable)
+                .Append("].[").Append(toColumn).Append("] ");
         }
 
         public void Select()
@@ -87,10 +79,10 @@ namespace YesSql.Core.Sql
         {
             if (column != "*")
             {
-                column = _openQuoteDialect + column + _closeQuoteDialect;
+                column = "[" + column + "]";
             }
 
-            return _openQuoteDialect + TablePrefix + table + _closeQuoteDialect + "." + column;
+            return "[" + TablePrefix + table + "]." + column;
         }
 
         public void WhereAlso(string where)
@@ -131,7 +123,7 @@ namespace YesSql.Core.Sql
         {
             if (_clause == "select")
             {
-                if ((_skip != 0 || _count != 0) && (dialect is SqlServerDialect || dialect is SqliteDialect))
+                if (_skip != 0 || _count != 0)
                 {
                     dialect.Page(this, _skip, _count);
                 }
@@ -139,7 +131,7 @@ namespace YesSql.Core.Sql
                 var sb = new StringBuilder();
                 sb
                     .Append(_clause).Append(" ").Append(_selector)
-                    .Append(" from " + _openQuoteDialect).Append(TablePrefix).Append(_table).Append(_closeQuoteDialect);
+                    .Append(" from [").Append(TablePrefix).Append(_table).Append("]");
 
                 if (_join != null)
                 {
@@ -161,13 +153,6 @@ namespace YesSql.Core.Sql
                     sb.Append(" ").Append(Trail);
                 }
 
-                if ((_skip != 0 || _count != 0) && dialect is MySqlDialect)
-                {
-                    _selector = sb.ToString();
-                    dialect.Page(this, _skip, _count);
-                    sb.Clear();
-                    sb.Append(_selector);
-                }
                 return sb.ToString();
             }
 

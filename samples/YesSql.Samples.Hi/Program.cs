@@ -5,7 +5,6 @@ using YesSql.Core.Services;
 using YesSql.Samples.Hi.Indexes;
 using YesSql.Samples.Hi.Models;
 using YesSql.Storage.InMemory;
-using MySql.Data.MySqlClient;
 
 namespace YesSql.Samples.Hi
 {
@@ -15,7 +14,7 @@ namespace YesSql.Samples.Hi
         {
             var configuration = new Configuration
             {
-                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(@"server=127.0.0.1,3306;uid=root;pwd=920624ppN_;database=dbSample2;", true),
+                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=yessql.db;Cache=Shared", true),
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
                 IsolationLevel = IsolationLevel.Serializable
             };

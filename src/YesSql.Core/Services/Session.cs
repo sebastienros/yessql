@@ -33,8 +33,6 @@ namespace YesSql.Core.Services
         private readonly IsolationLevel _isolationLevel;
         private readonly DbConnection _connection;
         private volatile bool _disposed;
-        private char _openQuoteDialect;
-        private char _closeQuoteDialect;
 
         protected bool _cancel;
 
@@ -48,8 +46,6 @@ namespace YesSql.Core.Services
 
             _connection = _store.Configuration.ConnectionFactory.CreateConnection();
             _dialect = SqlDialectFactory.For(_connection);
-            _openQuoteDialect = _dialect.OpenQuote;
-            _closeQuoteDialect = _dialect.CloseQuote;
         }
 
         public DbTransaction Transaction
@@ -99,7 +95,7 @@ namespace YesSql.Core.Services
                     return;
                 }
             }
-
+            
             // Then assign a new identifier if it has one
             if (accessor != null)
             {
@@ -172,7 +168,7 @@ namespace YesSql.Core.Services
                         doc.Id = _store.GetNextId(collection);
                     }
 
-                    await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix, _dialect).ExecuteAsync(_connection, _transaction);
+                    await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction);
                     await _storage.CreateAsync(new IdentityDocument(doc.Id, entity));
 
                     MapNew(doc, entity);
@@ -182,7 +178,7 @@ namespace YesSql.Core.Services
 
         private async Task<Document> GetDocumentByIdAsync(int id)
         {
-            var command = $"select * from {_openQuoteDialect}{_store.Configuration.TablePrefix}Document{_closeQuoteDialect} where Id = @Id";
+            var command = $"select * from [{_store.Configuration.TablePrefix}Document] where Id = @Id";
             var result = await _connection.QueryAsync<Document>(command, new { Id = id }, _transaction);
             return result.FirstOrDefault();
         }
@@ -226,7 +222,7 @@ namespace YesSql.Core.Services
                     MapDeleted(doc, obj);
 
                     // The command needs to come after any index deletiong because of the database constraints
-                    _commands.Add(new DeleteDocumentCommand(doc, _store.Configuration.TablePrefix, _dialect));
+                    _commands.Add(new DeleteDocumentCommand(doc, _store.Configuration.TablePrefix));
                 }
             }
         }
@@ -515,14 +511,14 @@ namespace YesSql.Core.Services
                     {
                         if (index == null)
                         {
-                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _store.Configuration.TablePrefix, _dialect));
+                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _store.Configuration.TablePrefix));
                         }
                         else
                         {
                             index.Id = dbIndex.Id;
 
                             // Update both new and deleted linked documents
-                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix, _dialect));
+                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
                         }
                     }
                     else
@@ -530,7 +526,7 @@ namespace YesSql.Core.Services
                         if (index != null)
                         {
                             // The index is new
-                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _store.Configuration.TablePrefix, _dialect));
+                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _store.Configuration.TablePrefix));
                         }
                     }
                 }
@@ -588,11 +584,11 @@ namespace YesSql.Core.Services
                     {
                         if (index.Id == 0)
                         {
-                            _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _store.Configuration.TablePrefix, _dialect));
+                            _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _store.Configuration.TablePrefix));
                         }
                         else
                         {
-                            _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _store.Configuration.TablePrefix, _dialect));
+                            _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _store.Configuration.TablePrefix));
                         }
                     }
                     else
@@ -620,11 +616,12 @@ namespace YesSql.Core.Services
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id, _store.Configuration.TablePrefix, _dialect));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id, _store.Configuration.TablePrefix));
                 }
                 else
                 {
                     var mapped = descriptor.Map(obj);
+
                     foreach (var index in mapped)
                     {
                         // save for later reducing
@@ -671,6 +668,7 @@ namespace YesSql.Core.Services
         public void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true)
         {
             Demand();
+
             try
             {
                 var schemaBuilder = new SchemaBuilder(_connection, _transaction, _store.Configuration.TablePrefix);
