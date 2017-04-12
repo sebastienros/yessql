@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Copyright>Sebastien Ros</Copyright>
-    <VersionPrefix>1.0.0-beta-0002</VersionPrefix>
+    <Version>1.0.0-beta-0002</Version>
     <Authors>Sebastien Ros</Authors>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <AssemblyName>YesSql.Provider.PostgreSql</AssemblyName>
@@ -17,11 +17,10 @@
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <Version>1.0.0-beta-0003</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Npgsql" Version="3.2.1" />
+    <PackageReference Include="Npgsql" Version="3.2.2" />
   </ItemGroup>
 
   <ItemGroup>
