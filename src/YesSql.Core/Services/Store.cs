@@ -1,11 +1,11 @@
-﻿using Dapper;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Dapper;
 using YesSql.Core.Collections;
 using YesSql.Core.Commands;
 using YesSql.Core.Data;
@@ -44,6 +44,20 @@ namespace YesSql.Core.Services
             // Add Type Handlers here
         }
 
+        /// <summary>
+        /// Initializes a <see cref="Store"/> instance and its new <see cref="Configuration"/>.
+        /// </summary>
+        /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
+        public Store(Action<Configuration> config)
+        {
+            var configuration = new Configuration();
+            config?.Invoke(configuration);
+        }
+
+        /// <summary>
+        /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
+        /// </summary>
+        /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
         public Store(Configuration configuration)
         {
             IndexCommand.ResetQueryCache();

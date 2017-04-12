@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Copyright>Sebastien Ros</Copyright>
-    <Version>2.0.0-beta-0014</Version>
+    <Version>2.0.0-beta-0015</Version>
     <Authors>Sebastien Ros</Authors>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <DebugType>portable</DebugType>
