@@ -8,14 +8,14 @@ namespace YesSql.Provider.SqlServer
 {
     public static class SqlServerDbProviderOptionsExtensions
     {
-        public static void UseSqlServer(
+        public static Configuration UseSqlServer(
             this Configuration configuration,
             string connectionString)
         {
-            UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
-        public static void UseSqlServer(
+        public static Configuration UseSqlServer(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
@@ -33,6 +33,8 @@ namespace YesSql.Provider.SqlServer
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
             configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            return configuration;
         }
     }
 }

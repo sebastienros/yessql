@@ -8,14 +8,14 @@ namespace YesSql.Provider.MySql
 {
     public static class MySqlDbProviderOptionsExtensions
     {
-        public static void UseMySql(
+        public static Configuration UseMySql(
             this Configuration configuration,
             string connectionString)
         {
-            UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            return UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
-        public static void UseMySql(
+        public static Configuration UseMySql(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
@@ -33,6 +33,8 @@ namespace YesSql.Provider.MySql
             configuration.ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString);
             configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            return configuration;
         }
     }
 }

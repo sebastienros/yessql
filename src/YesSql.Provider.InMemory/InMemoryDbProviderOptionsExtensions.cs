@@ -10,7 +10,7 @@ namespace YesSql.Provider.InMemory
     {
         private const string ConnectionString = "Data Source=:memory:";
 
-        public static void UseInMemory(
+        public static Configuration UseInMemory(
             this Configuration configuration)
         {
             if (configuration == null)
@@ -21,6 +21,8 @@ namespace YesSql.Provider.InMemory
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(ConnectionString);
             configuration.DocumentStorageFactory = new InMemoryDocumentStorageFactory();
             configuration.IsolationLevel = IsolationLevel.Serializable;
+
+            return configuration;
         }
     }
 }

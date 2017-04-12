@@ -8,14 +8,14 @@ namespace YesSql.Provider.Sqlite
 {
     public static class SqliteDbProviderOptionsExtensions
     {
-        public static void UseSqLite(
+        public static Configuration UseSqLite(
             this Configuration configuration,
             string connectionString)
         {
-            UseSqLite(configuration, connectionString, IsolationLevel.Serializable);
+            return UseSqLite(configuration, connectionString, IsolationLevel.Serializable);
         }
 
-        public static void UseSqLite(
+        public static Configuration UseSqLite(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
@@ -33,6 +33,8 @@ namespace YesSql.Provider.Sqlite
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
             configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            return configuration;
         }
     }
 }

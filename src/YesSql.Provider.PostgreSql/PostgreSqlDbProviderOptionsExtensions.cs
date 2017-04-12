@@ -8,14 +8,14 @@ namespace YesSql.Provider.PostgreSql
 {
     public static class PostgreSqlDbProviderOptionsExtensions
     {
-        public static void UsePostgreSql(
+        public static Configuration UsePostgreSql(
             this Configuration configuration,
             string connectionString)
         {
-            UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            return UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
-        public static void UsePostgreSql(
+        public static Configuration UsePostgreSql(
             this Configuration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
@@ -33,6 +33,8 @@ namespace YesSql.Provider.PostgreSql
             configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
             configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
+
+            return configuration;
         }
     }
 }
