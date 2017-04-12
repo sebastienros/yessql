@@ -15,8 +15,8 @@ namespace YesSql.Core.Services
 {
     public class Store : IStore
     {
-        protected readonly List<IIndexProvider> Indexes;
-        protected readonly LinearBlockIdGenerator IdGenerator;
+        protected List<IIndexProvider> Indexes;
+        protected LinearBlockIdGenerator IdGenerator;
 
         public Configuration Configuration
         {
@@ -50,8 +50,10 @@ namespace YesSql.Core.Services
         /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
         public Store(Action<Configuration> config)
         {
-            var configuration = new Configuration();
-            config?.Invoke(configuration);
+            Configuration = new Configuration();
+            config?.Invoke(Configuration);
+
+            AfterConfigurationAssigned();
         }
 
         /// <summary>
@@ -60,9 +62,14 @@ namespace YesSql.Core.Services
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
         public Store(Configuration configuration)
         {
-            IndexCommand.ResetQueryCache();
-
             Configuration = configuration;
+
+            AfterConfigurationAssigned();
+        }
+
+        public void AfterConfigurationAssigned()
+        {
+            IndexCommand.ResetQueryCache();
             Indexes = new List<IIndexProvider>();
             ValidateConfiguration();
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);

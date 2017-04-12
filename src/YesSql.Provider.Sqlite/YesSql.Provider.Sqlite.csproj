@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Copyright>Sebastien Ros</Copyright>
-    <Version>1.0.0-beta-0002</Version>
+    <Version>1.0.0-beta-0005</Version>
     <Authors>Sebastien Ros</Authors>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <AssemblyName>YesSql.Provider.Sqlite</AssemblyName>

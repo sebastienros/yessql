@@ -20,6 +20,36 @@ namespace YesSql.Core.Services
         public IsolationLevel IsolationLevel { get; set; }
         public IConnectionFactory ConnectionFactory { get; set; }
         public string TablePrefix { get; set; }
+
+        public Configuration SetIdentifierFactory(IIdentifierFactory identifierFactory)
+        {
+            IdentifierFactory = identifierFactory;
+            return this;
+        }
+
+        public Configuration SetDocumentStorageFactory(IDocumentStorageFactory documentStorageFactory)
+        {
+            DocumentStorageFactory = documentStorageFactory;
+            return this;
+        }
+
+        public Configuration SetIsolationLevel(IsolationLevel isolationLevel)
+        {
+            IsolationLevel = isolationLevel;
+            return this;
+        }
+
+        public Configuration SetConnectionFactory(IConnectionFactory connectionFactory)
+        {
+            ConnectionFactory = connectionFactory;
+            return this;
+        }
+
+        public Configuration SetTablePrefix(string tablePrefix)
+        {
+            TablePrefix = tablePrefix;
+            return this;
+        }
     }
 
     public interface IConnectionFactory : IDisposable
