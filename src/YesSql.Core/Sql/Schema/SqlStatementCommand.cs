@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace YesSql.Core.Sql.Schema
+namespace YesSql.Sql.Schema
 {
     public class SqlStatementCommand : SchemaCommand
     {

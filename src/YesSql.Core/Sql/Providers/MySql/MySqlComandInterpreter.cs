@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using YesSql.Core.Sql.Schema;
+using YesSql.Sql.Schema;
 
-namespace YesSql.Core.Sql.Providers.MySql
+namespace YesSql.Sql.Providers.MySql
 {
     public class MySqlComandInterpreter : BaseComandInterpreter
     {

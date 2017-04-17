@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 
-namespace YesSql.Core.Sql.Schema
+namespace YesSql.Sql.Schema
 {
     public class CreateTableCommand : SchemaCommand
     {

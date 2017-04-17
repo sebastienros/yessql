@@ -6,22 +6,21 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Dapper;
-using YesSql.Core.Collections;
-using YesSql.Core.Commands;
-using YesSql.Core.Data;
-using YesSql.Core.Indexes;
+using YesSql.Collections;
+using YesSql.Commands;
+using YesSql.Data;
+using YesSql.Indexes;
+using YesSql.Services;
+using YesSql.Sql;
 
-namespace YesSql.Core.Services
+namespace YesSql
 {
     public class Store : IStore
     {
         protected List<IIndexProvider> Indexes;
         protected LinearBlockIdGenerator IdGenerator;
 
-        public Configuration Configuration
-        {
-            get; set;
-        }
+        public IConfiguration Configuration { get; set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
@@ -40,7 +39,7 @@ namespace YesSql.Core.Services
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
-            
+
             // Add Type Handlers here
         }
 
@@ -48,7 +47,7 @@ namespace YesSql.Core.Services
         /// Initializes a <see cref="Store"/> instance and its new <see cref="Configuration"/>.
         /// </summary>
         /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
-        public Store(Action<Configuration> config)
+        public Store(Action<IConfiguration> config)
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
@@ -60,7 +59,7 @@ namespace YesSql.Core.Services
         /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
         /// </summary>
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
-        public Store(Configuration configuration)
+        public Store(IConfiguration configuration)
         {
             Configuration = configuration;
 
@@ -79,26 +78,24 @@ namespace YesSql.Core.Services
         {
             using (var session = CreateSession())
             {
-                session.ExecuteMigration(builder =>
-                {
-                    builder
-                        .CreateTable("Document", table => table
-                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                        .Column<string>("Type", column => column.NotNull())
-                    )
-                    .AlterTable("Document", table => table
-                        .CreateIndex("IX_Type", "Type")
-                    );
+                var builder = new SchemaBuilder(session);
 
-                    builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
-                        .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                        .Column<ulong>("nextval")
-                    )
-                    .AlterTable(LinearBlockIdGenerator.TableName, table => table
-                        .CreateIndex("IX_Dimension", "dimension")
-                    );
-                });
-            }
+                builder.CreateTable("Document", table => table
+                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                    .Column<string>("Type", column => column.NotNull())
+                )
+                .AlterTable("Document", table => table
+                    .CreateIndex("IX_Type", "Type")
+                );
+
+                builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
+                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                    .Column<ulong>("nextval")
+                )
+                .AlterTable(LinearBlockIdGenerator.TableName, table => table
+                    .CreateIndex("IX_Dimension", "dimension")
+                );
+            };
 
             return Configuration.DocumentStorageFactory.InitializeAsync(Configuration);
         }
@@ -109,17 +106,16 @@ namespace YesSql.Core.Services
 
             using (var session = CreateSession())
             {
-                session.ExecuteMigration(builder =>
-                {
-                    builder
-                        .CreateTable(documentTable, table => table
-                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                        .Column<string>("Type", column => column.NotNull())
-                    )
-                    .AlterTable(documentTable, table => table
-                        .CreateIndex("IX_" + documentTable + "_Type", "Type")
-                    );
-                });
+                var builder = new SchemaBuilder(session);
+
+                builder
+                    .CreateTable(documentTable, table => table
+                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                    .Column<string>("Type", column => column.NotNull())
+                )
+                .AlterTable(documentTable, table => table
+                    .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                );
             }
 
             return Configuration.DocumentStorageFactory.InitializeCollectionAsync(Configuration, collectionName);
@@ -209,9 +205,9 @@ namespace YesSql.Core.Services
 
         public IStore RegisterIndexes(params IIndexProvider[] indexProviders)
         {
-            foreach(var indexProvider in indexProviders)
+            foreach (var indexProvider in indexProviders)
             {
-                if(indexProvider.CollectionName == null)
+                if (indexProvider.CollectionName == null)
                 {
                     indexProvider.CollectionName = CollectionHelper.Current.GetSafeName();
                 }

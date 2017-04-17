@@ -1,5 +1,5 @@
 using System.Linq;
-using YesSql.Core.Indexes;
+using YesSql.Indexes;
 using YesSql.Samples.FullText.Models;
 using YesSql.Samples.FullText.Tokenizers;
 

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq.Expressions;
-using YesSql.Core.Indexes;
-using YesSql.Core.Query;
+using YesSql.Indexes;
 
-namespace YesSql.Core.Services {
+namespace YesSql
+{
     public static class QueryExtensions
     {
         public static IQuery<T> QueryAsync<T>(this ISession session) where T : class

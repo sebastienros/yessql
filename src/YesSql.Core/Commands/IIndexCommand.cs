@@ -1,12 +1,12 @@
-﻿using System.Data.Common;
+﻿using System.Data;
 using System.Threading.Tasks;
-using YesSql.Core.Sql;
+using YesSql.Sql;
 
-namespace YesSql.Core.Commands
+namespace YesSql.Commands
 {
     public interface IIndexCommand
     {
-        Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
+        Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect);
         int ExecutionOrder { get; }
     }
 }

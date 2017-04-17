@@ -1,9 +1,10 @@
-﻿using System.Data;
-using YesSql.Core.Services;
-using YesSql.Storage.Sql;
-using System;
-using Npgsql;
+﻿using System;
+using System.Data;
 using System.Threading.Tasks;
+using Npgsql;
+using YesSql.Services;
+using YesSql.Sql;
+using YesSql.Storage.Sql;
 using Xunit;
 
 namespace YesSql.Tests
@@ -30,13 +31,19 @@ namespace YesSql.Tests
         {
             base.OnCleanDatabase(session);
 
-            session.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable("Content"), false
-            );
+            var builder = new SchemaBuilder(session);
 
-            session.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable("Collection1_Content"), false
-            );
+            try
+            {
+                builder.DropTable("Content");
+            }
+            catch { }
+
+            try
+            {
+                builder.DropTable("Collection1_Content");
+            }
+            catch { }
         }
 
         [Fact(Skip = "Stopped working on the CI for an unknown reason")]

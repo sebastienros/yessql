@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.4
+VisualStudioVersion = 15.0.26413.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{0882456B-4A70-4895-A3AE-39B9D30A1B31}"
 EndProject
@@ -47,6 +47,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Provider.MySql", "src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj", "{A23C14D5-AC87-4FB3-BEAF-3A50EE1C4C40}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Web", "samples\YesSql.Samples.Web\YesSql.Samples.Web.csproj", "{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Abstractions", "src\YesSql.Abstractions\YesSql.Abstractions.csproj", "{B5FFC308-8D35-4642-A620-374FCCF36A84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -316,6 +318,22 @@ Global
 		{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA}.Release|x64.Build.0 = Release|Any CPU
 		{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA}.Release|x86.ActiveCfg = Release|Any CPU
 		{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA}.Release|x86.Build.0 = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|x64.Build.0 = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Debug|x86.Build.0 = Debug|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|x64.ActiveCfg = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|x64.Build.0 = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|x86.ActiveCfg = Release|Any CPU
+		{B5FFC308-8D35-4642-A620-374FCCF36A84}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -337,6 +355,7 @@ Global
 		{F6EBB174-D5A4-4850-9C0B-32AAD5B708EB} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{A23C14D5-AC87-4FB3-BEAF-3A50EE1C4C40} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
+		{B5FFC308-8D35-4642-A620-374FCCF36A84} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = Store.vsmdi

@@ -3,7 +3,7 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 
-namespace YesSql.Core.Sql
+namespace YesSql.Sql
 {
     public abstract class BaseDialect : ISqlDialect
     {

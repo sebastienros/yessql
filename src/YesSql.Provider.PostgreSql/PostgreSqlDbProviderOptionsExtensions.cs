@@ -1,22 +1,22 @@
 ﻿using Npgsql;
 using System;
 using System.Data;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.PostgreSql
 {
     public static class PostgreSqlDbProviderOptionsExtensions
     {
-        public static Configuration UsePostgreSql(
-            this Configuration configuration,
+        public static IConfiguration UsePostgreSql(
+            this IConfiguration configuration,
             string connectionString)
         {
             return UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
-        public static Configuration UsePostgreSql(
-            this Configuration configuration,
+        public static IConfiguration UsePostgreSql(
+            this IConfiguration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
         {

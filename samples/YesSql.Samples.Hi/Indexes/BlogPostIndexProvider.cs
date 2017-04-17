@@ -1,5 +1,5 @@
 using System.Linq;
-using YesSql.Core.Indexes;
+using YesSql.Indexes;
 using YesSql.Samples.Hi.Models;
 
 namespace YesSql.Samples.Hi.Indexes

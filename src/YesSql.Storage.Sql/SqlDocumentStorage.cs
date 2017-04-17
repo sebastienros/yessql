@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Core.Collections;
-using YesSql.Core.Services;
-using YesSql.Core.Sql;
-using YesSql.Core.Storage;
+using YesSql.Collections;
+using YesSql.Services;
+using YesSql.Sql;
+using YesSql.Storage;
 
 namespace YesSql.Storage.Sql
 {

@@ -1,7 +1,8 @@
-﻿using System.Threading.Tasks;
-using YesSql.Core.Services;
-using YesSql.Core.Sql;
-using YesSql.Core.Storage;
+﻿using System.Data;
+using System.Threading.Tasks;
+using YesSql.Services;
+using YesSql.Sql;
+using YesSql.Storage;
 
 namespace YesSql.Storage.Sql
 {
@@ -9,7 +10,7 @@ namespace YesSql.Storage.Sql
     {
         public string TablePrefix { get; set; }
 
-        public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
+        public IDocumentStorage CreateDocumentStorage(ISession session, IConfiguration configuration)
         {
             return new SqlDocumentStorage(session, this);
         }
@@ -17,10 +18,10 @@ namespace YesSql.Storage.Sql
         /// <summary>
         /// Creates the necessary tables
         /// </summary>
-        public async Task InitializeAsync(Configuration configuration)
+        public Task InitializeAsync(IConfiguration configuration)
         {
             var connection = configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
+            connection.Open();
             try
             {
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
@@ -48,16 +49,22 @@ namespace YesSql.Storage.Sql
                     connection.Close();
                 }
             }
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
+
         }
 
         /// <summary>
         /// Creates the necessary tables
         /// </summary>
-        public async Task InitializeCollectionAsync(Configuration configuration, string collection)
+        public Task InitializeCollectionAsync(IConfiguration configuration, string collection)
         {
             var contentTable = collection + "_" + "Content";
             var connection = configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
+            connection.Open();
             try
             {
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
@@ -85,6 +92,11 @@ namespace YesSql.Storage.Sql
                     connection.Close();
                 }
             }
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
     }
 }

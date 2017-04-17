@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using YesSql.Core.Services;
-using YesSql.Core.Storage;
+using YesSql.Services;
+using YesSql.Storage;
 
 namespace YesSql.Storage.InMemory
 {
@@ -9,7 +9,7 @@ namespace YesSql.Storage.InMemory
     {
         private InMemoryDocumentStorage _storage;
 
-        public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
+        public IDocumentStorage CreateDocumentStorage(ISession session, IConfiguration configuration)
         {
             if (_storage == null)
             {
@@ -19,7 +19,7 @@ namespace YesSql.Storage.InMemory
             return _storage;
         }
 
-        public Task InitializeAsync(Configuration configuration)
+        public Task InitializeAsync(IConfiguration configuration)
         {
 #if NET451
             return Task.FromResult(0);
@@ -28,7 +28,7 @@ namespace YesSql.Storage.InMemory
 #endif
         }
 
-        public Task InitializeCollectionAsync(Configuration configuration, string collectionName)
+        public Task InitializeCollectionAsync(IConfiguration configuration, string collectionName)
         {
 #if NET451
             return Task.FromResult(0);

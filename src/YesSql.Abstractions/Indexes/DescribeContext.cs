@@ -2,15 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace YesSql.Core.Indexes
+namespace YesSql.Indexes
 {
-    public interface IDescriptor
-    {
-        IEnumerable<IndexDescriptor> Describe(params Type[] types);
-        bool IsCompatibleWith(Type target);
-    }
-
     public class DescribeContext<T> : IDescriptor
     {
         private readonly Dictionary<Type, IList<IDescribeFor>> _describes = new Dictionary<Type, IList<IDescribeFor>>();
@@ -33,7 +29,7 @@ namespace YesSql.Core.Indexes
 
         public bool IsCompatibleWith(Type target)
         {
-            return typeof(T).IsAssignableFrom(target);
+            return typeof(T).GetTypeInfo().IsAssignableFrom(target.GetTypeInfo());
         }
 
         public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex

@@ -1,19 +1,19 @@
 ﻿using Dapper;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using YesSql.Core.Indexes;
-using YesSql.Core.Query;
-using YesSql.Core.Serialization;
-using YesSql.Core.Sql;
-using YesSql.Core.Collections;
+using YesSql.Indexes;
+using YesSql.Serialization;
+using YesSql.Sql;
+using YesSql.Collections;
 
-namespace YesSql.Core.Services
+namespace YesSql.Services
 {
     public class DefaultQuery : IQuery
     {
@@ -21,9 +21,9 @@ namespace YesSql.Core.Services
 
         private List<Type> _bound = new List<Type>();
         private readonly string _documentTable;
-        private readonly DbConnection _connection;
+        private readonly IDbConnection _connection;
         private readonly ISqlDialect _dialect;
-        private readonly DbTransaction _transaction;
+        private readonly IDbTransaction _transaction;
         private string _lastParameterName;
         private ISqlBuilder _sqlBuilder;
         private StringBuilder _builder = new StringBuilder();
@@ -101,7 +101,7 @@ namespace YesSql.Core.Services
                 };
         }
 
-        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix)
+        public DefaultQuery(IDbConnection connection, IDbTransaction transaction, Session session, string tablePrefix)
         {
             _documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             _connection = connection;

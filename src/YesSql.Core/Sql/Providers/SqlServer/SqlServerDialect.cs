@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 
-namespace YesSql.Core.Sql.Providers.SqlServer
+namespace YesSql.Sql.Providers.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {

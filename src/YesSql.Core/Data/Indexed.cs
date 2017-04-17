@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace YesSql.Core.Data
+namespace YesSql.Data
 {
     [AttributeUsage(AttributeTargets.Property)]
     public class IndexedAttribute : Attribute

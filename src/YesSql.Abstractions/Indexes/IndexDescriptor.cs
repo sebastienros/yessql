@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace YesSql.Core.Indexes
+namespace YesSql.Indexes
 {
     public class IndexDescriptor
     {

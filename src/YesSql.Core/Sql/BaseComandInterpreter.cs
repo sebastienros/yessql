@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
-using YesSql.Core.Sql.Schema;
+using YesSql.Sql.Schema;
 
-namespace YesSql.Core.Sql
+namespace YesSql.Sql
 {
     public abstract class BaseComandInterpreter : ICommandInterpreter
     {

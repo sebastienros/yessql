@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace YesSql.Core.Sql.Providers.Sqlite
+namespace YesSql.Sql.Providers.Sqlite
 {
     public class SqliteDialect : BaseDialect
     {

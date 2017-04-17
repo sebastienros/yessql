@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace YesSql.Core.Indexes
+namespace YesSql.Indexes
 {
     public class IdentityMap
     {

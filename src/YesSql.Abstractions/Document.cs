@@ -1,4 +1,4 @@
-﻿namespace YesSql.Core.Indexes
+﻿namespace YesSql
 {
     public class Document
     {

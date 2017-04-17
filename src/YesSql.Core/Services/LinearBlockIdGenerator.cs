@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading;
-using YesSql.Core.Sql;
+using YesSql.Sql;
 
-namespace YesSql.Core.Services
+namespace YesSql.Services
 {
     /// <summary>
     /// This class manages a linear identifiers block allocator

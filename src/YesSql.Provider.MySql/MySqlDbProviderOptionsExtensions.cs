@@ -1,22 +1,22 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Data;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.MySql
 {
     public static class MySqlDbProviderOptionsExtensions
     {
-        public static Configuration UseMySql(
-            this Configuration configuration,
+        public static IConfiguration UseMySql(
+            this IConfiguration configuration,
             string connectionString)
         {
             return UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
-        public static Configuration UseMySql(
-            this Configuration configuration,
+        public static IConfiguration UseMySql(
+            this IConfiguration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
         {

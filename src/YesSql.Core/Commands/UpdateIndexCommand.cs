@@ -1,14 +1,14 @@
 ﻿using Dapper;
 using System.Collections.Generic;
-using System.Data.Common;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Core.Indexes;
-using YesSql.Core.Sql;
-using YesSql.Core.Collections;
-using YesSql.Core.Services;
+using YesSql.Indexes;
+using YesSql.Sql;
+using YesSql.Collections;
+using YesSql.Services;
 
-namespace YesSql.Core.Commands
+namespace YesSql.Commands
 {
     public class UpdateIndexCommand : IndexCommand
     {
@@ -27,7 +27,7 @@ namespace YesSql.Core.Commands
             _deletedDocumentIds = deletedDocumentIds;
         }
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
+        public override async Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect)
         {
             var type = Index.GetType();
 

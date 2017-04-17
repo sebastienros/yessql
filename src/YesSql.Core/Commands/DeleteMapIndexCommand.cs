@@ -1,10 +1,10 @@
 ﻿using Dapper;
 using System;
-using System.Data.Common;
+using System.Data;
 using System.Threading.Tasks;
-using YesSql.Core.Sql;
+using YesSql.Sql;
 
-namespace YesSql.Core.Commands
+namespace YesSql.Commands
 {
     public class DeleteMapIndexCommand : IIndexCommand
     {
@@ -21,7 +21,7 @@ namespace YesSql.Core.Commands
             _tablePrefix = tablePrefix;
         }
 
-        public virtual Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
+        public virtual Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect)
         {
             return connection.ExecuteAsync("delete from " + dialect.QuoteForTableName(_tablePrefix + _indexType.Name) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @Id", new { Id = _documentId }, transaction);
         }

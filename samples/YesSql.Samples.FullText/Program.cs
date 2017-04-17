@@ -1,9 +1,10 @@
 ﻿using System;
 using Microsoft.Data.Sqlite;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
 using YesSql.Storage.InMemory;
+using YesSql.Sql;
 
 namespace YesSql.Samples.FullText
 {
@@ -23,12 +24,10 @@ namespace YesSql.Samples.FullText
 
             using (var session = store.CreateSession())
             {
-                session.ExecuteMigration(x => x
-                    .CreateReduceIndexTable(nameof(ArticleByWord), table => table
+                new SchemaBuilder(session).CreateReduceIndexTable(nameof(ArticleByWord), table => table
                         .Column<int>("Count")
                         .Column<string>("Word")
-                    )
-                );
+                    );
             }
 
             // register available indexes

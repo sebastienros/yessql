@@ -1,24 +1,24 @@
 ﻿using System.Threading.Tasks;
-using YesSql.Core.Services;
+using YesSql;
 
-namespace YesSql.Core.Storage
+namespace YesSql.Storage
 {
     public interface IDocumentStorageFactory
     {
         /// <summary>
         /// Creates a new storage instance that is not shared accross clients.
         /// </summary>
-        IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration);
+        IDocumentStorage CreateDocumentStorage(ISession session, IConfiguration configuration);
 
         /// <summary>
         /// Initializes the storage, for instance creating required SQL tables.
         /// </summary>
-        Task InitializeAsync(Configuration configuration);
+        Task InitializeAsync(IConfiguration configuration);
 
         /// <summary>
         /// Initializes the storage , for instance creating required SQL tables.
         /// </summary>
-        Task InitializeCollectionAsync(Configuration configuration, string collectionName);
+        Task InitializeCollectionAsync(IConfiguration configuration, string collectionName);
 
     }
 }

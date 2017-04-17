@@ -2,8 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using YesSql.Core.Services;
-using YesSql.Core.Storage;
+using YesSql.Services;
+using YesSql.Storage;
 
 namespace YesSql.Storage.Cache
 {
@@ -17,17 +17,17 @@ namespace YesSql.Storage.Cache
             _concreteStorageFactory = concreteStorageFactory;
         }
 
-        public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
+        public IDocumentStorage CreateDocumentStorage(ISession session, IConfiguration configuration)
         {
             return new CacheDocumentStorage(_documents, _concreteStorageFactory.CreateDocumentStorage(session, configuration));
         }
 
-        public Task InitializeAsync(Configuration configuration)
+        public Task InitializeAsync(IConfiguration configuration)
         {
             return _concreteStorageFactory.InitializeAsync(configuration);
         }
 
-        public Task InitializeCollectionAsync(Configuration configuration, string collectionName)
+        public Task InitializeCollectionAsync(IConfiguration configuration, string collectionName)
         {
 #if NET451
             return Task.FromResult(0);

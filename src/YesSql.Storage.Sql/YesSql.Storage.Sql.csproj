@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Copyright>Sebastien Ros</Copyright>
     <Authors>Sebastien Ros</Authors>
-    <Version>1.0.0-beta-0006</Version>
+    <Version>1.0.0-beta-0008</Version>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <AssemblyName>YesSql.Storage.Sql</AssemblyName>
     <PackageId>YesSql.Storage.Sql</PackageId>

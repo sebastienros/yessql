@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using YesSql.Core.Indexes;
+using YesSql.Indexes;
 
-namespace YesSql.Core.Query
+namespace YesSql
 {
     public interface IQuery
     {

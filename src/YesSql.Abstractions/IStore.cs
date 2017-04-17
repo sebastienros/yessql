@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Reflection;
 using System.Threading.Tasks;
-using YesSql.Core.Data;
-using YesSql.Core.Indexes;
+using YesSql.Indexes;
 
-namespace YesSql.Core.Services
+namespace YesSql
 {
     public interface IStore : IDisposable
     {
@@ -23,7 +21,7 @@ namespace YesSql.Core.Services
         /// <returns>The current <see cref="IStore"/>.</returns>
         IStore RegisterIndexes(params IIndexProvider[] indexProviders);
 
-        Configuration Configuration { get; set; }
+        IConfiguration Configuration { get; set; }
         Task InitializeAsync();
         Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);

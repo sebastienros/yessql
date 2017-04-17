@@ -1,8 +1,8 @@
 ﻿using LightningDB;
 using System;
 using System.Threading.Tasks;
-using YesSql.Core.Storage;
-using YesSql.Core.Services;
+using YesSql.Storage;
+using YesSql.Services;
 
 namespace YesSql.Storage.LightningDB
 {
@@ -33,7 +33,7 @@ namespace YesSql.Storage.LightningDB
             }
         }
 
-        public IDocumentStorage CreateDocumentStorage(ISession session, Configuration configuration)
+        public IDocumentStorage CreateDocumentStorage(ISession session, IConfiguration configuration)
         {
             return new LightningDocumentStorage(LightningEnvironment);
         }
@@ -43,7 +43,7 @@ namespace YesSql.Storage.LightningDB
             LightningEnvironment.Dispose();
         }
 
-        public Task InitializeAsync(Configuration configuration)
+        public Task InitializeAsync(IConfiguration configuration)
         {
 #if NET451
             return Task.FromResult(0);
@@ -52,7 +52,7 @@ namespace YesSql.Storage.LightningDB
 #endif
         }
 
-        public Task InitializeCollectionAsync(Configuration configuration, string collectionName)
+        public Task InitializeCollectionAsync(IConfiguration configuration, string collectionName)
         {
 #if NET451
             return Task.FromResult(0);
