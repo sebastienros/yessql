@@ -1262,6 +1262,64 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task PagingShouldNotReturnMoreItemsThanResults()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                    };
+
+                    session.Save(person);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var persons = await session.QueryAsync<Person, PersonByName>().Take(100).List();
+                Assert.Equal(10, persons.Count());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldReturnCachedResults()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                    };
+
+                    session.Save(person);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var persons = await session.QueryAsync<Person, PersonByName>().List();
+                Assert.Equal(10, persons.Count());
+
+                persons = await session.QueryAsync<Person, PersonByName>().List();
+                Assert.Equal(10, persons.Count());
+            }
+        }
+
+
+        [Fact]
         public async Task ShouldQueryByMappedIndex()
         {
             _store.RegisterIndexes<PersonIndexProvider>();

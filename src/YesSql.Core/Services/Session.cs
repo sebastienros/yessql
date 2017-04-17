@@ -240,21 +240,25 @@ namespace YesSql.Core.Services
             }
 
             // Are all the objects already in cache?
-            IEnumerable<object> cached = ids.Select(id =>
+            var cached = ids.Select(id =>
             {
                 if (_identityMap.TryGetEntityById(id, out object entity))
                 {
                     return entity;
                 }
-                return null;
-            });
 
+                return null;
+            }).ToArray();
+
+            // Are all the result already loaded in the current session?
             if (!cached.Any(x => x == null))
             {
                 foreach (T item in cached)
                 {
                     result.Add(item);
                 }
+
+                return result;
             }
 
             // Some documents might not be in cache, load all of them from storage, then resolve local maps
