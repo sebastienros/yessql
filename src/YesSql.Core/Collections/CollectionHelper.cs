@@ -6,7 +6,7 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 #endif
 
-namespace YesSql.Core.Collections
+namespace YesSql.Collections
 {
     public class CollectionHelper
     {

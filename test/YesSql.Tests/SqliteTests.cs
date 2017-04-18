@@ -1,7 +1,8 @@
 ﻿using System.Data;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
-using YesSql.Core.Services;
+using YesSql.Services;
+using YesSql.Sql;
 using YesSql.Storage.Sql;
 using Xunit;
 
@@ -35,13 +36,19 @@ namespace YesSql.Tests
         {
             base.OnCleanDatabase(session);
 
-            session.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable("Content"), false
-            );
+            var builder = new SchemaBuilder(session);
 
-            session.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable("Collection1_Content"), false
-            );
+            try
+            {
+                builder.DropTable("Content");
+            }
+            catch { }
+
+            try
+            {
+                builder.DropTable("Collection1_Content");
+            }
+            catch { }
         }
 
         [Fact(Skip = "ReadCommitted is not supported by Sqlite")]

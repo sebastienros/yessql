@@ -1,6 +1,6 @@
 ﻿using System.Data;
 using System.Data.SqlClient;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Storage.LightningDB;
 
 namespace YesSql.Tests

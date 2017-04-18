@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.SqlServer
 {
     public static class SqlServerDbProviderOptionsExtensions
     {
-        public static Configuration UseSqlServer(
-            this Configuration configuration,
+        public static IConfiguration UseSqlServer(
+            this IConfiguration configuration,
             string connectionString)
         {
             return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
-        public static Configuration UseSqlServer(
-            this Configuration configuration,
+        public static IConfiguration UseSqlServer(
+            this IConfiguration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
         {

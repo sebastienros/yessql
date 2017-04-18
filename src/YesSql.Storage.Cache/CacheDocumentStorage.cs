@@ -3,7 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using YesSql.Core.Storage;
+using YesSql.Storage;
 
 namespace YesSql.Storage.Cache
 {

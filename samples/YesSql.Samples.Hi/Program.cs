@@ -1,10 +1,11 @@
 ﻿using System;
 using Microsoft.Data.Sqlite;
 using System.Data;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Samples.Hi.Indexes;
 using YesSql.Samples.Hi.Models;
 using YesSql.Storage.InMemory;
+using YesSql.Sql;
 
 namespace YesSql.Samples.Hi
 {
@@ -25,15 +26,13 @@ namespace YesSql.Samples.Hi
 
             using (var session = store.CreateSession())
             {
-                session.ExecuteMigration(builder => builder
-                    .CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
+                new SchemaBuilder(session).CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
                         .Column<string>("Author")
                     )
                     .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
                         .Column<int>("Count")
                         .Column<int>("Day")
-                    )
-                );
+                    );
             };
 
             // register available indexes

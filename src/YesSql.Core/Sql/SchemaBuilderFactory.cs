@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using YesSql.Core.Sql.Providers.MySql;
-using YesSql.Core.Sql.Providers.PostgreSql;
-using YesSql.Core.Sql.Providers.Sqlite;
-using YesSql.Core.Sql.Providers.SqlServer;
+using System.Data;
+using YesSql.Sql.Providers.MySql;
+using YesSql.Sql.Providers.PostgreSql;
+using YesSql.Sql.Providers.Sqlite;
+using YesSql.Sql.Providers.SqlServer;
 
-namespace YesSql.Core.Sql
+namespace YesSql.Sql
 {
     public class SchemaBuilderFactory
     {
@@ -24,7 +24,7 @@ namespace YesSql.Core.Sql
             SchemaBuilders[connectionName] = schemaBuilder;
         }
 
-        public static ICommandInterpreter For(DbConnection connection)
+        public static ICommandInterpreter For(IDbConnection connection)
         {
             string connectionName = connection.GetType().Name.ToLower();
 

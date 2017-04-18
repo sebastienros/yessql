@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Data.Common;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using YesSql.Core.Indexes;
-using YesSql.Core.Sql;
+using YesSql.Indexes;
+using YesSql.Sql;
 
-namespace YesSql.Core.Commands
+namespace YesSql.Commands
 {
     public abstract class IndexCommand : IIndexCommand
     {
@@ -31,7 +31,7 @@ namespace YesSql.Core.Commands
         public IIndex Index { get; }
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
+        public abstract Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect);
 
         public static void ResetQueryCache()
         {

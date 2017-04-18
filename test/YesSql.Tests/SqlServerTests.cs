@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
-using YesSql.Core.Services;
+using YesSql.Services;
+using YesSql.Sql;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Tests
@@ -29,13 +30,19 @@ namespace YesSql.Tests
         {
             base.OnCleanDatabase(session);
 
-            session.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable("Content"), false
-            );
+            var builder = new SchemaBuilder(session);
 
-            session.ExecuteMigration(schemaBuilder => schemaBuilder
-                .DropTable("Collection1_Content"), false
-            );
+            try
+            {
+                builder.DropTable("Content");
+            }
+            catch { }
+
+            try
+            {
+                builder.DropTable("Collection1_Content");
+            }
+            catch { }
         }
     }
 }

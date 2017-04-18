@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using YesSql.Core.Sql.Providers.MySql;
-using YesSql.Core.Sql.Providers.PostgreSql;
-using YesSql.Core.Sql.Providers.Sqlite;
-using YesSql.Core.Sql.Providers.SqlServer;
+using YesSql.Sql.Providers.MySql;
+using YesSql.Sql.Providers.PostgreSql;
+using YesSql.Sql.Providers.Sqlite;
+using YesSql.Sql.Providers.SqlServer;
 
-namespace YesSql.Core.Sql
+namespace YesSql.Sql
 {
     public interface ISqlDialect
     {
@@ -49,7 +49,7 @@ namespace YesSql.Core.Sql
             SqlDialects[connectionName] = sqlTypeAdapter;
         }
 
-        public static ISqlDialect For(DbConnection connection)
+        public static ISqlDialect For(IDbConnection connection)
         {
             string connectionName = connection.GetType().Name.ToLower();
 

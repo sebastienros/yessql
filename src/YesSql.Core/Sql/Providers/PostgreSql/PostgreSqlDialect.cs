@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace YesSql.Core.Sql.Providers.PostgreSql
+namespace YesSql.Sql.Providers.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {

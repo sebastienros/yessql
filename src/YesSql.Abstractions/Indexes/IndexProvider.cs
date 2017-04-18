@@ -1,14 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace YesSql.Core.Indexes
+namespace YesSql.Indexes
 {
-    public interface IIndexProvider
-    {
-        void Describe(IDescriptor context);
-        Type ForType();
-        string CollectionName { get; set; }
-    }
-
     public abstract class IndexProvider<T> : IIndexProvider
     {
         public abstract void Describe(DescribeContext<T> context);

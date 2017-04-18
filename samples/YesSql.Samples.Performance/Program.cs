@@ -7,12 +7,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
-using YesSql.Core.Indexes;
-using YesSql.Core.Services;
-using YesSql.Core.Storage;
+using YesSql.Indexes;
+using YesSql.Services;
+using YesSql.Storage;
 using YesSql.Storage.InMemory;
 using YesSql.Storage.LightningDB;
 using YesSql.Storage.Sql;
+using YesSql.Sql;
 
 namespace YesSql.Samples.Performance
 {
@@ -521,14 +522,12 @@ namespace YesSql.Samples.Performance
                 sqlFactory.InitializeAsync(configuration).Wait();
                 using (var session = store.CreateSession())
                 {
-                    session.ExecuteMigration(builder => builder
-                        .CreateMapIndexTable("UserByName", table => table
+                    new SchemaBuilder(session).CreateMapIndexTable("UserByName", table => table
                             .Column<string>("Name")
                         )
                         .AlterTable("UserByName", table => table
                             .CreateIndex("IX_Name", "Name")
-                        )
-                    );
+                        );
                 }
             }
 
@@ -687,7 +686,7 @@ namespace YesSql.Samples.Performance
         {
             int batch = 0, batchSize = 128, i = 0;
             var storage = storageFactory.CreateDocumentStorage(session, configuration);
-            var identities = new List<IdentityDocument>();
+            var identities = new List<DocumentIdentity>();
 
             var sp = Stopwatch.StartNew();
             foreach (var name in Names)
@@ -695,7 +694,7 @@ namespace YesSql.Samples.Performance
                 batch++; i++;
 
                 identities.Add(
-                    new IdentityDocument(
+                    new DocumentIdentity(
                         id: i,
                         entity: new User
                         {

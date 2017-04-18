@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using YesSql.Core.Sql.Schema;
+using YesSql.Sql.Schema;
 
-namespace YesSql.Core.Sql.Providers.Sqlite
+namespace YesSql.Sql.Providers.Sqlite
 {
     public class SqliteComandInterpreter : BaseComandInterpreter
     {

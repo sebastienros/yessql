@@ -1,5 +1,5 @@
 ﻿
-namespace YesSql.Core.Sql.Providers.SqlServer
+namespace YesSql.Sql.Providers.SqlServer
 {
     public class SqlServerComandInterpreter : BaseComandInterpreter
     {

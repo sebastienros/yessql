@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Copyright>Sebastien Ros</Copyright>
-    <Version>1.0.0-beta-0003</Version>
+    <Version>1.0.0-beta-0004</Version>
     <Authors>Sebastien Ros</Authors>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <AssemblyName>YesSql.Storage.LightningDB</AssemblyName>

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace YesSql.Core.Indexes
+namespace YesSql.Indexes
 {
     public interface IDescribeFor
     {

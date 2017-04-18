@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace YesSql.Core.Sql
+namespace YesSql.Sql
 {
     public interface ISqlBuilder
     {

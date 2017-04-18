@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Text;
-using YesSql.Core.Sql.Schema;
+using YesSql.Sql.Schema;
 
-namespace YesSql.Core.Sql
+namespace YesSql.Sql
 {
     public interface ICommandInterpreter
     {

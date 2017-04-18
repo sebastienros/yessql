@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Threading.Tasks;
 using Xunit;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Provider.InMemory;
 using YesSql.Storage.InMemory;
 

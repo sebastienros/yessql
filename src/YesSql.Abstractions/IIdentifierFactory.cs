@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-namespace YesSql.Core.Data
+namespace YesSql
 {
     /// <summary>
     /// This interface represents a component which can create

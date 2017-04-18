@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Samples.Web.Models;
 using System.Threading.Tasks;
 

@@ -1,22 +1,22 @@
 ﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Data;
-using YesSql.Core.Services;
+using YesSql.Services;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.Sqlite
 {
     public static class SqliteDbProviderOptionsExtensions
     {
-        public static Configuration UseSqLite(
-            this Configuration configuration,
+        public static IConfiguration UseSqLite(
+            this IConfiguration configuration,
             string connectionString)
         {
             return UseSqLite(configuration, connectionString, IsolationLevel.Serializable);
         }
 
-        public static Configuration UseSqLite(
-            this Configuration configuration,
+        public static IConfiguration UseSqLite(
+            this IConfiguration configuration,
             string connectionString,
             IsolationLevel isolationLevel)
         {

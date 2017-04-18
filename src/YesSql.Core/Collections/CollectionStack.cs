@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace YesSql.Core.Collections
+namespace YesSql.Collections
 {
     internal class CollectionStack
     {

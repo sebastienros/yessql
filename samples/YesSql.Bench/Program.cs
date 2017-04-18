@@ -1,8 +1,9 @@
 ﻿using System.Data.SqlClient;
 using Xunit;
-using YesSql.Core.Indexes;
-using YesSql.Core.Services;
+using YesSql.Indexes;
 using YesSql.Storage.LightningDB;
+using YesSql;
+using YesSql.Sql;
 
 namespace Bench
 {
@@ -24,11 +25,13 @@ namespace Bench
 
             using (var session = _store.CreateSession())
             {
-                session.ExecuteMigration(x => x.CreateMapIndexTable(nameof(UserByName), c => c
+                var builder = new SchemaBuilder(session);
+
+                builder.CreateMapIndexTable(nameof(UserByName), c => c
                     .Column<string>("Name")
                     .Column<bool>("Adult")
                     .Column<int>("Age")
-                ));
+                );
             }
 
             _store.RegisterIndexes<UserIndexProvider>();

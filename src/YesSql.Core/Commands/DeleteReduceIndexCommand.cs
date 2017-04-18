@@ -1,12 +1,12 @@
 ﻿using Dapper;
-using System.Data.Common;
+using System.Data;
 using System.Threading.Tasks;
-using YesSql.Core.Indexes;
-using YesSql.Core.Collections;
-using YesSql.Core.Services;
-using YesSql.Core.Sql;
+using YesSql.Indexes;
+using YesSql.Collections;
+using YesSql.Services;
+using YesSql.Sql;
 
-namespace YesSql.Core.Commands
+namespace YesSql.Commands
 {
     public class DeleteReduceIndexCommand : IndexCommand
     {
@@ -16,7 +16,7 @@ namespace YesSql.Core.Commands
 
         public override int ExecutionOrder { get; } = 1;
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
+        public override async Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect)
         {
             var name = Index.GetType().Name;
 

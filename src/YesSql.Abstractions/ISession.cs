@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Core.Query;
-using YesSql.Core.Sql;
 
-namespace YesSql.Core.Services
+namespace YesSql
 {
     /// <summary>
     /// Represents a connection to the document store.
@@ -49,9 +47,9 @@ namespace YesSql.Core.Services
         /// <summary>
         /// Returns a <see cref="DbTransaction"/> that is used by this instance.
         /// </summary>
-        DbTransaction Demand();
+        IDbTransaction Demand();
 
-        void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true);
+        IStore Store { get; }
 
     }
 

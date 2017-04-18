@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using YesSql.Core.Indexes;
+using YesSql.Indexes;
 
-namespace YesSql.Core.Data
+namespace YesSql.Data
 {
     public class MapState
     {

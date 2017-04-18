@@ -1,5 +1,5 @@
 ﻿using System;
-using YesSql.Core.Services;
+using YesSql;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddDbProvider(
             this IServiceCollection services,
-            Action<Configuration> setupAction)
+            Action<IConfiguration> setupAction)
         {
             if (services == null)
             {

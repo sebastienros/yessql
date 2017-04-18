@@ -5,8 +5,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using YesSql.Core.Collections;
-using YesSql.Core.Services;
+using YesSql.Collections;
+using YesSql.Services;
+using YesSql.Sql;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 using System.Text;
@@ -40,48 +41,23 @@ namespace YesSql.Tests
             // Remove existing tables
             using (var session = _store.CreateSession())
             {
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropReduceIndexTable(nameof(ArticlesByDay)), false
-                );
+                var builder = new SchemaBuilder(session) { ThrowOnError = false };
 
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropMapIndexTable(nameof(ArticleByPublishedDate)), false
-                );
-
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropMapIndexTable(nameof(PersonByName)), false
-                );
-
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropMapIndexTable(nameof(PersonIdentity)), false
-                );
+                builder.DropReduceIndexTable(nameof(ArticlesByDay));
+                builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
+                builder.DropMapIndexTable(nameof(PersonByName));
+                builder.DropMapIndexTable(nameof(PersonIdentity));
 
                 using (new NamedCollection("Collection1"))
                 {
-                    session.ExecuteMigration(schemaBuilder => schemaBuilder
-                        .DropMapIndexTable(nameof(PersonByNameCol)), false
-                    );
+                    builder.DropMapIndexTable(nameof(PersonByNameCol));
                 }
 
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropMapIndexTable(nameof(PersonByAge)), false
-                );
-
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropMapIndexTable(nameof(PublishedArticle)), false
-                );
-
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropTable(Store.DocumentTable), false
-                );
-
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropTable("Collection1_Document"), false
-                );
-
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .DropTable(LinearBlockIdGenerator.TableName), false
-                );
+                builder.DropMapIndexTable(nameof(PersonByAge));
+                builder.DropMapIndexTable(nameof(PublishedArticle));
+                builder.DropTable(Store.DocumentTable);
+                builder.DropTable("Collection1_Document");
+                builder.DropTable(LinearBlockIdGenerator.TableName);
 
                 OnCleanDatabase(session);
             }
@@ -99,44 +75,33 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .CreateReduceIndexTable(nameof(ArticlesByDay), column => column
+                var builder = new SchemaBuilder(session);
+
+                builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
                         .Column<int>(nameof(ArticlesByDay.Count))
                         .Column<int>(nameof(ArticlesByDay.DayOfYear))
-                    )
-                );
+                    );
 
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
+                builder.CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
                         .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
                         .Column<DateTimeOffset>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
-                    )
-                );
+                    );
 
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .CreateMapIndexTable(nameof(PersonByName), column => column
+                builder.CreateMapIndexTable(nameof(PersonByName), column => column
                         .Column<string>(nameof(PersonByName.Name))
-                    )
-                );
+                    );
 
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .CreateMapIndexTable(nameof(PersonIdentity), column => column
+                builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
                         .Column<string>(nameof(PersonIdentity.Identity))
-                    )
-                );
+                    );
 
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .CreateMapIndexTable(nameof(PersonByAge), column => column
+                builder.CreateMapIndexTable(nameof(PersonByAge), column => column
                         .Column<int>(nameof(PersonByAge.Age))
                         .Column<bool>(nameof(PersonByAge.Adult))
                         .Column<string>(nameof(PersonByAge.Name))
-                    )
-                );
+                    );
 
-                session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .CreateMapIndexTable(nameof(PublishedArticle), column => { }
-                    )
-                );
+                builder.CreateMapIndexTable(nameof(PublishedArticle), column => { });
             }
         }
 
@@ -2009,11 +1974,9 @@ namespace YesSql.Tests
             {
                 using (var session = _store.CreateSession())
                 {
-                    session.ExecuteMigration(schemaBuilder => schemaBuilder
-                    .CreateMapIndexTable(nameof(PersonByNameCol), column => column
+                    new SchemaBuilder(session).CreateMapIndexTable(nameof(PersonByNameCol), column => column
                         .Column<string>(nameof(PersonByNameCol.Name))
-                        )
-                    );
+                        );
                 }
 
                 _store.RegisterIndexes<PersonIndexProviderCol>();

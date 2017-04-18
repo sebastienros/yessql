@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 
-namespace YesSql.Core.Sql.Schema
+namespace YesSql.Sql.Schema
 {
     public static class SchemaUtils
     {

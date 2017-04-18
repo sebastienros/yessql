@@ -1,10 +1,10 @@
-﻿using System.Data.Common;
+﻿using System.Data;
 using System.Reflection;
 using System.Threading.Tasks;
-using YesSql.Core.Indexes;
-using YesSql.Core.Sql;
+using YesSql.Indexes;
+using YesSql.Sql;
 
-namespace YesSql.Core.Commands
+namespace YesSql.Commands
 {
     public abstract class DocumentCommand : IIndexCommand
     {
@@ -27,6 +27,6 @@ namespace YesSql.Core.Commands
 
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
+        public abstract Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect);
     }
 }

@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using YesSql.Core.Storage;
-using YesSql.Core.Services;
+using YesSql.Storage;
+using YesSql.Services;
 
 namespace YesSql.Storage.LightningDB
 {

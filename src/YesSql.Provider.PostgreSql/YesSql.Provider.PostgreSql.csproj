@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Copyright>Sebastien Ros</Copyright>
-    <Version>1.0.0-beta-0005</Version>
+    <Version>1.0.0-beta-0006</Version>
     <Authors>Sebastien Ros</Authors>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <AssemblyName>YesSql.Provider.PostgreSql</AssemblyName>
@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
+    <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
     <ProjectReference Include="..\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj" />
   </ItemGroup>
 

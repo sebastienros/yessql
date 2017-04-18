@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace YesSql.Core.Sql.Providers.MySql
+namespace YesSql.Sql.Providers.MySql
 {
     public class MySqlSqlBuilder : SqlBuilder
     {

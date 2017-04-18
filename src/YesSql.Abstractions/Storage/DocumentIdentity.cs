@@ -1,24 +1,17 @@
 ﻿using System;
 
-namespace YesSql.Core.Storage
+namespace YesSql.Storage
 {
-    public interface IIdentityEntity
+    public class DocumentIdentity : IIdentityEntity
     {
-        int Id { get; set; }
-        object Entity { get; set; }
-        Type EntityType { get; set; }
-    }
-
-    public class IdentityDocument : IIdentityEntity
-    {
-        public IdentityDocument(int id, object entity)
+        public DocumentIdentity(int id, object entity)
         {
             Id = id;
             Entity = entity;
             EntityType = entity.GetType();
         }
 
-        public IdentityDocument(int id, Type type)
+        public DocumentIdentity(int id, Type type)
         {
             Id = id;
             Entity = null;

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace YesSql.Core.Collections
+namespace YesSql.Collections
 {
     public abstract class Collection : IDisposable
     {

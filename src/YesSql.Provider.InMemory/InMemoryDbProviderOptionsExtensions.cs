@@ -1,8 +1,9 @@
 ﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Data;
-using YesSql.Core.Services;
+using YesSql.Storage;
 using YesSql.Storage.InMemory;
+using YesSql;
 
 namespace YesSql.Provider.InMemory
 {
@@ -10,8 +11,8 @@ namespace YesSql.Provider.InMemory
     {
         private const string ConnectionString = "Data Source=:memory:";
 
-        public static Configuration UseInMemory(
-            this Configuration configuration)
+        public static IConfiguration UseInMemory(
+            this IConfiguration configuration)
         {
             if (configuration == null)
             {

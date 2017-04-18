@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 
-namespace YesSql.Core.Serialization
+namespace YesSql.Serialization
 {
 
     /// <summary>

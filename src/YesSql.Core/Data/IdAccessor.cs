@@ -1,13 +1,7 @@
 ﻿using System;
 
-namespace YesSql.Core.Data
+namespace YesSql.Data
 {
-    public interface IIdAccessor<T>
-    {
-        T Get(object obj);
-        void Set(object obj, T value);
-    }
-
     public class IdAccessor<T, TU> : IIdAccessor<TU>
     {
         private readonly Func<T, TU> _getter;

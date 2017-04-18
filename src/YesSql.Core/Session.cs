@@ -6,20 +6,20 @@ using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using YesSql.Core.Commands;
-using YesSql.Core.Data;
-using YesSql.Core.Indexes;
-using YesSql.Core.Query;
-using YesSql.Core.Serialization;
-using YesSql.Core.Sql;
-using YesSql.Core.Storage;
-using YesSql.Core.Collections;
+using YesSql.Commands;
+using YesSql.Data;
+using YesSql.Serialization;
+using YesSql.Services;
+using YesSql.Sql;
+using YesSql.Storage;
+using YesSql.Collections;
+using YesSql.Indexes;
 
-namespace YesSql.Core.Services
+namespace YesSql
 {
     public class Session : ISession
     {
-        private DbTransaction _transaction;
+        private IDbTransaction _transaction;
 
         private readonly IdentityMap _identityMap = new IdentityMap();
         private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
@@ -31,7 +31,7 @@ namespace YesSql.Core.Services
         private readonly Store _store;
         private readonly ISqlDialect _dialect;
         private readonly IsolationLevel _isolationLevel;
-        private readonly DbConnection _connection;
+        private readonly IDbConnection _connection;
         private volatile bool _disposed;
 
         protected bool _cancel;
@@ -48,7 +48,7 @@ namespace YesSql.Core.Services
             _dialect = SqlDialectFactory.For(_connection);
         }
 
-        public DbTransaction Transaction
+        public IDbTransaction Transaction
         {
             get
             {
@@ -143,7 +143,7 @@ namespace YesSql.Core.Services
                     MapNew(oldDoc, entity);
 
                     // Save entity
-                    await _storage.UpdateAsync(new IdentityDocument(id, entity));
+                    await _storage.UpdateAsync(new DocumentIdentity(id, entity));
                 }
                 else
                 {
@@ -167,7 +167,7 @@ namespace YesSql.Core.Services
                     Demand();
 
                     await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
-                    await _storage.CreateAsync(new IdentityDocument(doc.Id, entity));
+                    await _storage.CreateAsync(new DocumentIdentity(doc.Id, entity));
 
                     MapNew(doc, entity);
                 }
@@ -211,7 +211,7 @@ namespace YesSql.Core.Services
 
                 if (doc != null)
                 {
-                    await _storage.DeleteAsync(new IdentityDocument(id, obj));
+                    await _storage.DeleteAsync(new DocumentIdentity(id, obj));
 
                     // Untrack the deleted object
                     _identityMap.Remove(id, obj);
@@ -637,7 +637,7 @@ namespace YesSql.Core.Services
         /// <summary>
         /// Initializes a new transaction if none has been yet
         /// </summary>
-        public DbTransaction Demand()
+        public IDbTransaction Demand()
         {
             CheckDisposed();
 
@@ -661,21 +661,6 @@ namespace YesSql.Core.Services
             _cancel = true;
         }
 
-        public void ExecuteMigration(Action<SchemaBuilder> migration, bool throwException = true)
-        {
-            Demand();
-            try
-            {
-                var schemaBuilder = new SchemaBuilder(_connection, _transaction, _store.Configuration.TablePrefix);
-                migration(schemaBuilder);
-            }
-            catch
-            {
-                if (throwException)
-                {
-                    throw;
-                }
-            }
-        }
+        public IStore Store => _store;        
     }
 }

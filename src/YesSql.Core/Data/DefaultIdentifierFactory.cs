@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace YesSql.Core.Data
+namespace YesSql.Data
 {
     public class DefaultIdentifierFactory : IIdentifierFactory
     {
