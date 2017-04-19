@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Data;
 
 namespace YesSql
 {
     public class CommandInterpreterFactory
     {
-        public static readonly Dictionary<string, Func<ISqlDialect, ICommandInterpreter>> CommandInterpreters = new Dictionary<string, Func<ISqlDialect, ICommandInterpreter>>();
+        public static readonly ConcurrentDictionary<string, Func<ISqlDialect, ICommandInterpreter>> CommandInterpreters = new ConcurrentDictionary<string, Func<ISqlDialect, ICommandInterpreter>>();
         
         public static ICommandInterpreter For(IDbConnection connection)
         {

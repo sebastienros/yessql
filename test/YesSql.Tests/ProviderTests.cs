@@ -7,6 +7,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using YesSql.Provider.Sqlite;
 using YesSql.Storage.Sql;
+using YesSql.Provider.MySql;
+using YesSql.Provider.PostgreSql;
+using YesSql.Provider.SqlServer;
 
 namespace YesSql.Tests
 {
@@ -43,6 +46,19 @@ namespace YesSql.Tests
                 var response = await client.GetAsync("/");
 
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [Fact]
+        public void CanRegisterProviderSeveralTimes()
+        {
+            for (var i = 0; i < 2; i++)
+            {
+                new Configuration()
+                    .RegisterMySql()
+                    .RegisterSqLite()
+                    .RegisterPostgreSql()
+                    .RegisterSqlServer();
             }
         }
     }
