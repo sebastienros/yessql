@@ -1,10 +1,7 @@
-﻿using System.Data;
-using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
-using YesSql.Services;
-using YesSql.Sql;
-using YesSql.Storage.Sql;
+﻿using System.Threading.Tasks;
 using Xunit;
+using YesSql.Provider.Sqlite;
+using YesSql.Sql;
 
 namespace YesSql.Tests
 {
@@ -18,15 +15,10 @@ namespace YesSql.Tests
         public SqliteTests()
         {
             _tempFolder = new TemporaryFolder();
+            var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-            var configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared"),
-                IsolationLevel = IsolationLevel.Serializable,
-                DocumentStorageFactory = new SqlDocumentStorageFactory()
-            };
+            _store = new Store(new Configuration().UseSqLite(connectionString));
 
-            _store = new Store(configuration);
 
             CleanDatabase();
             CreateTables();

@@ -7,12 +7,12 @@ using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
 {
-    public abstract class BaseComandInterpreter : ICommandInterpreter
+    public abstract class BaseCommandInterpreter : ICommandInterpreter
     {
         protected readonly ISqlDialect _dialect;
         private const char Space = ' ';
 
-        public BaseComandInterpreter(ISqlDialect dialect)
+        public BaseCommandInterpreter(ISqlDialect dialect)
         {
             _dialect = dialect;
         }
@@ -33,22 +33,22 @@ namespace YesSql.Sql
                 switch (schemaCommand.Type)
                 {
                     case SchemaCommandType.CreateTable:
-                        sqlCommands.AddRange(Run((CreateTableCommand)schemaCommand));
+                        sqlCommands.AddRange(Run((ICreateTableCommand)schemaCommand));
                         break;
                     case SchemaCommandType.AlterTable:
-                        sqlCommands.AddRange(Run((AlterTableCommand)schemaCommand));
+                        sqlCommands.AddRange(Run((IAlterTableCommand)schemaCommand));
                         break;
                     case SchemaCommandType.DropTable:
-                        sqlCommands.AddRange(Run((DropTableCommand)schemaCommand));
+                        sqlCommands.AddRange(Run((IDropTableCommand)schemaCommand));
                         break;
                     case SchemaCommandType.SqlStatement:
-                        sqlCommands.AddRange(Run((SqlStatementCommand)schemaCommand));
+                        sqlCommands.AddRange(Run((ISqlStatementCommand)schemaCommand));
                         break;
                     case SchemaCommandType.CreateForeignKey:
-                        sqlCommands.AddRange(Run((CreateForeignKeyCommand)schemaCommand));
+                        sqlCommands.AddRange(Run((ICreateForeignKeyCommand)schemaCommand));
                         break;
                     case SchemaCommandType.DropForeignKey:
-                        sqlCommands.AddRange(Run((DropForeignKeyCommand)schemaCommand));
+                        sqlCommands.AddRange(Run((IDropForeignKeyCommand)schemaCommand));
                         break;
                 }
             }
@@ -56,7 +56,7 @@ namespace YesSql.Sql
             return sqlCommands;
         }
 
-        public virtual IEnumerable<string> Run(CreateTableCommand command)
+        public virtual IEnumerable<string> Run(ICreateTableCommand command)
         {
             // TODO: Support CreateForeignKeyCommand in a CREATE TABLE (in sqlite they can only be created with the table)
 
@@ -97,7 +97,7 @@ namespace YesSql.Sql
             yield return builder.ToString();
         }
 
-        public virtual IEnumerable<string> Run(DropTableCommand command)
+        public virtual IEnumerable<string> Run(IDropTableCommand command)
         {
             var builder = new StringBuilder();
 
@@ -105,7 +105,7 @@ namespace YesSql.Sql
             yield return builder.ToString();
         }
 
-        public virtual IEnumerable<string> Run(AlterTableCommand command)
+        public virtual IEnumerable<string> Run(IAlterTableCommand command)
         {
             if (command.TableCommands.Count == 0)
             {
@@ -154,23 +154,23 @@ namespace YesSql.Sql
             }
         }
 
-        public virtual void Run(StringBuilder builder, AddColumnCommand command)
+        public virtual void Run(StringBuilder builder, IAddColumnCommand command)
         {
-            builder.AppendFormat("alter table {0} add ", _dialect.QuoteForTableName(command.TableName));
+            builder.AppendFormat("alter table {0} add ", _dialect.QuoteForTableName(command.Name));
             Run(builder, (CreateColumnCommand)command);
         }
 
-        public virtual void Run(StringBuilder builder, DropColumnCommand command)
+        public virtual void Run(StringBuilder builder, IDropColumnCommand command)
         {
             builder.AppendFormat("alter table {0} drop column {1}",
-                _dialect.QuoteForTableName(command.TableName),
+                _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.ColumnName));
         }
 
-        public virtual void Run(StringBuilder builder, AlterColumnCommand command)
+        public virtual void Run(StringBuilder builder, IAlterColumnCommand command)
         {
             builder.AppendFormat("alter table {0} alter column {1} ",
-                _dialect.QuoteForTableName(command.TableName),
+                _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.ColumnName));
 
             // type
@@ -193,22 +193,22 @@ namespace YesSql.Sql
             }
         }
 
-        public virtual void Run(StringBuilder builder, AddIndexCommand command)
+        public virtual void Run(StringBuilder builder, IAddIndexCommand command)
         {
             builder.AppendFormat("create index {1} on {0} ({2}) ",
-                _dialect.QuoteForTableName(command.TableName),
+                _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.IndexName),
                 String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray()));
         }
 
-        public virtual void Run(StringBuilder builder, DropIndexCommand command)
+        public virtual void Run(StringBuilder builder, IDropIndexCommand command)
         {
             builder.AppendFormat("drop index {0} ON {1}",
                 _dialect.QuoteForColumnName(command.IndexName),
-                _dialect.QuoteForTableName(command.TableName));
+                _dialect.QuoteForTableName(command.Name));
         }
 
-        public virtual IEnumerable<string> Run(SqlStatementCommand command)
+        public virtual IEnumerable<string> Run(ISqlStatementCommand command)
         {
             if (command.Providers.Count != 0)
             {
@@ -218,7 +218,7 @@ namespace YesSql.Sql
             yield return command.Sql;
         }
 
-        public virtual IEnumerable<string> Run(CreateForeignKeyCommand command)
+        public virtual IEnumerable<string> Run(ICreateForeignKeyCommand command)
         {
             var builder = new StringBuilder();
 
@@ -234,7 +234,7 @@ namespace YesSql.Sql
             yield return builder.ToString();
         }
 
-        public virtual IEnumerable<string> Run(DropForeignKeyCommand command)
+        public virtual IEnumerable<string> Run(IDropForeignKeyCommand command)
         {
             var builder = new StringBuilder();
 
@@ -244,7 +244,7 @@ namespace YesSql.Sql
             yield return builder.ToString();
         }
 
-        private void Run(StringBuilder builder, CreateColumnCommand command)
+        private void Run(StringBuilder builder, ICreateColumnCommand command)
         {
             // name
             builder.Append(_dialect.QuoteForColumnName(command.ColumnName)).Append(Space);

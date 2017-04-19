@@ -1,6 +1,6 @@
 ﻿namespace YesSql.Sql.Schema
 {
-    public class AddIndexCommand : TableCommand
+    public class AddIndexCommand : TableCommand, IAddIndexCommand
     {
         public string IndexName { get; set; }
 

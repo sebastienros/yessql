@@ -3,6 +3,10 @@ using System.Reflection;
 
 namespace YesSql.Data
 {
+    /// <summary>
+    /// Provides an <see cref="IIdentifierFactory"/> implementation that creates <see cref="IIdAccessor{T}"/>
+    /// instances for a specific property name of an object.
+    /// </summary>
     public class DefaultIdentifierFactory : IIdentifierFactory
     {
         public IIdAccessor<T> CreateAccessor<T>(Type tContainer, string name)
@@ -13,7 +17,6 @@ namespace YesSql.Data
             if (propertyInfo == null)
             {
                 return null;
-                //return new IdAccessor<object, T>(x => default(T), (x, y) => { });
             }
 
             var tProperty = propertyInfo.PropertyType;

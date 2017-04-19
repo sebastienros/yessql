@@ -2,7 +2,7 @@
 
 namespace YesSql.Sql.Schema
 {
-    public class CreateColumnCommand : ColumnCommand
+    public class CreateColumnCommand : ColumnCommand, ICreateColumnCommand
     {
         public CreateColumnCommand(string tableName, string name) : base(tableName, name)
         {
@@ -18,45 +18,45 @@ namespace YesSql.Sql.Schema
 
         public bool IsIdentity { get; protected set; }
 
-        public CreateColumnCommand PrimaryKey()
+        public ICreateColumnCommand PrimaryKey()
         {
             IsPrimaryKey = true;
             IsUnique = false;
             return this;
         }
 
-        public CreateColumnCommand Identity()
+        public ICreateColumnCommand Identity()
         {
             IsIdentity = true;
             IsUnique = false;
             return this;
         }
 
-        public CreateColumnCommand WithPrecision(byte precision)
+        public ICreateColumnCommand WithPrecision(byte precision)
         {
             Precision = precision;
             return this;
         }
 
-        public CreateColumnCommand WithScale(byte scale)
+        public ICreateColumnCommand WithScale(byte scale)
         {
             Scale = scale;
             return this;
         }
 
-        public CreateColumnCommand NotNull()
+        public ICreateColumnCommand NotNull()
         {
             IsNotNull = true;
             return this;
         }
 
-        public CreateColumnCommand Nullable()
+        public ICreateColumnCommand Nullable()
         {
             IsNotNull = false;
             return this;
         }
 
-        public CreateColumnCommand Unique()
+        public ICreateColumnCommand Unique()
         {
             IsUnique = true;
             IsPrimaryKey = false;
@@ -64,30 +64,30 @@ namespace YesSql.Sql.Schema
             return this;
         }
 
-        public CreateColumnCommand NotUnique()
+        public ICreateColumnCommand NotUnique()
         {
             IsUnique = false;
             return this;
         }
 
-        public new CreateColumnCommand WithLength(int? length)
+        public new ICreateColumnCommand WithLength(int? length)
         {
             base.WithLength(length);
             return this;
         }
 
-        public new CreateColumnCommand Unlimited()
+        public new ICreateColumnCommand Unlimited()
         {
             return WithLength(10000);
         }
 
-        public new CreateColumnCommand WithType(DbType dbType)
+        public new ICreateColumnCommand WithType(DbType dbType)
         {
             base.WithType(dbType);
             return this;
         }
 
-        public new CreateColumnCommand WithDefault(object @default)
+        public new ICreateColumnCommand WithDefault(object @default)
         {
             base.WithDefault(@default);
             return this;

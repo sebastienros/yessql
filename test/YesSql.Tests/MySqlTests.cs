@@ -1,9 +1,6 @@
-﻿using System.Data;
-using YesSql.Services;
+﻿using System;
+using YesSql.Provider.MySql;
 using YesSql.Sql;
-using YesSql.Storage.Sql;
-using MySql.Data.MySqlClient;
-using System;
 
 namespace YesSql.Tests
 {
@@ -12,14 +9,7 @@ namespace YesSql.Tests
         public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=root;pwd=Password12!;database=yessql;";
         public MySqlTests()
         {
-            var configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<MySqlConnection>(ConnectionString),
-                IsolationLevel = IsolationLevel.ReadUncommitted,
-                DocumentStorageFactory = new SqlDocumentStorageFactory()
-            };
-
-            _store = new Store(configuration);
+            _store = new Store(new Configuration().UseMySql(ConnectionString));
 
             CleanDatabase();
             CreateTables();

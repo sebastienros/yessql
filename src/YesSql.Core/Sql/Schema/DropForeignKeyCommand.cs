@@ -1,6 +1,6 @@
 ﻿namespace YesSql.Sql.Schema
 {
-    public class DropForeignKeyCommand : SchemaCommand
+    public class DropForeignKeyCommand : SchemaCommand, IDropForeignKeyCommand
     {
         public string SrcTable { get; private set; }
 

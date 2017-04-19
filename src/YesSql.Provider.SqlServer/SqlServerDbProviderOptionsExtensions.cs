@@ -1,13 +1,21 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
-using YesSql.Services;
+using YesSql.Providers.SqlServer;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.SqlServer
 {
     public static class SqlServerDbProviderOptionsExtensions
     {
+        public static IConfiguration RegisterSqlServer(this IConfiguration configuration)
+        {
+            SqlDialectFactory.SqlDialects["sqlconnection"] = new SqlServerDialect();
+            CommandInterpreterFactory.CommandInterpreters["sqlconnection"] = d => new SqlServerCommandInterpreter(d);
+
+            return configuration;
+        }
+
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
             string connectionString)
@@ -30,6 +38,7 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentException(nameof(connectionString));
             }
 
+            RegisterSqlServer(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
             configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;

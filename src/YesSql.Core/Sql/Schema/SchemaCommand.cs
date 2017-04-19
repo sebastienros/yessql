@@ -6,30 +6,20 @@ namespace YesSql.Sql.Schema
     {
         protected SchemaCommand(string name, SchemaCommandType type)
         {
-            TableCommands = new List<TableCommand>();
+            TableCommands = new List<ITableCommand>();
             Type = type;
             WithName(name);
         }
 
         public string Name { get; private set; }
-        public List<TableCommand> TableCommands { get; private set; }
+        public List<ITableCommand> TableCommands { get; private set; }
 
         public SchemaCommandType Type { get; private set; }
 
-        public SchemaCommand WithName(string name)
+        public ISchemaCommand WithName(string name)
         {
             Name = name;
             return this;
         }
-    }
-
-    public enum SchemaCommandType
-    {
-        CreateTable,
-        DropTable,
-        AlterTable,
-        SqlStatement,
-        CreateForeignKey,
-        DropForeignKey
     }
 }

@@ -1,18 +1,19 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System.Net;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Threading.Tasks;
 using Xunit;
-using YesSql.Services;
-using YesSql.Provider.InMemory;
-using YesSql.Storage.InMemory;
+using YesSql.Provider.Sqlite;
+using YesSql.Storage.Sql;
 
 namespace YesSql.Tests
 {
     public class ProviderTests
     {
+        private const string ConnectionString = "Data Source=:memory:";
+
         [Fact]
         public async void AddedDbProviderStoreShouldPresentInDIContainer()
         {
@@ -21,7 +22,7 @@ namespace YesSql.Tests
                 .ConfigureServices(services =>
                 {
                     // Act
-                    services.AddDbProvider(config => config.UseInMemory());
+                    services.AddDbProvider(config => config.UseSqLite(ConnectionString));
                 })
                 .Configure(app =>
                 {
@@ -31,7 +32,7 @@ namespace YesSql.Tests
 
                         // Assert
                         Assert.NotNull(store);
-                        Assert.IsType<InMemoryDocumentStorageFactory>(store.Configuration.DocumentStorageFactory);
+                        Assert.IsType<SqlDocumentStorageFactory>(store.Configuration.DocumentStorageFactory);
                         return Task.FromResult(0);
                     });
                 });

@@ -1,13 +1,17 @@
-﻿namespace YesSql.Sql.Schema
+﻿using System;
+using System.Collections.Generic;
+
+namespace YesSql.Sql.Schema
 {
-    public class TableCommand : ISchemaCommand
+    public abstract class TableCommand : ISchemaCommand, ITableCommand
     {
-        public string TableName { get; private set; }
+        public string Name { get; private set; }
+
+        public List<ITableCommand> TableCommands { get; private set; }
 
         public TableCommand(string tableName)
         {
-            TableName = tableName;
+            Name = tableName;
         }
-
     }
 }
