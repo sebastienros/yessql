@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Data;
 using System.Threading.Tasks;
-using Npgsql;
-using YesSql.Services;
-using YesSql.Sql;
-using YesSql.Storage.Sql;
 using Xunit;
+using YesSql.Provider.PostgreSql;
+using YesSql.Sql;
 
 namespace YesSql.Tests
 {
@@ -14,14 +11,7 @@ namespace YesSql.Tests
         public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
         public PostgreSqlTests()
         {
-            var configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(ConnectionString),
-                IsolationLevel = IsolationLevel.ReadUncommitted,
-                DocumentStorageFactory = new SqlDocumentStorageFactory()
-            };
-
-            _store = new Store(configuration);
+            _store = new Store(new Configuration().UsePostgreSql(ConnectionString));
 
             CleanDatabase();
             CreateTables();

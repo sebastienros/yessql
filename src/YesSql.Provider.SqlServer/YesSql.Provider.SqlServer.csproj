@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
+    <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
     <ProjectReference Include="..\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj" />
   </ItemGroup>
 

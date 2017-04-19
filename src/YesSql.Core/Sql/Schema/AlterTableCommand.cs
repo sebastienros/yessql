@@ -3,14 +3,14 @@ using System.Data;
 
 namespace YesSql.Sql.Schema
 {
-    public class AlterTableCommand : SchemaCommand
+    public class AlterTableCommand : SchemaCommand, IAlterTableCommand
     {
         public AlterTableCommand(string name)
             : base(name, SchemaCommandType.AlterTable)
         {
         }
 
-        public void AddColumn(string columnName, DbType dbType, Action<AddColumnCommand> column = null)
+        public void AddColumn(string columnName, DbType dbType, Action<IAddColumnCommand> column = null)
         {
             var command = new AddColumnCommand(Name, columnName);
             command.WithType(dbType);
@@ -20,7 +20,7 @@ namespace YesSql.Sql.Schema
             TableCommands.Add(command);
         }
 
-        public void AddColumn<T>(string columnName, Action<AddColumnCommand> column = null)
+        public void AddColumn<T>(string columnName, Action<IAddColumnCommand> column = null)
         {
             var dbType = SchemaUtils.ToDbType(typeof(T));
             AddColumn(columnName, dbType, column);
@@ -32,7 +32,7 @@ namespace YesSql.Sql.Schema
             TableCommands.Add(command);
         }
 
-        public void AlterColumn(string columnName, Action<AlterColumnCommand> column = null)
+        public void AlterColumn(string columnName, Action<IAlterColumnCommand> column = null)
         {
             var command = new AlterColumnCommand(Name, columnName);
 

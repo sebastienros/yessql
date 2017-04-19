@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Text;
+using YesSql.Sql;
 
-namespace YesSql.Sql.Providers.Sqlite
+namespace YesSql.Provider.MySql
 {
-    public class SqliteSqlBuilder : SqlBuilder
+    public class MySqlSqlBuilder : SqlBuilder
     {
-        public SqliteSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
+        public MySqlSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
         {
-
         }
+
         public override string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false)
         {
             if (_clause == "select")
             {
-                if ((_skip != 0 || _count != 0))
-                {
-                    dialect.Page(this, _skip, _count);
-                }
-
                 var sb = new StringBuilder();
                 sb
                     .Append(_clause).Append(" ").Append(_selector)
@@ -42,7 +38,14 @@ namespace YesSql.Sql.Providers.Sqlite
                 {
                     sb.Append(" ").Append(Trail);
                 }
-                
+
+                if ((_skip != 0 || _count != 0))
+                {
+                    _selector = sb.ToString();
+                    dialect.Page(this, _skip, _count);
+                    sb.Clear();
+                    sb.Append(_selector);
+                }
                 return sb.ToString();
             }
 

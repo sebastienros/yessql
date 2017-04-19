@@ -2,7 +2,7 @@
 
 namespace YesSql.Sql.Schema
 {
-    public class ColumnCommand : TableCommand
+    public class ColumnCommand : TableCommand, IColumnCommand
     {
         public string ColumnName { get; set; }
 
@@ -24,26 +24,26 @@ namespace YesSql.Sql.Schema
 
         public int? Length { get; private set; }
 
-        public ColumnCommand WithType(DbType dbType)
+        public IColumnCommand WithType(DbType dbType)
         {
             DbType = dbType;
             return this;
         }
 
-        public ColumnCommand WithDefault(object @default)
+        public IColumnCommand WithDefault(object @default)
         {
             Default = @default;
             return this;
         }
 
 
-        public ColumnCommand WithLength(int? length)
+        public IColumnCommand WithLength(int? length)
         {
             Length = length;
             return this;
         }
 
-        public ColumnCommand Unlimited()
+        public IColumnCommand Unlimited()
         {
             return WithLength(10000);
         }

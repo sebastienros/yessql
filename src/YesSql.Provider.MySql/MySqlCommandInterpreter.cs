@@ -2,20 +2,21 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using YesSql.Sql;
 using YesSql.Sql.Schema;
 
-namespace YesSql.Sql.Providers.MySql
+namespace YesSql.Provider.MySql
 {
-    public class MySqlComandInterpreter : BaseComandInterpreter
+    public class MySqlCommandInterpreter : BaseCommandInterpreter
     {
-        public MySqlComandInterpreter(ISqlDialect dialect) : base(dialect)
+        public MySqlCommandInterpreter(ISqlDialect dialect) : base(dialect)
         {
         }
 
-        public override void Run(StringBuilder builder, AlterColumnCommand command)
+        public override void Run(StringBuilder builder, IAlterColumnCommand command)
         {
             builder.AppendFormat("alter table {0} modify column {1} ",
-                            _dialect.QuoteForTableName(command.TableName),
+                            _dialect.QuoteForTableName(command.Name),
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength = builder.Length;
 
@@ -36,7 +37,7 @@ namespace YesSql.Sql.Providers.MySql
             var builder2 = new StringBuilder();
 
             builder2.AppendFormat("alter table {0} alter column {1} ",
-                            _dialect.QuoteForTableName(command.TableName),
+                            _dialect.QuoteForTableName(command.Name),
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength2 = builder2.Length;
 

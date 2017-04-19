@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using YesSql.Provider;
 
-namespace YesSql.Sql.Providers.PostgreSql
+namespace YesSql.Providers.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {
@@ -100,7 +101,7 @@ namespace YesSql.Sql.Providers.PostgreSql
 
         public override string DefaultValuesInsert => "DEFAULT VALUES";
 
-        public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
             var sb = new StringBuilder();
 

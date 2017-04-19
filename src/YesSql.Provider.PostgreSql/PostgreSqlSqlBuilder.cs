@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Text;
+using YesSql.Sql;
 
-namespace YesSql.Sql.Providers.SqlServer
+namespace YesSql.Providers.PostgreSql
 {
-    public class SqlServerSqlBuilder : SqlBuilder
+    public class PostgreSqlSqlBuilder : SqlBuilder
     {
-        public SqlServerSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
+        public PostgreSqlSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
         {
         }
 

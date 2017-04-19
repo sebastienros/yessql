@@ -2,26 +2,26 @@
 
 namespace YesSql.Sql.Schema
 {
-    public class AlterColumnCommand : ColumnCommand
+    public class AlterColumnCommand : ColumnCommand, IAlterColumnCommand
     {
         public AlterColumnCommand(string tableName, string columnName)
             : base(tableName, columnName)
         {
         }
 
-        public new AlterColumnCommand WithType(DbType dbType)
+        public new IAlterColumnCommand WithType(DbType dbType)
         {
             base.WithType(dbType);
             return this;
         }
 
-        public AlterColumnCommand WithType(DbType dbType, int? length)
+        public IAlterColumnCommand WithType(DbType dbType, int? length)
         {
             base.WithType(dbType).WithLength(length);
             return this;
         }
 
-        public AlterColumnCommand WithType(DbType dbType, byte precision, byte scale)
+        public IAlterColumnCommand WithType(DbType dbType, byte precision, byte scale)
         {
             base.WithType(dbType);
             Precision = precision;
@@ -29,13 +29,13 @@ namespace YesSql.Sql.Schema
             return this;
         }
 
-        public new AlterColumnCommand WithLength(int? length)
+        public new IAlterColumnCommand WithLength(int? length)
         {
             base.WithLength(length);
             return this;
         }
 
-        public new AlterColumnCommand Unlimited()
+        public new IAlterColumnCommand Unlimited()
         {
             return WithLength(10000);
         }

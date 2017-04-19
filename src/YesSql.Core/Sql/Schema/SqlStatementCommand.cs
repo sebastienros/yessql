@@ -2,7 +2,7 @@
 
 namespace YesSql.Sql.Schema
 {
-    public class SqlStatementCommand : SchemaCommand
+    public class SqlStatementCommand : SchemaCommand, ISqlStatementCommand
     {
         protected readonly List<string> _providers;
         public SqlStatementCommand(string sql)
@@ -15,7 +15,7 @@ namespace YesSql.Sql.Schema
         public string Sql { get; private set; }
         public List<string> Providers { get { return _providers; } }
 
-        public SqlStatementCommand ForProvider(string dataProvider)
+        public ISqlStatementCommand ForProvider(string dataProvider)
         {
             _providers.Add(dataProvider);
             return this;

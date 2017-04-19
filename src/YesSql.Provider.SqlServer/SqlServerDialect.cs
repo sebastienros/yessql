@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using YesSql.Provider;
 
-namespace YesSql.Sql.Providers.SqlServer
+namespace YesSql.Providers.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
@@ -89,7 +90,7 @@ namespace YesSql.Sql.Providers.SqlServer
             throw new Exception("DbType not found for: " + dbType);
         }
 
-        public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
             if (offset == 0 && limit != 0)
             {

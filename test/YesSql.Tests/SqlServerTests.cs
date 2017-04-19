@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Data;
-using System.Data.SqlClient;
-using YesSql.Services;
+using YesSql.Provider.SqlServer;
 using YesSql.Sql;
-using YesSql.Storage.Sql;
 
 namespace YesSql.Tests
 {
@@ -13,14 +10,8 @@ namespace YesSql.Tests
 
         public SqlServerTests()
         {
-            var configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqlConnection>(ConnectionString),
-                IsolationLevel = IsolationLevel.ReadUncommitted,
-                DocumentStorageFactory = new SqlDocumentStorageFactory()
-            };
+            _store = new Store(new Configuration().UseSqlServer(ConnectionString));
 
-            _store = new Store(configuration);
 
             CleanDatabase();
             CreateTables();

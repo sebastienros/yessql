@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Text;
+using YesSql.Sql;
 
-namespace YesSql.Sql.Providers.PostgreSql
+namespace YesSql.Providers.Sqlite
 {
-    public class PostgreSqlSqlBuilder : SqlBuilder
+    public class SqliteSqlBuilder : SqlBuilder
     {
-        public PostgreSqlSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
+        public SqliteSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
         {
-        }
 
+        }
         public override string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false)
         {
             if (_clause == "select")

@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using YesSql.Provider;
 
-namespace YesSql.Sql.Providers.Sqlite
+namespace YesSql.Providers.Sqlite
 {
     public class SqliteDialect : BaseDialect
     {
@@ -52,7 +53,7 @@ namespace YesSql.Sql.Providers.Sqlite
             throw new Exception("DbType not found for: " + dbType);
         }
 
-        public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
             var sb = new StringBuilder();
 

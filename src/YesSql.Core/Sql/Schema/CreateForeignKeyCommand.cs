@@ -1,6 +1,6 @@
 ﻿namespace YesSql.Sql.Schema
 {
-    public class CreateForeignKeyCommand : SchemaCommand
+    public class CreateForeignKeyCommand : SchemaCommand, ICreateForeignKeyCommand
     {
         public string[] DestColumns { get; private set; }
 

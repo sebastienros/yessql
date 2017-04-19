@@ -1,13 +1,21 @@
-﻿using Microsoft.Data.Sqlite;
-using System;
+﻿using System;
 using System.Data;
-using YesSql.Services;
+using Microsoft.Data.Sqlite;
+using YesSql.Providers.Sqlite;
 using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.Sqlite
 {
     public static class SqliteDbProviderOptionsExtensions
     {
+        public static IConfiguration RegisterSqLite(this IConfiguration configuration)
+        {
+            SqlDialectFactory.SqlDialects["sqliteconnection"] = new SqliteDialect();
+            CommandInterpreterFactory.CommandInterpreters["sqliteconnection"] = d => new SqliteCommandInterpreter(d);
+
+            return configuration;
+        }
+
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
             string connectionString)
@@ -30,6 +38,7 @@ namespace YesSql.Provider.Sqlite
                 throw new ArgumentException(nameof(connectionString));
             }
 
+            RegisterSqLite(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
             configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
+using YesSql.Sql;
 
-namespace YesSql.Sql.Providers.MySql
+namespace YesSql.Provider.MySql
 {
     public class MySqlDialect : BaseDialect
     {
@@ -97,7 +97,7 @@ namespace YesSql.Sql.Providers.MySql
 
         public override string DefaultValuesInsert => "VALUES()";
 
-        public override void Page(SqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
             if (offset == 0 && limit != 0)
             {

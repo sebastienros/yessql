@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
 
-namespace YesSql.Sql
+namespace YesSql
 {
     public interface ISqlBuilder
     {
         string Clause { get; }
         Dictionary<string, object> Parameters { get; }
         string Trail { get; set; }
-
         string FormatColumn(string table, string column);
         string GetSelector();
         void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn);

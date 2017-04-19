@@ -3,7 +3,7 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 
-namespace YesSql.Sql
+namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
@@ -131,7 +131,7 @@ namespace YesSql.Sql
             return "null";
         }
 
-        public abstract void Page(SqlBuilder sqlBuilder, int offset, int limit);
+        public abstract void Page(ISqlBuilder sqlBuilder, int offset, int limit);
         public abstract ISqlBuilder CreateBuilder(string tablePrefix);
     }
 }

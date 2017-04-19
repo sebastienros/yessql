@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Text;
+using YesSql.Sql;
 
-namespace YesSql.Sql.Providers.MySql
+namespace YesSql.Providers.SqlServer
 {
-    public class MySqlSqlBuilder : SqlBuilder
+    public class SqlServerSqlBuilder : SqlBuilder
     {
-        public MySqlSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
+        public SqlServerSqlBuilder(string tablePrefix, ISqlDialect dialect) : base(tablePrefix, dialect)
         {
         }
 
@@ -13,6 +14,11 @@ namespace YesSql.Sql.Providers.MySql
         {
             if (_clause == "select")
             {
+                if ((_skip != 0 || _count != 0))
+                {
+                    dialect.Page(this, _skip, _count);
+                }
+
                 var sb = new StringBuilder();
                 sb
                     .Append(_clause).Append(" ").Append(_selector)
@@ -37,14 +43,7 @@ namespace YesSql.Sql.Providers.MySql
                 {
                     sb.Append(" ").Append(Trail);
                 }
-
-                if ((_skip != 0 || _count != 0))
-                {
-                    _selector = sb.ToString();
-                    dialect.Page(this, _skip, _count);
-                    sb.Clear();
-                    sb.Append(_selector);
-                }
+                
                 return sb.ToString();
             }
 
