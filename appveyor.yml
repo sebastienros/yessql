@@ -7,10 +7,12 @@ services:
   - mysql
   - postgresql96
 install:
+  - ps: $env:BuildNumber= $env:APPVEYOR_BUILD_NUMBER
+build_script:
   - dotnet --version
   - dotnet restore
-build_script:
-  - dotnet build --configuration Release
+  - dotnet build -c Release
+  - dotnet pack -c Release
 before_test:
   - SET SQLSERVER_CONNECTION_STRING=Data Source=.;Initial Catalog=tempdb;Integrated Security=True
   - SET MYSQL_CONNECTION_STRING=server=localhost;uid=root;pwd=Password12!;database=yessql;
@@ -30,3 +32,14 @@ test_script:
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.ProviderTests" --configuration Release
+artifacts:
+- path: '**\*.nupkg'
+deploy:
+  on:
+    branch: master
+  provider: NuGet
+  server: https://www.myget.org/F/orchardcore-preview/api/v2/package
+  api_key:
+    secure: s7HNYfyvnQGOhEPcs8cBm5zF8pOeBe6JzGkpONPGhRPsXSqYSDCj8D4XaT3VzvMo
+  skip_symbols: true
+  artifact: /.*\.nupkg/

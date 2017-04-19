@@ -1,29 +1,23 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
-    <RootNamespace>YesSql</RootNamespace>
     <Copyright>Sebastien Ros</Copyright>
-    <Version>2.0.0-beta-0001</Version>
     <Authors>Sebastien Ros</Authors>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
+    <VersionSuffix>preview</VersionSuffix>
+    <VersionSuffix Condition="'$(VersionSuffix)'!='' AND '$(BuildNumber)' != ''">$(VersionSuffix)-$(BuildNumber)</VersionSuffix>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DebugType>portable</DebugType>
-    <AssemblyName>YesSql.Abstractions</AssemblyName>
-    <PackageId>YesSql.Abstractions</PackageId>
     <PackageProjectUrl>https://github.com/sebastienros/yessql</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/sebastienros/yessql/blob/master/LICENSE.txt</PackageLicenseUrl>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
   </PropertyGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System.Data" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
-    <PackageReference Include="System.Data.Common" Version="4.3.0" />
-  </ItemGroup>
+
 </Project>

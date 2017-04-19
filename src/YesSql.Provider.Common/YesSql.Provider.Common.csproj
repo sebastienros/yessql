@@ -1,24 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <RootNamespace>YesSql.Provider</RootNamespace>
-    <Copyright>Sebastien Ros</Copyright>
-    <Version>1.0.0-beta-0001</Version>
-    <Authors>Sebastien Ros</Authors>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
-    <DebugType>portable</DebugType>
-    <AssemblyName>YesSql.Provider.Common</AssemblyName>
-    <PackageId>YesSql.Provider.Common</PackageId>
-    <PackageProjectUrl>https://github.com/sebastienros/yessql</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/sebastienros/yessql/blob/master/LICENSE.txt</PackageLicenseUrl>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <VersionPrefix>1.0.0</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
