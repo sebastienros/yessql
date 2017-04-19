@@ -12,7 +12,6 @@ namespace YesSql.Tests
         {
             _store = new Store(new Configuration().UseSqlServer(ConnectionString));
 
-
             CleanDatabase();
             CreateTables();
         }

@@ -1,6 +1,6 @@
 ﻿using System.Data;
 using System.Data.SqlClient;
-using YesSql.Services;
+using YesSql.Provider.SqlServer;
 using YesSql.Storage.InMemory;
 
 namespace YesSql.Tests
@@ -17,6 +17,8 @@ namespace YesSql.Tests
                 IsolationLevel = IsolationLevel.ReadUncommitted,
                 DocumentStorageFactory = new InMemoryDocumentStorageFactory()
             };
+
+            configuration.RegisterSqlServer();
 
             _store = new Store(configuration);
 
