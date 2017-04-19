@@ -9,7 +9,7 @@ services:
 install:
   - ps: $env:BuildNumber= $env:APPVEYOR_BUILD_NUMBER
   - ps: $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = true
-  - ps: $env:NUGET_XMLDOC_MODE = skip
+  - ps: $env:NUGET_XMLDOC_MODE = "skip"
 build_script:
   - dotnet --version
   - dotnet restore
