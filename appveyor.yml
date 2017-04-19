@@ -40,7 +40,7 @@ deploy:
   on:
     branch: master
   provider: NuGet
-  server: https://www.myget.org/F/orchardcore-preview/api/v2/package
+  server: https://www.nuget.org/api/v2/package
   api_key:
     secure: s7HNYfyvnQGOhEPcs8cBm5zF8pOeBe6JzGkpONPGhRPsXSqYSDCj8D4XaT3VzvMo
   skip_symbols: true
