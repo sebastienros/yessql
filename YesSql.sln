@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26413.2
+VisualStudioVersion = 15.0.26510.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{0882456B-4A70-4895-A3AE-39B9D30A1B31}"
 EndProject
@@ -24,31 +24,25 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Tests", "test\YesSql
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Bench", "samples\YesSql.Bench\YesSql.Bench.csproj", "{54213D0E-F9D8-4293-AD78-852FC72423F9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Storage.InMemory", "src\YesSql.Storage.InMemory\YesSql.Storage.InMemory.csproj", "{D5A78707-E9FD-497B-8EF9-3739E63265B2}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Storage.LightningDB", "src\YesSql.Storage.LightningDB\YesSql.Storage.LightningDB.csproj", "{B45DB217-4CB4-4942-BD71-6126571D1504}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Storage.Sql", "src\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj", "{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Storage.Cache", "src\YesSql.Storage.Cache\YesSql.Storage.Cache.csproj", "{45940D28-3708-4EF1-8428-D85AD47D5594}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Samples.Hi", "samples\YesSql.Samples.Hi\YesSql.Samples.Hi.csproj", "{2F005B29-D46A-441F-933D-CD25A0235074}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Samples.FullText", "samples\YesSql.Samples.FullText\YesSql.Samples.FullText.csproj", "{DC85F009-6C82-4829-9764-E328C04F023F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Samples.Web", "samples\YesSql.Samples.Web\YesSql.Samples.Web.csproj", "{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Samples.Web", "samples\YesSql.Samples.Web\YesSql.Samples.Web.csproj", "{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.Common", "src\YesSql.Provider.Common\YesSql.Provider.Common.csproj", "{B6DCACD9-AA54-475D-A91B-634330207138}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Provider.MySql", "src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj", "{01617324-47BF-4EEF-98F3-09A0BDC11036}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.MySql", "src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj", "{01617324-47BF-4EEF-98F3-09A0BDC11036}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Abstractions", "src\YesSql.Abstractions\YesSql.Abstractions.csproj", "{4F8EA926-60C9-44EB-B194-82A935346740}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Abstractions", "src\YesSql.Abstractions\YesSql.Abstractions.csproj", "{4F8EA926-60C9-44EB-B194-82A935346740}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Provider.SqlServer", "src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj", "{C5627926-D605-4F27-8324-F85862D22B05}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.SqlServer", "src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj", "{C5627926-D605-4F27-8324-F85862D22B05}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Provider.Sqlite", "src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj", "{5668D506-DA4C-4910-A4A5-4A3C3DC4576B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.Sqlite", "src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj", "{5668D506-DA4C-4910-A4A5-4A3C3DC4576B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Provider.PostgreSql", "src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj", "{ACC28167-D2C3-426A-9C45-C4906E09BA4E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.PostgreSql", "src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj", "{ACC28167-D2C3-426A-9C45-C4906E09BA4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -126,38 +120,6 @@ Global
 		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|x64.Build.0 = Release|Any CPU
 		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|x86.ActiveCfg = Release|Any CPU
 		{54213D0E-F9D8-4293-AD78-852FC72423F9}.Release|x86.Build.0 = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|x64.Build.0 = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Debug|x86.Build.0 = Debug|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|x64.ActiveCfg = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|x64.Build.0 = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|x86.ActiveCfg = Release|Any CPU
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2}.Release|x86.Build.0 = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|x64.Build.0 = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Debug|x86.Build.0 = Debug|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|x64.ActiveCfg = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|x64.Build.0 = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|x86.ActiveCfg = Release|Any CPU
-		{B45DB217-4CB4-4942-BD71-6126571D1504}.Release|x86.Build.0 = Release|Any CPU
 		{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -174,22 +136,6 @@ Global
 		{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}.Release|x64.Build.0 = Release|Any CPU
 		{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}.Release|x86.ActiveCfg = Release|Any CPU
 		{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4}.Release|x86.Build.0 = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|x64.Build.0 = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Debug|x86.Build.0 = Debug|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|Any CPU.Build.0 = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|x64.ActiveCfg = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|x64.Build.0 = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|x86.ActiveCfg = Release|Any CPU
-		{45940D28-3708-4EF1-8428-D85AD47D5594}.Release|x86.Build.0 = Release|Any CPU
 		{2F005B29-D46A-441F-933D-CD25A0235074}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2F005B29-D46A-441F-933D-CD25A0235074}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F005B29-D46A-441F-933D-CD25A0235074}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -343,10 +289,7 @@ Global
 		{F2C23E01-C045-4D8E-997F-A9110DA5E041} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
 		{2E2082CC-BB43-4971-A419-3F5CE5BD2CD7} = {90072A27-51D8-4043-B4D2-940088010E69}
 		{54213D0E-F9D8-4293-AD78-852FC72423F9} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
-		{D5A78707-E9FD-497B-8EF9-3739E63265B2} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
-		{B45DB217-4CB4-4942-BD71-6126571D1504} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{2BEB1EEC-2FC4-42CA-A410-5C7C6AF721B4} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
-		{45940D28-3708-4EF1-8428-D85AD47D5594} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{2F005B29-D46A-441F-933D-CD25A0235074} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
 		{DC85F009-6C82-4829-9764-E328C04F023F} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
 		{975E2E2B-FFA6-4FE0-A97B-DFBD0489D5BA} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}

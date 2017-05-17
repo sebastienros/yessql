@@ -1,28 +1,28 @@
-﻿using System;
-using Microsoft.Data.Sqlite;
-using System.Data;
-using YesSql.Services;
+using System;
+using System.Threading.Tasks;
+using YesSql.Provider.SqlServer;
 using YesSql.Samples.Hi.Indexes;
 using YesSql.Samples.Hi.Models;
-using YesSql.Storage.InMemory;
 using YesSql.Sql;
 
 namespace YesSql.Samples.Hi
 {
     internal class Program
     {
-        private static void Main()
+        static void Main(string[] args)
         {
-            var configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true),
-                DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
-                IsolationLevel = IsolationLevel.Serializable
-            };
+            MainAsync(args).GetAwaiter().GetResult();
+        }
 
-            var store = new Store(configuration);
+        static async Task MainAsync(string[] args)
+        {
+            var store = new Store(
+                new Configuration()
+                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
+                    .SetTablePrefix("Hi")
+                );
 
-            store.InitializeAsync().Wait();
+            await store.InitializeAsync();
 
             using (var session = store.CreateSession())
             {

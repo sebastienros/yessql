@@ -1,17 +1,15 @@
-﻿using Dapper;
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using YesSql.Collections;
 using YesSql.Indexes;
 using YesSql.Serialization;
-using YesSql.Sql;
-using YesSql.Collections;
 
 namespace YesSql.Services
 {

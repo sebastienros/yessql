@@ -1,8 +1,8 @@
-﻿using System.Data.SqlClient;
+using System.Threading.Tasks;
 using Xunit;
-using YesSql.Indexes;
-using YesSql.Storage.LightningDB;
 using YesSql;
+using YesSql.Indexes;
+using YesSql.Provider.SqlServer;
 using YesSql.Sql;
 
 namespace Bench
@@ -11,19 +11,20 @@ namespace Bench
     {
         static void Main(string[] args)
         {
-            var configuration = new Configuration()
-            {
-                ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True"),
-                //ConnectionFactory = new DbConnectionFactory<SQLiteConnection>(@"Data Source=:memory:", true),
-                DocumentStorageFactory = new LightningDocumentStorageFactory("db"),
-                TablePrefix = "Bench"
-            };
+            MainAsync(args).GetAwaiter().GetResult();
+        }
 
-            var _store = new Store(configuration);
+        static async Task MainAsync(string[] args)
+        {
+            var store = new Store(
+                new Configuration()
+                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
+                    .SetTablePrefix("Bench")
+                );
 
-            _store.InitializeAsync().Wait();
+            await store.InitializeAsync();
 
-            using (var session = _store.CreateSession())
+            using (var session = store.CreateSession())
             {
                 var builder = new SchemaBuilder(session);
 
@@ -34,11 +35,11 @@ namespace Bench
                 );
             }
 
-            _store.RegisterIndexes<UserIndexProvider>();
+            store.RegisterIndexes<UserIndexProvider>();
 
-            using (var session = _store.CreateSession())
+            using (var session = store.CreateSession())
             {
-                var user = session.QueryAsync<User>().FirstOrDefault().Result;
+                var user = await session.QueryAsync<User>().FirstOrDefault();
                 Assert.Null(user);
 
                 var bill = new User
@@ -53,18 +54,18 @@ namespace Bench
 
             }
 
-            using (var session = _store.CreateSession())
+            using (var session = store.CreateSession())
             {
-                var user = session.QueryAsync<User, UserByName>().Where(x => x.Adult == true).FirstOrDefault().Result;
+                var user = await session.QueryAsync<User, UserByName>().Where(x => x.Adult == true).FirstOrDefault();
                 Assert.NotNull(user);
 
-                user = session.QueryAsync<User, UserByName>().Where(x => x.Age == 1).FirstOrDefault().Result;
+                user = await session.QueryAsync<User, UserByName>().Where(x => x.Age == 1).FirstOrDefault();
                 Assert.NotNull(user);
 
-                user = session.QueryAsync<User, UserByName>().Where(x => x.Age == 1 && x.Adult).FirstOrDefault().Result;
+                user = await session.QueryAsync<User, UserByName>().Where(x => x.Age == 1 && x.Adult).FirstOrDefault();
                 Assert.NotNull(user);
 
-                user = session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("B")).FirstOrDefault().Result;
+                user = await session.QueryAsync<User, UserByName>().Where(x => x.Name.StartsWith("B")).FirstOrDefault();
                 Assert.NotNull(user);
             }
         }

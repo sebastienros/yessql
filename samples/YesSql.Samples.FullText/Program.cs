@@ -1,26 +1,29 @@
-﻿using System;
-using Microsoft.Data.Sqlite;
-using YesSql.Services;
+using System;
+using System.Threading.Tasks;
+using YesSql.Provider.SqlServer;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
-using YesSql.Storage.InMemory;
+using YesSql.Services;
 using YesSql.Sql;
 
 namespace YesSql.Samples.FullText
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        static void Main(string[] args)
         {
-            var configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqliteConnection>(@"Data Source=:memory:", true),
-                DocumentStorageFactory = new InMemoryDocumentStorageFactory()
-            };
+            MainAsync(args).GetAwaiter().GetResult();
+        }
 
-            var store = new Store(configuration);
+        static async Task MainAsync(string[] args)
+        {
+            var store = new Store(
+                new Configuration()
+                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
+                    .SetTablePrefix("FullText")
+                );
 
-            store.InitializeAsync().Wait();
+            await store.InitializeAsync();
 
             using (var session = store.CreateSession())
             {
@@ -45,7 +48,7 @@ namespace YesSql.Samples.FullText
             using (var session = store.CreateSession())
             {
                 Console.WriteLine("Simple term: 'white'");
-                var simple = session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word == "white").List().Result;
+                var simple = await session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word == "white").List();
 
                 foreach (var article in simple)
                 {
@@ -53,7 +56,7 @@ namespace YesSql.Samples.FullText
                 }
 
                 Console.WriteLine("Boolean query: 'white or fox or pink'");
-                var boolQuery = session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word.IsIn(new[] { "white", "fox", "pink" })).List().Result;
+                var boolQuery = await session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word.IsIn(new[] { "white", "fox", "pink" })).List();
 
                 foreach (var article in boolQuery)
                 {

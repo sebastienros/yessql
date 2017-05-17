@@ -32,9 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
-    <ProjectReference Include="..\..\src\YesSql.Storage.Cache\YesSql.Storage.Cache.csproj" />
-    <ProjectReference Include="..\..\src\YesSql.Storage.InMemory\YesSql.Storage.InMemory.csproj" />
-    <ProjectReference Include="..\..\src\YesSql.Storage.LightningDB\YesSql.Storage.LightningDB.csproj" />
+    <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
     <ProjectReference Include="..\..\src\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj" />
   </ItemGroup>
 </Project>

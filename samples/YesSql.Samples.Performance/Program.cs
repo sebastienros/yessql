@@ -1,18 +1,11 @@
-﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Indexes;
-using YesSql.Services;
-using YesSql.Storage;
-using YesSql.Storage.InMemory;
-using YesSql.Storage.LightningDB;
-using YesSql.Storage.Sql;
+using YesSql.Provider.SqlServer;
 using YesSql.Sql;
 
 namespace YesSql.Samples.Performance
@@ -477,83 +470,50 @@ namespace YesSql.Samples.Performance
         };
         #endregion
 
-        public static void Main()
+        static void Main(string[] args)
         {
-            var dbFileName = "performance.db";
-            if (File.Exists(dbFileName))
-            {
-                File.Delete(dbFileName);
-            }
+            MainAsync(args).GetAwaiter().GetResult();
+        }
 
-            var configuration = new Configuration
-            {
-                ConnectionFactory = new DbConnectionFactory<SqlConnection>(@"Data Source = .; Initial Catalog = yessql; Integrated Security = True"),
-                DocumentStorageFactory = new InMemoryDocumentStorageFactory(),
-                IsolationLevel = IsolationLevel.ReadUncommitted
-            };
+        static async Task MainAsync(string[] args)
+        {
+            var store = new Store(
+                new Configuration()
+                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
+                    .SetTablePrefix("Performance")
+                );
 
-            var store = new Store(configuration);
+            await store.InitializeAsync();
 
             using (var session = store.CreateSession())
             {
-                StoreUsers(new InMemoryDocumentStorageFactory(), session, configuration).Wait();
+                new SchemaBuilder(session).CreateMapIndexTable("UserByName", table => table
+                        .Column<string>("Name")
+                    )
+                    .AlterTable("UserByName", table => table
+                        .CreateIndex("IX_Name", "Name")
+                    );
             }
 
-            using (var tempFolder = new TemporaryFolder())
-            {
-                Console.WriteLine(tempFolder);
-
-                using (var factory = new LightningDocumentStorageFactory(tempFolder.Folder))
-                {
-                    using (var session = store.CreateSession())
-                    {
-                        StoreUsers(factory, session, configuration).Wait();
-                    }
-                }
-            }
-
-            var sqlFactory = new SqlDocumentStorageFactory();
-            
-            var runMigrations = true;
-
-            if (runMigrations)
-            {
-                store.InitializeAsync().Wait();
-                sqlFactory.InitializeAsync(configuration).Wait();
-                using (var session = store.CreateSession())
-                {
-                    new SchemaBuilder(session).CreateMapIndexTable("UserByName", table => table
-                            .Column<string>("Name")
-                        )
-                        .AlterTable("UserByName", table => table
-                            .CreateIndex("IX_Name", "Name")
-                        );
-                }
-            }
-
-            using (var session = store.CreateSession())
-            {
-                var sqlStorage = new SqlDocumentStorage(session, sqlFactory);
-                StoreUsers(sqlFactory, session, configuration).Wait();
-            }
+            await CreateUsersAsync(store);
 
             store.RegisterIndexes<UserIndexProvider>();
 
             // pre initialize configuration
             store.CreateSession().Dispose();
 
-            Task.WaitAll(Clean(store));
+            await Clean(store);
 
             // pre initialize configuration
             store.CreateSession().Dispose();
 
-            Task.WaitAll(WriteAllWithYesSql(store));
-
-            Task.WaitAll(QueryIndexByFullName(store));
-            Task.WaitAll(QueryIndexByFullNameInSQL(store));
-            Task.WaitAll(QueryIndexByPartialName(store));
-            Task.WaitAll(QueryDocumentByFullName(store));
-            Task.WaitAll(QueryDocumentByPartialName(store));
+            await WriteAllWithYesSql(store);
+            
+            await QueryIndexByFullName(store);
+            await QueryIndexByFullNameInSQL(store);
+            await QueryIndexByPartialName(store);
+            await QueryDocumentByFullName(store);
+            await QueryDocumentByPartialName(store);
         }
 
         private async static Task Clean(IStore store)
@@ -682,66 +642,50 @@ namespace YesSql.Samples.Performance
                 Names.Length / (double)sp.ElapsedMilliseconds);
         }
 
-        private static async Task StoreUsers(IDocumentStorageFactory storageFactory, ISession session, Configuration configuration)
+        private static async Task CreateUsersAsync(IStore store)
         {
             int batch = 0, batchSize = 128, i = 0;
-            var storage = storageFactory.CreateDocumentStorage(session, configuration);
-            var identities = new List<DocumentIdentity>();
+            var session = store.CreateSession();
+            var users = new List<User>();
 
             var sp = Stopwatch.StartNew();
             foreach (var name in Names)
             {
                 batch++; i++;
 
-                identities.Add(
-                    new DocumentIdentity(
-                        id: i,
-                        entity: new User
-                        {
-                            Email = name + "@" + name + ".name",
-                            Name = name
-                        }
-                    ));
+                users.Add(new User
+                {
+                    Email = name + "@" + name + ".name",
+                    Name = name
+                });
 
                 if (batch % batchSize == 0)
                 {
-                    await storage.CreateAsync(identities.ToArray());
-
-                    identities.Clear();
-
-                    (storage as IDisposable)?.Dispose();
-                    storage = storageFactory.CreateDocumentStorage(session, configuration);
+                    await session.CommitAsync();
+                    session.Dispose();
+                    session = store.CreateSession();
+                    users = new List<User>();
                 }
             }
 
-            await storage.CreateAsync(identities.ToArray());
-            (storage as IDisposable)?.Dispose();
+            await session.CommitAsync();
+            session.Dispose();
+            session = store.CreateSession();
 
-            Console.WriteLine("\n{3} Wrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds,
-                Names.Length / (double)sp.ElapsedMilliseconds, storageFactory.GetType().Name);
+            Console.WriteLine("\nWrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds, Names.Length / (double)sp.ElapsedMilliseconds);
 
-            storage = storageFactory.CreateDocumentStorage(session, configuration);
             sp.Restart();
 
             batch = 0; batchSize = 128; i = 0;
             foreach (var name in Names)
             {
                 batch++; i++;
-                var user = await storage.GetAsync<User>(i);
+                var user = await session.GetAsync<User>(i);
 
                 Assert.NotNull(user);
-
-                if (batch % batchSize == 0)
-                {
-                    (storage as IDisposable)?.Dispose();
-                    storage = storageFactory.CreateDocumentStorage(session, configuration);
-                }
             }
 
-            (storage as IDisposable)?.Dispose();
-
-            Console.WriteLine("\n{3} Read {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds,
-                Names.Length / (double)sp.ElapsedMilliseconds, storageFactory.GetType().Name);
+            Console.WriteLine("\nRead {0:#,#} documents sequencially in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds, Names.Length / (double)sp.ElapsedMilliseconds);
         }
     }
 
