@@ -1,19 +1,17 @@
-﻿using Dapper;
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Data;
+using YesSql.Indexes;
 using YesSql.Serialization;
 using YesSql.Services;
-using YesSql.Sql;
 using YesSql.Storage;
-using YesSql.Collections;
-using YesSql.Indexes;
 
 namespace YesSql
 {
@@ -107,7 +105,51 @@ namespace YesSql
             _saved.Add(entity);
         }
 
-        private async Task SaveEntityAsync(object entity, bool update)
+        private async Task SaveEntityAsync(object entity)
+        {
+            if (entity == null)
+            {
+                throw new ArgumentNullException("obj");
+            }
+
+            if (entity is Document document)
+            {
+                throw new ArgumentException("A document should not be saved explicitely");
+            }
+
+            var index = entity as IIndex;
+
+            if (index != null)
+            {
+                throw new ArgumentException("An index should not be saved explicitely");
+            }
+            
+            var doc = new Document
+            {
+                Type = entity.GetType().SimplifiedTypeName()
+            };
+
+            // Get the entity's Id if assigned
+            var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+            if (accessor != null)
+            {
+                doc.Id = accessor.Get(entity);
+            }
+            else
+            {
+                var collection = CollectionHelper.Current.GetSafeName();
+                doc.Id = _store.GetNextId(this, collection);
+            }
+
+            Demand();
+
+            await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
+            await _storage.CreateAsync(new DocumentIdentity(doc.Id, entity));
+
+            MapNew(doc, entity);
+        }
+
+        private async Task UpdateEntityAsync(object entity)
         {
             if (entity == null)
             {
@@ -120,58 +162,27 @@ namespace YesSql
             {
                 throw new ArgumentException("A document should not be saved explicitely");
             }
-            else if (index != null)
+
+            if (index != null)
             {
                 throw new ArgumentException("An index should not be saved explicitely");
             }
-            else
+
+            // Reload to get the old map
+            if (!_identityMap.TryGetDocumentId(entity, out int id))
             {
-                // If the object is not new, reload to get the old map
-
-                if (update)
-                {
-                    if (!_identityMap.TryGetDocumentId(entity, out int id))
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    var oldDoc = await GetDocumentByIdAsync(id);
-                    var oldObj = await _storage.GetAsync(id, entity.GetType());
-
-                    // Update map index
-                    MapDeleted(oldDoc, oldObj);
-                    MapNew(oldDoc, entity);
-
-                    // Save entity
-                    await _storage.UpdateAsync(new DocumentIdentity(id, entity));
-                }
-                else
-                {
-                    var doc = new Document
-                    {
-                        Type = entity.GetType().SimplifiedTypeName()
-                    };
-
-                    // Get the entity's Id if assigned
-                    var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
-                    if (accessor != null)
-                    {
-                        doc.Id = accessor.Get(entity);
-                    }
-                    else
-                    {
-                        var collection = CollectionHelper.Current.GetSafeName();
-                        doc.Id = _store.GetNextId(this, collection);
-                    }
-
-                    Demand();
-
-                    await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
-                    await _storage.CreateAsync(new DocumentIdentity(doc.Id, entity));
-
-                    MapNew(doc, entity);
-                }
+                throw new InvalidOperationException("The object to update was not found in identity map.");
             }
+
+            var oldDoc = await GetDocumentByIdAsync(id);
+            var oldObj = await _storage.GetAsync(id, entity.GetType());
+
+            // Update map index
+            MapDeleted(oldDoc, oldObj);
+            MapNew(oldDoc, entity);
+
+            // Save entity
+            await _storage.UpdateAsync(new DocumentIdentity(id, entity));
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -373,14 +384,14 @@ namespace YesSql
             {
                 if (!_deleted.Contains(obj))
                 {
-                    await SaveEntityAsync(obj, update: true);
+                    await UpdateEntityAsync(obj);
                 }
             }
 
             // saving all pending entities
             foreach (var obj in _saved)
             {
-                await SaveEntityAsync(obj, update: false);
+                await SaveEntityAsync(obj);
             }
 
             // deleting all pending entities
