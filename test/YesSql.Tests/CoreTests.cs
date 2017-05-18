@@ -1039,7 +1039,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task AlteringDocumentShouldUpdateReducedIndex()
+        public virtual async Task AlteringDocumentShouldUpdateReducedIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -1252,7 +1252,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldReturnCachedResults()
+        public virtual async Task ShouldReturnCachedResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -1460,7 +1460,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldGetDocumentById()
+        public virtual async Task ShouldGetDocumentById()
         {
             int circleId;
 

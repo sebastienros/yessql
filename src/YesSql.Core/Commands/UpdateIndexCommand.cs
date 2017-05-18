@@ -1,12 +1,10 @@
-﻿using Dapper;
+using Dapper;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Indexes;
-using YesSql.Sql;
 using YesSql.Collections;
-using YesSql.Services;
+using YesSql.Indexes;
 
 namespace YesSql.Commands
 {

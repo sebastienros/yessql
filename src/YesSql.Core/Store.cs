@@ -82,6 +82,7 @@ namespace YesSql
                 builder.CreateTable("Document", table => table
                     .Column<int>("Id", column => column.PrimaryKey().NotNull())
                     .Column<string>("Type", column => column.NotNull())
+                    .Column<string>("Content", column => column.Unlimited())
                 )
                 .AlterTable("Document", table => table
                     .CreateIndex("IX_Type", "Type")
@@ -94,13 +95,6 @@ namespace YesSql
                 .AlterTable(LinearBlockIdGenerator.TableName, table => table
                     .CreateIndex("IX_Dimension", "dimension")
                 );
-
-                builder.CreateTable("Content", table => table
-                        .Column<int>("Id", column => column
-                            .PrimaryKey().NotNull())
-                        .Column<string>("Content", column => column
-                            .Unlimited()
-                    ));
             }
 
 #if NET451
@@ -113,7 +107,6 @@ namespace YesSql
         public Task InitializeCollectionAsync(string collectionName)
         {
             var documentTable = collectionName + "_" + "Document";
-            var contentTable = collectionName + "_" + "Content";
 
             using (var session = CreateSession())
             {
@@ -123,17 +116,11 @@ namespace YesSql
                     .CreateTable(documentTable, table => table
                     .Column<int>("Id", column => column.PrimaryKey().NotNull())
                     .Column<string>("Type", column => column.NotNull())
+                    .Column<string>("Content", column => column.Unlimited())
                 )
                 .AlterTable(documentTable, table => table
                     .CreateIndex("IX_" + documentTable + "_Type", "Type")
                 );
-
-                builder.CreateTable(contentTable, table => table
-                        .Column<int>("Id", column => column
-                            .PrimaryKey().NotNull())
-                        .Column<string>("Content", column => column
-                            .Unlimited()
-                    ));
             }
 
 #if NET451

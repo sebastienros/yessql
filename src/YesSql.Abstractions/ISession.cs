@@ -26,7 +26,7 @@ namespace YesSql
         /// Loads objects by id
         /// </summary>
         /// <returns></returns>
-        Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids) where T : class;
+        Task<IEnumerable<T>> GetAsync<T>(int[] ids) where T : class;
 
         IQuery QueryAsync();
 

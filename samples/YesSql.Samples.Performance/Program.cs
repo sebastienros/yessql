@@ -483,26 +483,31 @@ namespace YesSql.Samples.Performance
                     .SetTablePrefix("Performance")
                 );
 
-            await store.InitializeAsync();
 
-            using (var session = store.CreateSession())
+            try
             {
-                new SchemaBuilder(session).CreateMapIndexTable("UserByName", table => table
-                        .Column<string>("Name")
-                    )
-                    .AlterTable("UserByName", table => table
-                        .CreateIndex("IX_Name", "Name")
-                    );
+                await store.InitializeAsync();
             }
+            catch { }
 
-            await CreateUsersAsync(store);
+            try
+            {
+                using (var session = store.CreateSession())
+                {
+                    new SchemaBuilder(session).CreateMapIndexTable("UserByName", table => table
+                            .Column<string>("Name")
+                        )
+                        .AlterTable("UserByName", table => table
+                            .CreateIndex("IX_Name", "Name")
+                        );
+                }
+            }
+            catch { }
 
             store.RegisterIndexes<UserIndexProvider>();
-
-            // pre initialize configuration
-            store.CreateSession().Dispose();
-
             await Clean(store);
+            await CreateUsersAsync(store);
+
 
             // pre initialize configuration
             store.CreateSession().Dispose();
@@ -514,6 +519,7 @@ namespace YesSql.Samples.Performance
             await QueryIndexByPartialName(store);
             await QueryDocumentByFullName(store);
             await QueryDocumentByPartialName(store);
+
         }
 
         private async static Task Clean(IStore store)
@@ -661,6 +667,7 @@ namespace YesSql.Samples.Performance
 
                 if (batch % batchSize == 0)
                 {
+                    users.ForEach(u => session.Save(u));
                     await session.CommitAsync();
                     session.Dispose();
                     session = store.CreateSession();
@@ -668,24 +675,12 @@ namespace YesSql.Samples.Performance
                 }
             }
 
+            users.ForEach(u => session.Save(u));
             await session.CommitAsync();
             session.Dispose();
             session = store.CreateSession();
 
             Console.WriteLine("\nWrote {0:#,#} documents in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds, Names.Length / (double)sp.ElapsedMilliseconds);
-
-            sp.Restart();
-
-            batch = 0; batchSize = 128; i = 0;
-            foreach (var name in Names)
-            {
-                batch++; i++;
-                var user = await session.GetAsync<User>(i);
-
-                Assert.NotNull(user);
-            }
-
-            Console.WriteLine("\nRead {0:#,#} documents sequencially in {1:#,#}ms: {2:#,#.##}: docs/ms\n\n", i, sp.ElapsedMilliseconds, Names.Length / (double)sp.ElapsedMilliseconds);
         }
     }
 

@@ -469,16 +469,23 @@ namespace YesSql.Services
                 }
                 else
                 {
-                    _query._sqlBuilder.Selector(_query._documentTable, "Id");
+                    _query._sqlBuilder.Selector(_query._documentTable, "*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
-                    var ids = (await _query._connection.QueryAsync<int>(sql, _query._sqlBuilder.Parameters, _query._transaction)).ToArray();
+                    var documents = (await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction)).ToArray();
 
-                    if (ids.Length == 0)
+                    if (documents.Length == 0)
                     {
                         return default(T);
                     }
 
-                    return (await _query._session.GetAsync<T>(ids[0])).FirstOrDefault();
+                    if (typeof(T) == typeof(object))
+                    {
+                        return _query._session.Store.Configuration.ContentSerializer.DeserializeDynamic(documents[0].Content);
+                    }
+                    else
+                    {
+                        return (T)_query._session.Store.Configuration.ContentSerializer.Deserialize(documents[0].Content, typeof(T));
+                    }
                 }
             }
 
@@ -503,7 +510,7 @@ namespace YesSql.Services
                     _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn(_query._documentTable, "*"));
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var documents = await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
-                    return await _query._session.GetAsync<T>(documents.Select(x => x.Id));
+                    return _query._session.Get<T>(documents.ToArray());
                 }
             }
 

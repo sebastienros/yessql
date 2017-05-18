@@ -1,4 +1,4 @@
-﻿namespace YesSql
+namespace YesSql
 {
     public class Document
     {
@@ -11,5 +11,10 @@
         /// The type of the document.
         /// </summary>
         public string Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the serialized content of the document.
+        /// </summary>
+        public string Content { get; set; }
     }
 }
