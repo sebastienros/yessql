@@ -596,6 +596,12 @@ namespace YesSql.Services
                 return this;
             }
 
+            IQueryIndex<T> IQueryIndex<T>.Where(Func<ISqlDialect, string> sql)
+            {
+                _query._sqlBuilder.WhereAlso(sql?.Invoke(_query._dialect));
+                return this;
+            }
+
             IQueryIndex<T> IQueryIndex<T>.Where(Expression<Func<T, bool>> predicate)
             {
                 _query.Filter<T>(predicate);
@@ -645,6 +651,12 @@ namespace YesSql.Services
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(string sql)
             {
                 _query._sqlBuilder.WhereAlso(sql);
+                return this;
+            }
+
+            IQuery<T, TIndex> IQuery<T, TIndex>.Where(Func<ISqlDialect, string> sql)
+            {
+                _query._sqlBuilder.WhereAlso(sql?.Invoke(_query._dialect));
                 return this;
             }
 
