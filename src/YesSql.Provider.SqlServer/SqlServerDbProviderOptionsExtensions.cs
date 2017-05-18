@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using YesSql.Providers.SqlServer;
-using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.SqlServer
 {
@@ -40,7 +39,6 @@ namespace YesSql.Provider.SqlServer
 
             RegisterSqlServer(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;

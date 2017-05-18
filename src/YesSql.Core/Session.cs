@@ -1,19 +1,16 @@
-﻿using Dapper;
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Data;
+using YesSql.Indexes;
 using YesSql.Serialization;
 using YesSql.Services;
-using YesSql.Sql;
-using YesSql.Storage;
-using YesSql.Collections;
-using YesSql.Indexes;
 
 namespace YesSql
 {
@@ -27,18 +24,16 @@ namespace YesSql
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
-        private readonly IDocumentStorage _storage;
         private readonly Store _store;
         private readonly ISqlDialect _dialect;
-        private readonly IsolationLevel _isolationLevel;
-        private readonly IDbConnection _connection;
         private volatile bool _disposed;
+        internal IsolationLevel _isolationLevel;
+        private IDbConnection _connection;
 
         protected bool _cancel;
 
-        public Session(Func<ISession, IDocumentStorage> storage, Store store, IsolationLevel isolationLevel)
+        public Session(Store store, IsolationLevel isolationLevel)
         {
-            _storage = storage(this);
             _store = store;
             _isolationLevel = isolationLevel;
 
@@ -107,7 +102,50 @@ namespace YesSql
             _saved.Add(entity);
         }
 
-        private async Task SaveEntityAsync(object entity, bool update)
+        private async Task SaveEntityAsync(object entity)
+        {
+            if (entity == null)
+            {
+                throw new ArgumentNullException("obj");
+            }
+
+            if (entity is Document document)
+            {
+                throw new ArgumentException("A document should not be saved explicitely");
+            }
+
+            if (entity is IIndex index)
+            {
+                throw new ArgumentException("An index should not be saved explicitely");
+            }
+
+            var doc = new Document
+            {
+                Type = entity.GetType().SimplifiedTypeName()
+            };
+
+            // Get the entity's Id if assigned
+            var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+            if (accessor != null)
+            {
+                doc.Id = accessor.Get(entity);
+            }
+            else
+            {
+                var collection = CollectionHelper.Current.GetSafeName();
+                doc.Id = _store.GetNextId(this, collection);
+            }
+
+            Demand();
+
+            doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
+
+            await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
+
+            MapNew(doc, entity);
+        }
+
+        private async Task UpdateEntityAsync(object entity)
         {
             if (entity == null)
             {
@@ -120,58 +158,27 @@ namespace YesSql
             {
                 throw new ArgumentException("A document should not be saved explicitely");
             }
-            else if (index != null)
+
+            if (index != null)
             {
                 throw new ArgumentException("An index should not be saved explicitely");
             }
-            else
+
+            // Reload to get the old map
+            if (!_identityMap.TryGetDocumentId(entity, out int id))
             {
-                // If the object is not new, reload to get the old map
-
-                if (update)
-                {
-                    if (!_identityMap.TryGetDocumentId(entity, out int id))
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    var oldDoc = await GetDocumentByIdAsync(id);
-                    var oldObj = await _storage.GetAsync(id, entity.GetType());
-
-                    // Update map index
-                    MapDeleted(oldDoc, oldObj);
-                    MapNew(oldDoc, entity);
-
-                    // Save entity
-                    await _storage.UpdateAsync(new DocumentIdentity(id, entity));
-                }
-                else
-                {
-                    var doc = new Document
-                    {
-                        Type = entity.GetType().SimplifiedTypeName()
-                    };
-
-                    // Get the entity's Id if assigned
-                    var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
-                    if (accessor != null)
-                    {
-                        doc.Id = accessor.Get(entity);
-                    }
-                    else
-                    {
-                        var collection = CollectionHelper.Current.GetSafeName();
-                        doc.Id = _store.GetNextId(this, collection);
-                    }
-
-                    Demand();
-
-                    await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
-                    await _storage.CreateAsync(new DocumentIdentity(doc.Id, entity));
-
-                    MapNew(doc, entity);
-                }
+                throw new InvalidOperationException("The object to update was not found in identity map.");
             }
+
+            var oldDoc = await GetDocumentByIdAsync(id);
+            var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
+
+            // Update map index
+            MapDeleted(oldDoc, oldObj);
+            MapNew(oldDoc, entity);
+
+            oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
+            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -200,19 +207,21 @@ namespace YesSql
             }
             else
             {
-                var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
-                if (accessor == null)
+                if (!_identityMap.TryGetDocumentId(obj, out var id))
                 {
-                    throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
+                    var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
+                    if (accessor == null)
+                    {
+                        throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
+                    }
+
+                    id = accessor.Get(obj);
                 }
 
-                var id = accessor.Get(obj);
                 var doc = await GetDocumentByIdAsync(id);
 
                 if (doc != null)
                 {
-                    await _storage.DeleteAsync(new DocumentIdentity(id, obj));
-
                     // Untrack the deleted object
                     _identityMap.Remove(id, obj);
 
@@ -225,75 +234,62 @@ namespace YesSql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(int[] ids) where T : class
         {
+            if (ids == null || !ids.Any())
+            {
+                return Enumerable.Empty<T>();
+            }
+
             CheckDisposed();
 
             // Auto-flush
             await CommitAsync();
 
+            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
+            var documents = await _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
+
+            return Get<T>(documents.ToArray());
+        }
+
+        public IEnumerable<T> Get<T>(Document[] documents) where T : class
+        {
+            if (documents == null || !documents.Any())
+            {
+                return Enumerable.Empty<T>();
+            }
+
             var result = new List<T>();
-
-            if (ids == null || !ids.Any())
-            {
-                return result;
-            }
-
-            // Are all the objects already in cache?
-            var cached = ids.Select(id =>
-            {
-                if (_identityMap.TryGetEntityById(id, out object entity))
-                {
-                    return entity;
-                }
-
-                return null;
-            }).ToArray();
-
-            // Are all the result already loaded in the current session?
-            if (!cached.Any(x => x == null))
-            {
-                foreach (T item in cached)
-                {
-                    result.Add(item);
-                }
-
-                return result;
-            }
-
-            // Some documents might not be in cache, load all of them from storage, then resolve local maps
-            var items = (await _storage.GetAsync<T>(ids.ToArray())).ToArray();
-
-            // if the document has an Id property, set it back
+            
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
 
-            for (int i = 0; i < items.Length; i++)
+            // Are all the objects already in cache?
+            foreach (var d in documents)
             {
-                var item = items[i];
-                var id = ids.ElementAt(i);
-
-                if (_identityMap.TryGetEntityById(id, out object entity))
+                if (_identityMap.TryGetEntityById(d.Id, out object entity))
                 {
                     result.Add((T)entity);
                 }
                 else
                 {
+                    var item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, typeof(T));
+
                     if (accessor != null)
                     {
-                        accessor.Set(item, id);
+                        accessor.Set(item, d.Id);
                     }
 
                     // track the loaded object
-                    _identityMap.Add(id, item);
+                    _identityMap.Add(d.Id, item);
 
                     result.Add(item);
                 }
-            }
-
+            };
+            
             return result;
         }
 
-        public IQuery QueryAsync()
+        public IQuery Query()
         {
             Demand();
 
@@ -357,6 +353,35 @@ namespace YesSql
                     }
                 }
             }
+
+            Release();
+        }
+
+        /// <summary>
+        /// Called when the instance is available to an object pool.
+        /// </summary>
+        internal void Release()
+        {
+            _updated.Clear();
+            _saved.Clear();
+            _deleted.Clear();
+            _commands.Clear();
+            _maps.Clear();
+
+            _identityMap.Clear();
+            _store.ReleaseSession(this);
+        }
+
+        /// <summary>
+        /// Called when the instance is reused from an object pool and doesn't go
+        /// through the constructor.
+        /// </summary>
+        internal void StartLease(IsolationLevel isolationLevel)
+        {
+            _disposed = false;
+            _cancel = false;
+            _isolationLevel = isolationLevel;
+            _connection = _store.Configuration.ConnectionFactory.CreateConnection();
         }
 
         public async Task CommitAsync()
@@ -373,14 +398,14 @@ namespace YesSql
             {
                 if (!_deleted.Contains(obj))
                 {
-                    await SaveEntityAsync(obj, update: true);
+                    await UpdateEntityAsync(obj);
                 }
             }
 
             // saving all pending entities
             foreach (var obj in _saved)
             {
-                await SaveEntityAsync(obj, update: false);
+                await SaveEntityAsync(obj);
             }
 
             // deleting all pending entities
@@ -401,6 +426,7 @@ namespace YesSql
             _saved.Clear();
             _deleted.Clear();
             _commands.Clear();
+            _maps.Clear();
         }
 
         private async Task ReduceAsync()
@@ -458,7 +484,7 @@ namespace YesSql
                         }
                     }
 
-                    ReduceIndex dbIndex = await ReduceForAsync(descriptor, currentKey);
+                    var dbIndex = await ReduceForAsync(descriptor, currentKey);
 
                     // if index present in db and new objects, reduce them
                     if (dbIndex != null && index != null)
@@ -661,6 +687,17 @@ namespace YesSql
             _cancel = true;
         }
 
-        public IStore Store => _store;        
+        public IStore Store => _store;
+
+        #region Storage implementation
+        
+        private struct IdString
+        {
+#pragma warning disable 0649
+            public int Id;
+            public string Content;
+#pragma warning restore 0649
+        }
+        #endregion
     }
 }

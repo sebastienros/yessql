@@ -1,14 +1,13 @@
-﻿using System.Net;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Threading.Tasks;
 using Xunit;
-using YesSql.Provider.Sqlite;
-using YesSql.Storage.Sql;
 using YesSql.Provider.MySql;
 using YesSql.Provider.PostgreSql;
+using YesSql.Provider.Sqlite;
 using YesSql.Provider.SqlServer;
 
 namespace YesSql.Tests
@@ -35,7 +34,6 @@ namespace YesSql.Tests
 
                         // Assert
                         Assert.NotNull(store);
-                        Assert.IsType<SqlDocumentStorageFactory>(store.Configuration.DocumentStorageFactory);
                         return Task.FromResult(0);
                     });
                 });

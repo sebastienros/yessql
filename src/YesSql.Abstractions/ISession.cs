@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -26,9 +26,9 @@ namespace YesSql
         /// Loads objects by id
         /// </summary>
         /// <returns></returns>
-        Task<IEnumerable<T>> GetAsync<T>(IEnumerable<int> ids) where T : class;
+        Task<IEnumerable<T>> GetAsync<T>(int[] ids) where T : class;
 
-        IQuery QueryAsync();
+        IQuery Query();
 
         /// <summary>
         /// Cancels any pending command

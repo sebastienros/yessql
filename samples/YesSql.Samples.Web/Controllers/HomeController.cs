@@ -20,7 +20,7 @@ namespace YesSql.Samples.Web.Controllers
             BlogPost post;
             using (var session = _store.CreateSession())
             {
-                post = await session.QueryAsync<BlogPost>().FirstOrDefault();
+                post = await session.Query<BlogPost>().FirstOrDefaultAsync();
             }
 
             return View(post);

@@ -1,14 +1,14 @@
-﻿using System;
+using Dapper;
+using Roslyn.Utilities;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Dapper;
 using YesSql.Collections;
 using YesSql.Commands;
-using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
@@ -19,6 +19,7 @@ namespace YesSql
     {
         protected List<IIndexProvider> Indexes;
         protected LinearBlockIdGenerator IdGenerator;
+        private ObjectPool<Session> SessionPool;
 
         public IConfiguration Configuration { get; set; }
 
@@ -35,7 +36,7 @@ namespace YesSql
             new ConcurrentDictionary<Type, Func<IDescriptor>>();
 
         public const string DocumentTable = "Document";
-
+        
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
@@ -72,6 +73,8 @@ namespace YesSql
             Indexes = new List<IIndexProvider>();
             ValidateConfiguration();
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
+
+            SessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
         }
 
         public Task InitializeAsync()
@@ -83,6 +86,7 @@ namespace YesSql
                 builder.CreateTable("Document", table => table
                     .Column<int>("Id", column => column.PrimaryKey().NotNull())
                     .Column<string>("Type", column => column.NotNull())
+                    .Column<string>("Content", column => column.Unlimited())
                 )
                 .AlterTable("Document", table => table
                     .CreateIndex("IX_Type", "Type")
@@ -95,9 +99,13 @@ namespace YesSql
                 .AlterTable(LinearBlockIdGenerator.TableName, table => table
                     .CreateIndex("IX_Dimension", "dimension")
                 );
-            };
+            }
 
-            return Configuration.DocumentStorageFactory.InitializeAsync(Configuration);
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
 
         public Task InitializeCollectionAsync(string collectionName)
@@ -112,13 +120,18 @@ namespace YesSql
                     .CreateTable(documentTable, table => table
                     .Column<int>("Id", column => column.PrimaryKey().NotNull())
                     .Column<string>("Type", column => column.NotNull())
+                    .Column<string>("Content", column => column.Unlimited())
                 )
                 .AlterTable(documentTable, table => table
                     .CreateIndex("IX_" + documentTable + "_Type", "Type")
                 );
             }
 
-            return Configuration.DocumentStorageFactory.InitializeCollectionAsync(Configuration, collectionName);
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
 
         private void ValidateConfiguration()
@@ -127,30 +140,32 @@ namespace YesSql
             {
                 throw new Exception("The connection factory should be initialized during configuration.");
             }
-
-            if (Configuration.DocumentStorageFactory == null)
-            {
-                throw new Exception("The document storage factory should be initialized during configuration.");
-            }
         }
 
         public ISession CreateSession()
         {
-            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this, Configuration.IsolationLevel);
+            return CreateSession(Configuration.IsolationLevel);
         }
 
         public ISession CreateSession(IsolationLevel isolationLevel)
         {
-            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this, isolationLevel);
+            var session = SessionPool.Allocate();
+            session.StartLease(isolationLevel);
+            return session;
+        }
+
+        private Session MakeSession()
+        {
+            return new Session(this, Configuration.IsolationLevel);
+        }
+
+        internal void ReleaseSession(Session session)
+        {
+            SessionPool.Free(session);
         }
 
         public void Dispose()
         {
-            var disposableFactory = Configuration.DocumentStorageFactory as IDisposable;
-            if (disposableFactory != null)
-            {
-                disposableFactory.Dispose();
-            }
         }
 
         public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)

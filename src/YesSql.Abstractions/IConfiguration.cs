@@ -1,16 +1,16 @@
-﻿using System.Data;
+using System.Data;
 using System.Data.Common;
-using YesSql.Storage;
 
 namespace YesSql
 {
     public interface IConfiguration
     {
         IIdentifierFactory IdentifierFactory { get; set; }
-        IDocumentStorageFactory DocumentStorageFactory { get; set; }
         IsolationLevel IsolationLevel { get; set; }
         IConnectionFactory ConnectionFactory { get; set; }
+        IContentSerializer ContentSerializer { get; set; }
         string TablePrefix { get; set; }
+        int SessionPoolSize { get; set; }
     }
 
     public static class ConfigurationExtensions
@@ -18,12 +18,6 @@ namespace YesSql
         public static IConfiguration SetIdentifierFactory(this IConfiguration configuration, IIdentifierFactory identifierFactory)
         {
             configuration.IdentifierFactory = identifierFactory;
-            return configuration;
-        }
-
-        public static IConfiguration SetDocumentStorageFactory(this IConfiguration configuration, IDocumentStorageFactory documentStorageFactory)
-        {
-            configuration.DocumentStorageFactory = documentStorageFactory;
             return configuration;
         }
 
@@ -44,8 +38,20 @@ namespace YesSql
             configuration.TablePrefix = tablePrefix;
             return configuration;
         }
+
+        public static IConfiguration SetContentSerializer(this IConfiguration configuration, IContentSerializer contentSerializer)
+        {
+            configuration.ContentSerializer = contentSerializer;
+            return configuration;
+        }
+
+        public static IConfiguration SetSessionPoolSize(this IConfiguration configuration, int size)
+        {
+            configuration.SessionPoolSize = size;
+            return configuration;
+        }
     }
-    
+
     public class DbConnectionFactory<TDbConnection> : IConnectionFactory
         where TDbConnection : DbConnection, new()
     {
