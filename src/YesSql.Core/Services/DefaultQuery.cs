@@ -161,12 +161,62 @@ namespace YesSql.Services
             _sqlBuilder.WhereAlso(_builder.ToString());
         }
 
+        /// <summary>
+        /// Converts an expression that is not based on a lambda parameter to its atomic constant value.
+        /// </summary>
+        private ConstantExpression Evaluate(Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.Constant:
+                    return (ConstantExpression)expression;
+                case ExpressionType.New:
+                    var newExpression = (NewExpression)expression;
+                    var arguments = newExpression.Arguments.Select(a => Evaluate(a).Value).ToArray();
+                    var value = newExpression.Constructor.Invoke(arguments);
+                    return Expression.Constant(value);
+                case ExpressionType.Call:
+                    var methodExpression = (MethodCallExpression)expression;
+                    arguments = methodExpression.Arguments.Select(a => Evaluate(a).Value).ToArray();
+                    var obj = Evaluate(methodExpression.Object).Value;
+                    return Expression.Constant(methodExpression.Method.Invoke(obj, arguments));
+                case ExpressionType.MemberAccess:
+                    var memberExpression = (MemberExpression)expression;
+
+                    if (memberExpression.Member.MemberType == MemberTypes.Field)
+                    {
+                        obj = Evaluate(memberExpression.Expression).Value;
+                        if (obj == null)
+                        {
+                            return Expression.Constant(null);
+                        }
+                        value = ((FieldInfo)memberExpression.Member).GetValue(obj);
+                        return Expression.Constant(value);
+                    }
+                    else if (memberExpression.Member.MemberType == MemberTypes.Property)
+                    {
+                        obj = Evaluate(memberExpression.Expression).Value;
+                        if (obj == null)
+                        {
+                            return Expression.Constant(null);
+                        }
+                        value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
+                        return Expression.Constant(value);
+                    }
+                    break;
+            }
+
+            // TODO: Detect the code paths that can reach this point, but testing various expression or
+            // logging, then enhance this method to take the case into account. This is critical
+            // to not have to compile as the performance difference is 100x.
+            return Expression.Constant(Expression.Lambda(expression).Compile().DynamicInvoke());
+        }
+
         public void ConvertFragment(StringBuilder builder, Expression expression)
         {
             if (!IsParameterBased(expression))
             {
-                var value = Expression.Lambda(expression).Compile().DynamicInvoke();
-                expression = Expression.Constant(value);
+                expression = Evaluate(expression);
             }
 
             switch (expression.NodeType)
