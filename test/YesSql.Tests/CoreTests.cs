@@ -206,6 +206,42 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryIndexWithParameter()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.QueryIndexAsync<PersonByName>().Where("Name = @name").WithParameter("name", "Bill").FirstOrDefault();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", (string)person.Name);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryDocumentWithParameter()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.QueryAsync<Person, PersonByName>().Where("Name = @name").WithParameter("name", "Bill").FirstOrDefault();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", (string)person.Firstname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldSerializeComplexObject()
         {
             int productId;

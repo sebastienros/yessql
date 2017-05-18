@@ -625,6 +625,12 @@ namespace YesSql.Services
                 _query.ThenByDescending(keySelector);
                 return this;
             }
+
+            IQueryIndex<T> IQueryIndex<T>.WithParameter(string name, object value)
+            {
+                _query._sqlBuilder.Parameters[name] = value;
+                return this;
+            }
         }
 
         class Query<T, TIndex> : Query<T>, IQuery<T, TIndex>
@@ -642,6 +648,11 @@ namespace YesSql.Services
                 return this;
             }
 
+            IQuery<T, TIndex> IQuery<T, TIndex>.WithParameter(string name, object value)
+            {
+                _query._sqlBuilder.Parameters[name] = value;
+                return this;
+            }
 
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(Expression<Func<TIndex, bool>> predicate)
             {

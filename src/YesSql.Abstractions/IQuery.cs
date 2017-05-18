@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -51,6 +51,7 @@ namespace YesSql
         IQueryIndex<TIndex> With<TIndex>() where TIndex : class, IIndex;
         IQueryIndex<TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
         IQueryIndex<T> Where(string sql);
+        IQueryIndex<T> WithParameter(string name, object value);
         IQueryIndex<T> Where(Expression<Func<T, bool>> predicate);
         IQueryIndex<T> OrderBy(Expression<Func<T, object>> keySelector);
         IQueryIndex<T> OrderByDescending(Expression<Func<T, object>> keySelector);
@@ -73,6 +74,7 @@ namespace YesSql
         where TIndex : IIndex
     {
         IQuery<T, TIndex> Where(string sql);
+        IQuery<T, TIndex> WithParameter(string name, object value);
         IQuery<T, TIndex> Where(Expression<Func<TIndex, bool>> predicate);
         IQuery<T, TIndex> OrderBy(Expression<Func<TIndex, object>> keySelector);
         IQuery<T, TIndex> OrderByDescending(Expression<Func<TIndex, object>> keySelector);
