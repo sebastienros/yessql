@@ -1,8 +1,7 @@
-﻿using System;
-using System.Data;
 using Npgsql;
+using System;
+using System.Data;
 using YesSql.Providers.PostgreSql;
-using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.PostgreSql
 {
@@ -40,7 +39,6 @@ namespace YesSql.Provider.PostgreSql
 
             RegisterPostgreSql(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;

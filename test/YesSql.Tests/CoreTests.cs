@@ -1,4 +1,3 @@
-﻿using Dapper;
 using System;
 using System.Data;
 using System.Linq;
@@ -10,7 +9,6 @@ using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
-using System.Text;
 
 namespace YesSql.Tests
 {
@@ -384,7 +382,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldAppendIndexOnUpdate()
+        public virtual async Task ShouldAppendIndexOnUpdate()
         {
             // When an object is updated, its map indexes
             // should be created a new records (to support append only scenarios)
@@ -2111,7 +2109,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldUpdateEntitiesFromSeparateSessions()
+        public virtual async Task ShouldUpdateEntitiesFromSeparateSessions()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -2132,6 +2130,7 @@ namespace YesSql.Tests
             {
                 bill.Firstname = "Bill2";
                 session.Save(bill);
+                await session.CommitAsync();
 
                 Assert.Equal(1, await session.QueryAsync<Person, PersonByName>().Count());
                 Assert.Equal(0, await session.QueryIndexAsync<PersonByName>().Where(x => x.Name == "Bill").Count());

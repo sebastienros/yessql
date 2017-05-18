@@ -8,9 +8,8 @@
     <PackageReference Include="MySqlConnector" Version="0.18.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
+    <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
-    <ProjectReference Include="..\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
   </ItemGroup>

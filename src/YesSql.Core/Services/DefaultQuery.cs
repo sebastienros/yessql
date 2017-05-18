@@ -478,7 +478,7 @@ namespace YesSql.Services
                         return default(T);
                     }
 
-                    return await _query._session.GetAsync<T>(ids[0]);
+                    return (await _query._session.GetAsync<T>(ids[0])).FirstOrDefault();
                 }
             }
 

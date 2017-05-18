@@ -1,15 +1,14 @@
-﻿using System.Data;
+using System.Data;
 using System.Data.Common;
-using YesSql.Storage;
 
 namespace YesSql
 {
     public interface IConfiguration
     {
         IIdentifierFactory IdentifierFactory { get; set; }
-        IDocumentStorageFactory DocumentStorageFactory { get; set; }
         IsolationLevel IsolationLevel { get; set; }
         IConnectionFactory ConnectionFactory { get; set; }
+        IContentSerializer ContentSerializer { get; set; }
         string TablePrefix { get; set; }
     }
 
@@ -18,12 +17,6 @@ namespace YesSql
         public static IConfiguration SetIdentifierFactory(this IConfiguration configuration, IIdentifierFactory identifierFactory)
         {
             configuration.IdentifierFactory = identifierFactory;
-            return configuration;
-        }
-
-        public static IConfiguration SetDocumentStorageFactory(this IConfiguration configuration, IDocumentStorageFactory documentStorageFactory)
-        {
-            configuration.DocumentStorageFactory = documentStorageFactory;
             return configuration;
         }
 
@@ -42,6 +35,12 @@ namespace YesSql
         public static IConfiguration SetTablePrefix(this IConfiguration configuration, string tablePrefix)
         {
             configuration.TablePrefix = tablePrefix;
+            return configuration;
+        }
+
+        public static IConfiguration SetContentSerializer(this IConfiguration configuration, IContentSerializer contentSerializer)
+        {
+            configuration.ContentSerializer = contentSerializer;
             return configuration;
         }
     }

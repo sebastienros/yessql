@@ -25,7 +25,6 @@ namespace YesSql
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
-        private readonly IDocumentStorage _storage;
         private readonly Store _store;
         private readonly ISqlDialect _dialect;
         private readonly IsolationLevel _isolationLevel;
@@ -34,9 +33,8 @@ namespace YesSql
 
         protected bool _cancel;
 
-        public Session(Func<ISession, IDocumentStorage> storage, Store store, IsolationLevel isolationLevel)
+        public Session(Store store, IsolationLevel isolationLevel)
         {
-            _storage = storage(this);
             _store = store;
             _isolationLevel = isolationLevel;
 
@@ -144,7 +142,7 @@ namespace YesSql
             Demand();
 
             await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
-            await _storage.CreateAsync(new DocumentIdentity(doc.Id, entity));
+            await CreateAsync(new DocumentIdentity(doc.Id, entity));
 
             MapNew(doc, entity);
         }
@@ -175,14 +173,14 @@ namespace YesSql
             }
 
             var oldDoc = await GetDocumentByIdAsync(id);
-            var oldObj = await _storage.GetAsync(id, entity.GetType());
+            var oldObj = (await GetAsync(new DocumentIdentity(id, entity.GetType())))?.FirstOrDefault();
 
             // Update map index
             MapDeleted(oldDoc, oldObj);
             MapNew(oldDoc, entity);
 
             // Save entity
-            await _storage.UpdateAsync(new DocumentIdentity(id, entity));
+            await UpdateAsync(new DocumentIdentity(id, entity));
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -222,7 +220,7 @@ namespace YesSql
 
                 if (doc != null)
                 {
-                    await _storage.DeleteAsync(new DocumentIdentity(id, obj));
+                    await DeleteAsync(new DocumentIdentity(id, obj));
 
                     // Untrack the deleted object
                     _identityMap.Remove(id, obj);
@@ -273,7 +271,7 @@ namespace YesSql
             }
 
             // Some documents might not be in cache, load all of them from storage, then resolve local maps
-            var items = (await _storage.GetAsync<T>(ids.ToArray())).ToArray();
+            var items = (await GetAsync<T>(ids.ToArray())).ToArray();
 
             // if the document has an Id property, set it back
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
@@ -672,6 +670,150 @@ namespace YesSql
             _cancel = true;
         }
 
-        public IStore Store => _store;        
+        public IStore Store => _store;
+
+        #region Storage implementation
+        public async Task CreateAsync(params IIdentityEntity[] documents)
+        {
+            var contentTable = CollectionHelper.Current.GetPrefixedName("Content");
+
+            var tx = Demand();
+
+            foreach (var document in documents)
+            {
+                var content = Store.Configuration.ContentSerializer.Serialize(document.Entity);
+
+                var dialect = SqlDialectFactory.For(tx.Connection);
+                var insertCmd = "insert into " + dialect.QuoteForTableName(Store.Configuration.TablePrefix + contentTable) + " (" + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + ") values (@Id, @Content);";
+                await tx.Connection.ExecuteScalarAsync<int>(insertCmd, new { Id = document.Id, Content = content }, tx);
+            }
+        }
+
+        public async Task UpdateAsync(params IIdentityEntity[] documents)
+        {
+            var contentTable = CollectionHelper.Current.GetPrefixedName("Content");
+            var tx = Demand();
+
+            foreach (var document in documents)
+            {
+                var content = Store.Configuration.ContentSerializer.Serialize(document.Entity);
+
+                var dialect = SqlDialectFactory.For(tx.Connection);
+                var updateCmd = "update " + dialect.QuoteForTableName(Store.Configuration.TablePrefix + contentTable) + " set " + dialect.QuoteForColumnName("Content") + " = @Content where " + dialect.QuoteForColumnName("Id") + " = @Id;";
+                await tx.Connection.ExecuteScalarAsync<int>(updateCmd, new { Id = document.Id, Content = content }, tx);
+            }
+        }
+
+        public async Task DeleteAsync(params IIdentityEntity[] documents)
+        {
+            var contentTable = CollectionHelper.Current.GetPrefixedName("Content");
+            var tx = Demand();
+
+            foreach (var documentsPage in documents.PagesOf(128))
+            {
+                var dialect = SqlDialectFactory.For(tx.Connection);
+                var deleteCmd = "delete from " + dialect.QuoteForTableName(Store.Configuration.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + dialect.InOperator("@Id") + ";";
+                await tx.Connection.ExecuteScalarAsync<int>(deleteCmd, new { Id = documentsPage.Select(x => x.Id).ToArray() }, tx);
+            }
+        }
+
+        public async Task<IEnumerable<T>> GetAsync<T>(params int[] ids)
+        {
+            if (ids == null)
+            {
+                throw new ArgumentNullException("id");
+            }
+
+            var contentTable = CollectionHelper.Current.GetPrefixedName("Content");
+            var result = new T[ids.Length];
+
+            // Create an index to lookup the position of a specific document id
+            var orderedLookup = new Dictionary<int, int>();
+            for (var i = 0; i < ids.Length; i++)
+            {
+                orderedLookup[ids[i]] = i;
+            }
+
+            var tx = Demand();
+
+            var dialect = SqlDialectFactory.For(tx.Connection);
+            var selectCmd = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(Store.Configuration.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + dialect.InOperator("@Id") + ";";
+
+            foreach (var idPages in ids.PagesOf(128))
+            {
+                var entities = await tx.Connection.QueryAsync<IdString>(selectCmd, new { Id = idPages.ToArray() }, tx);
+
+                foreach (var entity in entities)
+                {
+                    var index = orderedLookup[entity.Id];
+                    if (typeof(T) == typeof(object))
+                    {
+                        result[index] = Store.Configuration.ContentSerializer.DeserializeDynamic(entity.Content);
+                    }
+                    else
+                    {
+                        result[index] = (T)Store.Configuration.ContentSerializer.Deserialize(entity.Content, typeof(T));
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<IEnumerable<object>> GetAsync(params IIdentityEntity[] documents)
+        {
+            var result = new object[documents.Length];
+
+            // Create an index to lookup the position of a specific document id
+            var orderedLookup = new Dictionary<int, int>();
+            for (var i = 0; i < documents.Length; i++)
+            {
+                orderedLookup[documents[i].Id] = i;
+            }
+
+            var contentTable = CollectionHelper.Current.GetPrefixedName("Content");
+            var tx = Demand();
+
+            var typeGroups = documents.GroupBy(x => x.EntityType);
+
+            // In case identities are from different types, group queries by type
+            foreach (var typeGroup in typeGroups)
+            {
+                // Limit the IN clause to 128 items at a time
+                foreach (var documentsPage in typeGroup.PagesOf(128))
+                {
+                    var ids = documentsPage.Select(x => x.Id).ToArray();
+                    var dialect = SqlDialectFactory.For(tx.Connection);
+                    IEnumerable<IdString> entities;
+                    if (ids.Length == 1)
+                    {
+                        var single = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(Store.Configuration.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
+                        entities = await tx.Connection.QueryAsync<IdString>(single, new { Id = ids[0] }, tx);
+                    }
+                    else
+                    {
+                        var single = "select " + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Content") + " from " + dialect.QuoteForTableName(Store.Configuration.TablePrefix + contentTable) + " where " + dialect.QuoteForColumnName("Id") + dialect.InOperator("@Id");
+                        entities = await tx.Connection.QueryAsync<IdString>(single, new { Id = ids }, tx);
+                    }
+
+                    foreach (var entity in entities)
+                    {
+                        var index = orderedLookup[entity.Id];
+                        result[index] = Store.Configuration.ContentSerializer.Deserialize(entity.Content, typeGroup.Key);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private struct IdString
+        {
+#pragma warning disable 0649
+            public int Id;
+            public string Content;
+#pragma warning restore 0649
+        }
+        #endregion
     }
 }

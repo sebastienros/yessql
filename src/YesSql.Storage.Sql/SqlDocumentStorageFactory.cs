@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.Threading.Tasks;
 using YesSql.Services;
 using YesSql.Sql;

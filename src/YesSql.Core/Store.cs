@@ -1,14 +1,13 @@
-﻿using System;
+using Dapper;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Dapper;
 using YesSql.Collections;
 using YesSql.Commands;
-using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
@@ -95,14 +94,26 @@ namespace YesSql
                 .AlterTable(LinearBlockIdGenerator.TableName, table => table
                     .CreateIndex("IX_Dimension", "dimension")
                 );
-            };
 
-            return Configuration.DocumentStorageFactory.InitializeAsync(Configuration);
+                builder.CreateTable("Content", table => table
+                        .Column<int>("Id", column => column
+                            .PrimaryKey().NotNull())
+                        .Column<string>("Content", column => column
+                            .Unlimited()
+                    ));
+            }
+
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
 
         public Task InitializeCollectionAsync(string collectionName)
         {
             var documentTable = collectionName + "_" + "Document";
+            var contentTable = collectionName + "_" + "Content";
 
             using (var session = CreateSession())
             {
@@ -116,9 +127,20 @@ namespace YesSql
                 .AlterTable(documentTable, table => table
                     .CreateIndex("IX_" + documentTable + "_Type", "Type")
                 );
+
+                builder.CreateTable(contentTable, table => table
+                        .Column<int>("Id", column => column
+                            .PrimaryKey().NotNull())
+                        .Column<string>("Content", column => column
+                            .Unlimited()
+                    ));
             }
 
-            return Configuration.DocumentStorageFactory.InitializeCollectionAsync(Configuration, collectionName);
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
 
         private void ValidateConfiguration()
@@ -127,30 +149,20 @@ namespace YesSql
             {
                 throw new Exception("The connection factory should be initialized during configuration.");
             }
-
-            if (Configuration.DocumentStorageFactory == null)
-            {
-                throw new Exception("The document storage factory should be initialized during configuration.");
-            }
         }
 
         public ISession CreateSession()
         {
-            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this, Configuration.IsolationLevel);
+            return new Session(this, Configuration.IsolationLevel);
         }
 
         public ISession CreateSession(IsolationLevel isolationLevel)
         {
-            return new Session(s => Configuration.DocumentStorageFactory.CreateDocumentStorage(s, Configuration), this, isolationLevel);
+            return new Session(this, isolationLevel);
         }
 
         public void Dispose()
         {
-            var disposableFactory = Configuration.DocumentStorageFactory as IDisposable;
-            if (disposableFactory != null)
-            {
-                disposableFactory.Dispose();
-            }
         }
 
         public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)

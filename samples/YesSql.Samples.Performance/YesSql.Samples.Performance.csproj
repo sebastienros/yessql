@@ -33,6 +33,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
     <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
-    <ProjectReference Include="..\..\src\YesSql.Storage.Sql\YesSql.Storage.Sql.csproj" />
   </ItemGroup>
 </Project>

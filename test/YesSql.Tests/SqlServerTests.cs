@@ -1,4 +1,6 @@
-﻿using System;
+using System;
+using System.Threading.Tasks;
+using Xunit;
 using YesSql.Provider.SqlServer;
 using YesSql.Sql;
 

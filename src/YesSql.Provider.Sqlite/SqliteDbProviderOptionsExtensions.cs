@@ -1,8 +1,7 @@
-﻿using System;
-using System.Data;
 using Microsoft.Data.Sqlite;
+using System;
+using System.Data;
 using YesSql.Providers.Sqlite;
-using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.Sqlite
 {
@@ -40,7 +39,6 @@ namespace YesSql.Provider.Sqlite
 
             RegisterSqLite(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;

@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Data;
 using MySql.Data.MySqlClient;
-using YesSql.Storage.Sql;
 
 namespace YesSql.Provider.MySql
 {
@@ -40,7 +39,6 @@ namespace YesSql.Provider.MySql
             RegisterMySql(configuration);
 
             configuration.ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString);
-            configuration.DocumentStorageFactory = new SqlDocumentStorageFactory();
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;
