@@ -114,13 +114,11 @@ namespace YesSql
                 throw new ArgumentException("A document should not be saved explicitely");
             }
 
-            var index = entity as IIndex;
-
-            if (index != null)
+            if (entity is IIndex index)
             {
                 throw new ArgumentException("An index should not be saved explicitely");
             }
-            
+
             var doc = new Document
             {
                 Type = entity.GetType().SimplifiedTypeName()
@@ -291,7 +289,7 @@ namespace YesSql
             return result;
         }
 
-        public IQuery QueryAsync()
+        public IQuery Query()
         {
             Demand();
 
@@ -456,7 +454,7 @@ namespace YesSql
                         }
                     }
 
-                    ReduceIndex dbIndex = await ReduceForAsync(descriptor, currentKey);
+                    var dbIndex = await ReduceForAsync(descriptor, currentKey);
 
                     // if index present in db and new objects, reduce them
                     if (dbIndex != null && index != null)

@@ -449,7 +449,7 @@ namespace YesSql.Services
                 _query = query;
             }
 
-            public Task<T> FirstOrDefault()
+            public Task<T> FirstOrDefaultAsync()
             {
                 return FirstOrDefaultImpl();
             }
@@ -489,7 +489,7 @@ namespace YesSql.Services
                 }
             }
 
-            Task<IEnumerable<T>> IQuery<T>.List()
+            Task<IEnumerable<T>> IQuery<T>.ListAsync()
             {
                 return ListImpl();
             }
@@ -526,7 +526,7 @@ namespace YesSql.Services
                 return this;
             }
 
-            async Task<int> IQuery<T>.Count()
+            async Task<int> IQuery<T>.CountAsync()
             {
                 return await _query.CountAsync();
             }
@@ -550,12 +550,12 @@ namespace YesSql.Services
             public QueryIndex(DefaultQuery query) : base(query)
             { }
 
-            Task<T> IQueryIndex<T>.FirstOrDefault()
+            Task<T> IQueryIndex<T>.FirstOrDefaultAsync()
             {
                 return FirstOrDefaultImpl();
             }
 
-            Task<IEnumerable<T>> IQueryIndex<T>.List()
+            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
             {
                 return ListImpl();
             }
@@ -572,7 +572,7 @@ namespace YesSql.Services
                 return this;
             }
 
-            async Task<int> IQueryIndex<T>.Count()
+            async Task<int> IQueryIndex<T>.CountAsync()
             {
                 return await _query.CountAsync();
             }

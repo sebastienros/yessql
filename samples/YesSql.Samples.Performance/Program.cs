@@ -534,7 +534,7 @@ namespace YesSql.Samples.Performance
         {
             using (var session = store.CreateSession())
             {
-                var documents = await session.QueryAsync().For<User>().List();
+                var documents = await session.Query().For<User>().ListAsync();
                 foreach (var document in documents)
                 {
                     session.Delete(document);
@@ -550,7 +550,7 @@ namespace YesSql.Samples.Performance
             {
                 using (var session = store.CreateSession())
                 {
-                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name == name).List());
+                    Assert.NotEmpty(await session.QueryIndex<UserByName>(x => x.Name == name).ListAsync());
                 }
             }
 
@@ -566,7 +566,7 @@ namespace YesSql.Samples.Performance
             {
                 foreach (var name in Names)
                 {
-                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>(x => x.Name == name).List());
+                    Assert.NotEmpty(await session.QueryIndex<UserByName>(x => x.Name == name).ListAsync());
                 }
             }
 
@@ -581,7 +581,7 @@ namespace YesSql.Samples.Performance
             {
                 foreach (var name in Names)
                 {
-                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where("Name = '" + name +"'").WithParameter("Name", name).List());
+                    Assert.NotEmpty(await session.QueryIndex<UserByName>().Where("Name = '" + name +"'").WithParameter("Name", name).ListAsync());
                 }
             }
 
@@ -596,7 +596,7 @@ namespace YesSql.Samples.Performance
             {
                 using (var session = store.CreateSession())
                 {
-                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where($"Name = @Name").WithParameter("Name", name).List());
+                    Assert.NotEmpty(await session.QueryIndex<UserByName>().Where($"Name = @Name").WithParameter("Name", name).ListAsync());
                 }
             }
 
@@ -612,7 +612,7 @@ namespace YesSql.Samples.Performance
             {
                 foreach (var name in Names)
                 {
-                    Assert.NotEmpty(await session.QueryIndexAsync<UserByName>().Where($"Name = @Name").WithParameter("Name", name).List());
+                    Assert.NotEmpty(await session.QueryIndex<UserByName>().Where($"Name = @Name").WithParameter("Name", name).ListAsync());
                 }
             }
 
@@ -626,7 +626,7 @@ namespace YesSql.Samples.Performance
             {
                 foreach (var name in Names)
                 {
-                    Assert.NotEmpty(await session.QueryAsync<User, UserByName>(x => x.Name == name).List());
+                    Assert.NotEmpty(await session.Query<User, UserByName>(x => x.Name == name).ListAsync());
                 }
             }
 

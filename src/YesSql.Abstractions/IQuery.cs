@@ -37,9 +37,9 @@ namespace YesSql
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
         IQuery<T> Skip(int count);
         IQuery<T> Take(int count);
-        Task<T> FirstOrDefault();
-        Task<IEnumerable<T>> List();
-        Task<int> Count();
+        Task<T> FirstOrDefaultAsync();
+        Task<IEnumerable<T>> ListAsync();
+        Task<int> CountAsync();
     }
 
     /// <summary>
@@ -59,9 +59,9 @@ namespace YesSql
         IQueryIndex<T> ThenByDescending(Expression<Func<T, object>> keySelector);
         IQueryIndex<T> Skip(int count);
         IQueryIndex<T> Take(int count);
-        Task<T> FirstOrDefault();
-        Task<IEnumerable<T>> List();
-        Task<int> Count();
+        Task<T> FirstOrDefaultAsync();
+        Task<IEnumerable<T>> ListAsync();
+        Task<int> CountAsync();
     }
 
     /// <summary>

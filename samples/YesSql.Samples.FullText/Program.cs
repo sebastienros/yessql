@@ -48,7 +48,7 @@ namespace YesSql.Samples.FullText
             using (var session = store.CreateSession())
             {
                 Console.WriteLine("Simple term: 'white'");
-                var simple = await session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word == "white").List();
+                var simple = await session.Query<Article, ArticleByWord>().Where(a => a.Word == "white").ListAsync();
 
                 foreach (var article in simple)
                 {
@@ -56,7 +56,7 @@ namespace YesSql.Samples.FullText
                 }
 
                 Console.WriteLine("Boolean query: 'white or fox or pink'");
-                var boolQuery = await session.QueryAsync<Article, ArticleByWord>().Where(a => a.Word.IsIn(new[] { "white", "fox", "pink" })).List();
+                var boolQuery = await session.Query<Article, ArticleByWord>().Where(a => a.Word.IsIn(new[] { "white", "fox", "pink" })).ListAsync();
 
                 foreach (var article in boolQuery)
                 {

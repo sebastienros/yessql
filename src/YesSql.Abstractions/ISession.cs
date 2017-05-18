@@ -28,7 +28,7 @@ namespace YesSql
         /// <returns></returns>
         Task<IEnumerable<T>> GetAsync<T>(int[] ids) where T : class;
 
-        IQuery QueryAsync();
+        IQuery Query();
 
         /// <summary>
         /// Cancels any pending command
