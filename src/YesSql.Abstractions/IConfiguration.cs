@@ -10,6 +10,7 @@ namespace YesSql
         IConnectionFactory ConnectionFactory { get; set; }
         IContentSerializer ContentSerializer { get; set; }
         string TablePrefix { get; set; }
+        int SessionPoolSize { get; set; }
     }
 
     public static class ConfigurationExtensions
@@ -43,8 +44,14 @@ namespace YesSql
             configuration.ContentSerializer = contentSerializer;
             return configuration;
         }
+
+        public static IConfiguration SetSessionPoolSize(this IConfiguration configuration, int size)
+        {
+            configuration.SessionPoolSize = size;
+            return configuration;
+        }
     }
-    
+
     public class DbConnectionFactory<TDbConnection> : IConnectionFactory
         where TDbConnection : DbConnection, new()
     {

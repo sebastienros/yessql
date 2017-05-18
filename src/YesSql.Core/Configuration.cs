@@ -12,6 +12,7 @@ namespace YesSql
             ContentSerializer = new JsonContentSerializer();
             IsolationLevel = IsolationLevel.ReadCommitted;
             TablePrefix = "";
+            SessionPoolSize = 16;
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
@@ -19,5 +20,6 @@ namespace YesSql
         public IConnectionFactory ConnectionFactory { get; set; }
         public IContentSerializer ContentSerializer { get; set; }
         public string TablePrefix { get; set; }
+        public int SessionPoolSize { get; set; }
     }
 }

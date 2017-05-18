@@ -26,9 +26,9 @@ namespace YesSql
         private readonly HashSet<object> _deleted = new HashSet<object>();
         private readonly Store _store;
         private readonly ISqlDialect _dialect;
-        private readonly IsolationLevel _isolationLevel;
-        private readonly IDbConnection _connection;
         private volatile bool _disposed;
+        internal IsolationLevel _isolationLevel;
+        private IDbConnection _connection;
 
         protected bool _cancel;
 
@@ -353,6 +353,35 @@ namespace YesSql
                     }
                 }
             }
+
+            Release();
+        }
+
+        /// <summary>
+        /// Called when the instance is available to an object pool.
+        /// </summary>
+        internal void Release()
+        {
+            _updated.Clear();
+            _saved.Clear();
+            _deleted.Clear();
+            _commands.Clear();
+            _maps.Clear();
+
+            _identityMap.Clear();
+            _store.ReleaseSession(this);
+        }
+
+        /// <summary>
+        /// Called when the instance is reused from an object pool and doesn't go
+        /// through the constructor.
+        /// </summary>
+        internal void StartLease(IsolationLevel isolationLevel)
+        {
+            _disposed = false;
+            _cancel = false;
+            _isolationLevel = isolationLevel;
+            _connection = _store.Configuration.ConnectionFactory.CreateConnection();
         }
 
         public async Task CommitAsync()
@@ -397,6 +426,7 @@ namespace YesSql
             _saved.Clear();
             _deleted.Clear();
             _commands.Clear();
+            _maps.Clear();
         }
 
         private async Task ReduceAsync()

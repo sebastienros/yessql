@@ -1249,7 +1249,6 @@ namespace YesSql.Tests
 
                     session.Save(person);
                 }
-
             }
 
             using (var session = _store.CreateSession())
@@ -1631,7 +1630,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldNotCommitTransaction()
+        public virtual async Task ShouldNotCommitTransaction()
         {
             using (var session = _store.CreateSession())
             {

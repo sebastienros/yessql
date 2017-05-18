@@ -1,4 +1,5 @@
 using Dapper;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ namespace YesSql
     {
         protected List<IIndexProvider> Indexes;
         protected LinearBlockIdGenerator IdGenerator;
+        private ObjectPool<Session> SessionPool;
 
         public IConfiguration Configuration { get; set; }
 
@@ -34,7 +36,7 @@ namespace YesSql
             new ConcurrentDictionary<Type, Func<IDescriptor>>();
 
         public const string DocumentTable = "Document";
-
+        
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
@@ -71,6 +73,8 @@ namespace YesSql
             Indexes = new List<IIndexProvider>();
             ValidateConfiguration();
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
+
+            SessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
         }
 
         public Task InitializeAsync()
@@ -140,12 +144,24 @@ namespace YesSql
 
         public ISession CreateSession()
         {
-            return new Session(this, Configuration.IsolationLevel);
+            return CreateSession(Configuration.IsolationLevel);
         }
 
         public ISession CreateSession(IsolationLevel isolationLevel)
         {
-            return new Session(this, isolationLevel);
+            var session = SessionPool.Allocate();
+            session.StartLease(isolationLevel);
+            return session;
+        }
+
+        private Session MakeSession()
+        {
+            return new Session(this, Configuration.IsolationLevel);
+        }
+
+        internal void ReleaseSession(Session session)
+        {
+            SessionPool.Free(session);
         }
 
         public void Dispose()

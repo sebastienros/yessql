@@ -36,11 +36,5 @@ namespace YesSql.Tests
             }
             catch { }
         }
-
-        [Fact]
-        public override Task ShouldReturnCachedResults()
-        {
-            return base.ShouldReturnCachedResults();
-        }
     }
 }
