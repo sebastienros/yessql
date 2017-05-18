@@ -208,6 +208,8 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryIndexWithParameter()
         {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
             using (var session = _store.CreateSession())
             {
                 var bill = new Person { Firstname = "Bill" };
@@ -226,6 +228,8 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryDocumentWithParameter()
         {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
             using (var session = _store.CreateSession())
             {
                 var bill = new Person { Firstname = "Bill" };

@@ -248,7 +248,7 @@ namespace YesSql
             // Auto-flush
             await CommitAsync();
 
-            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " = @Ids";
+            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
             var documents = await _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
 
             return Get<T>(documents.ToArray());
