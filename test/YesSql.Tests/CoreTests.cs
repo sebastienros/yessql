@@ -206,6 +206,16 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryNonExistentResult()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.Null(person);
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryIndexWithParameter()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -2174,6 +2184,32 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
                 Assert.Equal(0, await session.QueryIndex<PersonByName>().Where(x => x.Name == "Bill").CountAsync());
                 Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == "Bill2").CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task PooledSessionsShouldCommit()
+        {
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                });
+
+                Assert.Equal(1, await session.Query<Person>().CountAsync());
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person
+                {
+                    Firstname = "Bill2",
+                    Lastname = "Gates"
+                });
+
+                Assert.Equal(2, await session.Query<Person>().CountAsync());
             }
         }
     }

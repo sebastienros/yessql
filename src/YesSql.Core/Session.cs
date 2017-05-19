@@ -2,6 +2,7 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -20,29 +21,24 @@ namespace YesSql
 
         private readonly IdentityMap _identityMap = new IdentityMap();
         private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
-        private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps;
+        private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
         private readonly Store _store;
-        private readonly ISqlDialect _dialect;
         private volatile bool _disposed;
-        internal IsolationLevel _isolationLevel;
+        private IsolationLevel _isolationLevel;
         private IDbConnection _connection;
-
+        private ISqlDialect _dialect;
         protected bool _cancel;
 
         public Session(Store store, IsolationLevel isolationLevel)
         {
             _store = store;
             _isolationLevel = isolationLevel;
-
-            _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
-
-            _connection = _store.Configuration.ConnectionFactory.CreateConnection();
-            _dialect = SqlDialectFactory.For(_connection);
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public IDbTransaction Transaction
         {
             get
@@ -177,12 +173,16 @@ namespace YesSql
             MapDeleted(oldDoc, oldObj);
             MapNew(oldDoc, entity);
 
+            Demand();
+
             oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
         {
+            Demand();
+
             var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var result = await _connection.QueryAsync<Document>(command, new { Id = id }, _transaction);
             return result.FirstOrDefault();
@@ -245,6 +245,8 @@ namespace YesSql
 
             // Auto-flush
             await CommitAsync();
+
+            Demand();
 
             var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
             var documents = await _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
@@ -343,18 +345,11 @@ namespace YesSql
 
                 if (_connection != null)
                 {
-                    if (_store.Configuration.ConnectionFactory.Disposable)
-                    {
-                        _connection.Dispose();
-                    }
-                    else
-                    {
-                        _connection.Close();
-                    }
+                    _connection.Close();
                 }
-            }
 
-            Release();
+                Release();
+            }            
         }
 
         /// <summary>
@@ -381,7 +376,6 @@ namespace YesSql
             _disposed = false;
             _cancel = false;
             _isolationLevel = isolationLevel;
-            _connection = _store.Configuration.ConnectionFactory.CreateConnection();
         }
 
         public async Task CommitAsync()
@@ -416,6 +410,8 @@ namespace YesSql
 
             // compute all reduce indexes
             await ReduceAsync();
+
+            Demand();
 
             foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
             {
@@ -560,6 +556,8 @@ namespace YesSql
 
         private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey)
         {
+            Demand();
+
             var name = _store.Configuration.TablePrefix + descriptor.IndexType.Name;
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
@@ -669,6 +667,17 @@ namespace YesSql
 
             if (_transaction == null)
             {
+                if (_connection == null)
+                {
+                    _connection = _store.Configuration.ConnectionFactory.CreateConnection();
+
+                    // The dialect could already be initialized if the session is reused
+                    if (_dialect == null)
+                    {
+                        _dialect = SqlDialectFactory.For(_connection);
+                    }
+                }
+
                 if (_connection.State == ConnectionState.Closed)
                 {
                     _connection.Open();

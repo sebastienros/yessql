@@ -19,7 +19,7 @@ namespace YesSql
     {
         protected List<IIndexProvider> Indexes;
         protected LinearBlockIdGenerator IdGenerator;
-        private ObjectPool<Session> SessionPool;
+        private ObjectPool<Session> _sessionPool;
 
         public IConfiguration Configuration { get; set; }
 
@@ -74,7 +74,7 @@ namespace YesSql
             ValidateConfiguration();
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
 
-            SessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
+            _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
         }
 
         public Task InitializeAsync()
@@ -149,11 +149,15 @@ namespace YesSql
 
         public ISession CreateSession(IsolationLevel isolationLevel)
         {
-            var session = SessionPool.Allocate();
+            var session = _sessionPool.Allocate();
             session.StartLease(isolationLevel);
             return session;
         }
 
+        /// <summary>
+        /// Called by the Session pool to make a new instance.
+        /// </summary>
+        /// <returns></returns>
         private Session MakeSession()
         {
             return new Session(this, Configuration.IsolationLevel);
@@ -161,7 +165,7 @@ namespace YesSql
 
         internal void ReleaseSession(Session session)
         {
-            SessionPool.Free(session);
+            _sessionPool.Free(session);
         }
 
         public void Dispose()

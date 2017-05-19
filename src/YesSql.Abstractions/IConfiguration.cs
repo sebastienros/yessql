@@ -55,29 +55,34 @@ namespace YesSql
     public class DbConnectionFactory<TDbConnection> : IConnectionFactory
         where TDbConnection : DbConnection, new()
     {
-        private readonly bool _reuseConnection;
-        private TDbConnection _reusedConnection;
+        private readonly bool _shareConnection;
+        private TDbConnection _sharedConnection;
         private readonly string _connectionString;
+        private bool _disposing;
 
-        public DbConnectionFactory(string connectionString, bool reuseConnection = false)
+        public DbConnectionFactory(string connectionString, bool shareConnection = false)
         {
-            _reuseConnection = reuseConnection;
+            _shareConnection = shareConnection;
             _connectionString = connectionString;
         }
 
-        public bool Disposable => !_reuseConnection;
-
         public IDbConnection CreateConnection()
         {
-            if (_reuseConnection)
+            if (_shareConnection)
             {
-                if (_reusedConnection == null)
+                if (_sharedConnection == null)
                 {
-                    _reusedConnection = new TDbConnection();
-                    _reusedConnection.ConnectionString = _connectionString;
+                    lock (this)
+                    {
+                        if (_sharedConnection == null)
+                        {
+                            _sharedConnection = new TDbConnection();
+                            _sharedConnection.ConnectionString = _connectionString;
+                        }
+                    }
                 }
 
-                return _reusedConnection;
+                return _sharedConnection;
             }
 
             var connection = new TDbConnection();
@@ -88,11 +93,18 @@ namespace YesSql
 
         public void Dispose()
         {
-            if (_reuseConnection)
+            if (_disposing)
             {
-                if (_reusedConnection != null)
+                return;
+            }
+
+            _disposing = true;
+
+            if (_shareConnection)
+            {
+                if (_sharedConnection != null)
                 {
-                    _reusedConnection.Dispose();
+                    _sharedConnection.Dispose();
                 }
             }
         }
