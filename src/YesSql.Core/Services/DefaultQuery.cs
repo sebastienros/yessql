@@ -528,14 +528,7 @@ namespace YesSql.Services
                         return default(T);
                     }
 
-                    if (typeof(T) == typeof(object))
-                    {
-                        return _query._session.Store.Configuration.ContentSerializer.DeserializeDynamic(documents[0].Content);
-                    }
-                    else
-                    {
-                        return (T)_query._session.Store.Configuration.ContentSerializer.Deserialize(documents[0].Content, typeof(T));
-                    }
+                    return _query._session.Get<T>(documents).FirstOrDefault();
                 }
             }
 

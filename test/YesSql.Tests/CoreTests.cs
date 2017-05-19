@@ -2212,5 +2212,20 @@ namespace YesSql.Tests
                 Assert.Equal(2, await session.Query<Person>().CountAsync());
             }
         }
+
+        [Fact]
+        public async Task TrackDocumentQuery()
+        {
+            Person person1, person2;
+
+            using (var session = _store.CreateSession())
+            {
+                person1 = new Person { Firstname = "Bill" };
+                session.Save(person1);
+                person2 = await session.Query<Person>().FirstOrDefaultAsync();
+            }
+
+            Assert.Equal(person1, person2);
+        }
     }
 }
