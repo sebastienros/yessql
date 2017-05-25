@@ -1,7 +1,6 @@
 using Microsoft.Data.Sqlite;
 using System;
 using System.Data;
-using YesSql.Providers.Sqlite;
 
 namespace YesSql.Provider.Sqlite
 {

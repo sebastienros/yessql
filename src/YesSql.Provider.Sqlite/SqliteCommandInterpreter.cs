@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using YesSql.Sql;
 using YesSql.Sql.Schema;
 
-namespace YesSql.Providers.Sqlite
+namespace YesSql.Provider.Sqlite
 {
     public class SqliteCommandInterpreter : BaseCommandInterpreter
     {

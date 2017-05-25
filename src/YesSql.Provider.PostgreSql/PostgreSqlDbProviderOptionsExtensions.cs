@@ -1,7 +1,6 @@
 using Npgsql;
 using System;
 using System.Data;
-using YesSql.Providers.PostgreSql;
 
 namespace YesSql.Provider.PostgreSql
 {

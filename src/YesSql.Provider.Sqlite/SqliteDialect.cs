@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using YesSql.Provider;
 
-namespace YesSql.Providers.Sqlite
+namespace YesSql.Provider.Sqlite
 {
     public class SqliteDialect : BaseDialect
     {

@@ -1,7 +1,6 @@
 using System;
 using System.Data;
 using System.Data.SqlClient;
-using YesSql.Providers.SqlServer;
 
 namespace YesSql.Provider.SqlServer
 {
