@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
 using YesSql.Sql;
 using YesSql.Sql.Schema;
 
-namespace YesSql.Providers.PostgreSql
+namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlCommandInterpreter : BaseCommandInterpreter
     {

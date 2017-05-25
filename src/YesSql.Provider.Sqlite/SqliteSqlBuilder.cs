@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Text;
 using YesSql.Sql;
 
-namespace YesSql.Providers.Sqlite
+namespace YesSql.Provider.Sqlite
 {
     public class SqliteSqlBuilder : SqlBuilder
     {

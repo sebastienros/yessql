@@ -1,7 +1,6 @@
-﻿
 using YesSql.Sql;
 
-namespace YesSql.Providers.SqlServer
+namespace YesSql.Provider.SqlServer
 {
     public class SqlServerCommandInterpreter : BaseCommandInterpreter
     {

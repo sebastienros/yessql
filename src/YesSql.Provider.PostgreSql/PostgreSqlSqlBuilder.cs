@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Text;
 using YesSql.Sql;
 
-namespace YesSql.Providers.PostgreSql
+namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlSqlBuilder : SqlBuilder
     {

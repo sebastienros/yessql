@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using YesSql.Provider;
 
-namespace YesSql.Providers.SqlServer
+namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
