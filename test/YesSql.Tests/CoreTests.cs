@@ -1,3 +1,4 @@
+using Dapper;
 using System;
 using System.Data;
 using System.Linq;
@@ -2226,6 +2227,39 @@ namespace YesSql.Tests
             }
 
             Assert.Equal(person1, person2);
+        }
+
+        [Theory]
+        [InlineData("second", 4)]
+        [InlineData("minute", 5)]
+        [InlineData("hour", 2)]
+        [InlineData("day", 1)]
+        [InlineData("month", 11)]
+        [InlineData("year", 2011)]
+        public async Task SqlDateFunctions(string method, int expected)
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var article = new Article
+                {
+                    PublishedUtc = new DateTime(2011, 11, 1, 2, 5, 4, DateTimeKind.Utc)
+                };
+
+                session.Save(article);
+            }
+
+            int result;
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                var dialect = SqlDialectFactory.For(connection);
+                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(nameof(ArticleByPublishedDate));
+                result = await connection.QueryFirstOrDefaultAsync<int>(sql);
+            }
+
+            Assert.Equal(expected, result);
         }
     }
 }

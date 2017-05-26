@@ -1,12 +1,16 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
+        public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>();
+
         public abstract string Name { get; }
         public virtual string InOperator(string values) {
             if (values.StartsWith("@") && !values.Contains(","))
@@ -133,5 +137,15 @@ namespace YesSql.Provider
 
         public abstract void Page(ISqlBuilder sqlBuilder, int offset, int limit);
         public abstract ISqlBuilder CreateBuilder(string tablePrefix);
+
+        public string RenderMethod(string name, string[] args)
+        {
+            if (Methods.TryGetValue(name, out var method))
+            {
+                return method.Render(args);
+            }
+
+            return name + "(" + String.Join(", ", args) +  ")";
+        }
     }
 }

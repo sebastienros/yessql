@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using YesSql.Sql;
 
 namespace YesSql.Provider.SqlServer
 {
@@ -32,6 +33,16 @@ namespace YesSql.Provider.SqlServer
             {DbType.StringFixedLength, "NCHAR(255)"},
             {DbType.String, "NVARCHAR(255)"},
         };
+
+        public SqlServerDialect()
+        {
+            Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
+            Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));
+            Methods.Add("hour", new TemplateFunction("datepart(hour, {0})"));
+            Methods.Add("day", new TemplateFunction("datepart(day, {0})"));
+            Methods.Add("month", new TemplateFunction("datepart(month, {0})"));
+            Methods.Add("year", new TemplateFunction("datepart(year, {0})"));
+        }
 
         public override string Name => "SqlServer";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
