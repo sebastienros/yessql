@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using YesSql.Sql;
 
 namespace YesSql.Provider.PostgreSql
 {
@@ -33,6 +34,16 @@ namespace YesSql.Provider.PostgreSql
             {DbType.String, "varchar(255)"},
             {DbType.Currency, "decimal(16,4)"}
         };
+
+        public PostgreSqlDialect()
+        {
+            Methods.Add("second", new TemplateFunction("extract(second from {0})"));
+            Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
+            Methods.Add("hour", new TemplateFunction("extract(hour from {0})"));
+            Methods.Add("day", new TemplateFunction("extract(day from {0})"));
+            Methods.Add("month", new TemplateFunction("extract(month from {0})"));
+            Methods.Add("year", new TemplateFunction("extract(year from {0})"));
+        }
 
         public override string Name => "PostgreSql";
         public override string InOperator(string values) => " = any(array[" + values + "])";

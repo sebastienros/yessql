@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
 {
@@ -35,6 +36,16 @@ namespace YesSql.Provider.Sqlite
             { DbType.Boolean, "BOOL" },
             { DbType.Guid, "UNIQUEIDENTIFIER" }
         };
+
+        public SqliteDialect()
+        {
+            Methods.Add("second", new TemplateFunction("cast(strftime('%S', {0}) as int)"));
+            Methods.Add("minute", new TemplateFunction("cast(strftime('%M', {0}) as int)"));
+            Methods.Add("hour", new TemplateFunction("cast(strftime('%H', {0}) as int)"));
+            Methods.Add("day", new TemplateFunction("cast(strftime('%d', {0}) as int)"));
+            Methods.Add("month", new TemplateFunction("cast(strftime('%m', {0}) as int)"));
+            Methods.Add("year", new TemplateFunction("cast(strftime('%Y', {0}) as int)"));
+        }
 
         public override string Name => "Sqlite";
 

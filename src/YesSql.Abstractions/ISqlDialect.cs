@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 
 namespace YesSql
 {
@@ -25,5 +25,6 @@ namespace YesSql
         string DefaultValuesInsert { get; }
         void Page(ISqlBuilder sqlBuilder, int offset, int limit);
         ISqlBuilder CreateBuilder(string tablePrefix);
+        string RenderMethod(string name, params string[] args);
     }
 }
