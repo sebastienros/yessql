@@ -39,9 +39,11 @@ namespace YesSql.Provider.SqlServer
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));
             Methods.Add("hour", new TemplateFunction("datepart(hour, {0})"));
-            Methods.Add("day", new TemplateFunction("datepart(day, {0})"));
-            Methods.Add("month", new TemplateFunction("datepart(month, {0})"));
-            Methods.Add("year", new TemplateFunction("datepart(year, {0})"));
+
+            // These are not necessary since SQL Server 2008 
+            //Methods.Add("day", new TemplateFunction("datepart(day, {0})"));
+            //Methods.Add("month", new TemplateFunction("datepart(month, {0})"));
+            //Methods.Add("year", new TemplateFunction("datepart(year, {0})"));
         }
 
         public override string Name => "SqlServer";

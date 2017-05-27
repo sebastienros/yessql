@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 
 namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
-        public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>();
+        public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
 
         public abstract string Name { get; }
         public virtual string InOperator(string values) {
