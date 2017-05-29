@@ -18,13 +18,18 @@ namespace YesSql.Provider.Sqlite
             this IConfiguration configuration,
             string connectionString)
         {
-            return UseSqLite(configuration, connectionString, IsolationLevel.Serializable);
+            return UseSqLite(
+                configuration, 
+                connectionString, 
+                IsolationLevel.Serializable,
+                false);
         }
 
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
             string connectionString,
-            IsolationLevel isolationLevel)
+            IsolationLevel isolationLevel,
+            bool shareConnection)
         {
             if (configuration == null)
             {
@@ -37,7 +42,7 @@ namespace YesSql.Provider.Sqlite
             }
 
             RegisterSqLite(configuration);
-            configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
+            configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString, shareConnection);
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;

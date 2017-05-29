@@ -6,5 +6,6 @@ namespace YesSql
     public interface IConnectionFactory : IDisposable
     {
         IDbConnection CreateConnection();
+        void CloseConnection(IDbConnection connection);
     }
 }

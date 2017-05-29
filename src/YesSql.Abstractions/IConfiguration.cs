@@ -91,6 +91,20 @@ namespace YesSql
             return connection;
         }
 
+        public void CloseConnection(IDbConnection connection)
+        {
+            if (_shareConnection)
+            {
+                // If the connection is shared, we don't close it
+                return;
+            }
+
+            if (connection != null)
+            {
+                connection.Close();
+            }
+        }
+
         public void Dispose()
         {
             if (_disposing)
