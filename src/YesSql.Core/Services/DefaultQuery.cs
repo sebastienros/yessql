@@ -178,8 +178,16 @@ namespace YesSql.Services
                 case ExpressionType.Call:
                     var methodExpression = (MethodCallExpression)expression;
                     arguments = methodExpression.Arguments.Select(a => Evaluate(a).Value).ToArray();
-                    var obj = Evaluate(methodExpression.Object).Value;
+                    object obj = null;
+
+                    // Static method?
+                    if (methodExpression.Object != null)
+                    {
+                        obj = Evaluate(methodExpression.Object).Value;
+                    }
+
                     return Expression.Constant(methodExpression.Method.Invoke(obj, arguments));
+
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)expression;
 

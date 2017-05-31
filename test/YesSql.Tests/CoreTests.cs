@@ -2261,5 +2261,27 @@ namespace YesSql.Tests
 
             Assert.Equal(expected, result);
         }
+
+        [Fact]
+        public virtual async Task CanUseStaticMethodsInLinqQueries()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var bill = new Person
+            {
+                Firstname = "BILL",
+                Lastname = "GATES"
+            };
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == PersonByName.Normalize(bill.Firstname)).CountAsync());
+            }
+        }
     }
 }
