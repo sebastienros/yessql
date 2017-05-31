@@ -1,4 +1,4 @@
-﻿using YesSql.Indexes;
+using YesSql.Indexes;
 using YesSql.Tests.Models;
 
 namespace YesSql.Tests.Indexes
@@ -6,6 +6,10 @@ namespace YesSql.Tests.Indexes
     public class PersonByName : MapIndex
     {
         public string Name { get; set; }
+        public static string Normalize(string name)
+        {
+            return name.ToUpperInvariant();
+        }
     }
 
     public class PersonIndexProvider : IndexProvider<Person>
