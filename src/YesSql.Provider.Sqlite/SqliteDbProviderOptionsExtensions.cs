@@ -6,9 +6,16 @@ namespace YesSql.Provider.Sqlite
 {
     public static class SqliteDbProviderOptionsExtensions
     {
+        public static readonly SqliteDialect DefaulSqliteDialect = new SqliteDialect();
+
         public static IConfiguration RegisterSqLite(this IConfiguration configuration)
         {
-            SqlDialectFactory.SqlDialects["sqliteconnection"] = new SqliteDialect();
+            return RegisterSqLite(configuration, DefaulSqliteDialect);
+        }
+
+        public static IConfiguration RegisterSqLite(this IConfiguration configuration, SqliteDialect sqliteDialect)
+        {
+            SqlDialectFactory.SqlDialects["sqliteconnection"] = sqliteDialect;
             CommandInterpreterFactory.CommandInterpreters["sqliteconnection"] = d => new SqliteCommandInterpreter(d);
 
             return configuration;
@@ -17,22 +24,36 @@ namespace YesSql.Provider.Sqlite
         public static IConfiguration UseInMemory(this IConfiguration configuration)
         {
             const string inMemoryConnectionString = "Data Source=:memory:";
-            return UseSqLite(configuration, inMemoryConnectionString, IsolationLevel.Serializable, shareConnection: true);
+            return UseSqLite(configuration, inMemoryConnectionString, DefaulSqliteDialect, IsolationLevel.Serializable, shareConnection: true);
         }
 
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
             string connectionString)
         {
-            return UseSqLite(
-                configuration, 
-                connectionString, 
-                IsolationLevel.Serializable);
+            return UseSqLite(configuration, connectionString, DefaulSqliteDialect);
         }
 
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
             string connectionString,
+            SqliteDialect sqliteDialect)
+        {
+            return UseSqLite(configuration, connectionString, sqliteDialect, IsolationLevel.Serializable);
+        }
+
+        public static IConfiguration UseSqLite(
+           this IConfiguration configuration,
+           string connectionString,
+           IsolationLevel isolationLevel)
+        {
+            return UseSqLite(configuration, connectionString, DefaulSqliteDialect, isolationLevel);
+        }
+
+        public static IConfiguration UseSqLite(
+            this IConfiguration configuration,
+            string connectionString,
+            SqliteDialect sqliteDialect,
             IsolationLevel isolationLevel,
             bool shareConnection = false)
         {
@@ -41,12 +62,17 @@ namespace YesSql.Provider.Sqlite
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (String.IsNullOrWhiteSpace(connectionString))
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            RegisterSqLite(configuration);
+            if (sqliteDialect == null)
+            {
+                throw new ArgumentNullException(nameof(sqliteDialect));
+            }
+
+            RegisterSqLite(configuration, sqliteDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString, shareConnection);
             configuration.IsolationLevel = isolationLevel;
 

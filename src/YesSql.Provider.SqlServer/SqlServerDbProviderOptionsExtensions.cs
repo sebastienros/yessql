@@ -6,9 +6,16 @@ namespace YesSql.Provider.SqlServer
 {
     public static class SqlServerDbProviderOptionsExtensions
     {
+        public static readonly SqlServerDialect DefaulSqlServerDialect = new SqlServerDialect();
+
         public static IConfiguration RegisterSqlServer(this IConfiguration configuration)
         {
-            SqlDialectFactory.SqlDialects["sqlconnection"] = new SqlServerDialect();
+            return RegisterSqlServer(configuration, DefaulSqlServerDialect);
+        }
+
+        public static IConfiguration RegisterSqlServer(this IConfiguration configuration, SqlServerDialect sqlServerDialect)
+        {
+            SqlDialectFactory.SqlDialects["sqlconnection"] = sqlServerDialect;
             CommandInterpreterFactory.CommandInterpreters["sqlconnection"] = d => new SqlServerCommandInterpreter(d);
 
             return configuration;
@@ -18,7 +25,15 @@ namespace YesSql.Provider.SqlServer
             this IConfiguration configuration,
             string connectionString)
         {
-            return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            return UseSqlServer(configuration, connectionString, DefaulSqlServerDialect);
+        }
+
+        public static IConfiguration UseSqlServer(
+            this IConfiguration configuration,
+            string connectionString,
+            SqlServerDialect sqlServerDialect)
+        {
+            return UseSqlServer(configuration, connectionString, sqlServerDialect, IsolationLevel.ReadUncommitted);
         }
 
         public static IConfiguration UseSqlServer(
@@ -26,17 +41,31 @@ namespace YesSql.Provider.SqlServer
             string connectionString,
             IsolationLevel isolationLevel)
         {
+            return UseSqlServer(configuration, connectionString, DefaulSqlServerDialect, isolationLevel);
+        }
+
+        public static IConfiguration UseSqlServer(
+            this IConfiguration configuration,
+            string connectionString,
+            SqlServerDialect sqlServerDialect,
+            IsolationLevel isolationLevel)
+        {
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (String.IsNullOrWhiteSpace(connectionString))
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            RegisterSqlServer(configuration);
+            if (sqlServerDialect == null)
+            {
+                throw new ArgumentNullException(nameof(sqlServerDialect));
+            }
+
+            RegisterSqlServer(configuration, sqlServerDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 
