@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
@@ -15,7 +15,7 @@ namespace YesSql.Tests
         public SqliteTests()
         {
             _tempFolder = new TemporaryFolder();
-            var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
+            var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared;Dialect=SqliteDialect";
 
             _store = new Store(new Configuration().UseSqLite(connectionString));
 

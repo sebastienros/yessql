@@ -1,26 +1,13 @@
 using Npgsql;
 using System;
 using System.Data;
+using System.Linq;
+using System.Reflection;
 
 namespace YesSql.Provider.PostgreSql
 {
     public static class PostgreSqlDbProviderOptionsExtensions
     {
-        public static readonly PostgreSqlDialect DefaulPostgreSqlDialect = new PostgreSqlDialect();
-
-        public static IConfiguration RegisterPostgreSql(this IConfiguration configuration)
-        {
-            return RegisterPostgreSql(configuration, DefaulPostgreSqlDialect);
-        }
-
-        public static IConfiguration RegisterPostgreSql(this IConfiguration configuration, PostgreSqlDialect postgreSqlDialect)
-        {
-            SqlDialectFactory.SqlDialects["npgsqlconnection"] = postgreSqlDialect;
-            CommandInterpreterFactory.CommandInterpreters["npgsqlconnection"] = d => new PostgreSqlCommandInterpreter(d);
-
-            return configuration;
-        }
-
         public static IConfiguration UsePostgreSql(
             this IConfiguration configuration,
             string connectionString)
@@ -31,23 +18,6 @@ namespace YesSql.Provider.PostgreSql
         public static IConfiguration UsePostgreSql(
             this IConfiguration configuration,
             string connectionString,
-            PostgreSqlDialect postgreSqlDialect)
-        {
-            return UsePostgreSql(configuration, connectionString, postgreSqlDialect, IsolationLevel.ReadUncommitted);
-        }
-
-        public static IConfiguration UsePostgreSql(
-            this IConfiguration configuration,
-            string connectionString,
-            IsolationLevel isolationLevel)
-        {
-            return UsePostgreSql(configuration, connectionString, DefaulPostgreSqlDialect, isolationLevel);
-        }
-
-        public static IConfiguration UsePostgreSql(
-            this IConfiguration configuration,
-            string connectionString,
-            PostgreSqlDialect postgreSqlDialect,
             IsolationLevel isolationLevel)
         {
             if (configuration == null)
@@ -60,16 +30,24 @@ namespace YesSql.Provider.PostgreSql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            if (postgreSqlDialect == null)
-            {
-                throw new ArgumentNullException(nameof(postgreSqlDialect));
-            }
+            const string dialectParameterName = "Dialect";
+            var dialectIndex = connectionString.IndexOf(dialectParameterName);
+            var dialectTypeName = connectionString.Substring(dialectIndex + dialectParameterName.Length + 1);
+            var dialectType = typeof(PostgreSqlDialect).GetTypeInfo().Assembly
+                .GetTypes().OfType<PostgreSqlDialect>()
+                .SingleOrDefault(d => d.Name == dialectTypeName);
 
-            RegisterPostgreSql(configuration, postgreSqlDialect);
+            RegisterPostgreSql(connectionString, dialectType);
             configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;
+        }
+
+        private static void RegisterPostgreSql(string connectionString, PostgreSqlDialect sqlServerDialect)
+        {
+            SqlDialectFactory.SqlDialects[connectionString] = sqlServerDialect;
+            CommandInterpreterFactory.CommandInterpreters[connectionString] = d => new PostgreSqlCommandInterpreter(d);
         }
     }
 }

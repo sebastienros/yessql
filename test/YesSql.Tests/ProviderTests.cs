@@ -53,10 +53,10 @@ namespace YesSql.Tests
             for (var i = 0; i < 2; i++)
             {
                 new Configuration()
-                    .RegisterMySql()
-                    .RegisterSqLite()
-                    .RegisterPostgreSql()
-                    .RegisterSqlServer();
+                    .UseMySql("")
+                    .UseSqLite("")
+                    .UsePostgreSql("")
+                    .UseSqlServer("");
             }
         }
     }

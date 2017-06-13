@@ -1,53 +1,23 @@
 using System;
 using System.Data;
 using MySql.Data.MySqlClient;
+using System.Linq;
+using System.Reflection;
 
 namespace YesSql.Provider.MySql
 {
     public static class MySqlDbProviderOptionsExtensions
     {
-        public static readonly MySqlDialect DefaulMySqlDialect = new MySqlDialect();
-
-        public static IConfiguration RegisterMySql(this IConfiguration configuration)
-        {
-            return RegisterMySql(configuration, DefaulMySqlDialect);
-        }
-
-        public static IConfiguration RegisterMySql(this IConfiguration configuration, MySqlDialect mySqlDialect)
-        {
-            SqlDialectFactory.SqlDialects["mysqlconnection"] = mySqlDialect;
-            CommandInterpreterFactory.CommandInterpreters["mysqlconnection"] = d => new MySqlCommandInterpreter(d);
-
-            return configuration;
-        }
-
         public static IConfiguration UseMySql(
             this IConfiguration configuration,
             string connectionString)
         {
-            return UseMySql(configuration, connectionString, DefaulMySqlDialect, IsolationLevel.ReadUncommitted);
+            return UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
         public static IConfiguration UseMySql(
             this IConfiguration configuration,
             string connectionString,
-            MySqlDialect mySqlDialect)
-        {
-            return UseMySql(configuration, connectionString, mySqlDialect, IsolationLevel.ReadUncommitted);
-        }
-
-        public static IConfiguration UseMySql(
-            this IConfiguration configuration,
-            string connectionString,
-            IsolationLevel isolationLevel)
-        {
-            return UseMySql(configuration, connectionString, DefaulMySqlDialect, isolationLevel);
-        }
-
-        public static IConfiguration UseMySql(
-            this IConfiguration configuration,
-            string connectionString,
-            MySqlDialect mySqlDialect,
             IsolationLevel isolationLevel)
         {
             if (configuration == null)
@@ -60,17 +30,24 @@ namespace YesSql.Provider.MySql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            if (mySqlDialect == null)
-            {
-                throw new ArgumentNullException(nameof(mySqlDialect));
-            }
+            const string dialectParameterName = "Dialect";
+            var dialectIndex = connectionString.IndexOf(dialectParameterName);
+            var dialectTypeName = connectionString.Substring(dialectIndex + dialectParameterName.Length + 1);
+            var dialectType = typeof(MySqlDialect).GetTypeInfo().Assembly
+                .GetTypes().OfType<MySqlDialect>()
+                .SingleOrDefault(d => d.Name == dialectTypeName);
 
-            RegisterMySql(configuration, mySqlDialect);
-
+            RegisterMySqlServer(connectionString, dialectType);
             configuration.ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;
+        }
+
+        private static void RegisterMySqlServer(string connectionString, MySqlDialect sqlServerDialect)
+        {
+            SqlDialectFactory.SqlDialects[connectionString] = sqlServerDialect;
+            CommandInterpreterFactory.CommandInterpreters[connectionString] = d => new MySqlCommandInterpreter(d);
         }
     }
 }

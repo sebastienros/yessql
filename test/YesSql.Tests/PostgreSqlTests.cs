@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.PostgreSql;
@@ -8,7 +8,7 @@ namespace YesSql.Tests
 {
     public class PostgreSqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;Dialect=PostgreSqlDialect";
         public PostgreSqlTests()
         {
             _store = new Store(new Configuration().UsePostgreSql(ConnectionString));

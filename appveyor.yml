@@ -16,9 +16,9 @@ build_script:
   - dotnet build -c Release
   - dotnet pack -c Release
 before_test:
-  - SET SQLSERVER_CONNECTION_STRING=Data Source=.;Initial Catalog=tempdb;Integrated Security=True
-  - SET MYSQL_CONNECTION_STRING=server=localhost;uid=root;pwd=Password12!;database=yessql;
-  - SET POSTGRESQL_CONNECTION_STRING=Server=localhost;Port=5432;Database=yessql;User Id=postgres;Password=Password12!;
+  - SET SQLSERVER_CONNECTION_STRING=Data Source=.;Initial Catalog=tempdb;Integrated Security=True;Dialect=SqlServerDialect
+  - SET MYSQL_CONNECTION_STRING=server=localhost;uid=root;pwd=Password12!;database=yessql;Dialect=MySqlDialect
+  - SET POSTGRESQL_CONNECTION_STRING=Server=localhost;Port=5432;Database=yessql;User Id=postgres;Password=Password12!;Dialect=PostgreSqlDialect
   - SET MYSQL_PWD=Password12!
   - PATH=C:\Program Files\MySQL\MySQL Server 5.7\bin;%PATH%
   - mysql -e "create database yessql;" --user=root

@@ -1,53 +1,23 @@
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
+using System.Reflection;
 
 namespace YesSql.Provider.SqlServer
 {
     public static class SqlServerDbProviderOptionsExtensions
     {
-        public static readonly SqlServerDialect DefaulSqlServerDialect = new SqlServerDialect();
-
-        public static IConfiguration RegisterSqlServer(this IConfiguration configuration)
-        {
-            return RegisterSqlServer(configuration, DefaulSqlServerDialect);
-        }
-
-        public static IConfiguration RegisterSqlServer(this IConfiguration configuration, SqlServerDialect sqlServerDialect)
-        {
-            SqlDialectFactory.SqlDialects["sqlconnection"] = sqlServerDialect;
-            CommandInterpreterFactory.CommandInterpreters["sqlconnection"] = d => new SqlServerCommandInterpreter(d);
-
-            return configuration;
-        }
-
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
             string connectionString)
         {
-            return UseSqlServer(configuration, connectionString, DefaulSqlServerDialect);
+            return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
         }
 
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
             string connectionString,
-            SqlServerDialect sqlServerDialect)
-        {
-            return UseSqlServer(configuration, connectionString, sqlServerDialect, IsolationLevel.ReadUncommitted);
-        }
-
-        public static IConfiguration UseSqlServer(
-            this IConfiguration configuration,
-            string connectionString,
-            IsolationLevel isolationLevel)
-        {
-            return UseSqlServer(configuration, connectionString, DefaulSqlServerDialect, isolationLevel);
-        }
-
-        public static IConfiguration UseSqlServer(
-            this IConfiguration configuration,
-            string connectionString,
-            SqlServerDialect sqlServerDialect,
             IsolationLevel isolationLevel)
         {
             if (configuration == null)
@@ -60,16 +30,24 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            if (sqlServerDialect == null)
-            {
-                throw new ArgumentNullException(nameof(sqlServerDialect));
-            }
+            const string dialectParameterName = "Dialect";
+            var dialectIndex = connectionString.IndexOf(dialectParameterName);
+            var dialectTypeName = connectionString.Substring(dialectIndex + dialectParameterName.Length + 1);
+            var dialectType = typeof(SqlServerDialect).GetTypeInfo().Assembly
+                .GetTypes().OfType<SqlServerDialect>()
+                .SingleOrDefault(d => d.Name == dialectTypeName);
 
-            RegisterSqlServer(configuration, sqlServerDialect);
+            RegisterSqlServer(connectionString, dialectType);
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;
+        }
+
+        private static void RegisterSqlServer(string connectionString, SqlServerDialect sqlServerDialect)
+        {
+            SqlDialectFactory.SqlDialects[connectionString] = sqlServerDialect;
+            CommandInterpreterFactory.CommandInterpreters[connectionString] = d => new SqlServerCommandInterpreter(d);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Data;
 
@@ -10,11 +10,11 @@ namespace YesSql
 
         public static ISqlDialect For(IDbConnection connection)
         {
-            string connectionName = connection.GetType().Name.ToLower();
+            var connectionString = connection.ConnectionString;
 
-            if (!SqlDialects.TryGetValue(connectionName, out ISqlDialect dialect))
+            if (!SqlDialects.TryGetValue(connectionString, out ISqlDialect dialect))
             {
-                throw new ArgumentException("Unknown connection name: " + connectionName);
+                throw new ArgumentException($"The connection string '{connectionString}' doesn't contains a dialect parameter.");
             }
 
             return dialect;
