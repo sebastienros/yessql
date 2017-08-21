@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using YesSql;
 
 namespace Microsoft.Extensions.DependencyInjection
