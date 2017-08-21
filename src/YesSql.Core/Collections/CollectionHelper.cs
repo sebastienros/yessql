@@ -1,9 +1,9 @@
-﻿using System;
-#if NETSTANDARD1_5
-using System.Threading;
-#else
+using System;
+#if NET451
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
+#else
+using System.Threading;
 #endif
 
 namespace YesSql.Collections
@@ -11,7 +11,7 @@ namespace YesSql.Collections
     public class CollectionHelper
     {
 
-#if NETSTANDARD1_5
+#if !NET451
         private static readonly AsyncLocal<CollectionStack> _scopes = new AsyncLocal<CollectionStack>();
 
         internal static CollectionStack Scopes

@@ -7,8 +7,8 @@
     <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
+  <ItemGroup>
+    <!-- Forcing 4.4.0 version, c.f. https://github.com/Azure/app-service-announcements-discussions/issues/9 -->
+    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
   </ItemGroup>
 </Project>
