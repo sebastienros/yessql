@@ -461,9 +461,11 @@ namespace YesSql
                     var newMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.New).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
+
                     var deletedMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.Delete).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
+                    
                     var updatedMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.Update).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
@@ -481,7 +483,7 @@ namespace YesSql
                         if (index == null)
                         {
                             throw new InvalidOperationException(
-                                "The reduction on a grouped set shoud have resulted in a unique result"
+                                "The reduction on a grouped set should have resulted in a unique result"
                                 );
                         }
                     }
@@ -499,7 +501,7 @@ namespace YesSql
                         if (grouppedReductions == null)
                         {
                             throw new InvalidOperationException(
-                                "The grouping on the db and in memory set shoud have resulted in a unique result");
+                                "The grouping on the db and in memory set should have resulted in a unique result");
                         }
 
                         index = descriptor.Reduce(grouppedReductions);
@@ -507,7 +509,7 @@ namespace YesSql
                         if (index == null)
                         {
                             throw new InvalidOperationException(
-                                "The reduction on a grouped set shoud have resulted in a unique result");
+                                "The reduction on a grouped set should have resulted in a unique result");
                         }
                     }
                     else if (dbIndex != null)
@@ -531,8 +533,8 @@ namespace YesSql
                         }
                     }
 
-                    var deletedDocumentIds = deletedMapsGroup.SelectMany(x => x.GetRemovedDocuments().Select(d => d.Id));
-                    var addedDocumentIds = newMapsGroup.SelectMany(x => x.GetAddedDocuments().Select(d => d.Id));
+                    var deletedDocumentIds = deletedMapsGroup.SelectMany(x => x.GetRemovedDocuments().Select(d => d.Id)).ToArray();
+                    var addedDocumentIds = newMapsGroup.SelectMany(x => x.GetAddedDocuments().Select(d => d.Id)).ToArray();
 
                     if (dbIndex != null)
                     {
@@ -544,8 +546,15 @@ namespace YesSql
                         {
                             index.Id = dbIndex.Id;
 
-                            // Update both new and deleted linked documents
-                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
+                            var common = addedDocumentIds.Intersect(deletedDocumentIds).ToArray();
+                            addedDocumentIds = addedDocumentIds.Where(x => !common.Contains(x)).ToArray();
+                            deletedDocumentIds = deletedDocumentIds.Where(x => !common.Contains(x)).ToArray();
+
+                            if (addedDocumentIds.Any() || deletedDocumentIds.Any())
+                            {
+                                // Update both new and deleted linked documents
+                                _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
+                            }
                         }
                     }
                     else
