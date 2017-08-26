@@ -54,6 +54,7 @@ namespace YesSql.Tests
 
                 builder.DropMapIndexTable(nameof(PersonByAge));
                 builder.DropMapIndexTable(nameof(PublishedArticle));
+                builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
                 builder.DropTable(Store.DocumentTable);
                 builder.DropTable("Collection1_Document");
                 builder.DropTable(LinearBlockIdGenerator.TableName);
@@ -79,6 +80,11 @@ namespace YesSql.Tests
                 builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
                         .Column<int>(nameof(ArticlesByDay.Count))
                         .Column<int>(nameof(ArticlesByDay.DayOfYear))
+                    );
+
+                builder.CreateReduceIndexTable(nameof(UserByRoleNameIndex), column => column
+                        .Column<int>(nameof(UserByRoleNameIndex.Count))
+                        .Column<string>(nameof(UserByRoleNameIndex.RoleName))
                     );
 
                 builder.CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
@@ -871,7 +877,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task MultipleIndexesShoudNotConflict()
+        public async Task MultipleIndexesShouldNotConflict()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -2281,6 +2287,70 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == PersonByName.Normalize(bill.Firstname)).CountAsync());
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldRemoveGroupKey()
+        {
+            _store.RegisterIndexes<UserByRoleNameIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var user = new User
+                {
+                    UserName = "admin",
+                    NormalizedUserName = "ADMIN",
+                    RoleNames = { "administrator", "editor" }
+                };
+
+                session.Save(user);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var user = await session.Query<User>().FirstOrDefaultAsync();
+                user.RoleNames.Remove("editor");
+                session.Save(user);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndex<UserByRoleNameIndex>().CountAsync());
+                Assert.Equal(1, await session.Query<User, UserByRoleNameIndex>(x => x.RoleName == "administrator").CountAsync());
+                Assert.Equal(0, await session.Query<User, UserByRoleNameIndex>(x => x.RoleName == "editor").CountAsync());
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldAddGroupKey()
+        {
+            _store.RegisterIndexes<UserByRoleNameIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var user = new User
+                {
+                    UserName = "admin",
+                    NormalizedUserName = "ADMIN",
+                    RoleNames = { "administrator" }
+                };
+
+                session.Save(user);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var user = await session.Query<User>().FirstOrDefaultAsync();
+                user.RoleNames.Add("editor");
+                session.Save(user);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryIndex<UserByRoleNameIndex>().CountAsync());
+                Assert.Equal(1, await session.Query<User, UserByRoleNameIndex>(x => x.RoleName == "administrator").CountAsync());
+                Assert.Equal(1, await session.Query<User, UserByRoleNameIndex>(x => x.RoleName == "editor").CountAsync());
             }
         }
     }
