@@ -54,7 +54,7 @@ namespace YesSql.Tests
 
                 builder.DropMapIndexTable(nameof(PersonByAge));
                 builder.DropMapIndexTable(nameof(PublishedArticle));
-                builder.DropMapIndexTable(nameof(UserByRoleNameIndex));
+                builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
                 builder.DropTable(Store.DocumentTable);
                 builder.DropTable("Collection1_Document");
                 builder.DropTable(LinearBlockIdGenerator.TableName);
