@@ -2355,7 +2355,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldGateQuery()
+        public virtual async Task ShouldGateQuery()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 

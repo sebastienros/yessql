@@ -46,5 +46,11 @@ namespace YesSql.Tests
         {
             return base.ShouldReadUncommittedRecords();
         }
+
+        [Fact(Skip = "Shared connection can't be used concurrently")]
+        public override Task ShouldGateQuery()
+        {
+            return base.ShouldGateQuery();
+        }
     }
 }
