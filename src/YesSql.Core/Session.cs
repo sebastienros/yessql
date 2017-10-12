@@ -25,7 +25,7 @@ namespace YesSql
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
-        private readonly Store _store;
+        internal readonly Store _store;
         private volatile bool _disposed;
         private IsolationLevel _isolationLevel;
         private IDbConnection _connection;
@@ -190,7 +190,9 @@ namespace YesSql
             Demand();
 
             var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
-            var result = await _connection.QueryAsync<Document>(command, new { Id = id }, _transaction);
+            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new [] { id });
+            var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
+
             return result.FirstOrDefault();
         }
 
@@ -255,7 +257,12 @@ namespace YesSql
             Demand();
 
             var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
-            var documents = await _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
+
+            var key = new WorkerQueryKey(nameof(GetAsync), ids);
+            var documents = await _store.ProduceAsync(key, () =>
+            {
+                return _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
+            });
 
             return Get<T>(documents.ToArray());
         }
@@ -698,6 +705,8 @@ namespace YesSql
                     _connection.Open();
                 }
 
+                // In the case of shared connections (InMemory) this can throw as the transation
+                // might already be set by a concurrent thread on the same shared connection.
                 _transaction = _connection.BeginTransaction(_isolationLevel);
             }
 

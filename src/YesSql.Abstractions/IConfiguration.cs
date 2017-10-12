@@ -11,6 +11,7 @@ namespace YesSql
         IContentSerializer ContentSerializer { get; set; }
         string TablePrefix { get; set; }
         int SessionPoolSize { get; set; }
+        bool QueryGatingEnabled { get; set; }
     }
 
     public static class ConfigurationExtensions
@@ -48,6 +49,12 @@ namespace YesSql
         public static IConfiguration SetSessionPoolSize(this IConfiguration configuration, int size)
         {
             configuration.SessionPoolSize = size;
+            return configuration;
+        }
+
+        public static IConfiguration DisableQueryGating(this IConfiguration configuration)
+        {
+            configuration.QueryGatingEnabled = false;
             return configuration;
         }
     }
