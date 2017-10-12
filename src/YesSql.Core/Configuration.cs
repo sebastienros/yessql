@@ -13,6 +13,7 @@ namespace YesSql
             IsolationLevel = IsolationLevel.ReadCommitted;
             TablePrefix = "";
             SessionPoolSize = 16;
+            QueryGatingEnabled = true;
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
@@ -21,5 +22,6 @@ namespace YesSql
         public IContentSerializer ContentSerializer { get; set; }
         public string TablePrefix { get; set; }
         public int SessionPoolSize { get; set; }
+        public bool QueryGatingEnabled { get; set; }
     }
 }

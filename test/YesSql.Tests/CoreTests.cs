@@ -2353,5 +2353,125 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query<User, UserByRoleNameIndex>(x => x.RoleName == "editor").CountAsync());
             }
         }
+
+        [Fact]
+        public async Task ShouldGateQuery()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+
+                for (int i = 0; i < 20; i++)
+                {
+                    session.Save(new Person { Firstname = $"Foo {i}" });
+                }
+            }
+
+            var concurrency = 5;
+            var MaxTransactions = 1000000;
+
+            var counter = 0;
+            var stopping = false;
+
+            // Warmup
+
+            var tasks = Enumerable.Range(1, concurrency).Select(async i =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        await session.Query().For<Person>().With<PersonByName>().ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
+                    }
+                }
+            }).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
+
+            await Task.WhenAny(tasks);
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
+            stopping = false;
+            counter = 0;
+
+            // Gated queries
+
+            tasks = Enumerable.Range(1, concurrency).Select(async i =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        await session.Query().For<Person>().With<PersonByName>().ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
+                    }
+                }
+            }).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
+
+            await Task.WhenAny(tasks);
+
+            var gatedCounter = counter;
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
+            stopping = false;
+            counter = 0;
+
+            // Non-gated queries
+
+            _store.Configuration.DisableQueryGating();
+
+            tasks = Enumerable.Range(1, concurrency).Select(async i =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        await session.Query().For<Person>().With<PersonByName>().ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
+                    }
+                }
+            }).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
+
+            await Task.WhenAny(tasks);
+
+            var nonGatedCounter = counter;
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
+            stopping = false;
+
+            // Not running the statement in case it fails (non deterministic)
+            // Assert.True(gatedCounter > nonGatedCounter);
+
+            Console.WriteLine($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
+        }
     }
 }

@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Collections;
+using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Serialization;
 
@@ -457,7 +458,12 @@ namespace YesSql.Services
 
             _sqlBuilder.Selector("count(*)");
             var sql = _sqlBuilder.ToSqlString(_dialect, true);
-            return await _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
+
+            var key = new WorkerQueryKey(sql, _sqlBuilder.Parameters);
+            return await _session._store.ProduceAsync(key, () =>
+            {
+                return _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
+            });
         }
 
         IQuery<T> IQuery.For<T>(bool filterType)
@@ -523,13 +529,21 @@ namespace YesSql.Services
                 {
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
-                    return (await _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction)).FirstOrDefault();
+                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    return (await _query._session._store.ProduceAsync(key, () =>
+                    {
+                        return _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                    })).FirstOrDefault();
                 }
                 else
                 {
                     _query._sqlBuilder.Selector(_query._documentTable, "*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
-                    var documents = (await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction)).ToArray();
+                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    var documents = (await _query._session._store.ProduceAsync(key, () =>
+                    {
+                        return _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                    })).ToArray();
 
                     if (documents.Length == 0)
                     {
@@ -554,13 +568,22 @@ namespace YesSql.Services
                 {
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
-                    return await _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    return await _query._session._store.ProduceAsync(key,() =>
+                    {
+                        return _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                    });
                 }
                 else
                 {
                     _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn(_query._documentTable, "*"));
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
-                    var documents = await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    var documents = await _query._session._store.ProduceAsync(key, () =>
+                    {
+                        return _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                    });
+
                     return _query._session.Get<T>(documents.ToArray());
                 }
             }

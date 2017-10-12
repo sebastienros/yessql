@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Commands;
+using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
@@ -34,6 +35,9 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<Type, Func<IDescriptor>> DescriptorActivators =
             new ConcurrentDictionary<Type, Func<IDescriptor>>();
+
+        internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
+            new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
 
         public const string DocumentTable = "Document";
         
@@ -234,6 +238,64 @@ namespace YesSql
 
             Indexes.AddRange(indexProviders);
             return this;
+        }
+
+        /// <summary>
+        /// Enlists some reusable logic such that not two threads run the same thing.
+        /// </summary>
+        /// <param name="key">A key identifying the running work.</param>
+        /// <param name="work">A function containing the logic to execute.</param>
+        /// <returns>The result of the work.</returns>
+        public async Task<T> ProduceAsync<T>(WorkerQueryKey key, Func<Task<T>> work)
+        {
+            if (!Configuration.QueryGatingEnabled)
+            {
+                return await work();
+            }
+
+            object content = null;
+
+            while (content == null)
+            {
+                // Is there any query already processing the ?
+                if (!Workers.TryGetValue(key, out var result))
+                {
+                    // Multiple threads can potentially reach this point which is fine
+                    var tcs = new TaskCompletionSource<object>();
+
+                    Workers.TryAdd(key, tcs.Task);
+
+                    try
+                    {
+                        // The current worker is processed
+                        content = await work();
+                    }
+                    catch
+                    {
+                        // An exception occured in the main worker, we broadcast the null value
+                        content = null;
+                        throw;
+                    }
+                    finally
+                    {
+                        // Remove the worker task before setting the result.
+                        // If the result is null, other threads would potentially
+                        // acquire it otherwise.
+                        Workers.TryRemove(key, out result);
+
+                        // Notify all other awaiters to render the content
+                        tcs.TrySetResult(content);
+                    }
+                }
+                else
+                {
+                    // Another worker is already running, wait for it to finish and reuse the results.
+                    // This value can be null if the worker failed, in this case the loop will run again.
+                    content = await result;
+                }
+            }
+
+            return (T) content;
         }
 
         internal class TypeCollectionTuple : Tuple<Type, string>
