@@ -2382,15 +2382,15 @@ namespace YesSql.Tests
                 }
             }
 
-            var concurrency = 5;
-            var MaxTransactions = 1000000;
+            var concurrency = 32;
+            var MaxTransactions = 100000;
 
             var counter = 0;
             var stopping = false;
 
             // Warmup
 
-            var tasks = Enumerable.Range(1, concurrency).Select(async i =>
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
@@ -2401,7 +2401,7 @@ namespace YesSql.Tests
                         await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
                     }
                 }
-            }).ToList();
+            })).ToList();
 
             tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
 
@@ -2415,7 +2415,7 @@ namespace YesSql.Tests
 
             // Gated queries
 
-            tasks = Enumerable.Range(1, concurrency).Select(async i =>
+            tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
@@ -2426,7 +2426,7 @@ namespace YesSql.Tests
                         await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
                     }
                 }
-            }).ToList();
+            })).ToList();
 
             tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
 
@@ -2444,7 +2444,7 @@ namespace YesSql.Tests
 
             _store.Configuration.DisableQueryGating();
 
-            tasks = Enumerable.Range(1, concurrency).Select(async i =>
+            tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
@@ -2455,7 +2455,7 @@ namespace YesSql.Tests
                         await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
                     }
                 }
-            }).ToList();
+            })).ToList();
 
             tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
 
