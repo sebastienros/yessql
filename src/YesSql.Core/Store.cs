@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Collections;
@@ -216,9 +217,7 @@ namespace YesSql
         private static Func<IDescriptor> MakeDescriptorActivator(Type type)
         {
             var contextType = typeof(DescribeContext<>).MakeGenericType(type);
-
-            // TODO: Implement a more performant activator
-            return () => Activator.CreateInstance(contextType) as IDescriptor;
+            return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
         public int GetNextId(ISession session, string collection)
