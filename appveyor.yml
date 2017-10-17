@@ -17,8 +17,6 @@ install:
   - ps: Start-FileDownload 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
 build_script:
   - dotnet --version
-  - dotnet restore
-  - dotnet build -c Release
   - dotnet pack -c Release
 before_test:
   - SET SQLSERVER_CONNECTION_STRING=Data Source=.;Initial Catalog=tempdb;Integrated Security=True
@@ -41,13 +39,8 @@ test_script:
 artifacts:
 - path: 'src\**\*.nupkg'
 
-for:
-
-# override settings for `master` branch
--
-  branches:
-    only:
-      - master
-
-  deploy_script:
-    - ps: foreach ($artifactName in $artifacts.keys) { Startnuget push $artifacts[$artifactName] $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package }
+deploy_script:
+# foreach ($artifactName in $artifacts.keys) { nuget push $artifacts[$artifactName] $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package }
+- ps: echo $env:APPVEYOR_REPO_BRANCH
+- ps: echo $env:APPVEYOR_PULL_REQUEST_NUMBER
+- ps:  if ( ($env:APPVEYOR_REPO_BRANCH -eq "master") -and ($env:APPVEYOR_PULL_REQUEST_NUMBER -eq "") ) { echo "true" }
