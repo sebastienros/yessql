@@ -50,4 +50,4 @@ for:
       - master
 
   deploy_script:
-    - ps: echo "foo"
+    - ps: foreach ($artifactName in $artifacts.keys) { Startnuget push $artifacts[$artifactName] $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package }
