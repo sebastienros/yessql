@@ -20,6 +20,16 @@ namespace YesSql.Data
 
         public WorkerQueryKey(string prefix, int[] ids)
         {
+            if (prefix == null)
+            {
+                throw new ArgumentNullException(nameof(prefix));
+            }
+
+            if (ids == null)
+            {
+                throw new ArgumentNullException(nameof(ids));
+            }
+
             _prefix = prefix;
             _ids = new List<int>(ids);
             _ids.Sort();
@@ -74,8 +84,15 @@ namespace YesSql.Data
                 {
                     foreach (var parameter in _parameters)
                     {
-                        combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Key.GetHashCode();
-                        combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Value.GetHashCode();
+                        if (parameter.Key != null)
+                        {
+                            combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Key.GetHashCode();
+                        }
+
+                        if (parameter.Value != null)
+                        {
+                            combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Value.GetHashCode();
+                        }
                     }
                 }
 
