@@ -17,7 +17,6 @@ install:
   - ps: Start-FileDownload 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
 build_script:
   - dotnet --version
-  - dotnet pack -c Release
 before_test:
   - SET SQLSERVER_CONNECTION_STRING=Data Source=.;Initial Catalog=tempdb;Integrated Security=True
   - SET MYSQL_CONNECTION_STRING=server=localhost;uid=root;pwd=Password12!;database=yessql;
@@ -36,11 +35,10 @@ test_script:
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.InMemoryTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.ProviderTests" --configuration Release
+after_test:
+  - dotnet pack -c Release
 artifacts:
 - path: 'src\**\*.nupkg'
 
 deploy_script:
-# foreach ($artifactName in $artifacts.keys) { nuget push $artifacts[$artifactName] $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package }
-- ps: echo $env:APPVEYOR_REPO_BRANCH
-- ps: echo $env:APPVEYOR_PULL_REQUEST_NUMBER
-- ps:  if ( ($env:APPVEYOR_REPO_BRANCH -eq "master") -and ($env:APPVEYOR_PULL_REQUEST_NUMBER -eq "") ) { echo "true" }
+- ps:  if ( ($env:APPVEYOR_REPO_BRANCH -eq "master") -and ($env:APPVEYOR_PULL_REQUEST_NUMBER -eq "") ) { foreach ($artifactName in $artifacts.keys) { nuget push $artifacts[$artifactName] $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package } }
