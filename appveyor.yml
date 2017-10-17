@@ -41,4 +41,4 @@ artifacts:
 - path: 'src\**\*.nupkg'
 
 deploy_script:
-- ps:  if ( ($env:APPVEYOR_REPO_BRANCH -eq "master") -and ($env:APPVEYOR_PULL_REQUEST_NUMBER -eq "") ) { foreach ($artifactName in $artifacts.keys) { nuget push $artifacts[$artifactName] $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package } }
+- ps: if (($env:APPVEYOR_REPO_BRANCH -eq "master") -and (-Not(Test-Path env:/APPVEYOR_PULL_REQUEST_NUMBER))) { foreach ($artifactName in $artifacts.keys) { nuget push $artifacts[$artifactName].path $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package } }
