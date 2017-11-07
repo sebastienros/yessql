@@ -1433,6 +1433,29 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldResolveTypes()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill"
+                };
+
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = await session.Query().Any().FirstOrDefaultAsync();
+
+                Assert.NotNull(bill);
+                Assert.IsType<Person>(bill);
+                Assert.Equal("Bill", ((Person)bill).Firstname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldSavePolymorphicProperties()
         {
             using (var session = _store.CreateSession())

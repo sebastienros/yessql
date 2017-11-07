@@ -13,7 +13,7 @@ namespace YesSql.Data
     public class WorkerQueryKey : IEquatable<WorkerQueryKey>
     {
         private readonly string _prefix;
-        private readonly List<int> _ids;
+        private readonly int[] _ids;
         private readonly Dictionary<string, object> _parameters;
 
         private int? _hashcode;
@@ -31,8 +31,7 @@ namespace YesSql.Data
             }
 
             _prefix = prefix;
-            _ids = new List<int>(ids);
-            _ids.Sort();
+            _ids = ids;
         }
 
         public WorkerQueryKey(string prefix, Dictionary<string, object> parameters)

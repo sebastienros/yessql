@@ -267,7 +267,7 @@ namespace YesSql
             return Get<T>(documents.ToArray());
         }
 
-        public IEnumerable<T> Get<T>(Document[] documents) where T : class
+        public IEnumerable<T> Get<T>(IList<Document> documents) where T : class
         {
             if (documents == null || !documents.Any())
             {
@@ -275,7 +275,7 @@ namespace YesSql
             }
 
             var result = new List<T>();
-            
+
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
 
             // Are all the objects already in cache?
@@ -287,7 +287,20 @@ namespace YesSql
                 }
                 else
                 {
-                    var item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, typeof(T));
+                    T item;
+
+                    // If no type is specified, use the one from the document
+                    if (typeof(T) == typeof(object))
+                    {
+                        var itemType = Type.GetType(d.Type) ?? typeof(object);
+                        accessor = _store.GetIdAccessor(itemType, "Id");
+
+                        item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, itemType);
+                    }
+                    else
+                    {
+                        item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, typeof(T));
+                    }
 
                     if (accessor != null)
                     {
