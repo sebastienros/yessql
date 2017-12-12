@@ -122,7 +122,7 @@ namespace YesSql.Services
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(dialect.InOperator(sqlBuilder.ToSqlString(dialect)));
+                    builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString(dialect)));
                 };
         }
 

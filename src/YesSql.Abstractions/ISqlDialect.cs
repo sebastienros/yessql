@@ -20,6 +20,7 @@ namespace YesSql
         string GetDropTableString(string name);
         string QuoteForColumnName(string columnName);
         string InOperator(string values);
+        string InSelectOperator(string query);
         string GetDropForeignKeyConstraintString(string name);
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
         string DefaultValuesInsert { get; }

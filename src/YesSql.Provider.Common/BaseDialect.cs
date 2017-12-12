@@ -21,6 +21,10 @@ namespace YesSql.Provider
                 return " IN (" + values + ") ";
             }
         }
+        public virtual string InSelectOperator(string values)
+        {
+            return " IN (" + values + ") ";
+        }
         public virtual string CreateTableString => "create table";
 
         public virtual bool HasDataTypeInIdentityColumn => false;
