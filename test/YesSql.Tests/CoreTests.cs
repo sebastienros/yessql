@@ -1,6 +1,7 @@
 using Dapper;
 using System;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,6 +36,7 @@ namespace YesSql.Tests
         {
         }
 
+        [DebuggerNonUserCode]
         protected virtual void CleanDatabase()
         {
             // Remove existing tables
@@ -435,6 +437,39 @@ namespace YesSql.Tests
                 Assert.Null(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new string[0])).FirstOrDefaultAsync());
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill" })).FirstOrDefaultAsync());
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill", "Steve" })).FirstOrDefaultAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryInnerSelect()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsInIndex<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.StartsWith("C"))).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsInIndex<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.Contains("lo"))).CountAsync());
             }
         }
 

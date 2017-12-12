@@ -66,8 +66,7 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(string), typeof(IEnumerable<string>) })] =
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(int), typeof(IEnumerable<int>) })] =
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(object), typeof(IEnumerable<string>) })] =
                 (query, builder, dialect, expression) =>
                 {
                     var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
@@ -97,6 +96,33 @@ namespace YesSql.Services
 
                         builder.Append(dialect.InOperator(elements.ToString()));
                     }
+                };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsInIndex")] =
+                (query, builder, dialect, expression) =>
+                {
+                    var selector = expression.Arguments[1];
+                    var predicate = expression.Arguments[2];
+
+
+                    var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
+
+                    // Build inner query
+                    var _builder = new StringBuilder();
+
+                    sqlBuilder.Select();
+
+                    query.ConvertFragment(_builder, expression.Arguments[0]);
+                    sqlBuilder.Selector(_builder.ToString());
+                    _builder.Clear();
+
+                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
+                    query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
+                    sqlBuilder.WhereAlso(_builder.ToString());
+
+                    // Insert query
+                    query.ConvertFragment(builder, expression.Arguments[0]);
+                    builder.Append(dialect.InOperator(sqlBuilder.ToSqlString(dialect)));
                 };
         }
 
@@ -279,7 +305,8 @@ namespace YesSql.Services
                     var methodCallExpression = (MethodCallExpression)expression;
                     var methodInfo = methodCallExpression.Method;
                     Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression> action;
-                    if (MethodMappings.TryGetValue(methodInfo, out action))
+                    if (MethodMappings.TryGetValue(methodInfo, out action) 
+                        || MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action))
                     {
                         action(this, builder, _dialect, methodCallExpression);
                     }
@@ -774,14 +801,14 @@ namespace YesSql.Services
 
     public static class DefaultQueryExtensions
     {
-        public static bool IsIn(this string source, IEnumerable<string> values)
+        public static bool IsIn(this object source, IEnumerable<string> values)
         {
             return false;
         }
-        public static bool IsIn(this int source, IEnumerable<int> values)
+
+        public static bool IsInIndex<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where)
         {
             return false;
         }
     }
-
 }
