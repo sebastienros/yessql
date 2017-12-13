@@ -468,8 +468,11 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsInIndex<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.StartsWith("C"))).CountAsync());
-                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsInIndex<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.Contains("lo"))).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.StartsWith("C"))).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.Contains("lo"))).CountAsync());
+
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.StartsWith("C"))).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.Contains("lo"))).CountAsync());
             }
         }
 
@@ -1852,6 +1855,45 @@ namespace YesSql.Tests
 
                 Assert.Equal(0, await session.Query().For<Person>()
                     .With<PersonByName>(x => x.Name.IsIn(new string[0]))
+                    .CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCreateNotInQuery()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill"
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve"
+                };
+
+                var paul = new Person
+                {
+                    Firstname = "Scott"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+                session.Save(paul);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query().For<Person>()
+                    .With<PersonByName>(x => x.Name.IsNotIn(new[] { "Bill", "Steve" }))
+                    .CountAsync());
+
+                Assert.Equal(3, await session.Query().For<Person>()
+                    .With<PersonByName>(x => x.Name.IsNotIn(new string[0]))
                     .CountAsync());
             }
         }

@@ -66,7 +66,7 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn", new Type[] { typeof(object), typeof(IEnumerable<string>) })] =
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
                     var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
@@ -98,12 +98,43 @@ namespace YesSql.Services
                     }
                 };
 
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsInIndex")] =
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsNotIn")] =
+                (query, builder, dialect, expression) =>
+                {
+                    var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
+
+                    if (values.Length == 0)
+                    {
+                        builder.Append(" 1 = 1");
+                    }
+                    else if (values.Length == 1)
+                    {
+                        query.ConvertFragment(builder, expression.Arguments[0]);
+                        builder.Append(" <> ");
+                        query.ConvertFragment(builder, Expression.Constant(values[0]));
+                    }
+                    else
+                    {
+                        query.ConvertFragment(builder, expression.Arguments[0]);
+                        var elements = new StringBuilder();
+                        for (var i = 0; i < values.Length; i++)
+                        {
+                            query.ConvertFragment(elements, Expression.Constant(values[i]));
+                            if (i < values.Length - 1)
+                            {
+                                elements.Append(", ");
+                            }
+                        }
+
+                        builder.Append(" not ").Append(dialect.InOperator(elements.ToString()));
+                    }
+                };
+
+            MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
                     var selector = expression.Arguments[1];
                     var predicate = expression.Arguments[2];
-
 
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
 
@@ -123,6 +154,32 @@ namespace YesSql.Services
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
                     builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString(dialect)));
+                };
+
+            MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotIn")] =
+                (query, builder, dialect, expression) =>
+                {
+                    var selector = expression.Arguments[1];
+                    var predicate = expression.Arguments[2];
+
+                    var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
+
+                    // Build inner query
+                    var _builder = new StringBuilder();
+
+                    sqlBuilder.Select();
+
+                    query.ConvertFragment(_builder, expression.Arguments[0]);
+                    sqlBuilder.Selector(_builder.ToString());
+                    _builder.Clear();
+
+                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
+                    query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
+                    sqlBuilder.WhereAlso(_builder.ToString());
+
+                    // Insert query
+                    query.ConvertFragment(builder, expression.Arguments[0]);
+                    builder.Append(" not ").Append(dialect.InSelectOperator(sqlBuilder.ToSqlString(dialect)));
                 };
         }
 
@@ -811,7 +868,21 @@ namespace YesSql.Services
             return false;
         }
 
-        public static bool IsInIndex<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where)
+        public static bool IsNotIn(this object source, IEnumerable<string> values)
+        {
+            return false;
+        }
+
+    }
+
+    public static class DefaultQueryExtensionsIndex
+    {
+        public static bool IsIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where)
+        {
+            return false;
+        }
+
+        public static bool IsNotIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where)
         {
             return false;
         }
