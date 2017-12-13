@@ -126,7 +126,7 @@ namespace YesSql.Services
                             }
                         }
 
-                        builder.Append(" not ").Append(dialect.InOperator(elements.ToString()));
+                        builder.Append(dialect.NotInOperator(elements.ToString()));
                     }
                 };
 
@@ -179,7 +179,7 @@ namespace YesSql.Services
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(" not ").Append(dialect.InSelectOperator(sqlBuilder.ToSqlString(dialect)));
+                    builder.Append(dialect.NotInSelectOperator(sqlBuilder.ToSqlString(dialect)));
                 };
         }
 

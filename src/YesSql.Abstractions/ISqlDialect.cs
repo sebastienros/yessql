@@ -21,6 +21,8 @@ namespace YesSql
         string QuoteForColumnName(string columnName);
         string InOperator(string values);
         string InSelectOperator(string query);
+        string NotInOperator(string values);
+        string NotInSelectOperator(string query);
         string GetDropForeignKeyConstraintString(string name);
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
         string DefaultValuesInsert { get; }

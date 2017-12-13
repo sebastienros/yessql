@@ -21,10 +21,22 @@ namespace YesSql.Provider
                 return " IN (" + values + ") ";
             }
         }
+
+        public virtual string NotInOperator(string values)
+        {
+            return " NOT" + InOperator(values);
+        }
+
         public virtual string InSelectOperator(string values)
         {
             return " IN (" + values + ") ";
         }
+
+        public virtual string NotInSelectOperator(string values)
+        {
+            return " NOT IN (" + values + ") ";
+        }
+
         public virtual string CreateTableString => "create table";
 
         public virtual bool HasDataTypeInIdentityColumn => false;
