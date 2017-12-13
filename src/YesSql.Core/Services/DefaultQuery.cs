@@ -136,6 +136,11 @@ namespace YesSql.Services
             _sqlBuilder = _dialect.CreateBuilder(tablePrefix);
         }
 
+        public override string ToString()
+        {
+            return _sqlBuilder.ToSqlString(_dialect);
+        }
+
         private void Bind<TIndex>() where TIndex : IIndex
         {
             if (_bound.Contains(typeof(TIndex)))
@@ -627,9 +632,9 @@ namespace YesSql.Services
                 return this;
             }
 
-            async Task<int> IQuery<T>.CountAsync()
+            Task<int> IQuery<T>.CountAsync()
             {
-                return await _query.CountAsync();
+                return _query.CountAsync();
             }
 
             IQuery<T, TIndex> IQuery<T>.With<TIndex>()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using YesSql.Sql;
 
@@ -39,7 +39,7 @@ namespace YesSql.Provider.MySql
                     sb.Append(" ").Append(Trail);
                 }
 
-                if ((_skip != 0 || _count != 0))
+                if (_skip != 0 || _count != 0)
                 {
                     _selector = sb.ToString();
                     dialect.Page(this, _skip, _count);
