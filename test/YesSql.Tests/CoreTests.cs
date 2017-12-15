@@ -2592,8 +2592,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(0, oak.Id);
-                Assert.NotEqual(0, (await session.Query<Tree>().FirstOrDefaultAsync()).Id);
+                Assert.Equal(oak.Id, (await session.Query<Tree>().FirstOrDefaultAsync()).Id);
             }
         }
     }
