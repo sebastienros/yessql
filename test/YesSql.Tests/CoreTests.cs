@@ -2573,5 +2573,28 @@ namespace YesSql.Tests
 
             Console.WriteLine($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
         }
+
+        [Fact]
+        public virtual async Task ShouldPopulateIdFieldWithPrivateSetter()
+        {
+            Tree oak;
+
+            using (var session = _store.CreateSession())
+            {
+                oak = new Tree
+                {
+                    Type = "Oak",
+                    HeightInInches = 375
+                };
+
+                session.Save(oak);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, oak.Id);
+                Assert.NotEqual(0, (await session.Query<Tree>().FirstOrDefaultAsync()).Id);
+            }
+        }
     }
 }
