@@ -136,6 +136,9 @@ namespace YesSql.Services
                     var selector = expression.Arguments[1];
                     var predicate = expression.Arguments[2];
 
+                    var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
+                    query._bound.Add(tIndex);
+
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
 
                     // Build inner query
@@ -150,6 +153,8 @@ namespace YesSql.Services
                     sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     sqlBuilder.WhereAlso(_builder.ToString());
+
+                    query._bound.RemoveAt(query._bound.Count - 1);
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
@@ -162,6 +167,9 @@ namespace YesSql.Services
                     var selector = expression.Arguments[1];
                     var predicate = expression.Arguments[2];
 
+                    var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
+                    query._bound.Add(tIndex);
+
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
 
                     // Build inner query
@@ -173,9 +181,11 @@ namespace YesSql.Services
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
-                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
+                    sqlBuilder.Table(query._bound.Last().Name);
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     sqlBuilder.WhereAlso(_builder.ToString());
+
+                    query._bound.RemoveAt(query._bound.Count - 1);
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
