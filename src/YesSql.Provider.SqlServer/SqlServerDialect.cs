@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using YesSql.Sql;
 
 namespace YesSql.Provider.SqlServer
@@ -130,6 +131,23 @@ namespace YesSql.Provider.SqlServer
         protected override string Quote(string value)
         {
             return QuoteString + value.Replace(QuoteString, DoubleQuoteString) + QuoteString;
+        }
+
+        public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)
+        {
+            builder.Append("(");
+
+            for (var i = 0; i < generators.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(" + ");
+                }
+
+                generators[i](builder);
+            }
+
+            builder.Append(")");
         }
     }
 }
