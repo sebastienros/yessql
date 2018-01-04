@@ -69,9 +69,7 @@ namespace YesSql.Services
             MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string[]) })] =
             MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string) })] =
             MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
-            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(object[]) })] =
-            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(object), typeof(object) })] =
-            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(object), typeof(object), typeof(object) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) })] =
                 (query, builder, dialect, expression) =>
             {
                 var generators = new List<Action<StringBuilder>>();
