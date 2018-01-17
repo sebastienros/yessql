@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.PostgreSql;
@@ -34,12 +34,6 @@ namespace YesSql.Tests
                 builder.DropTable("Collection1_Content");
             }
             catch { }
-        }
-
-        [Fact(Skip = "Stopped working on the CI for an unknown reason")]
-        public override Task ShouldIndexWithDateTime()
-        {
-            return base.ShouldIndexWithDateTime();
         }
 
         [Fact(Skip = "Postgres locks on the table")]
