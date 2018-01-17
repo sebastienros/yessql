@@ -477,6 +477,46 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldConcatenateMembers()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name + x.Name == "BillBill").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name + " " + x.Name == "Bill Bill").CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name + " " + x.Name == "Foo").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => (x.Name + x.Name).Contains("Bill")).CountAsync());
+
+                // Concat method
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name) == "BillBill").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name, x.Name) == "BillBillBill").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name, x.Name, x.Name) == "BillBillBillBill").CountAsync());
+            }
+        }
+
+        [Fact]
         public virtual async Task ShouldAppendIndexOnUpdate()
         {
             // When an object is updated, its map indexes
@@ -2223,7 +2263,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldIndexWithDateTimeOffset()
+        public virtual async Task ShouldIndexWithDateTimeOffset()
         {
             _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
 
@@ -2259,7 +2299,6 @@ namespace YesSql.Tests
             {
                 Assert.Equal(10, await session.QueryIndex<ArticleByPublishedDate>().CountAsync());
 
-                Assert.Equal(4, await session.QueryIndex<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).CountAsync());
                 Assert.Equal(4, await session.QueryIndex<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).CountAsync());
             }
         }

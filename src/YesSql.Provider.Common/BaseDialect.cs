@@ -162,5 +162,22 @@ namespace YesSql.Provider
 
             return name + "(" + String.Join(", ", args) +  ")";
         }
+
+        public virtual void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)
+        {
+            builder.Append("(");
+
+            for (var i = 0; i < generators.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(" || ");
+                }
+
+                generators[i](builder);
+            }
+
+            builder.Append(")");
+        }
     }
 }

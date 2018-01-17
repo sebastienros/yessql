@@ -66,6 +66,22 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
+            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string[]) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) })] =
+                (query, builder, dialect, expression) =>
+            {
+                var generators = new List<Action<StringBuilder>>();
+
+                foreach (var argument in expression.Arguments)
+                {
+                    generators.Add(sb => query.ConvertFragment(sb, argument));
+                }
+
+                dialect.Concat(builder, generators.ToArray());
+            };
+
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
@@ -269,11 +285,16 @@ namespace YesSql.Services
             {
                 case ExpressionType.Constant:
                     return (ConstantExpression)expression;
+
+                case ExpressionType.Convert:
+                    return Evaluate(((UnaryExpression)expression).Operand);
+
                 case ExpressionType.New:
                     var newExpression = (NewExpression)expression;
                     var arguments = newExpression.Arguments.Select(a => Evaluate(a).Value).ToArray();
                     var value = newExpression.Constructor.Invoke(arguments);
                     return Expression.Constant(value);
+
                 case ExpressionType.Call:
                     var methodExpression = (MethodCallExpression)expression;
                     arguments = methodExpression.Arguments.Select(a => Evaluate(a).Value).ToArray();
@@ -353,6 +374,31 @@ namespace YesSql.Services
                     break;
                 case ExpressionType.NotEqual:
                     ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " <> ");
+                    break;
+                case ExpressionType.Add:
+                    var binaryExpression = (BinaryExpression)expression;
+
+                    // Is it supposed to be a concatenation?
+                    if (binaryExpression.Left.Type == typeof(string) || binaryExpression.Right.Type == typeof(string))
+                    {
+                        ConvertConcatenateBinaryExpression(builder, binaryExpression);
+                    }
+                    else
+                    {
+                        ConvertComparisonBinaryExpression(builder, binaryExpression, " + ");
+                    }
+                    break;
+                case ExpressionType.Subtract:
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " - ");
+                    break;
+                case ExpressionType.Multiply:
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " * ");
+                    break;
+                case ExpressionType.Divide:
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " / ");
+                    break;
+                case ExpressionType.Convert:
+                    ConvertFragment(builder, ((UnaryExpression)expression).Operand);
                     break;
                 case ExpressionType.IsTrue:
                     ConvertFragment(builder, ((UnaryExpression)expression).Operand);
@@ -448,6 +494,7 @@ namespace YesSql.Services
 
                     return true;
                 case ExpressionType.Not:
+                case ExpressionType.Convert:
                     return true;
                 case ExpressionType.GreaterThan:
                 case ExpressionType.GreaterThanOrEqual:
@@ -459,6 +506,10 @@ namespace YesSql.Services
                 case ExpressionType.OrElse:
                 case ExpressionType.Equal:
                 case ExpressionType.NotEqual:
+                case ExpressionType.Add:
+                case ExpressionType.Multiply:
+                case ExpressionType.Divide:
+                case ExpressionType.Subtract:
                     var binaryExpression = (BinaryExpression)expression;
                     return IsParameterBased(binaryExpression.Left) || IsParameterBased(binaryExpression.Right);
                 case ExpressionType.IsTrue:
@@ -497,6 +548,11 @@ namespace YesSql.Services
             builder.Append(operation);
             ConvertFragment(builder, expression.Right);
             builder.Append(")");
+        }
+
+        private void ConvertConcatenateBinaryExpression(StringBuilder builder, BinaryExpression expression)
+        {
+            _dialect.Concat(builder, b => ConvertFragment(b, expression.Left), b => ConvertFragment(b, expression.Right));
         }
 
         private void ConvertEqualityBinaryExpression(StringBuilder builder, BinaryExpression expression, string operation)
@@ -559,9 +615,9 @@ namespace YesSql.Services
             var sql = _sqlBuilder.ToSqlString(_dialect, true);
 
             var key = new WorkerQueryKey(sql, _sqlBuilder.Parameters);
-            return await _session._store.ProduceAsync(key, () =>
+            return await _session._store.ProduceAsync(key, async () =>
             {
-                return _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
+                return await _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
             });
         }
 
@@ -629,9 +685,9 @@ namespace YesSql.Services
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    return (await _query._session._store.ProduceAsync(key, () =>
+                    return (await _query._session._store.ProduceAsync(key, async () =>
                     {
-                        return _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return await _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     })).FirstOrDefault();
                 }
                 else
@@ -639,9 +695,9 @@ namespace YesSql.Services
                     _query._sqlBuilder.Selector(_query._documentTable, "*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    var documents = (await _query._session._store.ProduceAsync(key, () =>
+                    var documents = (await _query._session._store.ProduceAsync(key, async () =>
                     {
-                        return _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     })).ToArray();
 
                     if (documents.Length == 0)
@@ -668,9 +724,9 @@ namespace YesSql.Services
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    return await _query._session._store.ProduceAsync(key,() =>
+                    return await _query._session._store.ProduceAsync(key, async () =>
                     {
-                        return _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return await _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     });
                 }
                 else
@@ -678,9 +734,9 @@ namespace YesSql.Services
                     _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn(_query._documentTable, "*"));
                     var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    var documents = await _query._session._store.ProduceAsync(key, () =>
+                    var documents = await _query._session._store.ProduceAsync(key, async () =>
                     {
-                        return _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     });
 
                     return _query._session.Get<T>(documents.ToArray());
