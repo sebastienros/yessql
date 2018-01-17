@@ -2263,7 +2263,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldIndexWithDateTimeOffset()
+        public virtual async Task ShouldIndexWithDateTimeOffset()
         {
             _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
 
@@ -2299,7 +2299,6 @@ namespace YesSql.Tests
             {
                 Assert.Equal(10, await session.QueryIndex<ArticleByPublishedDate>().CountAsync());
 
-                Assert.Equal(4, await session.QueryIndex<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).CountAsync());
                 Assert.Equal(4, await session.QueryIndex<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).CountAsync());
             }
         }
