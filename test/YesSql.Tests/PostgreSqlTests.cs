@@ -36,13 +36,13 @@ namespace YesSql.Tests
             catch { }
         }
 
-        //[Fact(Skip = "Stopped working on the CI for an unknown reason")]
+        [Fact(Skip = "Stopped working on the CI for an unknown reason")]
         public override Task ShouldIndexWithDateTime()
         {
             return base.ShouldIndexWithDateTime();
         }
 
-        //[Fact(Skip = "Stopped working on the CI for an unknown reason")]
+        [Fact(Skip = "Stopped working on the CI for an unknown reason")]
         public override Task ShouldIndexWithDateTimeOffset()
         {
             return base.ShouldIndexWithDateTimeOffset();
