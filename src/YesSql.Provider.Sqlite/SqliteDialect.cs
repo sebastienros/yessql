@@ -65,22 +65,18 @@ namespace YesSql.Provider.Sqlite
 
         public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
-            var sb = new StringBuilder();
-
-            sb.Append(" limit ");
-
+            sqlBuilder.ClearTrail();
             if (limit != 0)
             {
-                sb.Append(limit);
+                sqlBuilder.Trail(" LIMIT ");
+                sqlBuilder.Trail(limit.ToString());
             }
 
             if (offset != 0)
             {
-                sb.Append(" offset ");
-                sb.Append(offset);
+                sqlBuilder.Trail(" OFFSET ");
+                sqlBuilder.Trail(offset.ToString());
             }
-
-            sqlBuilder.Trail = sb.ToString();
         }
 
         protected override string Quote(string value)

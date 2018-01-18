@@ -100,16 +100,16 @@ namespace YesSql.Provider.MySql
 
         public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
-            if (offset == 0 && limit != 0)
+            if (limit != 0)
             {
-                // Insert LIMIT clause after the select
-                var selector = sqlBuilder.GetSelector();
-                selector = " " + selector + " limit " + limit;
-                sqlBuilder.Selector(selector);
-            }
-            else if (offset != 0 || limit != 0)
-            {
-                sqlBuilder.Trail = "OFFSET " + offset + " ROWS FETCH FIRST " + limit + " ROWS ONLY";
+                sqlBuilder.Trail(" LIMIT ");
+                sqlBuilder.Trail(limit.ToString());
+
+                if (offset != 0)
+                {
+                    sqlBuilder.Trail(" OFFSET ");
+                    sqlBuilder.Trail(offset.ToString());
+                }
             }
         }
 
