@@ -67,7 +67,7 @@ namespace YesSql.Sql
         public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
         {
             JoinSegments.AddRange(new[] {
-                "INNER JOIN ", _dialect.QuoteForTableName(_tablePrefix + table),
+                " INNER JOIN ", _dialect.QuoteForTableName(_tablePrefix + table),
                 " ON ", _dialect.QuoteForTableName(_tablePrefix + onTable), ".", _dialect.QuoteForColumnName(onColumn),
                 " = ", _dialect.QuoteForTableName(_tablePrefix + toTable), ".", _dialect.QuoteForColumnName(toColumn), " "
                 }
@@ -206,8 +206,6 @@ namespace YesSql.Sql
 
                 if (_join != null)
                 {
-                    sb.Append(" ");
-
                     foreach (var s in _join)
                     {
                         sb.Append(s);
@@ -256,8 +254,6 @@ namespace YesSql.Sql
 
                 if (_trail != null)
                 {
-                    sb.Append(" ");
-
                     foreach (var s in _trail)
                     {
                         sb.Append(s);
