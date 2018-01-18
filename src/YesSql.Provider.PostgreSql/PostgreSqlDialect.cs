@@ -52,11 +52,6 @@ namespace YesSql.Provider.PostgreSql
         public override string IdentityColumnString => "SERIAL PRIMARY KEY";
         public override bool SupportsIfExistsBeforeTableName => true;
 
-        public override ISqlBuilder CreateBuilder(string tablePrefix)
-        {
-            return new PostgreSqlSqlBuilder(tablePrefix, this);
-        }
-
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
             if (length.HasValue)

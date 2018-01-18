@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using YesSql.Sql;
 
 namespace YesSql.Provider.MySql
 {
@@ -37,12 +36,7 @@ namespace YesSql.Provider.MySql
         public override string IdentitySelectString => "; select LAST_INSERT_ID()";
         public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
         public override bool SupportsIfExistsBeforeTableName => true;
-
-        public override ISqlBuilder CreateBuilder(string tablePrefix)
-        {
-            return new MySqlSqlBuilder(tablePrefix, this);
-        }
-
+        
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
             if (length.HasValue)

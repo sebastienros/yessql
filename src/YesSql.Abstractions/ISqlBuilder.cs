@@ -25,7 +25,7 @@ namespace YesSql
         void GroupBy(string groupBy);
         void Trail(string trail);
         void ClearTrail();
-        string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false);
+        string ToSqlString(bool ignoreOrderBy = false);
         void WhereAlso(string where);
     }
 }

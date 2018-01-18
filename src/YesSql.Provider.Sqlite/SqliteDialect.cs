@@ -93,10 +93,5 @@ namespace YesSql.Provider.Sqlite
         {
             return QuoteString + tableName.Replace(QuoteString, DoubleQuoteString) + QuoteString;
         }
-
-        public override ISqlBuilder CreateBuilder(string tablePrefix)
-        {
-            return new SqliteSqlBuilder(tablePrefix, this);
-        }
     }
 }

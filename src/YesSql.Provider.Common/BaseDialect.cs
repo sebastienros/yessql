@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Text;
+using YesSql.Sql;
 
 namespace YesSql.Provider
 {
@@ -151,7 +152,10 @@ namespace YesSql.Provider
         }
 
         public abstract void Page(ISqlBuilder sqlBuilder, int offset, int limit);
-        public abstract ISqlBuilder CreateBuilder(string tablePrefix);
+        public virtual ISqlBuilder CreateBuilder(string tablePrefix)
+        {
+            return new SqlBuilder(tablePrefix, this);
+        }
 
         public string RenderMethod(string name, string[] args)
         {

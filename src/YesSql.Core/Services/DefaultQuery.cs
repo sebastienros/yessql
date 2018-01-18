@@ -174,7 +174,7 @@ namespace YesSql.Services
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString(dialect)));
+                    builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString()));
                 };
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotIn")] =
@@ -205,7 +205,7 @@ namespace YesSql.Services
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(dialect.NotInSelectOperator(sqlBuilder.ToSqlString(dialect)));
+                    builder.Append(dialect.NotInSelectOperator(sqlBuilder.ToSqlString()));
                 };
         }
 
@@ -221,7 +221,7 @@ namespace YesSql.Services
 
         public override string ToString()
         {
-            return _sqlBuilder.ToSqlString(_dialect);
+            return _sqlBuilder.ToSqlString();
         }
 
         private void Bind<TIndex>() where TIndex : IIndex
@@ -612,7 +612,7 @@ namespace YesSql.Services
             await _session.CommitAsync();
 
             _sqlBuilder.Selector("count(*)");
-            var sql = _sqlBuilder.ToSqlString(_dialect, true);
+            var sql = _sqlBuilder.ToSqlString(true);
 
             var key = new WorkerQueryKey(sql, _sqlBuilder.Parameters);
             return await _session._store.ProduceAsync(key, async () =>
@@ -683,7 +683,7 @@ namespace YesSql.Services
                 if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                 {
                     _query._sqlBuilder.Selector("*");
-                    var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
+                    var sql = _query._sqlBuilder.ToSqlString();
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
                     return (await _query._session._store.ProduceAsync(key, async () =>
                     {
@@ -693,7 +693,7 @@ namespace YesSql.Services
                 else
                 {
                     _query._sqlBuilder.Selector(_query._documentTable, "*");
-                    var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
+                    var sql = _query._sqlBuilder.ToSqlString();
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
                     var documents = (await _query._session._store.ProduceAsync(key, async () =>
                     {
@@ -722,7 +722,7 @@ namespace YesSql.Services
                 if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                 {
                     _query._sqlBuilder.Selector("*");
-                    var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
+                    var sql = _query._sqlBuilder.ToSqlString();
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
                     return await _query._session._store.ProduceAsync(key, async () =>
                     {
@@ -732,7 +732,7 @@ namespace YesSql.Services
                 else
                 {
                     _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn(_query._documentTable, "*"));
-                    var sql = _query._sqlBuilder.ToSqlString(_query._dialect);
+                    var sql = _query._sqlBuilder.ToSqlString();
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
                     var documents = await _query._session._store.ProduceAsync(key, async () =>
                     {

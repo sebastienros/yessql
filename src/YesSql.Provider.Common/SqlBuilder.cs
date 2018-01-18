@@ -4,7 +4,7 @@ using System.Text;
 
 namespace YesSql.Sql
 {
-    public abstract class SqlBuilder : ISqlBuilder
+    public class SqlBuilder : ISqlBuilder
     {
         protected ISqlDialect _dialect;
         protected string _tablePrefix;
@@ -168,13 +168,13 @@ namespace YesSql.Sql
             TrailSegments.Clear();
         }
 
-        public virtual string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false)
+        public virtual string ToSqlString(bool ignoreOrderBy = false)
         {
             if (String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
                 if ((_skip != 0 || _count != 0))
                 {
-                    dialect.Page(this, _skip, _count);
+                    _dialect.Page(this, _skip, _count);
                 }
 
                 var sb = new StringBuilder();
