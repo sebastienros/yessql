@@ -100,19 +100,25 @@ namespace YesSql.Provider.SqlServer
 
         public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
-            if (limit != 0)
-            {
-                // Insert LIMIT clause after the select
-                sqlBuilder.InsertSelector(limit.ToString());
-                sqlBuilder.InsertSelector(" TOP ");
-            }
-            else if (offset != 0 || limit != 0)
+            if (offset != 0)
             {
                 sqlBuilder.Trail("OFFSET ");
                 sqlBuilder.Trail(offset.ToString());
-                sqlBuilder.Trail(" ROWS FETCH FIRST ");
-                sqlBuilder.Trail(limit.ToString());
-                sqlBuilder.Trail(" ROWS ONLY");
+                sqlBuilder.Trail(" ROWS ");
+
+                if (limit != 0)
+                {
+                    sqlBuilder.Trail("FETCH NEXT ");
+                    sqlBuilder.Trail(limit.ToString());
+                    sqlBuilder.Trail(" ROWS ONLY");
+                }
+            }
+            else if (limit != 0)
+            {
+                // Insert LIMIT clause after the select
+                sqlBuilder.InsertSelector(" ");
+                sqlBuilder.InsertSelector(limit.ToString());
+                sqlBuilder.InsertSelector(" TOP ");
             }
         }
 

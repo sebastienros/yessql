@@ -94,10 +94,17 @@ namespace YesSql.Provider.MySql
 
         public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
+            if (offset != 0 && limit == 0)
+            {
+                limit = -1;
+            }
+
             if (limit != 0)
             {
                 sqlBuilder.Trail(" LIMIT ");
-                sqlBuilder.Trail(limit.ToString());
+
+                // c.f. https://stackoverflow.com/questions/255517/mysql-offset-infinite-rows
+                sqlBuilder.Trail(limit == -1 ? "18446744073709551610" : limit.ToString());
 
                 if (offset != 0)
                 {

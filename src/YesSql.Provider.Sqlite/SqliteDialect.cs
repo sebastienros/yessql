@@ -66,6 +66,13 @@ namespace YesSql.Provider.Sqlite
         public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
             sqlBuilder.ClearTrail();
+
+            // If offset is defined without limit, use -1 as limit is mandatory on Sqlite
+            if (offset != 0 && limit == 0)
+            {
+                limit = -1;
+            }
+
             if (limit != 0)
             {
                 sqlBuilder.Trail(" LIMIT ");
