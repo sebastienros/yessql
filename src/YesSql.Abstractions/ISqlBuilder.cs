@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace YesSql
 {
@@ -6,7 +6,6 @@ namespace YesSql
     {
         string Clause { get; }
         Dictionary<string, object> Parameters { get; }
-        string Trail { get; set; }
         string FormatColumn(string table, string column);
         string GetSelector();
         void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn);
@@ -20,6 +19,10 @@ namespace YesSql
         void Take(int take);
         void ThenOrderBy(string orderBy);
         void ThenOrderByDescending(string orderBy);
+        void Having(string having);
+        void GroupBy(string groupBy);
+        void Trail(string trail);
+        void ClearTrail();
         string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false);
         void WhereAlso(string where);
     }

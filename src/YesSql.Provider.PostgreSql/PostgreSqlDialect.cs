@@ -114,22 +114,18 @@ namespace YesSql.Provider.PostgreSql
 
         public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
         {
-            var sb = new StringBuilder();
-
-            sb.Append(" limit ");
+            sqlBuilder.Trail(" limit ");
 
             if (limit != 0)
             {
-                sb.Append(limit);
+                sqlBuilder.Trail(limit.ToString());
             }
 
             if (offset != 0)
             {
-                sb.Append(" offset ");
-                sb.Append(offset);
+                sqlBuilder.Trail(" offset ");
+                sqlBuilder.Trail(offset.ToString());
             }
-
-            sqlBuilder.Trail = sb.ToString();
         }
 
         public override string QuoteForColumnName(string columnName)

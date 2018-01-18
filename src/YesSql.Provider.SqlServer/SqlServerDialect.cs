@@ -114,7 +114,11 @@ namespace YesSql.Provider.SqlServer
             }
             else if (offset != 0 || limit != 0)
             {
-                sqlBuilder.Trail = "OFFSET " + offset + " ROWS FETCH FIRST " + limit + " ROWS ONLY";
+                sqlBuilder.Trail("OFFSET ");
+                sqlBuilder.Trail(offset.ToString());
+                sqlBuilder.Trail(" ROWS FETCH FIRST ");
+                sqlBuilder.Trail(limit.ToString());
+                sqlBuilder.Trail(" ROWS ONLY");
             }
         }
 

@@ -12,40 +12,86 @@ namespace YesSql.Provider.MySql
 
         public override string ToSqlString(ISqlDialect dialect, bool ignoreOrderBy = false)
         {
-            if (_clause == "select")
+            if (String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
                 var sb = new StringBuilder();
-                sb
-                    .Append(_clause).Append(" ").Append(_selector)
-                    .Append(" from ").Append(_dialect.QuoteForTableName(_tablePrefix + _table));
+                sb.Append("SELECT ");
+
+                foreach(var s in _select)
+                {
+                    sb.Append(s);
+                }
+
+                sb.Append(" FROM ").Append(_dialect.QuoteForTableName(_tablePrefix + _table));
 
                 if (_join != null)
                 {
-                    sb.Append(" ").Append(_join.ToString());
+                    sb.Append(" ");
+
+                    foreach (var s in _join)
+                    {
+                        sb.Append(s);
+                    }
                 }
 
                 if (_where != null)
                 {
-                    sb.Append(" where ").Append(_where);
+                    sb.Append(" WHERE ");
+
+                    foreach (var s in _where)
+                    {
+                        sb.Append(s);
+                    }
                 }
 
                 if (_order != null && !ignoreOrderBy)
                 {
-                    sb.Append(" order by ").Append(_order);
+                    sb.Append(" ORDER BY ");
+
+                    foreach (var s in _order)
+                    {
+                        sb.Append(s);
+                    }
                 }
 
-                if (!String.IsNullOrEmpty(Trail))
+                if (_group != null)
                 {
-                    sb.Append(" ").Append(Trail);
+                    sb.Append(" GROUP BY ");
+
+                    foreach (var s in _group)
+                    {
+                        sb.Append(s);
+                    }
+                }
+
+                if (_having != null)
+                {
+                    sb.Append(" HAVING ");
+
+                    foreach (var s in _having)
+                    {
+                        sb.Append(s);
+                    }
+                }
+
+                if (_trail != null)
+                {
+                    sb.Append(" ");
+
+                    foreach (var s in _trail)
+                    {
+                        sb.Append(s);
+                    }
                 }
 
                 if (_skip != 0 || _count != 0)
                 {
-                    _selector = sb.ToString();
+                    var temp = sb.ToString();
                     dialect.Page(this, _skip, _count);
                     sb.Clear();
-                    sb.Append(_selector);
+                    sb.Append(temp);
                 }
+
                 return sb.ToString();
             }
 
