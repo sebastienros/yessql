@@ -111,6 +111,11 @@ namespace YesSql.Provider.PostgreSql
         {
             sqlBuilder.Trail(" limit ");
 
+            if (offset != 0 && limit == 0)
+            {
+                sqlBuilder.Trail(" ALL");
+            }
+
             if (limit != 0)
             {
                 sqlBuilder.Trail(limit.ToString());

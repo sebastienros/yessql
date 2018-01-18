@@ -18,6 +18,7 @@ namespace YesSql
         void InsertSelector(string select);
         void Skip(int skip);
         void Table(string table);
+        void From(string from);
         void Take(int take);
         void ThenOrderBy(string orderBy);
         void ThenOrderByDescending(string orderBy);

@@ -13,6 +13,7 @@ namespace YesSql.Sql
         protected string _table;
 
         protected List<string> _select;
+        protected List<string> _from;
         protected List<string> _join;
         protected List<string> _where;
         protected List<string> _group;
@@ -21,6 +22,7 @@ namespace YesSql.Sql
         protected List<string> _trail;
 
         protected List<string> SelectSegments => _select = _select ?? new List<string>();
+        protected List<string> FromSegments => _from = _from ?? new List<string>();
         protected List<string> JoinSegments => _join = _join ?? new List<string>();
         protected List<string> WhereSegments => _where = _where ?? new List<string>();
         protected List<string> GroupSegments => _group = _group ?? new List<string>();
@@ -43,7 +45,13 @@ namespace YesSql.Sql
 
         public void Table(string table)
         {
-            _table = table;
+            FromSegments.Clear();
+            FromSegments.Add(_dialect.QuoteForTableName(table));
+        }
+
+        public void From(string from)
+        {
+            FromSegments.Add(from);
         }
 
         public void Skip(int skip)
@@ -186,7 +194,15 @@ namespace YesSql.Sql
                     sb.Append(s);
                 }
 
-                sb.Append(" FROM ").Append(_dialect.QuoteForTableName(_tablePrefix + _table));
+                if (_from != null)
+                {
+                    sb.Append(" FROM ");
+
+                    foreach (var s in _from)
+                    {
+                        sb.Append(s);
+                    }
+                }                    
 
                 if (_join != null)
                 {
