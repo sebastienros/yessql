@@ -1,5 +1,6 @@
 using Dapper;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -85,13 +86,20 @@ namespace YesSql.Services
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
-                    var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
+                    // Could be simplified if int[] could be casted to IEnumerable<object>
+                    var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
+                    var values = new List<object>();
 
-                    if (values.Length == 0)
+                    foreach(var o in objects)
+                    {
+                        values.Add(o);
+                    }
+
+                    if (values.Count == 0)
                     {
                         builder.Append(" 1 = 0");
                     }
-                    else if (values.Length == 1)
+                    else if (values.Count == 1)
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
                         builder.Append(" = " );
@@ -101,10 +109,10 @@ namespace YesSql.Services
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
                         var elements = new StringBuilder();
-                        for (var i = 0; i < values.Length; i++)
+                        for (var i = 0; i < values.Count; i++)
                         {
                             query.ConvertFragment(elements, Expression.Constant(values[i]));
-                            if (i < values.Length - 1)
+                            if (i < values.Count - 1)
                             {
                                 elements.Append(", ");
                             }
@@ -929,16 +937,15 @@ namespace YesSql.Services
 
     public static class DefaultQueryExtensions
     {
-        public static bool IsIn(this object source, IEnumerable<string> values)
+        public static bool IsIn(this object source, IEnumerable values)
         {
             return false;
         }
 
-        public static bool IsNotIn(this object source, IEnumerable<string> values)
+        public static bool IsNotIn(this object source, IEnumerable values)
         {
             return false;
         }
-
     }
 
     public static class DefaultQueryExtensionsIndex
