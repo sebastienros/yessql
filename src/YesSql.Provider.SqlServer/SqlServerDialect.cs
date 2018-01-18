@@ -58,17 +58,17 @@ namespace YesSql.Provider.SqlServer
                 {
                     if (dbType == DbType.String)
                     {
-                        return "NTEXT";
+                        return "NVARCHAR(max)";
                     }
 
                     if (dbType == DbType.AnsiString)
                     {
-                        return "TEXT";
+                        return "VARCHAR(max)";
                     }
 
                     if (dbType == DbType.Binary)
                     {
-                        return "BLOB";
+                        return "VARBINARY(max)";
                     }
                 }
                 else
