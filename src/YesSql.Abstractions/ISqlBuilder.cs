@@ -14,6 +14,8 @@ namespace YesSql
         void Select();
         void Selector(string selector);
         void Selector(string table, string column);
+        void AddSelector(string select);
+        void InsertSelector(string select);
         void Skip(int skip);
         void Table(string table);
         void Take(int take);

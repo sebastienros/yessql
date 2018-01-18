@@ -82,6 +82,16 @@ namespace YesSql.Sql
             Selector(FormatColumn(table, column));
         }
 
+        public void AddSelector(string select)
+        {
+            SelectSegments.Add(select);
+        }
+
+        public void InsertSelector(string select)
+        {
+            SelectSegments.Insert(0, select);
+        }
+
         public string GetSelector()
         {
             if (SelectSegments.Count == 1)
