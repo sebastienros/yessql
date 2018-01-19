@@ -102,13 +102,13 @@ namespace YesSql.Provider.SqlServer
         {
             if (offset != 0)
             {
-                sqlBuilder.Trail("OFFSET ");
+                sqlBuilder.Trail(" OFFSET ");
                 sqlBuilder.Trail(offset.ToString());
-                sqlBuilder.Trail(" ROWS ");
+                sqlBuilder.Trail(" ROWS");
 
                 if (limit != 0)
                 {
-                    sqlBuilder.Trail("FETCH NEXT ");
+                    sqlBuilder.Trail(" FETCH NEXT ");
                     sqlBuilder.Trail(limit.ToString());
                     sqlBuilder.Trail(" ROWS ONLY");
                 }
@@ -118,7 +118,7 @@ namespace YesSql.Provider.SqlServer
                 // Insert LIMIT clause after the select
                 sqlBuilder.InsertSelector(" ");
                 sqlBuilder.InsertSelector(limit.ToString());
-                sqlBuilder.InsertSelector(" TOP ");
+                sqlBuilder.InsertSelector("TOP ");
             }
         }
 
