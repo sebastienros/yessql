@@ -1,3 +1,4 @@
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -92,24 +93,24 @@ namespace YesSql.Provider.MySql
 
         public override string DefaultValuesInsert => "VALUES()";
 
-        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
-            if (offset != 0 && limit == 0)
+            if (offset != null && limit == null)
             {
-                limit = -1;
+                limit = "-1";
             }
 
-            if (limit != 0)
+            if (limit != null)
             {
                 sqlBuilder.Trail(" LIMIT ");
 
                 // c.f. https://stackoverflow.com/questions/255517/mysql-offset-infinite-rows
-                sqlBuilder.Trail(limit == -1 ? "18446744073709551610" : limit.ToString());
+                sqlBuilder.Trail(limit == "-1" ? "18446744073709551610" : limit);
 
-                if (offset != 0)
+                if (offset != null)
                 {
                     sqlBuilder.Trail(" OFFSET ");
-                    sqlBuilder.Trail(offset.ToString());
+                    sqlBuilder.Trail(offset);
                 }
             }
         }

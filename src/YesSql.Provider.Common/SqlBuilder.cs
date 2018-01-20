@@ -20,6 +20,9 @@ namespace YesSql.Sql
         protected List<string> _having;
         protected List<string> _order;
         protected List<string> _trail;
+        protected string _skip;
+        protected string _count;
+
 
         protected List<string> SelectSegments => _select = _select ?? new List<string>();
         protected List<string> FromSegments => _from = _from ?? new List<string>();
@@ -29,9 +32,6 @@ namespace YesSql.Sql
         protected List<string> HavingSegments => _having = _having ?? new List<string>();
         protected List<string> OrderSegments => _order = _order ?? new List<string>();
         protected List<string> TrailSegments => _trail = _trail ?? new List<string>();
-
-        protected int _skip;
-        protected int _count;
 
         public Dictionary<string, object> Parameters { get; } = new Dictionary<string, object>();
 
@@ -54,12 +54,12 @@ namespace YesSql.Sql
             FromSegments.Add(from);
         }
 
-        public void Skip(int skip)
+        public void Skip(string skip)
         {
             _skip = skip;
         }
 
-        public void Take(int take)
+        public void Take(string take)
         {
             _count = take;
         }
@@ -180,7 +180,7 @@ namespace YesSql.Sql
         {
             if (String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
-                if ((_skip != 0 || _count != 0))
+                if ((_skip != null || _count != null))
                 {
                     _dialect.Page(this, _skip, _count);
                 }

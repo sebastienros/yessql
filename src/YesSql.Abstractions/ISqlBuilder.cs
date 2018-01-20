@@ -16,10 +16,10 @@ namespace YesSql
         void Selector(string table, string column);
         void AddSelector(string select);
         void InsertSelector(string select);
-        void Skip(int skip);
+        void Skip(string skip);
+        void Take(string take);
         void Table(string table);
         void From(string from);
-        void Take(int take);
         void ThenOrderBy(string orderBy);
         void ThenOrderByDescending(string orderBy);
         void Having(string having);

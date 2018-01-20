@@ -98,26 +98,26 @@ namespace YesSql.Provider.SqlServer
             throw new Exception("DbType not found for: " + dbType);
         }
 
-        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
-            if (offset != 0)
+            if (offset != null)
             {
                 sqlBuilder.Trail(" OFFSET ");
-                sqlBuilder.Trail(offset.ToString());
+                sqlBuilder.Trail(offset);
                 sqlBuilder.Trail(" ROWS");
 
-                if (limit != 0)
+                if (limit != null)
                 {
                     sqlBuilder.Trail(" FETCH NEXT ");
-                    sqlBuilder.Trail(limit.ToString());
+                    sqlBuilder.Trail(limit);
                     sqlBuilder.Trail(" ROWS ONLY");
                 }
             }
-            else if (limit != 0)
+            else if (limit != null)
             {
                 // Insert LIMIT clause after the select
                 sqlBuilder.InsertSelector(" ");
-                sqlBuilder.InsertSelector(limit.ToString());
+                sqlBuilder.InsertSelector(limit);
                 sqlBuilder.InsertSelector("TOP ");
             }
         }

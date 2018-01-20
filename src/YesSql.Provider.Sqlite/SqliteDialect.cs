@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
@@ -63,26 +62,26 @@ namespace YesSql.Provider.Sqlite
             throw new Exception("DbType not found for: " + dbType);
         }
 
-        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
             sqlBuilder.ClearTrail();
 
             // If offset is defined without limit, use -1 as limit is mandatory on Sqlite
-            if (offset != 0 && limit == 0)
+            if (offset != null && limit == null)
             {
-                limit = -1;
+                limit = "-1";
             }
 
-            if (limit != 0)
+            if (limit != null)
             {
                 sqlBuilder.Trail(" LIMIT ");
-                sqlBuilder.Trail(limit.ToString());
+                sqlBuilder.Trail(limit);
             }
 
-            if (offset != 0)
+            if (offset != null)
             {
                 sqlBuilder.Trail(" OFFSET ");
-                sqlBuilder.Trail(offset.ToString());
+                sqlBuilder.Trail(offset);
             }
         }
 

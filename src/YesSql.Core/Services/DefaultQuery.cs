@@ -261,8 +261,15 @@ namespace YesSql.Services
 
         private void Page(int count, int skip)
         {
-            _sqlBuilder.Skip(skip);
-            _sqlBuilder.Take(count);
+            if (skip > 0)
+            {
+                _sqlBuilder.Skip(skip.ToString());
+            }
+
+            if (count > 0)
+            {
+                _sqlBuilder.Take(count.ToString());
+            }
         }
 
         private void Filter<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : IIndex
@@ -753,13 +760,13 @@ namespace YesSql.Services
 
             IQuery<T> IQuery<T>.Skip(int count)
             {
-                _query._sqlBuilder.Skip(count);
+                _query._sqlBuilder.Skip(count.ToString());
                 return this;
             }
 
             IQuery<T> IQuery<T>.Take(int count)
             {
-                _query._sqlBuilder.Take(count);
+                _query._sqlBuilder.Take(count.ToString());
                 return this;
             }
 
@@ -799,13 +806,13 @@ namespace YesSql.Services
 
             IQueryIndex<T> IQueryIndex<T>.Skip(int count)
             {
-                _query._sqlBuilder.Skip(count);
+                _query._sqlBuilder.Skip(count.ToString());
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.Take(int count)
             {
-                _query._sqlBuilder.Take(count);
+                _query._sqlBuilder.Take(count.ToString());
                 return this;
             }
 

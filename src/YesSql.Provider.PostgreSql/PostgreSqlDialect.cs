@@ -107,24 +107,24 @@ namespace YesSql.Provider.PostgreSql
 
         public override string DefaultValuesInsert => "DEFAULT VALUES";
 
-        public override void Page(ISqlBuilder sqlBuilder, int offset, int limit)
+        public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
             sqlBuilder.Trail(" limit ");
 
-            if (offset != 0 && limit == 0)
+            if (offset != null && limit == null)
             {
-                sqlBuilder.Trail(" ALL");
+                sqlBuilder.Trail(" all");
             }
 
-            if (limit != 0)
+            if (limit != null)
             {
-                sqlBuilder.Trail(limit.ToString());
+                sqlBuilder.Trail(limit);
             }
 
-            if (offset != 0)
+            if (offset != null)
             {
                 sqlBuilder.Trail(" offset ");
-                sqlBuilder.Trail(offset.ToString());
+                sqlBuilder.Trail(offset);
             }
         }
 
