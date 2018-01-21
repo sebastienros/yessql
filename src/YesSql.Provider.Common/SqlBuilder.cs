@@ -46,7 +46,7 @@ namespace YesSql.Sql
         public void Table(string table)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(table));
+            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
         }
 
         public void From(string from)

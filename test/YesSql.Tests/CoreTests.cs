@@ -1,8 +1,6 @@
 using Dapper;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +15,7 @@ namespace YesSql.Tests
 {
     public abstract class CoreTests : IDisposable
     {
+        protected virtual string TablePrefix => "";
 
         protected IStore _store;
 
@@ -27,7 +26,7 @@ namespace YesSql.Tests
 
         public void Dispose()
         {
-            CleanDatabase();
+            CleanDatabase(false);
             _store.Dispose();
 
             OnDispose();
@@ -37,13 +36,13 @@ namespace YesSql.Tests
         {
         }
 
-        [DebuggerNonUserCode]
-        protected virtual void CleanDatabase()
+        //[DebuggerNonUserCode]
+        protected virtual void CleanDatabase(bool throwOnError)
         {
             // Remove existing tables
             using (var session = _store.CreateSession())
             {
-                var builder = new SchemaBuilder(session) { ThrowOnError = false };
+                var builder = new SchemaBuilder(session) { ThrowOnError = throwOnError };
 
                 builder.DropReduceIndexTable(nameof(ArticlesByDay));
                 builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
@@ -62,11 +61,11 @@ namespace YesSql.Tests
                 builder.DropTable("Collection1_Document");
                 builder.DropTable(LinearBlockIdGenerator.TableName);
 
-                OnCleanDatabase(session);
+                OnCleanDatabase(builder, session);
             }
         }
 
-        protected virtual void OnCleanDatabase(ISession session)
+        protected virtual void OnCleanDatabase(SchemaBuilder builder, ISession session)
         {
 
         }
@@ -2407,7 +2406,7 @@ namespace YesSql.Tests
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
                 var dialect = SqlDialectFactory.For(connection);
-                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(nameof(ArticleByPublishedDate));
+                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
 
