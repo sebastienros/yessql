@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using Dapper;
@@ -222,7 +222,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -240,7 +240,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -257,7 +257,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
 
             }
@@ -276,7 +276,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(FormatTable(name), FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch

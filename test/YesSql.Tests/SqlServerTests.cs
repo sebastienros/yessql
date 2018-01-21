@@ -12,17 +12,15 @@ namespace YesSql.Tests
 
         public SqlServerTests()
         {
-            _store = new Store(new Configuration().UseSqlServer(ConnectionString));
+            _store = new Store(new Configuration().UseSqlServer(ConnectionString).SetTablePrefix(TablePrefix));
 
-            CleanDatabase();
+            CleanDatabase(false);
             CreateTables();
         }
 
-        protected override void OnCleanDatabase(ISession session)
+        protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
         {
-            base.OnCleanDatabase(session);
-
-            var builder = new SchemaBuilder(session);
+            base.OnCleanDatabase(builder, session);
 
             try
             {

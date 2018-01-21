@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using YesSql.Provider.MySql;
 using YesSql.Sql;
 
@@ -9,17 +9,15 @@ namespace YesSql.Tests
         public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=root;pwd=Password12!;database=yessql;";
         public MySqlTests()
         {
-            _store = new Store(new Configuration().UseMySql(ConnectionString));
+            _store = new Store(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix));
 
-            CleanDatabase();
+            CleanDatabase(false);
             CreateTables();
         }
 
-        protected override void OnCleanDatabase(ISession session)
+        protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
         {
-            base.OnCleanDatabase(session);
-
-            var builder = new SchemaBuilder(session);
+            base.OnCleanDatabase(builder, session);
 
             try
             {
