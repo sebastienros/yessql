@@ -15,7 +15,7 @@ namespace YesSql.Tests
 {
     public abstract class CoreTests : IDisposable
     {
-        protected virtual string TablePrefix => "";
+        protected virtual string TablePrefix => "tp";
 
         protected IStore _store;
 
