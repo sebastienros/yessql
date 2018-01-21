@@ -1,6 +1,6 @@
 namespace YesSql.Tests
 {
-    public class PostgreSqlTestsPrefixed : PostgreSqlTests
+    public class PrefixedPostgreSqlTests : PostgreSqlTests
     {
         protected override string TablePrefix => "tp";
     }
