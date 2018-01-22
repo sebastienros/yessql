@@ -558,6 +558,35 @@ namespace YesSql.Services
 
         private void ConvertComparisonBinaryExpression(StringBuilder builder, BinaryExpression expression, string operation)
         {
+            if (operation == " = " || operation == " <> ")
+            {
+                // Checking for NULL comparison
+                var leftIsNull = expression.Left.NodeType == ExpressionType.Constant && (expression.Left as ConstantExpression).Value == null;
+                var rightIsNull = expression.Right.NodeType == ExpressionType.Constant && (expression.Right as ConstantExpression).Value == null;
+
+                if (leftIsNull && rightIsNull)
+                {
+                    builder.Append(_dialect.GetSqlValue(true));
+                    return;
+                }
+                else if (leftIsNull)
+                {
+                    builder.Append("(");
+                    ConvertFragment(builder, expression.Right);
+                    builder.Append(operation == " = " ? " IS NULL" : " IS NOT NULL");
+                    builder.Append(")");
+                    return;
+                }
+                else if (rightIsNull)
+                {
+                    builder.Append("(");
+                    ConvertFragment(builder, expression.Left);
+                    builder.Append(operation == " = " ? " IS NULL" : " IS NOT NULL");
+                    builder.Append(")");
+                    return;
+                }
+            }
+
             builder.Append("(");
             ConvertFragment(builder, expression.Left);
             builder.Append(operation);

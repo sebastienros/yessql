@@ -245,6 +245,29 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryNullValues()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = null });
+                session.Save(new Person { Firstname = "a" });
+                session.Save(new Person { Firstname = "b" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.Name == null).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => x.Name != null).CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => null == x.Name).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => null != x.Name).CountAsync());
+                Assert.Equal(3, await session.QueryIndex<PersonByName>(x => null == null).CountAsync());
+                Assert.Equal(0, await session.QueryIndex<PersonByName>(x => null != null).CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryDocumentWithParameter()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
