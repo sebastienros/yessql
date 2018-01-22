@@ -294,7 +294,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new DropForeignKeyCommand(Prefix(srcTable), name);
+                var command = new DropForeignKeyCommand(Prefix(srcTable), Prefix(name));
                 Execute(_builder.CreateSql(command));
             }
             catch
