@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using Dapper;
@@ -42,7 +42,7 @@ namespace YesSql.Sql
             }
         }
 
-        private string FormatTable(string table)
+        private string Prefix(string table)
         {
             return _tablePrefix + table;
         }
@@ -51,7 +51,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var createTable = new CreateTableCommand(FormatTable(name));
+                var createTable = new CreateTableCommand(Prefix(name));
                 var collection = CollectionHelper.Current;
                 var documentTable = collection.GetPrefixedName(Store.DocumentTable);
 
@@ -79,7 +79,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var createTable = new CreateTableCommand(FormatTable(name));
+                var createTable = new CreateTableCommand(Prefix(name));
                 var collection = CollectionHelper.Current;
                 var documentTable = collection.GetPrefixedName(Store.DocumentTable);
 
@@ -166,7 +166,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var createTable = new CreateTableCommand(FormatTable(name));
+                var createTable = new CreateTableCommand(Prefix(name));
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
             }
@@ -185,7 +185,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var alterTable = new AlterTableCommand(FormatTable(name));
+                var alterTable = new AlterTableCommand(Prefix(name));
                 table(alterTable);
                 Execute(_builder.CreateSql(alterTable));
             }
@@ -204,7 +204,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var deleteTable = new DropTableCommand(FormatTable(name));
+                var deleteTable = new DropTableCommand(Prefix(name));
                 Execute(_builder.CreateSql(deleteTable));
             }
             catch
@@ -222,7 +222,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -240,7 +240,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -257,7 +257,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
 
             }
@@ -276,7 +276,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(name, FormatTable(srcTable), srcColumns, FormatTable(destTable), destColumns);
+                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -294,7 +294,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new DropForeignKeyCommand(FormatTable(srcTable), name);
+                var command = new DropForeignKeyCommand(Prefix(srcTable), Prefix(name));
                 Execute(_builder.CreateSql(command));
             }
             catch
