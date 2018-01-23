@@ -355,40 +355,96 @@ namespace YesSql.Services
             return Expression.Constant(Expression.Lambda(expression).Compile().DynamicInvoke());
         }
 
+        private string GetBinaryOperator(Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.LessThan:
+                    return " < ";
+                case ExpressionType.LessThanOrEqual:
+                    return " <= ";
+                case ExpressionType.GreaterThan:
+                    return " > ";
+                case ExpressionType.GreaterThanOrEqual:
+                    return " >= ";
+                case ExpressionType.And:
+                case ExpressionType.AndAlso:
+                    return " and ";
+                case ExpressionType.Or:
+                case ExpressionType.OrElse:
+                    return " or ";
+                case ExpressionType.Equal:
+                    return " = ";
+                case ExpressionType.NotEqual:
+                    return " <> ";
+                case ExpressionType.Add:
+                    return " + ";
+                case ExpressionType.Subtract:
+                    return " - ";
+                case ExpressionType.Multiply:
+                    return " * ";
+                case ExpressionType.Divide:
+                    return " / ";
+            }
+
+            throw new ArgumentException(nameof(expression));
+        }
+
         public void ConvertFragment(StringBuilder builder, Expression expression)
         {
             if (!IsParameterBased(expression))
             {
+                switch (expression.NodeType)
+                {
+                    case ExpressionType.GreaterThan:
+                    case ExpressionType.GreaterThanOrEqual:
+                    case ExpressionType.LessThan:
+                    case ExpressionType.LessThanOrEqual:
+                    case ExpressionType.And:
+                    case ExpressionType.Or:
+                    case ExpressionType.AndAlso:
+                    case ExpressionType.OrElse:
+                    case ExpressionType.Equal:
+                    case ExpressionType.NotEqual:
+                    case ExpressionType.Add:
+                    case ExpressionType.Multiply:
+                    case ExpressionType.Divide:
+                    case ExpressionType.Subtract:
+                        // Don't reduce to a single value, just render both ends
+
+                        var binaryExpression = (BinaryExpression)expression;
+                        if (binaryExpression.Left is ConstantExpression left && binaryExpression.Right is ConstantExpression right)
+                        {
+                            _builder.Append(_dialect.GetSqlValue(left.Value));
+                            _builder.Append(GetBinaryOperator(expression));
+                            _builder.Append(_dialect.GetSqlValue(right.Value));
+                            return;
+                        }
+
+                        break;
+                }
+
                 expression = Evaluate(expression);
             }
 
             switch (expression.NodeType)
             {
                 case ExpressionType.LessThan:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " < ");
-                    break;
                 case ExpressionType.LessThanOrEqual:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " <= ");
-                    break;
                 case ExpressionType.GreaterThan:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " > ");
-                    break;
                 case ExpressionType.GreaterThanOrEqual:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " >= ");
+                case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
+                case ExpressionType.Subtract:
+                case ExpressionType.Multiply:
+                case ExpressionType.Divide:
+                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, GetBinaryOperator(expression));
                     break;
                 case ExpressionType.And:
                 case ExpressionType.AndAlso:
-                    ConvertEqualityBinaryExpression(builder, (BinaryExpression)expression, " and ");
-                    break;
                 case ExpressionType.Or:
                 case ExpressionType.OrElse:
-                    ConvertEqualityBinaryExpression(builder, (BinaryExpression)expression, " or ");
-                    break;
-                case ExpressionType.Equal:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " = ");
-                    break;
-                case ExpressionType.NotEqual:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " <> ");
+                    ConvertEqualityBinaryExpression(builder, (BinaryExpression)expression, GetBinaryOperator(expression));
                     break;
                 case ExpressionType.Add:
                     var binaryExpression = (BinaryExpression)expression;
@@ -402,15 +458,6 @@ namespace YesSql.Services
                     {
                         ConvertComparisonBinaryExpression(builder, binaryExpression, " + ");
                     }
-                    break;
-                case ExpressionType.Subtract:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " - ");
-                    break;
-                case ExpressionType.Multiply:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " * ");
-                    break;
-                case ExpressionType.Divide:
-                    ConvertComparisonBinaryExpression(builder, (BinaryExpression)expression, " / ");
                     break;
                 case ExpressionType.Convert:
                     ConvertFragment(builder, ((UnaryExpression)expression).Operand);
@@ -566,7 +613,11 @@ namespace YesSql.Services
 
                 if (leftIsNull && rightIsNull)
                 {
+                    builder.Append("(");
                     builder.Append(_dialect.GetSqlValue(true));
+                    builder.Append(operation);
+                    builder.Append(_dialect.GetSqlValue(true));
+                    builder.Append(")");
                     return;
                 }
                 else if (leftIsNull)
@@ -585,6 +636,7 @@ namespace YesSql.Services
                     builder.Append(")");
                     return;
                 }
+
             }
 
             builder.Append("(");
