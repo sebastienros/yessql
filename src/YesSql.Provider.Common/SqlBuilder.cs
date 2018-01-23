@@ -54,6 +54,8 @@ namespace YesSql.Sql
             FromSegments.Add(from);
         }
 
+        public bool HasPaging => _skip != null || _count != null;
+
         public void Skip(string skip)
         {
             _skip = skip;
@@ -132,6 +134,13 @@ namespace YesSql.Sql
             WhereSegments.Add(where);
         }
 
+        public bool HasOrder => _order != null && _order.Count > 0;
+
+        public void ClearOrder()
+        {
+            _order = null;
+        }
+
         public virtual void OrderBy(string orderBy)
         {
             OrderSegments.Add(orderBy);
@@ -176,7 +185,7 @@ namespace YesSql.Sql
             TrailSegments.Clear();
         }
 
-        public virtual string ToSqlString(bool ignoreOrderBy = false)
+        public virtual string ToSqlString()
         {
             if (String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
@@ -222,7 +231,7 @@ namespace YesSql.Sql
                     }
                 }
 
-                if (_order != null && !ignoreOrderBy)
+                if (_order != null)
                 {
                     sb.Append(" ORDER BY ");
 

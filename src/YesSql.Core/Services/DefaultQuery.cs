@@ -708,7 +708,13 @@ namespace YesSql.Services
             await _session.CommitAsync();
 
             _sqlBuilder.Selector("count(*)");
-            var sql = _sqlBuilder.ToSqlString(true);
+
+            // Clear paging and order when counting 
+            _sqlBuilder.ClearOrder();
+            _sqlBuilder.Skip(null);
+            _sqlBuilder.Take(null);
+
+            var sql = _sqlBuilder.ToSqlString();
 
             var key = new WorkerQueryKey(sql, _sqlBuilder.Parameters);
             return await _session._store.ProduceAsync(key, async () =>
@@ -818,6 +824,13 @@ namespace YesSql.Services
                 if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                 {
                     _query._sqlBuilder.Selector("*");
+
+                    // If a page is requested without order add a default one
+                    if (!_query._sqlBuilder.HasOrder && _query._sqlBuilder.HasPaging)
+                    {
+                        _query._sqlBuilder.OrderBy(_query._sqlBuilder.FormatColumn(typeof(T).Name, "Id"));
+                    }
+
                     var sql = _query._sqlBuilder.ToSqlString();
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
                     return await _query._session._store.ProduceAsync(key, async () =>
@@ -827,6 +840,12 @@ namespace YesSql.Services
                 }
                 else
                 {
+                    // If a page is requested without order add a default one
+                    if (!_query._sqlBuilder.HasOrder && _query._sqlBuilder.HasPaging)
+                    {
+                        _query._sqlBuilder.OrderBy(_query._sqlBuilder.FormatColumn(_query._documentTable, "Id"));
+                    }
+
                     _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn(_query._documentTable, "*"));
                     var sql = _query._sqlBuilder.ToSqlString();
                     var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
@@ -841,12 +860,16 @@ namespace YesSql.Services
 
             IQuery<T> IQuery<T>.Skip(int count)
             {
+                _query._sqlBuilder.ClearOrder();
+                _query._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
                 _query._sqlBuilder.Skip(count.ToString());
                 return this;
             }
 
             IQuery<T> IQuery<T>.Take(int count)
             {
+                _query._sqlBuilder.ClearOrder();
+                _query._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
                 _query._sqlBuilder.Take(count.ToString());
                 return this;
             }
@@ -887,13 +910,29 @@ namespace YesSql.Services
 
             IQueryIndex<T> IQueryIndex<T>.Skip(int count)
             {
-                _query._sqlBuilder.Skip(count.ToString());
+                if (count > 0)
+                {
+                    _query._sqlBuilder.Skip(count.ToString());
+                }
+                else
+                {
+                    _query._sqlBuilder.Skip(null);
+                }
+
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.Take(int count)
             {
-                _query._sqlBuilder.Take(count.ToString());
+                if (count > 0)
+                {
+                    _query._sqlBuilder.Take(count.ToString());
+                }
+                else
+                {
+                    _query._sqlBuilder.Take(null);
+                }
+
                 return this;
             }
 

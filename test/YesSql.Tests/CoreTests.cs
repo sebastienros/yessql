@@ -1379,11 +1379,47 @@ namespace YesSql.Tests
                 Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(10).Take(10).ListAsync()).Count());
                 Assert.Equal(5, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(95).Take(10).ListAsync()).Count());
                 Assert.Equal(90, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(10).ListAsync()).Count());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.Name == "Bill0").CountAsync());
+            }
+        }
 
-                var persons = await session.Query<Person, PersonByName>().Take(10).ListAsync();
+        [Fact]
+        public async Task ShouldPageWithoutOrder()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
 
-                Assert.Equal(10, persons.Count());
+            using (var session = _store.CreateSession())
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                    };
+
+                    session.Save(person);
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+
+                Assert.Equal(100, await session.Query<Person>().CountAsync());
+                Assert.Equal(100, await session.Query<Person>().Skip(10).CountAsync());
+                Assert.Equal(100, await session.Query<Person>().Take(10).CountAsync());
+                Assert.Equal(100, await session.Query<Person>().Skip(95).Take(10).CountAsync());
+
+                // Using ListAsync().Count() as CountAsync() remove Order
+                Assert.Equal(100, (await session.Query<Person>().ListAsync()).Count());
+                Assert.Equal(90, (await session.Query<Person>().Skip(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.Query<Person>().Take(10).ListAsync()).Count());
+                Assert.Equal(5, (await session.Query<Person>().Skip(95).Take(10).ListAsync()).Count());
+
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().Skip(0).Take(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().Skip(10).Take(10).ListAsync()).Count());
+                Assert.Equal(5, (await session.QueryIndex<PersonByName>().Skip(95).Take(10).ListAsync()).Count());
+                Assert.Equal(90, (await session.QueryIndex<PersonByName>().Skip(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().Take(10).ListAsync()).Count());
             }
         }
 
