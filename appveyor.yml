@@ -5,10 +5,6 @@ services:
   - mssql2016
   - mysql
   - postgresql96
-environment:
-  global:
-    NUGET_API_KEY:
-      secure: EbFVaFfJ7tcKDP2vWGGXkXwOO/3M67hK29MV0gdzbH1zkWWviCv/0cbQZ7crDfUK
 install:
   - ps: $env:BuildNumber= $env:APPVEYOR_BUILD_NUMBER
   - ps: $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = true
@@ -40,5 +36,11 @@ after_test:
 artifacts:
 - path: 'src\**\*.nupkg'
 
-deploy_script:
-- ps: if (($env:APPVEYOR_REPO_BRANCH -eq "master") -and (-Not(Test-Path env:/APPVEYOR_PULL_REQUEST_NUMBER))) { foreach ($artifactName in $artifacts.keys) { nuget push $artifacts[$artifactName].path $env:NUGET_API_KEY -Source https://www.nuget.org/api/v2/package } }
+deploy:  
+  - provider: NuGet
+    on:
+      branch: master
+    server: https://www.nuget.org/api/v2/package
+    api_key:
+      secure: EbFVaFfJ7tcKDP2vWGGXkXwOO/3M67hK29MV0gdzbH1zkWWviCv/0cbQZ7crDfUK
+    skip_symbols: true

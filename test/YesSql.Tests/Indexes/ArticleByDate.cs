@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using YesSql.Indexes;
 using YesSql.Tests.Models;
 
@@ -6,8 +6,8 @@ namespace YesSql.Tests.Indexes
 {
     public class ArticleByPublishedDate : MapIndex
     {
+        public string Title { get; set; }
         public DateTime PublishedDateTime { get; set; }
-        public DateTimeOffset PublishedDateTimeOffset { get; set; }
     }
 
     public class ArticleBydPublishedDateProvider : IndexProvider<Article>
@@ -19,7 +19,7 @@ namespace YesSql.Tests.Indexes
                 .Map(article => new ArticleByPublishedDate
                 {
                     PublishedDateTime = article.PublishedUtc,
-                    PublishedDateTimeOffset = article.PublishedUtc
+                    Title = article.Title
                 });
         }
     }

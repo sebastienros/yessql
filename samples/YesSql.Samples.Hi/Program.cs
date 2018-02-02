@@ -57,14 +57,14 @@ namespace YesSql.Samples.Hi
             // loading a single blog post
             using (var session = store.CreateSession())
             {
-                var p = session.Query().For<BlogPost>().FirstOrDefaultAsync().Result;
+                var p = await session.Query().For<BlogPost>().FirstOrDefaultAsync();
                 Console.WriteLine(p.Title); // > Hello YesSql
             }
 
             // loading blog posts by author
             using (var session = store.CreateSession())
             {
-                var ps = session.Query<BlogPost, BlogPostByAuthor>().Where(x => x.Author.StartsWith("B")).ListAsync().Result;
+                var ps = await session.Query<BlogPost, BlogPostByAuthor>().Where(x => x.Author.StartsWith("B")).ListAsync();
 
                 foreach (var p in ps)
                 {
@@ -75,7 +75,7 @@ namespace YesSql.Samples.Hi
             // loading blog posts by day of publication
             using (var session = store.CreateSession())
             {
-                var ps = session.Query<BlogPost, BlogPostByDay>(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd")).ListAsync().Result;
+                var ps = await session.Query<BlogPost, BlogPostByDay>(x => x.Day == DateTime.UtcNow.ToString("yyyyMMdd")).ListAsync();
 
                 foreach (var p in ps)
                 {
@@ -86,7 +86,7 @@ namespace YesSql.Samples.Hi
             // counting blog posts by day
             using (var session = store.CreateSession())
             {
-                var days = session.QueryIndex<BlogPostByDay>().ListAsync().Result;
+                var days = await session.QueryIndex<BlogPostByDay>().ListAsync();
 
                 foreach (var day in days)
                 {

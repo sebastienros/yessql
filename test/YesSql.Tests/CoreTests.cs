@@ -91,7 +91,7 @@ namespace YesSql.Tests
 
                 builder.CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
                         .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                        .Column<DateTimeOffset>(nameof(ArticleByPublishedDate.PublishedDateTimeOffset))
+                        .Column<string>(nameof(ArticleByPublishedDate.Title))
                     );
 
                 builder.CreateMapIndexTable(nameof(PersonByName), column => column
@@ -264,6 +264,28 @@ namespace YesSql.Tests
                 Assert.Equal(2, await session.QueryIndex<PersonByName>(x => null != x.Name).CountAsync());
                 Assert.Equal(3, await session.QueryIndex<PersonByName>(x => null == null).CountAsync());
                 Assert.Equal(0, await session.QueryIndex<PersonByName>(x => null != null).CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCompareWithConstants()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Article { Title = TestConstants.Strings.SomeString, PublishedUtc = new DateTime(2011, 11, 1) });
+                session.Save(new Article { Title = TestConstants.Strings.SomeOtherString, PublishedUtc = new DateTime(2011, 11, 1) });
+                session.Save(new Article { Title = TestConstants.Strings.SomeString, PublishedUtc = new DateTime(2011, 11, 2) });
+                session.Save(new Article { Title = TestConstants.Strings.SomeOtherString, PublishedUtc = new DateTime(2011, 11, 2) });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Article, ArticleByPublishedDate>(x => x.Title == TestConstants.Strings.SomeString).CountAsync());
+                Assert.Equal(2, await session.Query<Article, ArticleByPublishedDate>(x => x.Title != TestConstants.Strings.SomeString).CountAsync());
+                Assert.Equal(4, await session.Query<Article, ArticleByPublishedDate>(x => x.PublishedDateTime < DateTime.UtcNow).CountAsync());
+                Assert.Equal(2, await session.Query<Article, ArticleByPublishedDate>(x => x.Title != TestConstants.Strings.SomeString && x.PublishedDateTime < DateTime.UtcNow).CountAsync());
             }
         }
 
@@ -2322,49 +2344,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(10, await session.QueryIndex<ArticleByPublishedDate>().CountAsync());
-
+                Assert.Equal(10, (await session.QueryIndex<ArticleByPublishedDate>().ListAsync()).Count());
                 Assert.Equal(4, await session.QueryIndex<ArticleByPublishedDate>(x => x.PublishedDateTime == new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)).CountAsync());
-            }
-        }
 
-        [Fact]
-        public virtual async Task ShouldIndexWithDateTimeOffset()
-        {
-            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
-
-            using (var session = _store.CreateSession())
-            {
-                var dates = new[]
-                {
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 4, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
-                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-
-                var articles = dates.Select((x, i) => new Article
-                {
-                    PublishedUtc = x
-                });
-
-
-                foreach (var article in articles)
-                {
-                    session.Save(article);
-                }
-            }
-
-            using (var session = _store.CreateSession())
-            {
-                Assert.Equal(10, await session.QueryIndex<ArticleByPublishedDate>().CountAsync());
-
-                Assert.Equal(4, await session.QueryIndex<ArticleByPublishedDate>(x => x.PublishedDateTimeOffset == new DateTimeOffset(2011, 11, 1, 0, 0, 0, new TimeSpan(0))).CountAsync());
+                var list = await session.QueryIndex<ArticleByPublishedDate>(x => x.PublishedDateTime < new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc)).ListAsync();
+                Assert.Equal(4, list.Count());
             }
         }
 
