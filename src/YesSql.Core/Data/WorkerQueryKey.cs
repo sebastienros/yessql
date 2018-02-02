@@ -7,8 +7,7 @@ using System.Collections.Generic;
 namespace YesSql.Data
 {
     /// <summary>
-    /// An instance of <see cref="CacheTagKey"/> represents the state of <see cref="CacheTagHelper"/>
-    /// or <see cref="DistributedCacheTagHelper"/> keys.
+    /// An instance of <see cref="WorkerQueryKey"/> represents the state of <see cref="WorkerQueryKey"/>.
     /// </summary>
     public class WorkerQueryKey : IEquatable<WorkerQueryKey>
     {
