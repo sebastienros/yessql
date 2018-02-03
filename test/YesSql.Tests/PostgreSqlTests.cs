@@ -40,12 +40,6 @@ namespace YesSql.Tests
             return base.ShouldIndexWithDateTime();
         }
 
-        [Fact(Skip = "Stopped working on the CI for an unknown reason")]
-        public override Task ShouldIndexWithDateTimeOffset()
-        {
-            return base.ShouldIndexWithDateTimeOffset();
-        }
-
         [Fact(Skip = "Postgres locks on the table")]
         public override Task ShouldReadUncommittedRecords()
         {

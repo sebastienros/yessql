@@ -328,21 +328,41 @@ namespace YesSql.Services
 
                     if (memberExpression.Member.MemberType == MemberTypes.Field)
                     {
-                        obj = Evaluate(memberExpression.Expression).Value;
-                        if (obj == null)
+                        if (memberExpression.Expression != null)
                         {
-                            return Expression.Constant(null);
+                            obj = Evaluate(memberExpression.Expression).Value;
+
+                            if (obj == null)
+                            {
+                                return Expression.Constant(null);
+                            }
                         }
+                        else
+                        {
+                            // Static members
+                            obj = null;
+                        }
+
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
                         return Expression.Constant(value);
                     }
                     else if (memberExpression.Member.MemberType == MemberTypes.Property)
                     {
-                        obj = Evaluate(memberExpression.Expression).Value;
-                        if (obj == null)
+                        if (memberExpression.Expression != null)
                         {
-                            return Expression.Constant(null);
+                            obj = Evaluate(memberExpression.Expression).Value;
+
+                            if (obj == null)
+                            {
+                                return Expression.Constant(null);
+                            }
                         }
+                        else
+                        {
+                            // Static members
+                            obj = null;
+                        }
+
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
                         return Expression.Constant(value);
                     }
