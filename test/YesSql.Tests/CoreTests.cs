@@ -2683,5 +2683,23 @@ namespace YesSql.Tests
                 Assert.Equal(oak.Id, (await session.Query<Tree>().FirstOrDefaultAsync()).Id);
             }
         }
+
+        [Fact]
+        public virtual async Task ShouldConvertDateTimeToUtc()
+        {
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Article { PublishedUtc = new DateTime(2013, 1, 21, 0, 0, 0, DateTimeKind.Local) });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var article = await session.Query<Article>().FirstOrDefaultAsync();
+
+                Assert.NotNull(article);
+                Assert.Equal(DateTimeKind.Utc, article.PublishedUtc.Kind);
+                Assert.Equal(new DateTime(2013, 1, 21, 0, 0, 0, DateTimeKind.Local).ToUniversalTime(), article.PublishedUtc.ToUniversalTime());
+            }
+        }
     }
 }
