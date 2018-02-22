@@ -231,16 +231,6 @@ namespace YesSql.Sql
                     }
                 }
 
-                if (_order != null)
-                {
-                    sb.Append(" ORDER BY ");
-
-                    foreach (var s in _order)
-                    {
-                        sb.Append(s);
-                    }
-                }
-
                 if (_group != null)
                 {
                     sb.Append(" GROUP BY ");
@@ -256,6 +246,16 @@ namespace YesSql.Sql
                     sb.Append(" HAVING ");
 
                     foreach (var s in _having)
+                    {
+                        sb.Append(s);
+                    }
+                }
+
+                if (_order != null)
+                {
+                    sb.Append(" ORDER BY ");
+
+                    foreach (var s in _order)
                     {
                         sb.Append(s);
                     }
