@@ -39,6 +39,14 @@ artifacts:
 deploy:  
   - provider: NuGet
     on:
+      branch: dev
+    server: https://www.myget.org/F/yessql/api/v2/package
+    api_key:
+      secure: 7PQvuxXn5P39X5QDlDKWbNpOKJKivpqkq7umakIirAZ12CSTAiCwjtJhSBGVboPm
+    skip_symbols: true
+    artifact: /.*\.nupkg/
+  - provider: NuGet
+    on:
       branch: master
     server: https://www.nuget.org/api/v2/package
     api_key:
