@@ -880,7 +880,6 @@ namespace YesSql.Services
 
             IQuery<T> IQuery<T>.Skip(int count)
             {
-                _query._sqlBuilder.ClearOrder();
                 _query._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
                 _query._sqlBuilder.Skip(count.ToString());
                 return this;
@@ -888,7 +887,6 @@ namespace YesSql.Services
 
             IQuery<T> IQuery<T>.Take(int count)
             {
-                _query._sqlBuilder.ClearOrder();
                 _query._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
                 _query._sqlBuilder.Take(count.ToString());
                 return this;

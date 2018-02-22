@@ -1379,15 +1379,28 @@ namespace YesSql.Tests
         public async Task ShouldPageResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
-
+            var random = new Random();
             using (var session = _store.CreateSession())
             {
+                var indices = Enumerable.Range(0, 100).Select(x => x).ToList();
+
+                // Randomize indices
+                for (var i = 0; i < 100; i++)
+                {
+                    var a = random.Next(99);
+                    var b = random.Next(99);
+
+                    var tmp = indices[a];
+                    indices[a] = indices[b];
+                    indices[b] = tmp;
+                }
+
                 for (int i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
-                        Firstname = "Bill" + i,
-                        Lastname = "Gates" + i,
+                        Firstname = "Bill" + indices[i].ToString("D2"),
+                        Lastname = "Gates" + indices[i].ToString("D2"),
                     };
 
                     session.Save(person);
@@ -1401,6 +1414,29 @@ namespace YesSql.Tests
                 Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(10).Take(10).ListAsync()).Count());
                 Assert.Equal(5, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(95).Take(10).ListAsync()).Count());
                 Assert.Equal(90, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(10).ListAsync()).Count());
+
+                var ordered = (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(95).Take(10).ListAsync()).ToList();
+
+                for (var i = 1; i < ordered.Count; i++)
+                {
+                    Assert.Equal(1, String.Compare(ordered[i].Name, ordered[i - 1].Name));
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(100, await session.QueryIndex<PersonByName>().CountAsync());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(0).Take(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(10).Take(10).ListAsync()).Count());
+                Assert.Equal(5, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(95).Take(10).ListAsync()).Count());
+                Assert.Equal(90, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(10).ListAsync()).Count());
+
+                var ordered = (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(95).Take(10).ListAsync()).ToList();
+
+                for (var i = 1; i < ordered.Count; i++)
+                {
+                    Assert.Equal(-1, String.Compare(ordered[i].Name, ordered[i - 1].Name));
+                }
             }
         }
 
