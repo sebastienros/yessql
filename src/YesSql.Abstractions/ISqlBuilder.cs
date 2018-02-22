@@ -31,5 +31,6 @@ namespace YesSql
         void ClearTrail();
         string ToSqlString();
         void WhereAlso(string where);
+        ISqlBuilder Clone();
     }
 }
