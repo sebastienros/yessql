@@ -727,19 +727,20 @@ namespace YesSql.Services
             // Commit any pending changes before doing a query (auto-flush)
             await _session.CommitAsync();
 
-            _sqlBuilder.Selector("count(*)");
+            var localBuilder = _sqlBuilder.Clone();
+            localBuilder.Selector("count(*)");
 
             // Clear paging and order when counting 
-            _sqlBuilder.ClearOrder();
-            _sqlBuilder.Skip(null);
-            _sqlBuilder.Take(null);
+            localBuilder.ClearOrder();
+            localBuilder.Skip(null);
+            localBuilder.Take(null);
 
-            var sql = _sqlBuilder.ToSqlString();
+            var sql = localBuilder.ToSqlString();
 
-            var key = new WorkerQueryKey(sql, _sqlBuilder.Parameters);
+            var key = new WorkerQueryKey(sql, localBuilder.Parameters);
             return await _session._store.ProduceAsync(key, async () =>
             {
-                return await _connection.ExecuteScalarAsync<int>(sql, _sqlBuilder.Parameters, _transaction);
+                return await _connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, _transaction);
             });
         }
 

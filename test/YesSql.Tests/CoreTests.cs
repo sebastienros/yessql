@@ -1438,6 +1438,22 @@ namespace YesSql.Tests
                     Assert.Equal(-1, String.Compare(ordered[i].Name, ordered[i - 1].Name));
                 }
             }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(95).Take(10);
+
+                Assert.Equal(100, await query.CountAsync());
+
+                var ordered = (await query.ListAsync()).ToList();
+
+                Assert.Equal(5, ordered.Count);
+
+                for (var i = 1; i < ordered.Count; i++)
+                {
+                    Assert.Equal(1, String.Compare(ordered[i].Name, ordered[i - 1].Name));
+                }
+            }
         }
 
         [Fact]
@@ -1461,7 +1477,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-
+                // Count() should remove paging and order as it's not supported by some databases
                 Assert.Equal(100, await session.Query<Person>().CountAsync());
                 Assert.Equal(100, await session.Query<Person>().Skip(10).CountAsync());
                 Assert.Equal(100, await session.Query<Person>().Take(10).CountAsync());
