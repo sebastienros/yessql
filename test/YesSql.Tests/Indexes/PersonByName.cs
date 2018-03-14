@@ -5,7 +5,7 @@ namespace YesSql.Tests.Indexes
 {
     public class PersonByName : MapIndex
     {
-        public string Name { get; set; }
+        public string SomeName { get; set; }
         public static string Normalize(string name)
         {
             return name.ToUpperInvariant();
@@ -18,7 +18,7 @@ namespace YesSql.Tests.Indexes
         {
             context
                 .For<PersonByName>()
-                .Map(person => new PersonByName { Name = person.Firstname });
+                .Map(person => new PersonByName { SomeName = person.Firstname });
         }
     }
 }

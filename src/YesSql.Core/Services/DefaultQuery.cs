@@ -170,7 +170,7 @@ namespace YesSql.Services
 
                     sqlBuilder.Select();
 
-                    query.ConvertFragment(_builder, expression.Arguments[0]);
+                    query.ConvertFragment(_builder, ((LambdaExpression)((UnaryExpression)selector).Operand).Body);
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
@@ -201,7 +201,7 @@ namespace YesSql.Services
 
                     sqlBuilder.Select();
 
-                    query.ConvertFragment(_builder, expression.Arguments[0]);
+                    query.ConvertFragment(_builder, ((LambdaExpression)((UnaryExpression)selector).Operand).Body);
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
