@@ -125,11 +125,6 @@ namespace YesSql.Provider.MySql
             return "`" + tableName + "`";
         }
 
-        protected override string Quote(string value)
-        {
-            return QuoteString + value.Replace(QuoteString, DoubleQuoteString) + QuoteString;
-        }
-
         public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)
         {
             builder.Append("concat(");

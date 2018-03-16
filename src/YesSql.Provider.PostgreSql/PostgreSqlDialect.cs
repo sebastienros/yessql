@@ -138,11 +138,6 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + tableName + QuoteString;
         }
 
-        protected override string Quote(string value)
-        {
-            return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
-        }
-
         public override string CascadeConstraintsString => " cascade ";
 
         public override string GetSqlValue(object value)

@@ -115,7 +115,11 @@ namespace YesSql.Provider
 
         public virtual string DefaultValuesInsert => "DEFAULT VALUES";
 
-        protected abstract string Quote(string value);
+        protected virtual string Quote(string value)
+        {
+            return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
+        }
+
         public abstract string GetTypeName(DbType dbType, int? length, byte precision, byte scale);
 
         public virtual string GetSqlValue(object value)

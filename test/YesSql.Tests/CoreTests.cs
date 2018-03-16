@@ -310,6 +310,32 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQuoteString()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                var steve = new Person { Firstname = "Steve" };
+                session.Save(bill);
+                session.Save(steve);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var connection = session.Demand().Connection;
+                var dialect = SqlDialectFactory.For(connection);
+                var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
+
+                var person = await session.Query<Person, PersonByName>().Where(sql).FirstOrDefaultAsync();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", (string)person.Firstname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldSerializeComplexObject()
         {
             int productId;
