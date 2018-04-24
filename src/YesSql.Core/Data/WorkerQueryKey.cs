@@ -6,7 +6,7 @@ namespace YesSql.Data
     /// <summary>
     /// An instance of <see cref="WorkerQueryKey"/> represents the state of <see cref="WorkerQueryKey"/>.
     /// </summary>
-    public class WorkerQueryKey : IEquatable<WorkerQueryKey>
+    public struct WorkerQueryKey : IEquatable<WorkerQueryKey>
     {
         private readonly string _prefix;
         private readonly int[] _ids;
@@ -28,12 +28,16 @@ namespace YesSql.Data
 
             _prefix = prefix;
             _ids = ids;
+            _hashcode = default(int?);
+            _parameters = null;
         }
 
         public WorkerQueryKey(string prefix, Dictionary<string, object> parameters)
         {
             _prefix = prefix;
             _parameters = parameters;
+            _hashcode = default(int?);
+            _ids = null;
         }
 
         /// <inheritdoc />
