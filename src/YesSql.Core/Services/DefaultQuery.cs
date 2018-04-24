@@ -737,8 +737,8 @@ namespace YesSql.Services
 
             var sql = localBuilder.ToSqlString();
 
-            var key = new WorkerQueryKey(sql, localBuilder.Parameters);
-            return await _session._store.ProduceAsync(key, async () =>
+            //var key = new WorkerQueryKey(sql, localBuilder.Parameters);
+            return await _session._store.ProduceAsync(sql, async () =>
             {
                 return await _connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, _transaction);
             });
@@ -807,20 +807,20 @@ namespace YesSql.Services
                 {
                     _query._sqlBuilder.Selector("*");
                     var sql = _query._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    return (await _query._session._store.ProduceAsync(key, async () =>
+                    //var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    return (await _query._session._store.ProduceAsync(sql, () =>
                     {
-                        return await _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     })).FirstOrDefault();
                 }
                 else
                 {
                     _query._sqlBuilder.Selector(_query._documentTable, "*");
                     var sql = _query._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    var documents = (await _query._session._store.ProduceAsync(key, async () =>
+                    //var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    var documents = (await _query._session._store.ProduceAsync(sql, () =>
                     {
-                        return await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     })).ToArray();
 
                     if (documents.Length == 0)
@@ -853,10 +853,10 @@ namespace YesSql.Services
                     }
 
                     var sql = _query._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    return await _query._session._store.ProduceAsync(key, async () =>
+                    //var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    return await _query._session._store.ProduceAsync(sql, () =>
                     {
-                        return await _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return _query._connection.QueryAsync<T>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     });
                 }
                 else
@@ -869,10 +869,10 @@ namespace YesSql.Services
 
                     _query._sqlBuilder.Selector(_query._sqlBuilder.FormatColumn(_query._documentTable, "*"));
                     var sql = _query._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
-                    var documents = await _query._session._store.ProduceAsync(key, async () =>
+                    //var key = new WorkerQueryKey(sql, _query._sqlBuilder.Parameters);
+                    var documents = await _query._session._store.ProduceAsync(sql, () =>
                     {
-                        return await _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
+                        return _query._connection.QueryAsync<Document>(sql, _query._sqlBuilder.Parameters, _query._transaction);
                     });
 
                     return _query._session.Get<T>(documents.ToArray());

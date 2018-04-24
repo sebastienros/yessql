@@ -37,8 +37,8 @@ namespace YesSql
         internal readonly ConcurrentDictionary<Type, Func<IDescriptor>> DescriptorActivators =
             new ConcurrentDictionary<Type, Func<IDescriptor>>();
 
-        internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
-            new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
+        internal readonly ConcurrentDictionary<string, Task<object>> Workers =
+            new ConcurrentDictionary<string, Task<object>>();
 
         public const string DocumentTable = "Document";
         
@@ -245,7 +245,7 @@ namespace YesSql
         /// <param name="key">A key identifying the running work.</param>
         /// <param name="work">A function containing the logic to execute.</param>
         /// <returns>The result of the work.</returns>
-        public async Task<T> ProduceAsync<T>(WorkerQueryKey key, Func<Task<T>> work)
+        public async Task<T> ProduceAsync<T>(string key, Func<Task<T>> work)
         {
             if (!Configuration.QueryGatingEnabled)
             {

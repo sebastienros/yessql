@@ -190,8 +190,8 @@ namespace YesSql
             Demand();
 
             var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
-            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new [] { id });
-            var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
+            //var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new [] { id });
+            var result = await _store.ProduceAsync(nameof(GetDocumentByIdAsync) + id, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
 
             return result.FirstOrDefault();
         }
@@ -258,8 +258,8 @@ namespace YesSql
 
             var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
-            var key = new WorkerQueryKey(nameof(GetAsync), ids);
-            var documents = await _store.ProduceAsync(key, () =>
+            //var key = new WorkerQueryKey(nameof(GetAsync), ids);
+            var documents = await _store.ProduceAsync(nameof(GetAsync) + String.Join(",", ids), () =>
             {
                 return _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
             });
