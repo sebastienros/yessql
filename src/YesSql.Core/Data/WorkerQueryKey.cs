@@ -55,8 +55,8 @@ namespace YesSql.Data
         public bool Equals(WorkerQueryKey other)
         {
             return string.Equals(other._prefix, _prefix, StringComparison.Ordinal) &&
-                AreSame(_ids, other._ids) &&
-                AreSame(_parameters, other._parameters)
+                SameIds(_ids, other._ids) &&
+                SameParameters(_parameters, other._parameters)
                 ;
         }
 
@@ -100,8 +100,8 @@ namespace YesSql.Data
 
             return _hashcode.Value;
         }
-        
-        private static bool AreSame(Dictionary<string, object> values1, Dictionary<string, object> values2)
+
+        private static bool SameParameters(Dictionary<string, object> values1, Dictionary<string, object> values2)
         {
             if (values1 == values2)
             {
@@ -116,32 +116,42 @@ namespace YesSql.Data
             var enumerator1 = values1.GetEnumerator();
             var enumerator2 = values2.GetEnumerator();
 
-            while (enumerator1.MoveNext() && enumerator2.MoveNext())
+            while (true)
             {
-                
+                var hasMore1 = enumerator1.MoveNext();
+                var hasMore2 = enumerator2.MoveNext();
+
+                if (!hasMore1 && !hasMore2)
+                {
+                    return true;
+                }
+
+                if (!hasMore1 || !hasMore2)
+                {
+                    return false;
+                }
+
                 if (!string.Equals(enumerator1.Current.Key, enumerator2.Current.Key, StringComparison.Ordinal) ||
                     enumerator1.Current.Value != enumerator2.Current.Value)
                 {
                     return false;
                 }
             }
-
-            return true;
         }
 
-        private static bool AreSame(IList<int> values1, IList<int> values2)
+        private static bool SameIds(int[] values1, int[] values2)
         {
             if (values1 == values2)
             {
                 return true;
             }
 
-            if (values1 == null || values2 == null || values1.Count != values2.Count)
+            if (values1 == null || values2 == null || values1.Length != values2.Length)
             {
                 return false;
             }
 
-            for (var i = 0; i < values1.Count; i++)
+            for (var i = 0; i < values1.Length; i++)
             {
                 if (values1[i] != values2[i])
                 {
