@@ -1,18 +1,19 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
 
 namespace YesSql.Data
 {
     /// <summary>
     /// An instance of <see cref="WorkerQueryKey"/> represents the state of <see cref="WorkerQueryKey"/>.
     /// </summary>
-    public class WorkerQueryKey : IEquatable<WorkerQueryKey>
+    public struct WorkerQueryKey : IEquatable<WorkerQueryKey>
     {
+        private static readonly ThreadLocal<StringBuilder> _stringBuilder = new ThreadLocal<StringBuilder>(() => new StringBuilder());
+
         private readonly string _prefix;
-        private readonly int[] _ids;
         private readonly Dictionary<string, object> _parameters;
 
         private int? _hashcode;
@@ -30,13 +31,45 @@ namespace YesSql.Data
             }
 
             _prefix = prefix;
-            _ids = ids;
+
+            if (ids != null && ids.Length > 0)
+            {
+                var stringBuilder = _stringBuilder.Value;
+                stringBuilder.Clear();
+                stringBuilder.Append(_prefix);
+
+                foreach (var id in ids)
+                {
+                    stringBuilder.Append(";").Append(id);
+                }
+
+                _prefix = stringBuilder.ToString();
+            }
+
+            _hashcode = default(int?);
+            _parameters = null;
         }
 
         public WorkerQueryKey(string prefix, Dictionary<string, object> parameters)
         {
             _prefix = prefix;
             _parameters = parameters;
+            _hashcode = default(int?);
+            
+            if (parameters.Count < 5 && parameters.All(x => x.Value is ValueType))
+            {
+                var stringBuilder = _stringBuilder.Value;
+                stringBuilder.Clear();
+                stringBuilder.Append(_prefix);
+
+                foreach (var parameter in _parameters)
+                {
+                    stringBuilder.Append(";").Append(parameter.Key).Append("=").Append(parameter.Value);
+                }
+
+                _parameters = null;
+                _prefix = stringBuilder.ToString();
+            }
         }
 
         /// <inheritdoc />
@@ -53,10 +86,16 @@ namespace YesSql.Data
         /// <inheritdoc />
         public bool Equals(WorkerQueryKey other)
         {
-            return string.Equals(other._prefix, _prefix, StringComparison.Ordinal) &&
-                AreSame(_ids, other._ids) &&
-                AreSame(_parameters, other._parameters)
+            if (_parameters != null)
+            {
+                return string.Equals(other._prefix, _prefix, StringComparison.Ordinal) &&
+                SameParameters(_parameters, other._parameters)
                 ;
+            }
+            else
+            {
+                return String.Equals(_prefix, other._prefix, StringComparison.Ordinal);
+            }
         }
 
         /// <inheritdoc />
@@ -66,20 +105,11 @@ namespace YesSql.Data
             // multiple times during a request.
             if (!_hashcode.HasValue)
             {
-
-                var combinedHash = 5381;
-                combinedHash = ((combinedHash << 5) + combinedHash) ^ _prefix.GetHashCode();
-
-                if (_ids != null)
-                {
-                    foreach (var id in _ids)
-                    {
-                        combinedHash = ((combinedHash << 5) + combinedHash) ^ id;
-                    }
-                }
-
                 if (_parameters != null)
                 {
+                    var combinedHash = 5381;
+                    combinedHash = ((combinedHash << 5) + combinedHash) ^ _prefix.GetHashCode();
+
                     foreach (var parameter in _parameters)
                     {
                         if (parameter.Key != null)
@@ -92,15 +122,19 @@ namespace YesSql.Data
                             combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Value.GetHashCode();
                         }
                     }
-                }
 
-                _hashcode = combinedHash;
+                    _hashcode = combinedHash;
+                }
+                else
+                {
+                    _hashcode = _prefix.GetHashCode();
+                }
             }
 
             return _hashcode.Value;
         }
-        
-        private static bool AreSame(Dictionary<string, object> values1, Dictionary<string, object> values2)
+
+        private static bool SameParameters(Dictionary<string, object> values1, Dictionary<string, object> values2)
         {
             if (values1 == values2)
             {
@@ -115,40 +149,30 @@ namespace YesSql.Data
             var enumerator1 = values1.GetEnumerator();
             var enumerator2 = values2.GetEnumerator();
 
-            while (enumerator1.MoveNext() && enumerator2.MoveNext())
+            while (true)
             {
-                
-                if (!string.Equals(enumerator1.Current.Key, enumerator2.Current.Key, StringComparison.Ordinal) ||
-                    enumerator1.Current.Value != enumerator2.Current.Value)
+                var hasMore1 = enumerator1.MoveNext();
+                var hasMore2 = enumerator2.MoveNext();
+
+                if (!hasMore1 && !hasMore2)
+                {
+                    return true;
+                }
+
+                if (!hasMore1 || !hasMore2)
+                {
+                    return false;
+                }
+
+                var current1 = enumerator1.Current;
+                var current2 = enumerator2.Current;
+
+                if (!string.Equals(current1.Key, current2.Key, StringComparison.Ordinal) ||
+                    current1.Value != current2.Value)
                 {
                     return false;
                 }
             }
-
-            return true;
-        }
-
-        private static bool AreSame(IList<int> values1, IList<int> values2)
-        {
-            if (values1 == values2)
-            {
-                return true;
-            }
-
-            if (values1 == null || values2 == null || values1.Count != values2.Count)
-            {
-                return false;
-            }
-
-            for (var i = 0; i < values1.Count; i++)
-            {
-                if (values1[i] != values2[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 }
