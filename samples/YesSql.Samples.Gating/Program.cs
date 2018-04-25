@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Provider.SqlServer;
+using YesSql.Provider.Sqlite;
+using YesSql.Provider.PostgreSql;
 using YesSql.Sql;
 
 namespace YesSql.Samples.Gating
@@ -11,11 +13,32 @@ namespace YesSql.Samples.Gating
     {
         static void Main(string[] args)
         {
+            // Uncomment to use SQL Server
+
             var store = new Store(
                 new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
                     .SetTablePrefix("Gating")
                 );
+
+            // Uncomment to use Sqlite
+
+            //var store = new Store(
+            //    new Configuration()
+            //        .UseSqLite("Data Source=yessql.db;Cache=Shared")
+            //    );
+
+            // Uncomment to use PostgreSql
+
+            //var store = new Store(
+            //    new Configuration()
+            //        .UsePostgreSql(@"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;Maximum Pool Size=1024;NoResetOnClose=true;Enlist=false;Max Auto Prepare=200")
+            //        .SetTablePrefix("Gating")
+            //    );
+
+            // Uncomment to disable gating
+
+            // store.Configuration.DisableQueryGating();
 
             try
             {
@@ -59,15 +82,12 @@ namespace YesSql.Samples.Gating
                     for (var i = 0; i < 500; i++)
                     {
                         await session.Query().For<Person>().With<PersonByName>(x => x.SomeName.StartsWith("Steve100")).ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve200").ListAsync();
                     }
                 }).GetAwaiter().GetResult();
             }
 
-            store.Configuration.DisableQueryGating();
-
-            var concurrency = 32;
+            var concurrency = 20;
             var counter = 0;
             var MaxTransactions = 50000;
             var stopping = false;
