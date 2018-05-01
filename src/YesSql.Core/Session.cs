@@ -188,8 +188,8 @@ namespace YesSql
         private async Task<Document> GetDocumentByIdAsync(int id)
         {
             Demand();
-
-            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
+            var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
+            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new [] { id });
             var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
 
@@ -255,8 +255,8 @@ namespace YesSql
             await CommitAsync();
 
             Demand();
-
-            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + "Document") + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
+            var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
+            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             var documents = await _store.ProduceAsync(key, () =>
