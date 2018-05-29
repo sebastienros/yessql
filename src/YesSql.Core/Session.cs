@@ -277,10 +277,16 @@ namespace YesSql
             var result = new List<T>();
 
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
+            var typeName = typeof(T).SimplifiedTypeName();
 
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
+                if (typeof(T) != typeof(object) && !String.Equals(typeName, d.Type, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
                 if (_identityMap.TryGetEntityById(d.Id, out object entity))
                 {
                     result.Add((T)entity);
