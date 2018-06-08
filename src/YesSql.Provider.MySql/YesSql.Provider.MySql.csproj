@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
     <VersionPrefix>1.0.0</VersionPrefix>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MySqlConnector" Version="0.33.1" />
+    <PackageReference Include="MySqlConnector" Version="0.40.4" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
