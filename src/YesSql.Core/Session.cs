@@ -576,11 +576,8 @@ namespace YesSql
                             addedDocumentIds = addedDocumentIds.Where(x => !common.Contains(x)).ToArray();
                             deletedDocumentIds = deletedDocumentIds.Where(x => !common.Contains(x)).ToArray();
 
-                            if (addedDocumentIds.Any() || deletedDocumentIds.Any())
-                            {
-                                // Update both new and deleted linked documents
-                                _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
-                            }
+                            // Update updated, new and deleted linked documents
+                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
                         }
                     }
                     else

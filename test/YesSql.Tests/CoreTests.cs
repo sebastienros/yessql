@@ -1,5 +1,6 @@
 using Dapper;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading;
@@ -45,6 +46,7 @@ namespace YesSql.Tests
                 var builder = new SchemaBuilder(session) { ThrowOnError = throwOnError };
 
                 builder.DropReduceIndexTable(nameof(ArticlesByDay));
+                builder.DropReduceIndexTable(nameof(AttachmentByDay));
                 builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
                 builder.DropMapIndexTable(nameof(PersonByName));
                 builder.DropMapIndexTable(nameof(PersonIdentity));
@@ -82,6 +84,10 @@ namespace YesSql.Tests
                 builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
                         .Column<int>(nameof(ArticlesByDay.Count))
                         .Column<int>(nameof(ArticlesByDay.DayOfYear))
+                    );
+                builder.CreateReduceIndexTable(nameof(AttachmentByDay), column => column
+                        .Column<int>(nameof(AttachmentByDay.Count))
+                        .Column<int>(nameof(AttachmentByDay.Date))
                     );
 
                 builder.CreateReduceIndexTable(nameof(UserByRoleNameIndex), column => column
@@ -949,7 +955,85 @@ namespace YesSql.Tests
                 Assert.Equal("Bill", person.Firstname);
             }
         }
+        [Fact]
+        public async Task ShouldIncrementAttachmentIndex()
+        {
+            _store.RegisterIndexes<AttachmentByDayProvider>();
+            //Create one Email with 3 attachments
+            using (var session = _store.CreateSession())
+            {
+                var email = new Email() { Date = new DateTime(2018, 06, 11), Attachements = new System.Collections.Generic.List<Attachement>(){ new Attachement("A1"), new Attachement("A2"), new Attachement("A3") }};
+                session.Save(email);
+            }
 
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndex<AttachmentByDay>().CountAsync());
+                Assert.Equal(3, (await session.QueryIndex<AttachmentByDay>(x => x.Date == new DateTime(2018, 06, 11).DayOfYear).FirstOrDefaultAsync()).Count);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldUpdateAttachmentIndex()
+        {
+            _store.RegisterIndexes<AttachmentByDayProvider>();
+            var date = new DateTime(2018, 06, 11);
+
+            // Create one Email with 3 attachments
+            using (var session = _store.CreateSession())
+            {
+                var email = new Email()
+                {
+                    Date = date,
+                    Attachements = new List<Attachement>()
+                    {
+                        new Attachement("A1"),
+                        new Attachement("A2"),
+                        new Attachement("A3")
+                    }
+                };
+
+                session.Save(email);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndex<AttachmentByDay>().CountAsync());
+                Assert.Equal(3, (await session.QueryIndex<AttachmentByDay>(x => x.Date == date.DayOfYear).FirstOrDefaultAsync()).Count);
+            }
+
+            // Updating existing email, adding 2 attachments
+            using (var session = _store.CreateSession())
+            {
+                var email = await session.Query<Email, AttachmentByDay>()
+                    .Where(m => m.Date == date.DayOfYear)
+                    .FirstOrDefaultAsync();
+
+                email.Attachements.Add(new Attachement("A4"));
+                email.Attachements.Add(new Attachement("A5"));
+
+                session.Save(email);
+            }
+
+            // Actual email should be updated, and there should still be a single AttachmentByDay
+            using (var session = _store.CreateSession())
+            {
+                var email = await session.Query<Email, AttachmentByDay>()
+                    .Where(m => m.Date == date.DayOfYear)
+                    .FirstOrDefaultAsync();
+
+                Assert.Equal(5, email.Attachements.Count);
+                Assert.Equal(1, await session.QueryIndex<AttachmentByDay>().CountAsync());
+            }
+
+            // AttachmentByDay Count should have been incremented
+            using (var session = _store.CreateSession())
+            {
+                var abd = await session.QueryIndex<AttachmentByDay>(x => x.Date == date.DayOfYear).FirstOrDefaultAsync();
+                Assert.Equal(5, abd.Count);
+            }
+
+        }
         [Fact]
         public async Task ShouldReduce()
         {
