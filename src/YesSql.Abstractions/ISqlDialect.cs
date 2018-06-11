@@ -12,6 +12,11 @@ namespace YesSql
         string PrimaryKeyString { get; }
         string NullColumnString { get; }
         bool SupportsUnique { get; }
+
+        /// <summary>
+        /// Returns whether the index names must be prefixed or not.
+        /// </summary>
+        bool PrefixIndex { get; }
         bool HasDataTypeInIdentityColumn { get; }
         bool SupportsIdentityColumns { get; }
         string IdentityColumnString { get; }

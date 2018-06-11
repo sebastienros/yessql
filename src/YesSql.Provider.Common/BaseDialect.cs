@@ -115,6 +115,8 @@ namespace YesSql.Provider
 
         public virtual string DefaultValuesInsert => "DEFAULT VALUES";
 
+        public virtual bool PrefixIndex => false;
+
         protected virtual string Quote(string value)
         {
             return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
