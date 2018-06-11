@@ -85,11 +85,6 @@ namespace YesSql.Provider.Sqlite
             }
         }
 
-        protected override string Quote(string value)
-        {
-            return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
-        }
-
         public override string QuoteForColumnName(string columnName)
         {
             return QuoteString + columnName.Replace(QuoteString, DoubleQuoteString) + QuoteString;

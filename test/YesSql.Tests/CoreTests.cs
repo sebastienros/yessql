@@ -95,7 +95,7 @@ namespace YesSql.Tests
                     );
 
                 builder.CreateMapIndexTable(nameof(PersonByName), column => column
-                        .Column<string>(nameof(PersonByName.Name))
+                        .Column<string>(nameof(PersonByName.SomeName))
                     );
 
                 builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
@@ -225,6 +225,30 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldUpdateNewDocument()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+
+                session.Save(bill);
+
+                bill.Lastname = "Gates";
+
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person>().CountAsync());
+
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Bill", person.Firstname);
+                Assert.Equal("Gates", person.Lastname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryIndexWithParameter()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -237,10 +261,10 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.QueryIndex<PersonByName>().Where(d => d.QuoteForColumnName("Name") + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+                var person = await session.QueryIndex<PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
-                Assert.Equal("Bill", (string)person.Name);
+                Assert.Equal("Bill", (string)person.SomeName);
             }
         }
 
@@ -258,10 +282,10 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.Name == null).CountAsync());
-                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => x.Name != null).CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => null == x.Name).CountAsync());
-                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => null != x.Name).CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.SomeName == null).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => x.SomeName != null).CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => null == x.SomeName).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => null != x.SomeName).CountAsync());
                 Assert.Equal(3, await session.QueryIndex<PersonByName>(x => null == null).CountAsync());
                 Assert.Equal(0, await session.QueryIndex<PersonByName>(x => null != null).CountAsync());
             }
@@ -302,7 +326,33 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.Query<Person, PersonByName>().Where(d => d.QuoteForColumnName("Name") + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+                var person = await session.Query<Person, PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", (string)person.Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQuoteString()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                var steve = new Person { Firstname = "Steve" };
+                session.Save(bill);
+                session.Save(steve);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var connection = session.Demand().Connection;
+                var dialect = SqlDialectFactory.For(connection);
+                var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
+
+                var person = await session.Query<Person, PersonByName>().Where(sql).FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", (string)person.Firstname);
@@ -426,7 +476,7 @@ namespace YesSql.Tests
                 bill.Firstname = "Bill2";
                 session.Save(bill);
 
-                Assert.Equal(1, await session.Query<Person, PersonByName>().Where(x => x.Name == "Bill2").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByName>().Where(x => x.SomeName == "Bill2").CountAsync());
 
                 bill.Firstname = "Bill3";
                 session.Save(bill);
@@ -437,7 +487,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == "Bill3").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill3").CountAsync());
             }
         }
 
@@ -516,11 +566,11 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.StartsWith("C"))).CountAsync());
-                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.Contains("lo"))).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
 
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.StartsWith("C"))).CountAsync());
-                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.Name, y => y.Name.StartsWith("B") || y.Name.Contains("lo"))).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
             }
         }
 
@@ -605,7 +655,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == "Bill3").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill3").CountAsync());
             }
         }
 
@@ -672,13 +722,13 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(2, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.Name == "Bill").CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.Name == "Steve").CountAsync());
-                Assert.Equal(0, await session.QueryIndex<PersonByName>(x => x.Name == "Joe").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.SomeName == "Bill").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.SomeName == "Steve").CountAsync());
+                Assert.Equal(0, await session.QueryIndex<PersonByName>(x => x.SomeName == "Joe").CountAsync());
 
                 var person = await session
                     .Query<Person, PersonByName>()
-                    .Where(x => x.Name == "Bill")
+                    .Where(x => x.SomeName == "Bill")
                     .FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
@@ -722,7 +772,7 @@ namespace YesSql.Tests
                 Assert.Equal(3, await session.QueryIndex<PersonByName>().CountAsync());
                 Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Age == 2).CountAsync());
                 Assert.Equal(1, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name == "Steve")
+                    .With<PersonByName>(x => x.SomeName == "Steve")
                     .With<PersonByAge>(x => x.Age == 2)
                     .CountAsync());
             }
@@ -784,20 +834,20 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(2, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name.StartsWith("S"))
+                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
                     .With<PersonByAge>(x => x.Age == 2)
                     .CountAsync());
 
                 Assert.Equal("Scott", (await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name.StartsWith("S"))
-                    .OrderBy(x => x.Name)
+                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
+                    .OrderBy(x => x.SomeName)
                     .With<PersonByAge>(x => x.Age == 2)
                     .FirstOrDefaultAsync())
                     .Firstname);
 
                 Assert.Equal("Steve", (await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name.StartsWith("S"))
-                    .OrderByDescending(x => x.Name)
+                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
+                    .OrderByDescending(x => x.SomeName)
                     .With<PersonByAge>(x => x.Age == 2)
                     .FirstOrDefaultAsync())
                     .Firstname);
@@ -874,11 +924,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.Name == "Bill").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.SomeName == "Bill").CountAsync());
 
                 var person = await session
                     .Query<Person, PersonByName>()
-                    .Where(x => x.Name == "Bill")
+                    .Where(x => x.SomeName == "Bill")
                     .FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
@@ -888,11 +938,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.Name == "Bill").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.SomeName == "Bill").CountAsync());
 
                 var person = await session
                     .Query<Person, PersonByName>()
-                    .Where(x => x.Name == "Bill")
+                    .Where(x => x.SomeName == "Bill")
                     .FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
@@ -1410,38 +1460,38 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(100, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(0).Take(10).ListAsync()).Count());
-                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(10).Take(10).ListAsync()).Count());
-                Assert.Equal(5, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(95).Take(10).ListAsync()).Count());
-                Assert.Equal(90, (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderBy(x => x.SomeName).Skip(0).Take(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderBy(x => x.SomeName).Skip(10).Take(10).ListAsync()).Count());
+                Assert.Equal(5, (await session.QueryIndex<PersonByName>().OrderBy(x => x.SomeName).Skip(95).Take(10).ListAsync()).Count());
+                Assert.Equal(90, (await session.QueryIndex<PersonByName>().OrderBy(x => x.SomeName).Skip(10).ListAsync()).Count());
 
-                var ordered = (await session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(95).Take(10).ListAsync()).ToList();
+                var ordered = (await session.QueryIndex<PersonByName>().OrderBy(x => x.SomeName).Skip(95).Take(10).ListAsync()).ToList();
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, String.Compare(ordered[i].Name, ordered[i - 1].Name));
+                    Assert.Equal(1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
 
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(100, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(0).Take(10).ListAsync()).Count());
-                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(10).Take(10).ListAsync()).Count());
-                Assert.Equal(5, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(95).Take(10).ListAsync()).Count());
-                Assert.Equal(90, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.SomeName).Skip(0).Take(10).ListAsync()).Count());
+                Assert.Equal(10, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.SomeName).Skip(10).Take(10).ListAsync()).Count());
+                Assert.Equal(5, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.SomeName).Skip(95).Take(10).ListAsync()).Count());
+                Assert.Equal(90, (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.SomeName).Skip(10).ListAsync()).Count());
 
-                var ordered = (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.Name).Skip(95).Take(10).ListAsync()).ToList();
+                var ordered = (await session.QueryIndex<PersonByName>().OrderByDescending(x => x.SomeName).Skip(95).Take(10).ListAsync()).ToList();
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(-1, String.Compare(ordered[i].Name, ordered[i - 1].Name));
+                    Assert.Equal(-1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
 
             using (var session = _store.CreateSession())
             {
-                var query = session.QueryIndex<PersonByName>().OrderBy(x => x.Name).Skip(95).Take(10);
+                var query = session.QueryIndex<PersonByName>().OrderBy(x => x.SomeName).Skip(95).Take(10);
 
                 Assert.Equal(100, await query.CountAsync());
 
@@ -1451,7 +1501,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, String.Compare(ordered[i].Name, ordered[i - 1].Name));
+                    Assert.Equal(1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
         }
@@ -1581,8 +1631,8 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(2, await session.Query().For<Person>().With<PersonByName>().CountAsync());
-                Assert.Equal(1, await session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").CountAsync());
-                Assert.Equal(1, await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").CountAsync());
+                Assert.Equal(1, await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").CountAsync());
+                Assert.Equal(1, await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").CountAsync());
             }
         }
 
@@ -1752,6 +1802,32 @@ namespace YesSql.Tests
 
                 Assert.NotNull(circle);
                 Assert.Equal(10, circle.Radius);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldReturnNullWithWrongTypeById()
+        {
+            int circleId;
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+                await session.CommitAsync();
+
+                circleId = circle.Id;
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var square = await session.GetAsync<Square>(circleId);
+
+                Assert.Null(square);
             }
         }
 
@@ -2029,11 +2105,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(2, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name.IsIn(new[] { "Bill", "Steve" }))
+                    .With<PersonByName>(x => x.SomeName.IsIn(new[] { "Bill", "Steve" }))
                     .CountAsync());
 
                 Assert.Equal(0, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name.IsIn(new string[0]))
+                    .With<PersonByName>(x => x.SomeName.IsIn(new string[0]))
                     .CountAsync());
             }
         }
@@ -2068,11 +2144,11 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name.IsNotIn(new[] { "Bill", "Steve" }))
+                    .With<PersonByName>(x => x.SomeName.IsNotIn(new[] { "Bill", "Steve" }))
                     .CountAsync());
 
                 Assert.Equal(3, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.Name.IsNotIn(new string[0]))
+                    .With<PersonByName>(x => x.SomeName.IsNotIn(new string[0]))
                     .CountAsync());
             }
         }
@@ -2419,7 +2495,7 @@ namespace YesSql.Tests
             {
                 session.Save(bill);
                 Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == "Bill").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill").CountAsync());
             }
 
             using (var session = _store.CreateSession())
@@ -2429,8 +2505,8 @@ namespace YesSql.Tests
                 await session.CommitAsync();
 
                 Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
-                Assert.Equal(0, await session.QueryIndex<PersonByName>().Where(x => x.Name == "Bill").CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == "Bill2").CountAsync());
+                Assert.Equal(0, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill2").CountAsync());
             }
         }
 
@@ -2526,7 +2602,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.Name == PersonByName.Normalize(bill.Firstname)).CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == PersonByName.Normalize(bill.Firstname)).CountAsync());
             }
         }
 
@@ -2637,8 +2713,8 @@ namespace YesSql.Tests
                     using (var session = _store.CreateSession())
                     {
                         await session.Query().For<Person>().With<PersonByName>().ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                     }
                 }
             })).ToList();
@@ -2662,8 +2738,8 @@ namespace YesSql.Tests
                     using (var session = _store.CreateSession())
                     {
                         await session.Query().For<Person>().With<PersonByName>().ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                     }
                 }
             })).ToList();
@@ -2691,8 +2767,8 @@ namespace YesSql.Tests
                     using (var session = _store.CreateSession())
                     {
                         await session.Query().For<Person>().With<PersonByName>().ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>(x => x.Name == "Steve").ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.Name == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
+                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                     }
                 }
             })).ToList();

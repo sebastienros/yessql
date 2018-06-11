@@ -282,7 +282,7 @@ namespace YesSql
                         // acquire it otherwise.
                         Workers.TryRemove(key, out result);
 
-                        // Notify all other awaiters to render the content
+                        // Notify all other awaiters to return the result
                         tcs.TrySetResult(content);
                     }
                 }

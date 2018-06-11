@@ -1,7 +1,6 @@
 using YesSql.Indexes;
-using YesSql.Tests.Models;
 
-namespace YesSql.Tests.Indexes
+namespace YesSql.Samples.Gating
 {
     public class PersonByName : MapIndex
     {
