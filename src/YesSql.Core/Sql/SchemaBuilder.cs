@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using Dapper;
@@ -185,7 +185,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var alterTable = new AlterTableCommand(Prefix(name));
+                var alterTable = new AlterTableCommand(Prefix(name), _dialect, _tablePrefix);
                 table(alterTable);
                 Execute(_builder.CreateSql(alterTable));
             }
