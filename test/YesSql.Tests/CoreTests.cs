@@ -2521,6 +2521,43 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldGetAndDeletePerCollection()
+        {
+            await _store.InitializeCollectionAsync("Collection1");
+
+            using (new NamedCollection("Collection1"))
+            {
+                using (var session = _store.CreateSession())
+                {
+                    var bill = new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Gates",
+                    };
+
+                    session.Save(bill);
+                }
+
+                using (var session = _store.CreateSession())
+                {
+                    var person = await session.Query<Person>().FirstOrDefaultAsync();
+                    Assert.NotNull(person);
+
+                    person = await session.GetAsync<Person>(person.Id);
+                    Assert.NotNull(person);
+
+                    session.Delete(person);
+                }
+
+                using (var session = _store.CreateSession())
+                {
+                    var person = await session.Query<Person>().FirstOrDefaultAsync();
+                    Assert.Null(person);
+                }
+            }
+        }
+
+        [Fact]
         public virtual async Task ShouldIndexWithDateTime()
         {
             _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
