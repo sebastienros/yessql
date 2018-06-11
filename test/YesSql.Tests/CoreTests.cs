@@ -231,6 +231,30 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldUpdateNewDocument()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+
+                session.Save(bill);
+
+                bill.Lastname = "Gates";
+
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person>().CountAsync());
+
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Bill", person.Firstname);
+                Assert.Equal("Gates", person.Lastname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryIndexWithParameter()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -1862,6 +1886,32 @@ namespace YesSql.Tests
 
                 Assert.NotNull(circle);
                 Assert.Equal(10, circle.Radius);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldReturnNullWithWrongTypeById()
+        {
+            int circleId;
+
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+                await session.CommitAsync();
+
+                circleId = circle.Id;
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var square = await session.GetAsync<Square>(circleId);
+
+                Assert.Null(square);
             }
         }
 
