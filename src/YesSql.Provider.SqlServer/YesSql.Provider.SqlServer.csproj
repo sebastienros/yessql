@@ -9,6 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Forcing 4.4.0 version, c.f. https://github.com/Azure/app-service-announcements-discussions/issues/9 -->
-    <PackageReference Include="System.Data.SqlClient" Version="4.5.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.5.1" />
   </ItemGroup>
 </Project>

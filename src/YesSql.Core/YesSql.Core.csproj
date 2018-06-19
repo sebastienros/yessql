@@ -5,8 +5,8 @@
     <RootNamespace>YesSql</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="1.50.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Dapper" Version="1.50.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
     <Reference Include="Microsoft.CSharp" />
