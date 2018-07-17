@@ -12,6 +12,7 @@ namespace YesSql
         string TablePrefix { get; set; }
         int SessionPoolSize { get; set; }
         bool QueryGatingEnabled { get; set; }
+        int LinearBlockSize { get; set; }
     }
 
     public static class ConfigurationExtensions

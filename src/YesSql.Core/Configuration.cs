@@ -14,6 +14,7 @@ namespace YesSql
             TablePrefix = "";
             SessionPoolSize = 16;
             QueryGatingEnabled = true;
+            LinearBlockSize = 20;
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
@@ -23,5 +24,6 @@ namespace YesSql
         public string TablePrefix { get; set; }
         public int SessionPoolSize { get; set; }
         public bool QueryGatingEnabled { get; set; }
+        public int LinearBlockSize { get; set; }
     }
 }

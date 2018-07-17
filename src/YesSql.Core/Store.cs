@@ -77,7 +77,7 @@ namespace YesSql
             IndexCommand.ResetQueryCache();
             Indexes = new List<IIndexProvider>();
             ValidateConfiguration();
-            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
+            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, Configuration.LinearBlockSize, Configuration.TablePrefix);
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
         }
