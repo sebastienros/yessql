@@ -1857,7 +1857,7 @@ namespace YesSql.Tests
 
                 Assert.NotNull(dog);
                 Assert.Equal("Doggy", dog.Name);
-                Assert.Equal(null, dog.Color);
+                Assert.Null(dog.Color);
             }
         }
 
@@ -2014,7 +2014,7 @@ namespace YesSql.Tests
             {
                 var circles = await session.Query().For<Circle>().ListAsync();
 
-                Assert.Equal(1, circles.Count());
+                Assert.Single(circles);
             }
         }
 
@@ -2041,7 +2041,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var circles = await session.Query().For<Circle>().ListAsync();
-                Assert.Equal(1, circles.Count());
+                Assert.Single(circles);
                 Assert.Equal(20, circles.FirstOrDefault().Radius);
             }
         }

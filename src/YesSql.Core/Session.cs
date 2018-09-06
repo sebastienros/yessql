@@ -138,7 +138,7 @@ namespace YesSql
 
             await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
 
-            MapNew(doc, entity);
+            await MapNew(doc, entity);
         }
 
         private async Task UpdateEntityAsync(object entity)
@@ -176,8 +176,9 @@ namespace YesSql
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
 
             // Update map index
-            MapDeleted(oldDoc, oldObj);
-            MapNew(oldDoc, entity);
+            await MapDeleted(oldDoc, oldObj);
+
+            await MapNew(oldDoc, entity);
 
             Demand();
 
@@ -236,7 +237,7 @@ namespace YesSql
                     _identityMap.Remove(id, obj);
 
                     // Update impacted indexes
-                    MapDeleted(doc, obj);
+                    await MapDeleted(doc, obj);
 
                     // The command needs to come after any index deletiong because of the database constraints
                     _commands.Add(new DeleteDocumentCommand(doc, _store.Configuration.TablePrefix));
@@ -627,11 +628,11 @@ namespace YesSql
             });
         }
 
-        private void MapNew(Document document, object obj)
+        private async Task MapNew(Document document, object obj)
         {
             foreach (var descriptor in _store.Describe(obj.GetType()))
             {
-                var mapped = descriptor.Map(obj);
+                var mapped = await descriptor.Map(obj);
 
                 foreach (var index in mapped)
                 {
@@ -672,7 +673,7 @@ namespace YesSql
         /// <summary>
         /// Update map and reduce indexes when an entity is deleted.
         /// </summary>
-        private void MapDeleted(Document document, object obj)
+        private async Task MapDeleted(Document document, object obj)
         {
             foreach (var descriptor in _store.Describe(obj.GetType()))
             {
@@ -683,7 +684,8 @@ namespace YesSql
                 }
                 else
                 {
-                    var mapped = descriptor.Map(obj);
+                    var mapped = await descriptor.Map(obj);
+
                     foreach (var index in mapped)
                     {
                         // save for later reducing
