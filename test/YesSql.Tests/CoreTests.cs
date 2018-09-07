@@ -275,6 +275,26 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldMapAsyncIndex()
+        {
+            _store.RegisterIndexes<PersonAsyncIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.QueryIndex<PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", (string)person.SomeName);
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryNullValues()
         {
             _store.RegisterIndexes<PersonIndexProvider>();

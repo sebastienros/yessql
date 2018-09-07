@@ -20,6 +20,8 @@ namespace YesSql.Indexes
     {
         IGroupFor<TIndex> Map(Func<T, TIndex> map);
         IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map);
+        IGroupFor<TIndex> Map(Func<T, Task<TIndex>> map);
+        IGroupFor<TIndex> Map(Func<T, Task<IEnumerable<TIndex>>> map);
     }
 
     public interface IGroupFor<TIndex> where TIndex : IIndex
