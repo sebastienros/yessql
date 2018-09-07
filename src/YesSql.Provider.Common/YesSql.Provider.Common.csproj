@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>YesSql.Provider</RootNamespace>
-    <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
+    <TargetFrameworks>net451;netstandard1.5;netstandard2.0</TargetFrameworks>
     <VersionPrefix>1.0.0</VersionPrefix>
   </PropertyGroup>
 
