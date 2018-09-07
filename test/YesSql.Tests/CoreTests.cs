@@ -275,6 +275,26 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldMapAsyncIndex()
+        {
+            _store.RegisterIndexes<PersonAsyncIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.QueryIndex<PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", (string)person.SomeName);
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryNullValues()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -1857,7 +1877,7 @@ namespace YesSql.Tests
 
                 Assert.NotNull(dog);
                 Assert.Equal("Doggy", dog.Name);
-                Assert.Equal(null, dog.Color);
+                Assert.Null(dog.Color);
             }
         }
 
@@ -2014,7 +2034,7 @@ namespace YesSql.Tests
             {
                 var circles = await session.Query().For<Circle>().ListAsync();
 
-                Assert.Equal(1, circles.Count());
+                Assert.Single(circles);
             }
         }
 
@@ -2041,7 +2061,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var circles = await session.Query().For<Circle>().ListAsync();
-                Assert.Equal(1, circles.Count());
+                Assert.Single(circles);
                 Assert.Equal(20, circles.FirstOrDefault().Radius);
             }
         }
