@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using YesSql.Indexes;
 
 namespace YesSql
 {
@@ -49,8 +50,14 @@ namespace YesSql
         /// </summary>
         IDbTransaction Demand();
 
-        IStore Store { get; }
+        /// <summary>
+        /// Registers index providers.
+        /// </summary>
+        /// <param name="indexProviders">The index providers to register.</param>
+        /// <returns>The <see cref="ISession"/> instance.</returns>
+        ISession RegisterIndexes(params IIndexProvider[] indexProviders);
 
+        IStore Store { get; }
     }
 
     public static class SessionExtensions

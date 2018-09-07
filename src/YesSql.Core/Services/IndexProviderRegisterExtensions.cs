@@ -6,22 +6,28 @@ using YesSql.Indexes;
 
 namespace YesSql
 {
-    public static class StoreExtensions
+    public static class IndexProviderRegisterExtensions
     {
         public static IStore RegisterIndexes<T>(this IStore store) where T : IIndexProvider
         {
             return store.RegisterIndexes(typeof(T));
         }
 
+        public static IStore RegisterIndexes(this IStore store, IIndexProvider indexProvider)
+        {
+            if (indexProvider != null)
+            {
+                return store.RegisterIndexes(new[] { indexProvider });
+            }
+
+            return store.RegisterIndexes(new IIndexProvider[0]);
+        }
+
         public static IStore RegisterIndexes(this IStore store, Type type)
         {
             var index = Activator.CreateInstance(type) as IIndexProvider;
-            if (index != null)
-            {
-                store.RegisterIndexes(index);
-            }
 
-            return store;
+            return store.RegisterIndexes(index);
         }
 
         public static IStore RegisterIndexes(this IStore store, IEnumerable<Type> types)
@@ -31,7 +37,7 @@ namespace YesSql
                 store.RegisterIndexes(type);
             }
 
-            return store;
+            return store.RegisterIndexes(new IIndexProvider[0]);
         }
 
         public static IStore RegisterIndexes(this IStore store, Assembly assembly)

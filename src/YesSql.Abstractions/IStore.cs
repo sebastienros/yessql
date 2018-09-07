@@ -15,11 +15,11 @@ namespace YesSql
         ISession CreateSession(IsolationLevel isolationLevel);
 
         /// <summary>
-        /// Registers the specified <see cref="IIndexProvider"/> instance.
+        /// Registers index providers.
         /// </summary>
-        /// <param name="indexProviders">The <see cref="IIndexProvider"/> to register.</param>
-        /// <returns>The current <see cref="IStore"/>.</returns>
-        IStore RegisterIndexes(params IIndexProvider[] indexProviders);
+        /// <param name="indexProviders">The index providers to register.</param>
+        /// <returns>The <see cref="IStore"/> instance.</returns>
+        IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders);
 
         IConfiguration Configuration { get; set; }
         Task InitializeAsync();

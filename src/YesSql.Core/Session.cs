@@ -25,12 +25,14 @@ namespace YesSql
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
+        protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
         private IsolationLevel _isolationLevel;
         private IDbConnection _connection;
         private ISqlDialect _dialect;
         protected bool _cancel;
+        protected List<IIndexProvider> _indexes;
 
         public Session(Store store, IsolationLevel isolationLevel)
         {
@@ -46,6 +48,26 @@ namespace YesSql
                 Demand();
                 return _transaction;
             }
+        }
+
+        public ISession RegisterIndexes(params IIndexProvider[] indexProviders)
+        {
+            foreach (var indexProvider in indexProviders)
+            {
+                if (indexProvider.CollectionName == null)
+                {
+                    indexProvider.CollectionName = CollectionHelper.Current.GetSafeName();
+                }
+            }
+
+            if (_indexes == null)
+            {
+                _indexes = new List<IIndexProvider>();
+            }
+
+            _indexes.AddRange(indexProviders);
+
+            return this;
         }
 
         public void Save(object entity)
@@ -400,6 +422,8 @@ namespace YesSql
             _maps.Clear();
 
             _identityMap.Clear();
+            _descriptors.Clear();
+            _indexes?.Clear();
             _store.ReleaseSession(this);
         }
 
@@ -628,9 +652,32 @@ namespace YesSql
             });
         }
 
+        /// <summary>
+        /// Resolves all the descriptors registered on the Store and the Session
+        /// </summary>
+        private IEnumerable<IndexDescriptor> GetDescriptors(Type t)
+        {
+            var cacheKey = t.FullName + ":" + CollectionHelper.Current.GetSafeName();
+
+            if (!_descriptors.TryGetValue(cacheKey, out var typedDescriptors))
+            {
+                typedDescriptors = _store.Describe(t);
+
+                if (_indexes != null)
+                {
+                    var collection = CollectionHelper.Current.GetSafeName();
+                    typedDescriptors = typedDescriptors.Union(_store.CreateDescriptors(t, collection, _indexes)).ToArray();
+                }
+
+                _descriptors.Add(cacheKey, typedDescriptors);
+            }
+
+            return typedDescriptors;
+        }
+
         private async Task MapNew(Document document, object obj)
         {
-            foreach (var descriptor in _store.Describe(obj.GetType()))
+            foreach (var descriptor in GetDescriptors(obj.GetType()))
             {
                 var mapped = await descriptor.Map(obj);
 

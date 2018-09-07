@@ -287,10 +287,43 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.QueryIndex<PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+                var person = await session.QueryIndex<PersonByName>().FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
-                Assert.Equal("Bill", (string)person.SomeName);
+                Assert.Equal("Bill", person.SomeName);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldResolveScopedIndexProviders()
+        {
+
+            using (var session = _store.CreateSession())
+            {
+                session.RegisterIndexes(new ScopedPersonAsyncIndexProvider(1));
+
+                session.Save(new Person { Firstname = "Bill" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                session.RegisterIndexes(new ScopedPersonAsyncIndexProvider(2));
+
+                session.Save(new Person { Firstname = "Bill" });
+                session.Save(new Person { Firstname = "Steve" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var count = await session.QueryIndex<PersonByName>().CountAsync();
+                var bill1 = await session.QueryIndex<PersonByName>(x => x.SomeName == "Bill1").FirstOrDefaultAsync();
+                var bill2 = await session.QueryIndex<PersonByName>(x => x.SomeName == "Bill2").FirstOrDefaultAsync();
+                var steve2 = await session.QueryIndex<PersonByName>(x => x.SomeName == "Steve2").FirstOrDefaultAsync();
+
+                Assert.Equal(3, count);
+                Assert.NotNull(bill1);
+                Assert.NotNull(bill2);
+                Assert.NotNull(steve2);
             }
         }
 
