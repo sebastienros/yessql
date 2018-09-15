@@ -257,7 +257,7 @@ namespace YesSql.Sql
             // append identity if handled
             if (command.IsIdentity && _dialect.SupportsIdentityColumns)
             {
-                builder.Append(Space).Append(_dialect.IdentityColumnString);
+                builder.Append(Space).Append(command.DbType == DbType.Int64? _dialect.BigIntIdentityColumnString : _dialect.IdentityColumnString);
             }
 
             // [default value]

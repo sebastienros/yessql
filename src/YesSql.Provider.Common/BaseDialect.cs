@@ -46,6 +46,8 @@ namespace YesSql.Provider
 
         public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
 
+        public virtual string BigIntIdentityColumnString => "[bigint] IDENTITY(1,1) primary key";
+
         public virtual string NullColumnString => String.Empty;
 
         public virtual string PrimaryKeyString => "primary key";

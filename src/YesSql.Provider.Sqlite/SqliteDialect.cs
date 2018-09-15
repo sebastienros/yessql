@@ -49,6 +49,7 @@ namespace YesSql.Provider.Sqlite
         public override string Name => "Sqlite";
 
         public override string IdentityColumnString => "integer primary key autoincrement";
+        public override string BigIntIdentityColumnString => "BIGINT primary key autoincrement";
 
         public override string IdentitySelectString => "; select last_insert_rowid()";
 

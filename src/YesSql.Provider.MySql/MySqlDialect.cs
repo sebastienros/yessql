@@ -36,6 +36,7 @@ namespace YesSql.Provider.MySql
         public override string Name => "MySql";
         public override string IdentitySelectString => "; select LAST_INSERT_ID()";
         public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
+        public override string BigIntIdentityColumnString => "bigint AUTO_INCREMENT primary key";
         public override bool SupportsIfExistsBeforeTableName => true;
         
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)

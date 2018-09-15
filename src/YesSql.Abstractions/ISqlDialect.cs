@@ -20,6 +20,7 @@ namespace YesSql
         bool HasDataTypeInIdentityColumn { get; }
         bool SupportsIdentityColumns { get; }
         string IdentityColumnString { get; }
+        string BigIntIdentityColumnString { get; }
         string IdentitySelectString { get; }
         string GetTypeName(DbType dbType, int? length, byte precision, byte scale);
         string GetSqlValue(object value);
