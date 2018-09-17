@@ -25,6 +25,8 @@ namespace YesSql
         /// Returns documents from any type
         /// </summary>
         IQuery<object> Any();
+
+        IQuery<T> ExecuteAsync<T>(ICompiledQuery<T> compiledQuery) where T : class;
     }
 
     /// <summary>

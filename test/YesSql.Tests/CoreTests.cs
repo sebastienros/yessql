@@ -9,6 +9,7 @@ using Xunit;
 using YesSql.Collections;
 using YesSql.Services;
 using YesSql.Sql;
+using YesSql.Tests.CompiledQueries;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
@@ -219,6 +220,7 @@ namespace YesSql.Tests
                 Assert.Equal("Redmond", (string)person.Address.City);
             }
         }
+
 
         [Fact]
         public async Task ShouldQueryNonExistentResult()
@@ -594,6 +596,50 @@ namespace YesSql.Tests
 
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Age.IsIn(new[] { 12 })).FirstOrDefaultAsync());
                 Assert.Null(await session.Query<Person, PersonByAge>().Where(x => x.Age.IsIn(new[] { 1, 2, 3 }.Cast<object>())).FirstOrDefaultAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryWithCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var eilon = new Person
+                {
+                    Firstname = "Eilon",
+                    Lastname = "Lipton",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(eilon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query().ExecuteAsync(new PersonByAgeQuery(50)).CountAsync());
+                Assert.Equal(2, await session.Query().ExecuteAsync(new PersonByAgeQuery(12)).CountAsync());
+                Assert.Equal(0, await session.Query().ExecuteAsync(new PersonByAgeQuery(10)).CountAsync());
+                Assert.Single(await session.Query().ExecuteAsync(new PersonByAgeQuery(50)).ListAsync());
+                Assert.Equal(2, (await session.Query().ExecuteAsync(new PersonByAgeQuery(12)).ListAsync()).Count());
+                Assert.Empty(await session.Query().ExecuteAsync(new PersonByAgeQuery(10)).ListAsync());
             }
         }
 

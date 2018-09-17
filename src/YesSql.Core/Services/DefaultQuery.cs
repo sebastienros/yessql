@@ -1,6 +1,7 @@
 using Dapper;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -26,7 +27,11 @@ namespace YesSql.Services
         private readonly IDbTransaction _transaction;
         private string _lastParameterName;
         private ISqlBuilder _sqlBuilder;
+        private List<Action<object, ISqlBuilder>> _parameterBindings;
         private StringBuilder _builder = new StringBuilder();
+        internal object _compiledQuery = null;
+
+        private static ConcurrentDictionary<Type, object> _compiledQueries = new ConcurrentDictionary<Type, object>();
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
             new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>>();
@@ -343,6 +348,13 @@ namespace YesSql.Services
                             obj = null;
                         }
 
+                        _parameterBindings = _parameterBindings ?? new List<Action<object, ISqlBuilder>>();
+
+                        // Create a delegate that will be invoked every time a compiled query is reused,
+                        // which will re-evaluate the current node, for the current parameter.
+                        var _parameterName = "@p" + _sqlBuilder.Parameters.Count.ToString();
+                        _parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((PropertyInfo)memberExpression.Member).GetValue(o));
+
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
                         return Expression.Constant(value);
                     }
@@ -362,6 +374,13 @@ namespace YesSql.Services
                             // Static members
                             obj = null;
                         }
+
+                        _parameterBindings = _parameterBindings ?? new List<Action<object, ISqlBuilder>>();
+
+                        // Create a delegate that will be invoked every time a compiled query is reused,
+                        // which will re-evaluate the current node, for the current parameter.
+                        var _parameterName = "@p" + _sqlBuilder.Parameters.Count.ToString();
+                        _parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((PropertyInfo)memberExpression.Member).GetValue(o));
 
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
                         return Expression.Constant(value);
@@ -722,6 +741,13 @@ namespace YesSql.Services
             _sqlBuilder.ThenOrderByDescending(_builder.ToString());
         }
 
+        public IQuery<T> ExecuteAsync<T>(ICompiledQuery<T> compiledQuery) where T : class
+        {
+            var query = (Query<T>)_compiledQueries.GetOrAdd(compiledQuery.GetType(), t => compiledQuery.Query().Compile().Invoke(this));
+            query._query._compiledQuery = compiledQuery;
+            return query;
+        }
+
         public async Task<int> CountAsync()
         {
             // Commit any pending changes before doing a query (auto-flush)
@@ -734,6 +760,14 @@ namespace YesSql.Services
             localBuilder.ClearOrder();
             localBuilder.Skip(null);
             localBuilder.Take(null);
+
+            if (_compiledQuery != null && _parameterBindings != null)
+            {
+                foreach (var binding in _parameterBindings)
+                {
+                    binding(_compiledQuery, localBuilder);
+                }
+            }
 
             var sql = localBuilder.ToSqlString();
 
@@ -784,7 +818,7 @@ namespace YesSql.Services
 
         class Query<T> : IQuery<T> where T : class
         {
-            protected readonly DefaultQuery _query;
+            internal readonly DefaultQuery _query;
 
             public Query(DefaultQuery query)
             {
@@ -841,6 +875,14 @@ namespace YesSql.Services
             {
                 // Commit any pending changes before doing a query (auto-flush)
                 await _query._session.CommitAsync();
+
+                if (_query._compiledQuery != null && _query._parameterBindings != null)
+                {
+                    foreach (var binding in _query._parameterBindings)
+                    {
+                        binding(_query._compiledQuery, _query._sqlBuilder);
+                    }
+                }
 
                 if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                 {
