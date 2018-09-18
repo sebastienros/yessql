@@ -87,12 +87,12 @@ namespace YesSql.Provider.Sqlite
 
         public override string QuoteForColumnName(string columnName)
         {
-            return QuoteString + columnName.Replace(QuoteString, DoubleQuoteString) + QuoteString;
+            return "[" + columnName + "]";
         }
 
         public override string QuoteForTableName(string tableName)
         {
-            return QuoteString + tableName.Replace(QuoteString, DoubleQuoteString) + QuoteString;
+            return "[" + tableName + "]";
         }
     }
 }
