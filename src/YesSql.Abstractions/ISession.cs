@@ -66,5 +66,10 @@ namespace YesSql
         {
             return (await session.GetAsync<T>(new[] { id })).FirstOrDefault();
         }
+
+        public static IQuery<T> ExecuteQueryAsync<T>(this ISession session, ICompiledQuery<T> compiledQuery) where T : class
+        {
+            return session.Query().ExecuteQuery(compiledQuery);
+        }
     }
 }

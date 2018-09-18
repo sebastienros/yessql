@@ -26,7 +26,7 @@ namespace YesSql
         /// </summary>
         IQuery<object> Any();
 
-        IQuery<T> ExecuteAsync<T>(ICompiledQuery<T> compiledQuery) where T : class;
+        IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class;
     }
 
     /// <summary>

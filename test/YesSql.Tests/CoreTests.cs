@@ -634,12 +634,12 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query().ExecuteAsync(new PersonByAgeQuery(50)).CountAsync());
-                Assert.Equal(2, await session.Query().ExecuteAsync(new PersonByAgeQuery(12)).CountAsync());
-                Assert.Equal(0, await session.Query().ExecuteAsync(new PersonByAgeQuery(10)).CountAsync());
-                Assert.Single(await session.Query().ExecuteAsync(new PersonByAgeQuery(50)).ListAsync());
-                Assert.Equal(2, (await session.Query().ExecuteAsync(new PersonByAgeQuery(12)).ListAsync()).Count());
-                Assert.Empty(await session.Query().ExecuteAsync(new PersonByAgeQuery(10)).ListAsync());
+                Assert.Equal(1, await session.Query().ExecuteQuery(new PersonByAgeQuery(50)).CountAsync());
+                Assert.Equal(2, await session.Query().ExecuteQuery(new PersonByAgeQuery(12)).CountAsync());
+                Assert.Equal(0, await session.Query().ExecuteQuery(new PersonByAgeQuery(10)).CountAsync());
+                Assert.Single(await session.Query().ExecuteQuery(new PersonByAgeQuery(50)).ListAsync());
+                Assert.Equal(2, (await session.Query().ExecuteQuery(new PersonByAgeQuery(12)).ListAsync()).Count());
+                Assert.Empty(await session.Query().ExecuteQuery(new PersonByAgeQuery(10)).ListAsync());
             }
         }
 

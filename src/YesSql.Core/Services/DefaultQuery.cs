@@ -741,7 +741,7 @@ namespace YesSql.Services
             _sqlBuilder.ThenOrderByDescending(_builder.ToString());
         }
 
-        public IQuery<T> ExecuteAsync<T>(ICompiledQuery<T> compiledQuery) where T : class
+        public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class
         {
             var query = (Query<T>)_compiledQueries.GetOrAdd(compiledQuery.GetType(), t => compiledQuery.Query().Compile().Invoke(this));
             query._query._compiledQuery = compiledQuery;
