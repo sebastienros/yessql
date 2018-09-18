@@ -652,51 +652,6 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldNotLeakExpressionTrees()
-        {
-
-            _store.RegisterIndexes<PersonAgeIndexProvider>();
-            
-            using (var session = _store.CreateSession())
-            {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates",
-                    Age = 50
-                };
-
-                var elon = new Person
-                {
-                    Firstname = "Elon",
-                    Lastname = "Musk",
-                    Age = 12
-                };
-
-                var eilon = new Person
-                {
-                    Firstname = "Eilon",
-                    Lastname = "Lipton",
-                    Age = 12
-                };
-
-                session.Save(bill);
-                session.Save(elon);
-                session.Save(eilon);
-            }
-
-            // There can't be more than 1000 parameters in a SQLite query.
-            // We ensure that no parameter is duplicated.
-            for (var i = 0; i < 1000; i++)
-            {
-                using (var session = _store.CreateSession())
-                {
-                    Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).FirstOrDefaultAsync()).Firstname);
-                }
-            }
-        }
-
-        [Fact]
         public async Task ShouldOrderCompiledQueries()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();
@@ -735,6 +690,46 @@ namespace YesSql.Tests
 
                 Assert.Equal("Bill", results.ElementAt(0).Firstname);
                 Assert.Equal("Elon", results.ElementAt(1).Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotLeakPagingBetweenQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var eilon = new Person
+                {
+                    Firstname = "Eilon",
+                    Lastname = "Lipton",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(eilon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(12, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).FirstOrDefaultAsync()).Age);
+                Assert.Equal(2, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ListAsync()).Count());
             }
         }
 

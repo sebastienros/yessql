@@ -421,6 +421,8 @@ namespace YesSql
 
             // Clear previous paging if any
             queryState._sqlBuilder.ClearTrail();
+            queryState._sqlBuilder.Skip(null);
+            queryState._sqlBuilder.Take(null);
 
             IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _tablePrefix, queryState, compiledQuery);
             return newQuery.For<T>(false);
