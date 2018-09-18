@@ -31,6 +31,8 @@ namespace YesSql
 
         IQuery Query();
 
+        IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class;
+        
         /// <summary>
         /// Cancels any pending command
         /// </summary>

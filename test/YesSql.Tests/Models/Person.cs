@@ -1,4 +1,4 @@
-﻿namespace YesSql.Tests.Models
+namespace YesSql.Tests.Models
 {
     public class Person
     {
