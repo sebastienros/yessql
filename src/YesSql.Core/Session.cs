@@ -418,6 +418,10 @@ namespace YesSql
 
             var query = (DefaultQuery.Query<T>)cache.GetOrAdd(compiledQuery.GetType(), t => compiledQuery.Query().Compile().Invoke(this.Query().For<T>(false)));
             var queryState = query._query._queryState;
+
+            // Clear previous paging if any
+            queryState._sqlBuilder.ClearTrail();
+
             IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _tablePrefix, queryState, compiledQuery);
             return newQuery.For<T>(false);
         }

@@ -6,7 +6,7 @@ namespace YesSql.Tests
 {
     public class MySqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=root;pwd=Password12!;database=yessql;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=user1;pwd=Password12!;database=yessql;";
         public MySqlTests()
         {
             _store = new Store(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix));
