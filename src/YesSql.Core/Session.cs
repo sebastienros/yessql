@@ -34,12 +34,18 @@ namespace YesSql
         private ISqlDialect _dialect;
         protected bool _cancel;
         protected List<IIndexProvider> _indexes;
-        private static ConcurrentDictionary<string, ConcurrentDictionary<Type, object>> _compiledQueries = new ConcurrentDictionary<string, ConcurrentDictionary<Type, object>>();
+        protected string _tablePrefix;
+
+        private static object _synLock = new object();
+        private static ConcurrentDictionary<Type, ConcurrentDictionary<Type, object>> _compiledQueryCaches;
+        private static ConcurrentDictionary<Type, object> _compiledQueryCache;
+        private static Type _compiledQueryConnectionType;
 
         public Session(Store store, IsolationLevel isolationLevel)
         {
             _store = store;
             _isolationLevel = isolationLevel;
+            _tablePrefix = _store.Configuration.TablePrefix;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -160,7 +166,7 @@ namespace YesSql
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
-            await new CreateDocumentCommand(doc, _store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
+            await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
 
             await MapNew(doc, entity);
         }
@@ -216,7 +222,7 @@ namespace YesSql
 
             var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
 
-            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
+            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new [] { id });
             var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
 
@@ -264,7 +270,7 @@ namespace YesSql
                     await MapDeleted(doc, obj);
 
                     // The command needs to come after any index deletiong because of the database constraints
-                    _commands.Add(new DeleteDocumentCommand(doc, _store.Configuration.TablePrefix));
+                    _commands.Add(new DeleteDocumentCommand(doc, _tablePrefix));
                 }
             }
         }
@@ -284,7 +290,7 @@ namespace YesSql
             Demand();
 
             var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
-            var command = "select * from " + _dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
+            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             var documents = await _store.ProduceAsync(key, () =>
@@ -355,19 +361,64 @@ namespace YesSql
         {
             Demand();
 
-            return new DefaultQuery(_connection, _transaction, this, _store.Configuration.TablePrefix);
+            return new DefaultQuery(_connection, _transaction, this, _tablePrefix);
         }
 
         public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class
         {
-            // There is a cache of queries per dialect
-            var connectionName = _connection.GetType().Name.ToLower();
+            if (compiledQuery == null)
+            {
+                throw new ArgumentNullException(nameof(compiledQuery));
+            }
 
-            var cache = _compiledQueries.GetOrAdd(connectionName, name => new ConcurrentDictionary<Type, object>());
+            ConcurrentDictionary<Type, object> cache;
+
+            // There is a cache of queries per dialect. We still optimize for the common case
+            // which is that a single connection type is used.
+            var connectionType = _connection.GetType();
+
+            if (_compiledQueryCache == null)
+            {
+                lock(_synLock)
+                {
+                    if (_compiledQueryCache == null)
+                    {
+                        _compiledQueryCache = new ConcurrentDictionary<Type, object>();
+                        _compiledQueryConnectionType = connectionType;
+                    }
+                }
+
+                cache = _compiledQueryCache;
+            }
+            else
+            {
+                if (_compiledQueryConnectionType == connectionType)
+                {
+                    // Most common case: single connection type, already initialized
+                    cache = _compiledQueryCache;
+                }
+                else
+                {
+                    // We are using multiple connection types
+                    if (_compiledQueryCaches == null)
+                    {
+                        // The caches are not initialized
+                        lock (_synLock)
+                        {
+                            if (_compiledQueryCaches == null)
+                            {
+                                _compiledQueryCaches = new ConcurrentDictionary<Type, ConcurrentDictionary<Type, object>>();
+                            }
+                        }
+                    }
+
+                    cache = _compiledQueryCaches.GetOrAdd(connectionType, name => new ConcurrentDictionary<Type, object>());
+                }
+            }
 
             var query = (DefaultQuery.Query<T>)cache.GetOrAdd(compiledQuery.GetType(), t => compiledQuery.Query().Compile().Invoke(this.Query().For<T>(false)));
             var queryState = query._query._queryState;
-            IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _store.Configuration.TablePrefix, queryState, compiledQuery);
+            IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _tablePrefix, queryState, compiledQuery);
             return newQuery.For<T>();
         }
 
@@ -627,7 +678,7 @@ namespace YesSql
                     {
                         if (index == null)
                         {
-                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _store.Configuration.TablePrefix));
+                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _tablePrefix));
                         }
                         else
                         {
@@ -638,7 +689,7 @@ namespace YesSql
                             deletedDocumentIds = deletedDocumentIds.Where(x => !common.Contains(x)).ToArray();
 
                             // Update updated, new and deleted linked documents
-                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _store.Configuration.TablePrefix));
+                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _tablePrefix));
                         }
                     }
                     else
@@ -646,7 +697,7 @@ namespace YesSql
                         if (index != null)
                         {
                             // The index is new
-                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _store.Configuration.TablePrefix));
+                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _tablePrefix));
                         }
                     }
                 }
@@ -657,7 +708,7 @@ namespace YesSql
         {
             Demand();
 
-            var name = _store.Configuration.TablePrefix + descriptor.IndexType.Name;
+            var name = _tablePrefix + descriptor.IndexType.Name;
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
             var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);
@@ -729,11 +780,11 @@ namespace YesSql
                     {
                         if (index.Id == 0)
                         {
-                            _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _store.Configuration.TablePrefix));
+                            _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix));
                         }
                         else
                         {
-                            _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _store.Configuration.TablePrefix));
+                            _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix));
                         }
                     }
                     else
@@ -760,7 +811,7 @@ namespace YesSql
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id, _store.Configuration.TablePrefix, _dialect));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id, _tablePrefix, _dialect));
                 }
                 else
                 {

@@ -844,6 +844,14 @@ namespace YesSql.Services
                 // Commit any pending changes before doing a query (auto-flush)
                 await _query._session.CommitAsync();
 
+                if (_query._compiledQuery != null && _query._queryState._parameterBindings != null)
+                {
+                    foreach (var binding in _query._queryState._parameterBindings)
+                    {
+                        binding(_query._compiledQuery, _query._queryState._sqlBuilder);
+                    }
+                }
+
                 _query.Page(1, 0);
 
                 if (typeof(IIndex).IsAssignableFrom(typeof(T)))

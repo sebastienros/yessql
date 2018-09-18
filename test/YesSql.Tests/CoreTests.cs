@@ -654,6 +654,12 @@ namespace YesSql.Tests
                 Assert.Equal(2, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ListAsync()).Count());
                 Assert.Empty(await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).ListAsync());
             }
+
+            // FirstOrDefaultAsync
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).FirstOrDefaultAsync()).Firstname);
+            }
         }
 
         [Fact]
