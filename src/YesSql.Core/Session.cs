@@ -1,5 +1,6 @@
 using Dapper;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -33,6 +34,7 @@ namespace YesSql
         private ISqlDialect _dialect;
         protected bool _cancel;
         protected List<IIndexProvider> _indexes;
+        private static ConcurrentDictionary<string, ConcurrentDictionary<Type, object>> _compiledQueries = new ConcurrentDictionary<string, ConcurrentDictionary<Type, object>>();
 
         public Session(Store store, IsolationLevel isolationLevel)
         {
@@ -354,6 +356,19 @@ namespace YesSql
             Demand();
 
             return new DefaultQuery(_connection, _transaction, this, _store.Configuration.TablePrefix);
+        }
+
+        public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class
+        {
+            // There is a cache of queries per dialect
+            var connectionName = _connection.GetType().Name.ToLower();
+
+            var cache = _compiledQueries.GetOrAdd(connectionName, name => new ConcurrentDictionary<Type, object>());
+
+            var query = (DefaultQuery.Query<T>)cache.GetOrAdd(compiledQuery.GetType(), t => compiledQuery.Query().Compile().Invoke(this.Query().For<T>(false)));
+            var queryState = query._query._queryState;
+            IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _store.Configuration.TablePrefix, queryState, compiledQuery);
+            return newQuery.For<T>();
         }
 
         private void CheckDisposed()

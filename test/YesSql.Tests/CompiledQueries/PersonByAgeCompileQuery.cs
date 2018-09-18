@@ -16,9 +16,25 @@ namespace YesSql.Tests.CompiledQueries
         public int Age { get; }
         public string Name { get; }
 
-        public Expression<Func<IQuery, IQuery<Person>>> Query()
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
         {
-            return query => query.For<Person>(false).With<PersonByAge>(x => x.Age == Age || x.Name == Name);
+            return query => query.With<PersonByAge>(x => x.Age == Age || x.Name == Name);
+        }
+    }
+
+    public class PersonOrderedAscQuery : ICompiledQuery<Person>
+    {
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByAge>().OrderBy(x => x.Age);
+        }
+    }
+
+    public class PersonOrderedDescQuery : ICompiledQuery<Person>
+    {
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByAge>().OrderByDescending(x => x.Age);
         }
     }
 }

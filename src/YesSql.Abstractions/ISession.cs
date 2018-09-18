@@ -31,6 +31,8 @@ namespace YesSql
 
         IQuery Query();
 
+        IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class;
+        
         /// <summary>
         /// Cancels any pending command
         /// </summary>
@@ -65,11 +67,6 @@ namespace YesSql
         public async static Task<T> GetAsync<T>(this ISession session, int id) where T : class
         {
             return (await session.GetAsync<T>(new[] { id })).FirstOrDefault();
-        }
-
-        public static IQuery<T> ExecuteQueryAsync<T>(this ISession session, ICompiledQuery<T> compiledQuery) where T : class
-        {
-            return session.Query().ExecuteQuery(compiledQuery);
         }
     }
 }

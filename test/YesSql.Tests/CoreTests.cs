@@ -632,14 +632,69 @@ namespace YesSql.Tests
                 session.Save(eilon);
             }
 
+            // Count
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query().ExecuteQuery(new PersonByAgeQuery(50)).CountAsync());
-                Assert.Equal(2, await session.Query().ExecuteQuery(new PersonByAgeQuery(12)).CountAsync());
-                Assert.Equal(0, await session.Query().ExecuteQuery(new PersonByAgeQuery(10)).CountAsync());
-                Assert.Single(await session.Query().ExecuteQuery(new PersonByAgeQuery(50)).ListAsync());
-                Assert.Equal(2, (await session.Query().ExecuteQuery(new PersonByAgeQuery(12)).ListAsync()).Count());
-                Assert.Empty(await session.Query().ExecuteQuery(new PersonByAgeQuery(10)).ListAsync());
+                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).CountAsync());
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).CountAsync());
+                Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).CountAsync());
+                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
+
+                Assert.Equal(3, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, "Bill")).CountAsync());
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Elon")).CountAsync());
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Eilon")).CountAsync());
+                Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, "Mark")).CountAsync());
+            }
+
+
+            // ListAsync
+            using (var session = _store.CreateSession())
+            {
+                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
+                Assert.Equal(2, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ListAsync()).Count());
+                Assert.Empty(await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).ListAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldOrderCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.ExecuteQuery(new PersonOrderedAscQuery()).ListAsync();
+
+                Assert.Equal("Elon", results.ElementAt(0).Firstname);
+                Assert.Equal("Bill", results.ElementAt(1).Firstname);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.ExecuteQuery(new PersonOrderedDescQuery()).ListAsync();
+
+                Assert.Equal("Bill", results.ElementAt(0).Firstname);
+                Assert.Equal("Elon", results.ElementAt(1).Firstname);
             }
         }
 
