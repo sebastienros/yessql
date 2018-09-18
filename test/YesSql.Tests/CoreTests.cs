@@ -632,33 +632,67 @@ namespace YesSql.Tests
                 session.Save(eilon);
             }
 
-            // Count
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).CountAsync());
                 Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).CountAsync());
                 Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).CountAsync());
-                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
 
                 Assert.Equal(3, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, "Bill")).CountAsync());
                 Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Elon")).CountAsync());
                 Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Eilon")).CountAsync());
                 Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, "Mark")).CountAsync());
-            }
 
-
-            // ListAsync
-            using (var session = _store.CreateSession())
-            {
                 Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
-                Assert.Equal(2, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ListAsync()).Count());
+                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
                 Assert.Empty(await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).ListAsync());
-            }
 
-            // FirstOrDefaultAsync
+                Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).FirstOrDefaultAsync()).Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotLeakExpressionTrees()
+        {
+
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            
             using (var session = _store.CreateSession())
             {
-                Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).FirstOrDefaultAsync()).Firstname);
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var eilon = new Person
+                {
+                    Firstname = "Eilon",
+                    Lastname = "Lipton",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(eilon);
+            }
+
+            // There can't be more than 1000 parameters in a SQLite query.
+            // We ensure that no parameter is duplicated.
+            for (var i = 0; i < 1000; i++)
+            {
+                using (var session = _store.CreateSession())
+                {
+                    Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).FirstOrDefaultAsync()).Firstname);
+                }
             }
         }
 
