@@ -1914,6 +1914,25 @@ namespace YesSql.Tests
             }
         }
 
+        [Fact]
+        public async Task ShouldNotHaveWorkAfterCommit()
+        {
+            using (var session = (Session)_store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+
+                Assert.True(session.HasWork());
+
+                await session.CommitAsync();
+
+                Assert.False(session.HasWork());
+            }
+        }
 
         [Fact]
         public async Task ShouldGetTypeById()

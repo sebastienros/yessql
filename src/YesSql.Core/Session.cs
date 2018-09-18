@@ -375,8 +375,14 @@ namespace YesSql
             {
                 if (!_cancel)
                 {
-                    // execute pending commands
-                    CommitAsync().Wait();
+                    if (HasWork())
+                    {
+                        // Execute pending commands. This is a sync call over async
+                        // which is not recommended. Prefer to call CommitAsync() before 
+                        // disposing the session.
+
+                        CommitAsync().Wait();
+                    }
 
                     if (_transaction != null)
                     {
@@ -442,7 +448,7 @@ namespace YesSql
         {
             CheckDisposed();
 
-            if (_saved.Count == 0 && _updated.Count == 0 && _deleted.Count == 0)
+            if (!HasWork())
             {
                 return;
             }
@@ -483,6 +489,18 @@ namespace YesSql
             _deleted.Clear();
             _commands.Clear();
             _maps.Clear();
+        }
+
+        /// <summary>
+        /// Whether the current session has data to flush or not.
+        /// </summary>
+        internal bool HasWork()
+        {
+            return
+                _saved.Count != 0 ||
+                _updated.Count != 0 ||
+                _deleted.Count != 0
+                ;
         }
 
         private async Task ReduceAsync()

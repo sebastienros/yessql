@@ -37,12 +37,8 @@ namespace YesSql
         void Cancel();
 
         /// <summary>
-        /// Commits the current transaction asynchronously
+        /// Flushes the current commands asynchronously.
         /// </summary>
-        /// <param name="keepTracked">
-        /// <c>True</c> if the tracked entities should still be tracked. This
-        /// parameter should normally not be used.
-        /// </param>
         Task CommitAsync();
 
         /// <summary>
