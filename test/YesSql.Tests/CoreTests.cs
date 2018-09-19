@@ -694,6 +694,55 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public virtual async Task ShouldRunCompiledQueriesConcurrently()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+            }
+
+            var concurrency = 20;
+            var MaxTransactions = 10000;
+
+            var counter = 0;
+            var stopping = false;
+
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).CountAsync());
+                    }
+                }
+            })).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(5)));
+
+            await Task.WhenAny(tasks);
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
+        }
+
+        [Fact]
         public async Task ShouldNotLeakPagingBetweenQueries()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();

@@ -54,6 +54,12 @@ namespace YesSql.Tests
             return base.ShouldGateQuery();
         }
 
+        [Fact(Skip = "Shared connection can't be used concurrently")]
+        public override Task ShouldRunCompiledQueriesConcurrently()
+        {
+            return base.ShouldRunCompiledQueriesConcurrently();
+        }
+
         [Fact]
         public async Task ShouldNotLeakExpressionTrees()
         {

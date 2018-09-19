@@ -42,6 +42,9 @@ namespace YesSql
         internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
             new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
 
+        internal readonly ConcurrentDictionary<Type, QueryState> CompiledQueries = 
+            new ConcurrentDictionary<Type, QueryState>();
+
         public const string DocumentTable = "Document";
         
         static Store()

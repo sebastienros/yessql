@@ -36,11 +36,6 @@ namespace YesSql
         protected List<IIndexProvider> _indexes;
         protected string _tablePrefix;
 
-        private static object _synLock = new object();
-        private static ConcurrentDictionary<Type, ConcurrentDictionary<Type, QueryState>> _compiledQueryCaches;
-        private static ConcurrentDictionary<Type, QueryState> _compiledQueryCache;
-        private static Type _compiledQueryConnectionType;
-
         public Session(Store store, IsolationLevel isolationLevel)
         {
             _store = store;
@@ -371,59 +366,18 @@ namespace YesSql
                 throw new ArgumentNullException(nameof(compiledQuery));
             }
 
-            ConcurrentDictionary<Type, QueryState> cache;
-
-            // There is a cache of queries per dialect. We still optimize for the common case
-            // which is that a single connection type is used.
-            var connectionType = _connection.GetType();
-
-            if (_compiledQueryCache == null)
+            var queryState = _store.CompiledQueries.GetOrAdd(compiledQuery.GetType(), t =>
             {
-                lock(_synLock)
-                {
-                    if (_compiledQueryCache == null)
-                    {
-                        _compiledQueryCache = new ConcurrentDictionary<Type, QueryState>();
-                        _compiledQueryConnectionType = connectionType;
-                    }
-                }
-
-                cache = _compiledQueryCache;
-            }
-            else
-            {
-                if (_compiledQueryConnectionType == connectionType)
-                {
-                    // Most common case: single connection type, already initialized
-                    cache = _compiledQueryCache;
-                }
-                else
-                {
-                    // We are using multiple connection types
-                    if (_compiledQueryCaches == null)
-                    {
-                        // The caches are not initialized
-                        lock (_synLock)
-                        {
-                            if (_compiledQueryCaches == null)
-                            {
-                                _compiledQueryCaches = new ConcurrentDictionary<Type, ConcurrentDictionary<Type, QueryState>>();
-                            }
-                        }
-                    }
-
-                    cache = _compiledQueryCaches.GetOrAdd(connectionType, name => new ConcurrentDictionary<Type, QueryState>());
-                }
-            }
-
-            var queryState = cache.GetOrAdd(compiledQuery.GetType(), t =>
-            {
-                var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(this.Query().For<T>(false));
+                Demand();
+                var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix)).For<T>(false);
+                var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
+                
                 return defaultQuery._query._queryState;
             });
 
             queryState = queryState.Clone();
 
+            Demand();
             IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _tablePrefix, queryState, compiledQuery);
             return newQuery.For<T>(false);
         }
