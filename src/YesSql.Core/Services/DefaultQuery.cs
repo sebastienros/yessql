@@ -29,6 +29,23 @@ namespace YesSql.Services
         public ISqlBuilder _sqlBuilder;
         public List<Action<object, ISqlBuilder>> _parameterBindings;
         public StringBuilder _builder = new StringBuilder();
+
+        public QueryState Clone()
+        {
+            var clone = new QueryState(_sqlBuilder.Clone());
+
+            clone._bound = new List<Type>(_bound);
+            clone._lastParameterName = _lastParameterName;
+            clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
+            clone._builder = new StringBuilder(_builder.ToString());
+
+            // Clear previous paging if any
+            clone._sqlBuilder.ClearTrail();
+            clone._sqlBuilder.Skip(null);
+            clone._sqlBuilder.Take(null);
+
+            return clone;
+        }
     }
 
     public class DefaultQuery : IQuery

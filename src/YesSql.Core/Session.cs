@@ -37,8 +37,8 @@ namespace YesSql
         protected string _tablePrefix;
 
         private static object _synLock = new object();
-        private static ConcurrentDictionary<Type, ConcurrentDictionary<Type, object>> _compiledQueryCaches;
-        private static ConcurrentDictionary<Type, object> _compiledQueryCache;
+        private static ConcurrentDictionary<Type, ConcurrentDictionary<Type, QueryState>> _compiledQueryCaches;
+        private static ConcurrentDictionary<Type, QueryState> _compiledQueryCache;
         private static Type _compiledQueryConnectionType;
 
         public Session(Store store, IsolationLevel isolationLevel)
@@ -371,7 +371,7 @@ namespace YesSql
                 throw new ArgumentNullException(nameof(compiledQuery));
             }
 
-            ConcurrentDictionary<Type, object> cache;
+            ConcurrentDictionary<Type, QueryState> cache;
 
             // There is a cache of queries per dialect. We still optimize for the common case
             // which is that a single connection type is used.
@@ -383,7 +383,7 @@ namespace YesSql
                 {
                     if (_compiledQueryCache == null)
                     {
-                        _compiledQueryCache = new ConcurrentDictionary<Type, object>();
+                        _compiledQueryCache = new ConcurrentDictionary<Type, QueryState>();
                         _compiledQueryConnectionType = connectionType;
                     }
                 }
@@ -407,22 +407,22 @@ namespace YesSql
                         {
                             if (_compiledQueryCaches == null)
                             {
-                                _compiledQueryCaches = new ConcurrentDictionary<Type, ConcurrentDictionary<Type, object>>();
+                                _compiledQueryCaches = new ConcurrentDictionary<Type, ConcurrentDictionary<Type, QueryState>>();
                             }
                         }
                     }
 
-                    cache = _compiledQueryCaches.GetOrAdd(connectionType, name => new ConcurrentDictionary<Type, object>());
+                    cache = _compiledQueryCaches.GetOrAdd(connectionType, name => new ConcurrentDictionary<Type, QueryState>());
                 }
             }
 
-            var query = (DefaultQuery.Query<T>)cache.GetOrAdd(compiledQuery.GetType(), t => compiledQuery.Query().Compile().Invoke(this.Query().For<T>(false)));
-            var queryState = query._query._queryState;
+            var queryState = cache.GetOrAdd(compiledQuery.GetType(), t =>
+            {
+                var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(this.Query().For<T>(false));
+                return defaultQuery._query._queryState;
+            });
 
-            // Clear previous paging if any
-            queryState._sqlBuilder.ClearTrail();
-            queryState._sqlBuilder.Skip(null);
-            queryState._sqlBuilder.Take(null);
+            queryState = queryState.Clone();
 
             IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _tablePrefix, queryState, compiledQuery);
             return newQuery.For<T>(false);
