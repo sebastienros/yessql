@@ -3207,5 +3207,45 @@ namespace YesSql.Tests
                 Assert.Equal(new DateTime(2013, 1, 21, 0, 0, 0, DateTimeKind.Local).ToUniversalTime(), article.PublishedUtc.ToUniversalTime());
             }
         }
+
+        [Fact]
+        public async Task ShouldOrderCaseInsensitively()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "A",
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "b",
+                };
+
+                session.Save(new Person { Firstname = "D" });
+                session.Save(new Person { Firstname = "b" });
+                session.Save(new Person { Firstname = "G" });
+                session.Save(new Person { Firstname = "F" });
+                session.Save(new Person { Firstname = "c" });
+                session.Save(new Person { Firstname = "e" });
+                session.Save(new Person { Firstname = "A" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
+
+                Assert.Equal("A", results.ElementAt(0).Firstname);
+                Assert.Equal("b", results.ElementAt(1).Firstname);
+                Assert.Equal("c", results.ElementAt(2).Firstname);
+                Assert.Equal("D", results.ElementAt(3).Firstname);
+                Assert.Equal("e", results.ElementAt(4).Firstname);
+                Assert.Equal("F", results.ElementAt(5).Firstname);
+                Assert.Equal("G", results.ElementAt(6).Firstname);
+            }
+        }
     }
 }
