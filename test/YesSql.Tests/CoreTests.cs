@@ -3215,16 +3215,6 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var bill = new Person
-                {
-                    Firstname = "A",
-                };
-
-                var elon = new Person
-                {
-                    Firstname = "b",
-                };
-
                 session.Save(new Person { Firstname = "D" });
                 session.Save(new Person { Firstname = "b" });
                 session.Save(new Person { Firstname = "G" });
