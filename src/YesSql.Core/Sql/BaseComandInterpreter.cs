@@ -254,6 +254,11 @@ namespace YesSql.Sql
                 builder.Append(_dialect.GetTypeName(command.DbType, command.Length, command.Precision, command.Scale));
             }
 
+            if (_dialect.ColumnCollation != string.Empty)
+            {
+                builder.Append(Space).Append(_dialect.ColumnCollation);
+            }
+
             // append identity if handled
             if (command.IsIdentity && _dialect.SupportsIdentityColumns)
             {
