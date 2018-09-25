@@ -56,6 +56,9 @@ namespace YesSql.Provider.Sqlite
         {
             if (ColumnTypes.TryGetValue(dbType, out string value))
             {
+                // Set the column collation for String data types
+                base.ColumnCollation = (value == "TEXT" ? "collate nocase" : string.Empty);
+
                 return value;
             }
 

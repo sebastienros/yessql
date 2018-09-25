@@ -246,18 +246,27 @@ namespace YesSql.Sql
 
         private void Run(StringBuilder builder, ICreateColumnCommand command)
         {
+            var ignoreCollation = false;
             // name
             builder.Append(_dialect.QuoteForColumnName(command.ColumnName)).Append(Space);
 
             if (!command.IsIdentity || _dialect.HasDataTypeInIdentityColumn)
             {
                 builder.Append(_dialect.GetTypeName(command.DbType, command.Length, command.Precision, command.Scale));
+                ignoreCollation = false;
             }
 
             // append identity if handled
             if (command.IsIdentity && _dialect.SupportsIdentityColumns)
             {
                 builder.Append(Space).Append(_dialect.IdentityColumnString);
+                ignoreCollation = true;
+            }
+
+            // collation
+            if (!ignoreCollation)
+            {
+                builder.Append(Space).Append(_dialect.ColumnCollation);
             }
 
             // [default value]

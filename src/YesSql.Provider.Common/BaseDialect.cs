@@ -40,6 +40,8 @@ namespace YesSql.Provider
 
         public virtual string CreateTableString => "create table";
 
+        public virtual string ColumnCollation { get; protected set; }
+
         public virtual bool HasDataTypeInIdentityColumn => false;
 
         public abstract string IdentitySelectString { get; }

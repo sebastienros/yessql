@@ -37,4 +37,12 @@ namespace YesSql.Tests.CompiledQueries
             return query => query.With<PersonByAge>().OrderByDescending(x => x.Age);
         }
     }
+
+    public class PersonOrderedAscByNameQuery : ICompiledQuery<Person>
+    {
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByName>().OrderBy(p => p.SomeName);
+        }
+    }
 }

@@ -9,6 +9,7 @@ namespace YesSql
         string Name { get; }
         string CascadeConstraintsString { get; }
         string CreateTableString { get; }
+        string ColumnCollation { get; }
         string PrimaryKeyString { get; }
         string NullColumnString { get; }
         bool SupportsUnique { get; }
