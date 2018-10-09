@@ -8,14 +8,14 @@
         <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
     </ItemGroup>
     <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-        <PackageReference Include="Npgsql" Version="4.0.2" />
+        <PackageReference Include="Npgsql" Version="4.0.3" />
         <Reference Include="System" />
         <Reference Include="Microsoft.CSharp" />
     </ItemGroup>
     <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-        <PackageReference Include="Npgsql" Version="4.0.2" />
+        <PackageReference Include="Npgsql" Version="4.0.3" />
     </ItemGroup>
     <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
-        <PackageReference Include="Npgsql" Version="3.2.6" />
+        <PackageReference Include="Npgsql" Version="3.2.7" />
     </ItemGroup>
 </Project>
