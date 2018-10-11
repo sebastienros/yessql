@@ -110,7 +110,7 @@ namespace YesSql.Indexes
 
         Func<object, Task<IEnumerable<IIndex>>> IDescribeFor.GetMap()
         {
-            return async x => (await _map((T)x)).Cast<IIndex>();
+            return async x => (await _map((T)x) ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
         }
 
         Func<IGrouping<object, IIndex>, IIndex> IDescribeFor.GetReduce()

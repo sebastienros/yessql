@@ -1,6 +1,5 @@
 using Dapper;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -84,14 +83,8 @@ namespace YesSql
             }
 
             // is it a new object?
-            if (_identityMap.TryGetDocumentId(entity, out int id))
+            if (_identityMap.TryGetDocumentId(entity, out var id))
             {
-                // already being updated?
-                if (_updated.Contains(entity))
-                {
-                    return;
-                }
-
                 _updated.Add(entity);
                 return;
             }
@@ -186,7 +179,7 @@ namespace YesSql
             }
 
             // Reload to get the old map
-            if (!_identityMap.TryGetDocumentId(entity, out int id))
+            if (!_identityMap.TryGetDocumentId(entity, out var id))
             {
                 throw new InvalidOperationException("The object to update was not found in identity map.");
             }
@@ -316,7 +309,7 @@ namespace YesSql
                     continue;
                 }
 
-                if (_identityMap.TryGetEntityById(d.Id, out object entity))
+                if (_identityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
                 }
@@ -721,41 +714,46 @@ namespace YesSql
 
         private async Task MapNew(Document document, object obj)
         {
-            foreach (var descriptor in GetDescriptors(obj.GetType()))
+            var descriptors = GetDescriptors(obj.GetType());
+
+            foreach (var descriptor in descriptors)
             {
                 var mapped = await descriptor.Map(obj);
 
-                foreach (var index in mapped)
+                if (mapped != null)
                 {
-                    if (index == null)
+                    foreach (var index in mapped)
                     {
-                        continue;
-                    }
-
-                    index.AddDocument(document);
-
-                    // if the mapped elements are not meant to be reduced,
-                    // then save them in db, as index
-                    if (descriptor.Reduce == null)
-                    {
-                        if (index.Id == 0)
+                        if (index == null)
                         {
-                            _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix));
+                            continue;
+                        }
+
+                        index.AddDocument(document);
+
+                        // if the mapped elements are not meant to be reduced,
+                        // then save them in db, as index
+                        if (descriptor.Reduce == null)
+                        {
+                            if (index.Id == 0)
+                            {
+                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix));
+                            }
+                            else
+                            {
+                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix));
+                            }
                         }
                         else
                         {
-                            _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix));
-                        }
-                    }
-                    else
-                    {
-                        // save for later reducing
-                        if (!_maps.TryGetValue(descriptor, out IList<MapState> listmap))
-                        {
-                            _maps.Add(descriptor, listmap = new List<MapState>());
-                        }
+                            // save for later reducing
+                            if (!_maps.TryGetValue(descriptor, out var listmap))
+                            {
+                                _maps.Add(descriptor, listmap = new List<MapState>());
+                            }
 
-                        listmap.Add(new MapState(index, MapStates.New));
+                            listmap.Add(new MapState(index, MapStates.New));
+                        }
                     }
                 }
             }
@@ -766,7 +764,9 @@ namespace YesSql
         /// </summary>
         private async Task MapDeleted(Document document, object obj)
         {
-            foreach (var descriptor in _store.Describe(obj.GetType()))
+            var descriptors = GetDescriptors(obj.GetType());
+
+            foreach (var descriptor in descriptors)
             {
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
@@ -777,16 +777,19 @@ namespace YesSql
                 {
                     var mapped = await descriptor.Map(obj);
 
-                    foreach (var index in mapped)
+                    if (mapped != null)
                     {
-                        // save for later reducing
-                        if (!_maps.TryGetValue(descriptor, out IList<MapState> listmap))
+                        foreach (var index in mapped)
                         {
-                            _maps.Add(descriptor, listmap = new List<MapState>());
-                        }
+                            // save for later reducing
+                            if (!_maps.TryGetValue(descriptor, out var listmap))
+                            {
+                                _maps.Add(descriptor, listmap = new List<MapState>());
+                            }
 
-                        listmap.Add(new MapState(index, MapStates.Delete));
-                        index.RemoveDocument(document);
+                            listmap.Add(new MapState(index, MapStates.Delete));
+                            index.RemoveDocument(document);
+                        }
                     }
                 }
             }

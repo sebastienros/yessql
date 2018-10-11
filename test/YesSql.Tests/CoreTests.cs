@@ -941,6 +941,55 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldDeletePreviousIndexes()
+        {
+            // When an index returns multiple map indexes, changing these results should remove the previous ones.
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryIndex<PersonIdentity>().CountAsync());
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var guthrie = await session.Query<Person, PersonIdentity>(x => x.Identity == "Scott").FirstOrDefaultAsync();
+                guthrie.Lastname = "Gu";
+
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryIndex<PersonIdentity>().CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Scott").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Gu").CountAsync());
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var guthrie = await session.Query<Person, PersonIdentity>(x => x.Identity == "Scott").FirstOrDefaultAsync();
+                guthrie.Anonymous = true;
+
+                session.Save(guthrie);
+
+                Assert.Equal(0, await session.QueryIndex<PersonIdentity>().CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldCreateIndexAndLinkToDocument()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
