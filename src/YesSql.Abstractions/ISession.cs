@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using YesSql.Indexes;
 
 namespace YesSql
 {
@@ -30,18 +31,16 @@ namespace YesSql
 
         IQuery Query();
 
+        IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class;
+        
         /// <summary>
         /// Cancels any pending command
         /// </summary>
         void Cancel();
 
         /// <summary>
-        /// Commits the current transaction asynchronously
+        /// Flushes the current commands asynchronously.
         /// </summary>
-        /// <param name="keepTracked">
-        /// <c>True</c> if the tracked entities should still be tracked. This
-        /// parameter should normally not be used.
-        /// </param>
         Task CommitAsync();
 
         /// <summary>
@@ -49,8 +48,14 @@ namespace YesSql
         /// </summary>
         IDbTransaction Demand();
 
-        IStore Store { get; }
+        /// <summary>
+        /// Registers index providers.
+        /// </summary>
+        /// <param name="indexProviders">The index providers to register.</param>
+        /// <returns>The <see cref="ISession"/> instance.</returns>
+        ISession RegisterIndexes(params IIndexProvider[] indexProviders);
 
+        IStore Store { get; }
     }
 
     public static class SessionExtensions

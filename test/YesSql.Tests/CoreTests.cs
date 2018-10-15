@@ -9,6 +9,7 @@ using Xunit;
 using YesSql.Collections;
 using YesSql.Services;
 using YesSql.Sql;
+using YesSql.Tests.CompiledQueries;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
@@ -220,6 +221,7 @@ namespace YesSql.Tests
             }
         }
 
+
         [Fact]
         public async Task ShouldQueryNonExistentResult()
         {
@@ -271,6 +273,59 @@ namespace YesSql.Tests
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", (string)person.SomeName);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldMapAsyncIndex()
+        {
+            _store.RegisterIndexes<PersonAsyncIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.QueryIndex<PersonByName>().FirstOrDefaultAsync();
+
+                Assert.NotNull(person);
+                Assert.Equal("Bill", person.SomeName);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldResolveScopedIndexProviders()
+        {
+
+            using (var session = _store.CreateSession())
+            {
+                session.RegisterIndexes(new ScopedPersonAsyncIndexProvider(1));
+
+                session.Save(new Person { Firstname = "Bill" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                session.RegisterIndexes(new ScopedPersonAsyncIndexProvider(2));
+
+                session.Save(new Person { Firstname = "Bill" });
+                session.Save(new Person { Firstname = "Steve" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var count = await session.QueryIndex<PersonByName>().CountAsync();
+                var bill1 = await session.QueryIndex<PersonByName>(x => x.SomeName == "Bill1").FirstOrDefaultAsync();
+                var bill2 = await session.QueryIndex<PersonByName>(x => x.SomeName == "Bill2").FirstOrDefaultAsync();
+                var steve2 = await session.QueryIndex<PersonByName>(x => x.SomeName == "Steve2").FirstOrDefaultAsync();
+
+                Assert.Equal(3, count);
+                Assert.NotNull(bill1);
+                Assert.NotNull(bill2);
+                Assert.NotNull(steve2);
             }
         }
 
@@ -545,6 +600,189 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryWithCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var eilon = new Person
+                {
+                    Firstname = "Eilon",
+                    Lastname = "Lipton",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(eilon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).CountAsync());
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).CountAsync());
+                Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).CountAsync());
+
+                Assert.Equal(3, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, "Bill")).CountAsync());
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Elon")).CountAsync());
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Eilon")).CountAsync());
+                Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, "Mark")).CountAsync());
+
+                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
+                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
+                Assert.Empty(await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).ListAsync());
+
+                Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).FirstOrDefaultAsync()).Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldOrderCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.ExecuteQuery(new PersonOrderedAscQuery()).ListAsync();
+
+                Assert.Equal("Elon", results.ElementAt(0).Firstname);
+                Assert.Equal("Bill", results.ElementAt(1).Firstname);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.ExecuteQuery(new PersonOrderedDescQuery()).ListAsync();
+
+                Assert.Equal("Bill", results.ElementAt(0).Firstname);
+                Assert.Equal("Elon", results.ElementAt(1).Firstname);
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldRunCompiledQueriesConcurrently()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+            }
+
+            var concurrency = 20;
+            var MaxTransactions = 10000;
+
+            var counter = 0;
+            var stopping = false;
+
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).CountAsync());
+                    }
+                }
+            })).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(5)));
+
+            await Task.WhenAny(tasks);
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
+        }
+
+        [Fact]
+        public async Task ShouldNotLeakPagingBetweenQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var eilon = new Person
+                {
+                    Firstname = "Eilon",
+                    Lastname = "Lipton",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(eilon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(12, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).FirstOrDefaultAsync()).Age);
+                Assert.Equal(2, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ListAsync()).Count());
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryInnerSelect()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();
@@ -699,6 +937,55 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Hanselman").CountAsync());
                 Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Guthrie").CountAsync());
                 Assert.Equal(2, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Scott").CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldDeletePreviousIndexes()
+        {
+            // When an index returns multiple map indexes, changing these results should remove the previous ones.
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryIndex<PersonIdentity>().CountAsync());
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var guthrie = await session.Query<Person, PersonIdentity>(x => x.Identity == "Scott").FirstOrDefaultAsync();
+                guthrie.Lastname = "Gu";
+
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryIndex<PersonIdentity>().CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Scott").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Gu").CountAsync());
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var guthrie = await session.Query<Person, PersonIdentity>(x => x.Identity == "Scott").FirstOrDefaultAsync();
+                guthrie.Anonymous = true;
+
+                session.Save(guthrie);
+
+                Assert.Equal(0, await session.QueryIndex<PersonIdentity>().CountAsync());
             }
         }
 
@@ -1857,10 +2144,29 @@ namespace YesSql.Tests
 
                 Assert.NotNull(dog);
                 Assert.Equal("Doggy", dog.Name);
-                Assert.Equal(null, dog.Color);
+                Assert.Null(dog.Color);
             }
         }
 
+        [Fact]
+        public async Task ShouldNotHaveWorkAfterCommit()
+        {
+            using (var session = (Session)_store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+
+                Assert.True(session.HasWork());
+
+                await session.CommitAsync();
+
+                Assert.False(session.HasWork());
+            }
+        }
 
         [Fact]
         public async Task ShouldGetTypeById()
@@ -2014,7 +2320,7 @@ namespace YesSql.Tests
             {
                 var circles = await session.Query().For<Circle>().ListAsync();
 
-                Assert.Equal(1, circles.Count());
+                Assert.Single(circles);
             }
         }
 
@@ -2041,7 +2347,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var circles = await session.Query().For<Circle>().ListAsync();
-                Assert.Equal(1, circles.Count());
+                Assert.Single(circles);
                 Assert.Equal(20, circles.FirstOrDefault().Radius);
             }
         }
@@ -2948,6 +3254,36 @@ namespace YesSql.Tests
                 Assert.NotNull(article);
                 Assert.Equal(DateTimeKind.Utc, article.PublishedUtc.Kind);
                 Assert.Equal(new DateTime(2013, 1, 21, 0, 0, 0, DateTimeKind.Local).ToUniversalTime(), article.PublishedUtc.ToUniversalTime());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldOrderCaseInsensitively()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = "D" });
+                session.Save(new Person { Firstname = "b" });
+                session.Save(new Person { Firstname = "G" });
+                session.Save(new Person { Firstname = "F" });
+                session.Save(new Person { Firstname = "c" });
+                session.Save(new Person { Firstname = "e" });
+                session.Save(new Person { Firstname = "A" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
+
+                Assert.Equal("A", results.ElementAt(0).Firstname);
+                Assert.Equal("b", results.ElementAt(1).Firstname);
+                Assert.Equal("c", results.ElementAt(2).Firstname);
+                Assert.Equal("D", results.ElementAt(3).Firstname);
+                Assert.Equal("e", results.ElementAt(4).Firstname);
+                Assert.Equal("F", results.ElementAt(5).Firstname);
+                Assert.Equal("G", results.ElementAt(6).Firstname);
             }
         }
     }

@@ -50,5 +50,5 @@ deploy:
       branch: master
     server: https://www.nuget.org/api/v2/package
     api_key:
-      secure: EbFVaFfJ7tcKDP2vWGGXkXwOO/3M67hK29MV0gdzbH1zkWWviCv/0cbQZ7crDfUK
+      secure: 1W5p2uxA5pc/2pI0hkUkDbOukcM89CNTxENu8CKEAGFGtjJq1/2p+f0trkiipH6k
     skip_symbols: true

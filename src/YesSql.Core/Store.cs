@@ -20,6 +20,8 @@ namespace YesSql
     public class Store : IStore
     {
         protected List<IIndexProvider> Indexes;
+        protected List<Type> ScopedIndexes;
+
         protected LinearBlockIdGenerator IdGenerator;
         private ObjectPool<Session> _sessionPool;
 
@@ -28,8 +30,8 @@ namespace YesSql
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
 
-        internal readonly ConcurrentDictionary<TypeCollectionTuple, IEnumerable<IndexDescriptor>> Descriptors =
-            new ConcurrentDictionary<TypeCollectionTuple, IEnumerable<IndexDescriptor>>();
+        internal readonly ConcurrentDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
+            new ConcurrentDictionary<string, IEnumerable<IndexDescriptor>>();
 
         internal readonly ConcurrentDictionary<Type, IIdAccessor<int>> _idAccessors =
             new ConcurrentDictionary<Type, IIdAccessor<int>>();
@@ -39,6 +41,9 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
             new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
+
+        internal readonly ConcurrentDictionary<Type, QueryState> CompiledQueries = 
+            new ConcurrentDictionary<Type, QueryState>();
 
         public const string DocumentTable = "Document";
         
@@ -76,6 +81,7 @@ namespace YesSql
         {
             IndexCommand.ResetQueryCache();
             Indexes = new List<IIndexProvider>();
+            ScopedIndexes = new List<Type>();
             ValidateConfiguration();
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, Configuration.LinearBlockSize, Configuration.TablePrefix);
 
@@ -193,25 +199,26 @@ namespace YesSql
             }
 
             var collection = CollectionHelper.Current.GetSafeName();
+            var cacheKey = target.FullName + ":" + collection;
 
-            var tupe = new TypeCollectionTuple(target, collection);
+            return Descriptors.GetOrAdd(cacheKey, key => CreateDescriptors(target, collection, Indexes));
+        }
 
-            return Descriptors.GetOrAdd(tupe, key =>
+        internal IEnumerable<IndexDescriptor> CreateDescriptors(Type target, string collection, IEnumerable<IIndexProvider> indexProviders)
+        {
+            var activator = DescriptorActivators.GetOrAdd(target, type => MakeDescriptorActivator(type));
+            var context = activator();
+
+            foreach (var provider in indexProviders)
             {
-                var activator = DescriptorActivators.GetOrAdd(key.Type, type => MakeDescriptorActivator(type));
-                var context = activator();
-
-                foreach (var provider in Indexes)
+                if (provider.ForType().IsAssignableFrom(target) &&
+                    String.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (provider.ForType().IsAssignableFrom(target) &&
-                        String.Equals(key.Collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        provider.Describe(context);
-                    }
+                    provider.Describe(context);
                 }
+            }
 
-                return context.Describe(new[] { target }).ToList();
-            });
+            return context.Describe(new[] { target }).ToList();
         }
 
         private static Func<IDescriptor> MakeDescriptorActivator(Type type)
@@ -225,7 +232,7 @@ namespace YesSql
             return (int)IdGenerator.GetNextId(session, collection);
         }
 
-        public IStore RegisterIndexes(params IIndexProvider[] indexProviders)
+        public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)
         {
             foreach (var indexProvider in indexProviders)
             {
@@ -236,6 +243,12 @@ namespace YesSql
             }
 
             Indexes.AddRange(indexProviders);
+            return this;
+        }
+
+        public IStore RegisterScopedIndexes(IEnumerable<Type> indexProviders)
+        {
+            ScopedIndexes.AddRange(indexProviders);
             return this;
         }
 
@@ -295,16 +308,6 @@ namespace YesSql
             }
 
             return (T) content;
-        }
-
-        internal class TypeCollectionTuple : Tuple<Type, string>
-        {
-            public TypeCollectionTuple(Type type, string collection) : base(type, collection)
-            {
-            }
-
-            public Type Type { get { return Item1; } }
-            public string Collection { get { return Item2; } }
         }
     }
 }

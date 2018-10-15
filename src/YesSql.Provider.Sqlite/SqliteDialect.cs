@@ -23,10 +23,10 @@ namespace YesSql.Provider.Sqlite
             { DbType.Double, "DOUBLE" },
             { DbType.Single, "DOUBLE" },
             { DbType.VarNumeric, "NUMERIC" },
-            { DbType.AnsiString, "TEXT" },
-            { DbType.String, "TEXT" },
-            { DbType.AnsiStringFixedLength, "TEXT" },
-            { DbType.StringFixedLength, "TEXT" },
+            { DbType.AnsiString, "TEXT COLLATE NOCASE" },
+            { DbType.String, "TEXT COLLATE NOCASE" },
+            { DbType.AnsiStringFixedLength, "TEXT COLLATE NOCASE" },
+            { DbType.StringFixedLength, "TEXT COLLATE NOCASE" },
             { DbType.Date, "DATE" },
             { DbType.DateTime, "DATETIME" },
             { DbType.DateTime2, "DATETIME" },
@@ -87,12 +87,12 @@ namespace YesSql.Provider.Sqlite
 
         public override string QuoteForColumnName(string columnName)
         {
-            return QuoteString + columnName.Replace(QuoteString, DoubleQuoteString) + QuoteString;
+            return "[" + columnName + "]";
         }
 
         public override string QuoteForTableName(string tableName)
         {
-            return QuoteString + tableName.Replace(QuoteString, DoubleQuoteString) + QuoteString;
+            return "[" + tableName + "]";
         }
     }
 }
