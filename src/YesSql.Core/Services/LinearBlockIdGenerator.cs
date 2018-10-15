@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Threading;
-using YesSql.Sql;
 
 namespace YesSql.Services
 {
@@ -13,7 +12,6 @@ namespace YesSql.Services
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
 
-        private readonly IConnectionFactory _connectionFactory;
         private readonly int _range;
         private bool _initialized;
         private readonly ISqlDialect _dialect;
@@ -25,8 +23,7 @@ namespace YesSql.Services
 
         public LinearBlockIdGenerator(IConnectionFactory connectionFactory, int range, string tablePrefix)
         {
-            _connectionFactory = connectionFactory;
-            _dialect = SqlDialectFactory.For(connectionFactory.CreateConnection());
+            _dialect = SqlDialectFactory.For(connectionFactory.DbConnectionType);
             _range = range;
             _tablePrefix = tablePrefix;
         }
@@ -66,7 +63,7 @@ namespace YesSql.Services
                     // instance in case another client is trying to lease a range
                     // at the same time
 
-                    var transaction = session.Demand();
+                    var transaction = session.DemandAsync().GetAwaiter().GetResult();
                     
                     var selectCommand = transaction.Connection.CreateCommand();
                     selectCommand.CommandText = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
@@ -123,7 +120,7 @@ namespace YesSql.Services
                 return;
             }
 
-            var transaction = session.Demand();
+            var transaction = session.DemandAsync().GetAwaiter().GetResult();
             
             // Does the record already exist?
             var selectCommand = transaction.Connection.CreateCommand();

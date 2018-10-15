@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
@@ -27,6 +27,7 @@ namespace YesSql
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
         int GetNextId(ISession session, string collection);
         IEnumerable<IndexDescriptor> Describe(Type target);
+        ISqlDialect Dialect { get; }
     }
 
     public static class IStoreExtensions

@@ -46,7 +46,7 @@ namespace YesSql
         /// <summary>
         /// Returns a <see cref="DbTransaction"/> that is used by this instance.
         /// </summary>
-        IDbTransaction Demand();
+        Task<IDbTransaction> DemandAsync();
 
         /// <summary>
         /// Registers index providers.

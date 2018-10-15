@@ -52,9 +52,7 @@ namespace YesSql.Services
     {
         internal QueryState _queryState;
         private readonly Session _session;
-        private readonly IDbConnection _connection;
         private readonly ISqlDialect _dialect;
-        private readonly IDbTransaction _transaction;
         private object _compiledQuery = null;
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
@@ -248,10 +246,8 @@ namespace YesSql.Services
 
         public DefaultQuery(IDbConnection connection, IDbTransaction transaction, Session session, string tablePrefix)
         {
-            _connection = connection;
-            _transaction = transaction;
             _session = session;
-            _dialect = SqlDialectFactory.For(connection);
+            _dialect = session.Store.Dialect;
             _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix));
         }
 
@@ -259,10 +255,8 @@ namespace YesSql.Services
         {
             _queryState = queryState;
             _compiledQuery = compiledQuery;
-            _connection = connection;
-            _transaction = transaction;
             _session = session;
-            _dialect = SqlDialectFactory.For(connection);
+            _dialect = session.Store.Dialect;
         }
 
         public override string ToString()
@@ -779,6 +773,8 @@ namespace YesSql.Services
             // Commit any pending changes before doing a query (auto-flush)
             await _session.CommitAsync();
 
+            var transaction = await _session.DemandAsync();
+
             var localBuilder = _queryState._sqlBuilder.Clone();
             localBuilder.Selector("count(*)");
 
@@ -800,7 +796,7 @@ namespace YesSql.Services
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
             return await _session._store.ProduceAsync(key, async () =>
             {
-                return await _connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, _transaction);
+                return await transaction.Connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, transaction);
             });
         }
 
@@ -861,6 +857,8 @@ namespace YesSql.Services
                 // Commit any pending changes before doing a query (auto-flush)
                 await _query._session.CommitAsync();
 
+                var transaction = await _query._session.DemandAsync();
+
                 if (_query._compiledQuery != null && _query._queryState._parameterBindings != null)
                 {
                     foreach (var binding in _query._queryState._parameterBindings)
@@ -878,7 +876,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     return (await _query._session._store.ProduceAsync(key, () =>
                     {
-                        return _query._connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, _query._transaction);
+                        return transaction.Connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     })).FirstOrDefault();
                 }
                 else
@@ -888,7 +886,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     var documents = (await _query._session._store.ProduceAsync(key, () =>
                     {
-                        return _query._connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, _query._transaction);
+                        return transaction.Connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     })).ToArray();
 
                     if (documents.Length == 0)
@@ -909,6 +907,8 @@ namespace YesSql.Services
             {
                 // Commit any pending changes before doing a query (auto-flush)
                 await _query._session.CommitAsync();
+
+                var transaction = await _query._session.DemandAsync();
 
                 if (_query._compiledQuery != null && _query._queryState._parameterBindings != null)
                 {
@@ -932,7 +932,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     return await _query._session._store.ProduceAsync(key, () =>
                     {
-                        return _query._connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, _query._transaction);
+                        return transaction.Connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     });
                 }
                 else
@@ -948,7 +948,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     var documents = await _query._session._store.ProduceAsync(key, () =>
                     {
-                        return _query._connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, _query._transaction);
+                        return transaction.Connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     });
 
                     return _query._session.Get<T>(documents.ToArray());
