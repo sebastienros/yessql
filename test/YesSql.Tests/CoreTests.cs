@@ -409,7 +409,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var connection = session.Demand().Connection;
+                var connection = (await session.DemandAsync()).Connection;
                 var dialect = SqlDialectFactory.For(connection);
                 var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
 

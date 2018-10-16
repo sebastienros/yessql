@@ -1,3 +1,4 @@
+using System;
 using System.Data;
 using System.Data.Common;
 
@@ -66,6 +67,8 @@ namespace YesSql
         private TDbConnection _sharedConnection;
         private readonly string _connectionString;
         private bool _disposing;
+
+        public Type DbConnectionType => typeof(TDbConnection);
 
         public DbConnectionFactory(string connectionString, bool shareConnection = false)
         {

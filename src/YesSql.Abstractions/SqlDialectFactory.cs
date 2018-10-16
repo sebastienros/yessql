@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Data;
 
@@ -10,7 +10,12 @@ namespace YesSql
 
         public static ISqlDialect For(IDbConnection connection)
         {
-            string connectionName = connection.GetType().Name.ToLower();
+            return For(connection.GetType());
+        }
+
+        public static ISqlDialect For(Type dbConnectionType)
+        {
+            string connectionName = dbConnectionType.Name.ToLower();
 
             if (!SqlDialects.TryGetValue(connectionName, out ISqlDialect dialect))
             {
