@@ -794,9 +794,9 @@ namespace YesSql.Services
             var sql = localBuilder.ToSqlString();
 
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
-            return await _session._store.ProduceAsync(key, async () =>
+            return await _session._store.ProduceAsync(key, () =>
             {
-                return await transaction.Connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, transaction);
+                return transaction.Connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, transaction);
             });
         }
 
