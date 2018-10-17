@@ -3286,5 +3286,42 @@ namespace YesSql.Tests
                 Assert.Equal("G", results.ElementAt(6).Firstname);
             }
         }
+
+        [Fact]
+        public async Task ShouldImportDetachedObject()
+        {
+            var bill = new Person
+            {
+                Firstname = "Bill",
+            };
+
+            using (var session = _store.CreateSession())
+            {
+
+                session.Save(bill);
+
+                Assert.Single(await session.Query<Person>().ListAsync());
+                Assert.True(bill.Id > 0);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                bill = new Person
+                {
+                    Id = bill.Id,
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                session.Import(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var all = await session.Query<Person>().ListAsync();
+                Assert.Single(all);
+                Assert.Equal("Gates", all.First().Lastname);
+            }
+        }
     }
 }

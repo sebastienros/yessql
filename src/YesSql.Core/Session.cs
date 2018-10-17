@@ -106,6 +106,49 @@ namespace YesSql
             _saved.Add(entity);
         }
 
+        public bool Import(object entity, int id = 0)
+        {
+            CheckDisposed();
+
+            // already known?
+            if (_saved.Contains(entity) || _updated.Contains(entity))
+            {
+                return false;
+            }
+
+            if (id != 0)
+            {
+                _identityMap.Add(id, entity);
+                _updated.Add(entity);
+
+                return true;
+            }
+            else
+            {
+                // Does it have a valid identifier?
+                var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+                if (accessor != null)
+                {
+                    id = accessor.Get(entity);
+
+                    if (id > 0)
+                    {
+                        _identityMap.Add(id, entity);
+                        _updated.Add(entity);
+                        return true;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Invalid 'Id' value: {id}");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("Objects without an 'Id' property can't be imported if no 'id' argument is provided.");
+                }
+            }
+        }
+
         private async Task SaveEntityAsync(object entity)
         {
             if (entity == null)
