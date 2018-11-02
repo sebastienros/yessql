@@ -458,6 +458,7 @@ namespace YesSql
                 if (_connection != null)
                 {
                     _store.Configuration.ConnectionFactory.CloseConnection(_connection);
+                    _connection = null;
                 }
 
                 Release();
