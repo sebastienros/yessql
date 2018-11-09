@@ -2267,7 +2267,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var circle = await session.GetAsync<Circle>(circleId);
+                var circle = await session.GetAsync<object>(circleId);
 
                 Assert.NotNull(circle);
                 Assert.Equal(typeof(Circle), circle.GetType());
@@ -2298,6 +2298,39 @@ namespace YesSql.Tests
 
                 Assert.NotNull(circle);
                 Assert.Equal(10, (int)circle.Radius);
+            }
+        }
+
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(5)]
+        [Theory]
+        public async Task ShouldReturnObjectsByIdsInCorrectOrder(int numberOfItems)
+        {
+            var circleIds = new List<int>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < numberOfItems; i++)
+                {
+                    var circle = new Circle
+                    {
+                        Radius = 10
+                    };
+                    session.Save(circle);
+                    circleIds.Add(circle.Id);
+                }
+
+                await session.CommitAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                circleIds.Reverse();
+
+                var circles = await session.GetAsync<object>(circleIds.ToArray());
+
+                Assert.Equal(circleIds, circles.Select(c => ((Circle)c).Id));
             }
         }
 

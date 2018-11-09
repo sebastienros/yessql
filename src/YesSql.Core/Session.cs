@@ -319,7 +319,7 @@ namespace YesSql
                 return _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
             });
 
-            return Get<T>(documents.ToArray());
+            return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray());
         }
 
         public IEnumerable<T> Get<T>(IList<Document> documents) where T : class
@@ -374,7 +374,7 @@ namespace YesSql
                     result.Add(item);
                 }
             };
-            
+
             return result;
         }
 
@@ -394,7 +394,7 @@ namespace YesSql
             {
                 var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix)).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
-                
+
                 return defaultQuery._query._queryState;
             });
 
@@ -462,7 +462,7 @@ namespace YesSql
                 }
 
                 Release();
-            }            
+            }
         }
 
         /// <summary>
@@ -527,7 +527,7 @@ namespace YesSql
             await ReduceAsync();
 
             await DemandAsync();
-            
+
             foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
             {
                 await command.ExecuteAsync(_connection, _transaction, _dialect);
@@ -586,7 +586,7 @@ namespace YesSql
                     var deletedMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.Delete).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
-                    
+
                     var updatedMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.Update).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
@@ -873,7 +873,7 @@ namespace YesSql
         public IStore Store => _store;
 
         #region Storage implementation
-        
+
         private struct IdString
         {
 #pragma warning disable 0649
