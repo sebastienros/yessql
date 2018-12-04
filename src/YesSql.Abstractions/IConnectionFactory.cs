@@ -7,5 +7,6 @@ namespace YesSql
     {
         IDbConnection CreateConnection();
         void CloseConnection(IDbConnection connection);
+        Type DbConnectionType { get; }
     }
 }

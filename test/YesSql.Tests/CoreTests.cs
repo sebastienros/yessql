@@ -409,7 +409,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var connection = session.Demand().Connection;
+                var connection = (await session.DemandAsync()).Connection;
                 var dialect = SqlDialectFactory.For(connection);
                 var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
 
@@ -2267,7 +2267,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var circle = await session.GetAsync<Circle>(circleId);
+                var circle = await session.GetAsync<object>(circleId);
 
                 Assert.NotNull(circle);
                 Assert.Equal(typeof(Circle), circle.GetType());
@@ -2298,6 +2298,39 @@ namespace YesSql.Tests
 
                 Assert.NotNull(circle);
                 Assert.Equal(10, (int)circle.Radius);
+            }
+        }
+
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(5)]
+        [Theory]
+        public async Task ShouldReturnObjectsByIdsInCorrectOrder(int numberOfItems)
+        {
+            var circleIds = new List<int>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < numberOfItems; i++)
+                {
+                    var circle = new Circle
+                    {
+                        Radius = 10
+                    };
+                    session.Save(circle);
+                    circleIds.Add(circle.Id);
+                }
+
+                await session.CommitAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                circleIds.Reverse();
+
+                var circles = await session.GetAsync<object>(circleIds.ToArray());
+
+                Assert.Equal(circleIds, circles.Select(c => ((Circle)c).Id));
             }
         }
 
@@ -3284,6 +3317,43 @@ namespace YesSql.Tests
                 Assert.Equal("e", results.ElementAt(4).Firstname);
                 Assert.Equal("F", results.ElementAt(5).Firstname);
                 Assert.Equal("G", results.ElementAt(6).Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldImportDetachedObject()
+        {
+            var bill = new Person
+            {
+                Firstname = "Bill",
+            };
+
+            using (var session = _store.CreateSession())
+            {
+
+                session.Save(bill);
+
+                Assert.Single(await session.Query<Person>().ListAsync());
+                Assert.True(bill.Id > 0);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                bill = new Person
+                {
+                    Id = bill.Id,
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                session.Import(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var all = await session.Query<Person>().ListAsync();
+                Assert.Single(all);
+                Assert.Equal("Gates", all.First().Lastname);
             }
         }
     }

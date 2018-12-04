@@ -26,6 +26,7 @@ namespace YesSql
         private ObjectPool<Session> _sessionPool;
 
         public IConfiguration Configuration { get; set; }
+        public ISqlDialect Dialect { get; private set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
@@ -86,6 +87,7 @@ namespace YesSql
             IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, Configuration.LinearBlockSize, Configuration.TablePrefix);
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
+            Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
         }
 
         public Task InitializeAsync()
@@ -273,7 +275,12 @@ namespace YesSql
                 if (!Workers.TryGetValue(key, out var result))
                 {
                     // Multiple threads can potentially reach this point which is fine
+#if !NET451
+                    // c.f. https://blogs.msdn.microsoft.com/seteplia/2018/10/01/the-danger-of-taskcompletionsourcet-class/
+                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+#else
                     var tcs = new TaskCompletionSource<object>();
+#endif
 
                     Workers.TryAdd(key, tcs.Task);
 

@@ -1,7 +1,7 @@
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using Dapper;
 using YesSql.Collections;
 using YesSql.Sql.Schema;
 
@@ -18,10 +18,10 @@ namespace YesSql.Sql
 
         public SchemaBuilder(ISession session)
         {
-            Transaction = session.Demand();
+            Transaction = session.DemandAsync().GetAwaiter().GetResult();
             Connection = Transaction.Connection;
             _builder = CommandInterpreterFactory.For(Connection);
-            _dialect = SqlDialectFactory.For(Connection);
+            _dialect = session.Store.Dialect;
             _tablePrefix = session.Store.Configuration.TablePrefix;
         }
 

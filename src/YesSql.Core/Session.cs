@@ -2,7 +2,7 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -29,7 +29,7 @@ namespace YesSql
         internal readonly Store _store;
         private volatile bool _disposed;
         private IsolationLevel _isolationLevel;
-        private IDbConnection _connection;
+        private DbConnection _connection;
         private ISqlDialect _dialect;
         protected bool _cancel;
         protected List<IIndexProvider> _indexes;
@@ -40,16 +40,6 @@ namespace YesSql
             _store = store;
             _isolationLevel = isolationLevel;
             _tablePrefix = _store.Configuration.TablePrefix;
-        }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public IDbTransaction Transaction
-        {
-            get
-            {
-                Demand();
-                return _transaction;
-            }
         }
 
         public ISession RegisterIndexes(params IIndexProvider[] indexProviders)
@@ -116,6 +106,49 @@ namespace YesSql
             _saved.Add(entity);
         }
 
+        public bool Import(object entity, int id = 0)
+        {
+            CheckDisposed();
+
+            // already known?
+            if (_saved.Contains(entity) || _updated.Contains(entity))
+            {
+                return false;
+            }
+
+            if (id != 0)
+            {
+                _identityMap.Add(id, entity);
+                _updated.Add(entity);
+
+                return true;
+            }
+            else
+            {
+                // Does it have a valid identifier?
+                var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+                if (accessor != null)
+                {
+                    id = accessor.Get(entity);
+
+                    if (id > 0)
+                    {
+                        _identityMap.Add(id, entity);
+                        _updated.Add(entity);
+                        return true;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Invalid 'Id' value: {id}");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("Objects without an 'Id' property can't be imported if no 'id' argument is provided.");
+                }
+            }
+        }
+
         private async Task SaveEntityAsync(object entity)
         {
             if (entity == null)
@@ -150,7 +183,7 @@ namespace YesSql
                 doc.Id = _store.GetNextId(this, collection);
             }
 
-            Demand();
+            await DemandAsync();
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
@@ -198,7 +231,7 @@ namespace YesSql
 
             await MapNew(oldDoc, entity);
 
-            Demand();
+            await DemandAsync();
 
             oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
@@ -206,7 +239,7 @@ namespace YesSql
 
         private async Task<Document> GetDocumentByIdAsync(int id)
         {
-            Demand();
+            await DemandAsync();
 
             var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
 
@@ -275,7 +308,7 @@ namespace YesSql
             // Auto-flush
             await CommitAsync();
 
-            Demand();
+            await DemandAsync();
 
             var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
@@ -286,7 +319,7 @@ namespace YesSql
                 return _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
             });
 
-            return Get<T>(documents.ToArray());
+            return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray());
         }
 
         public IEnumerable<T> Get<T>(IList<Document> documents) where T : class
@@ -341,14 +374,12 @@ namespace YesSql
                     result.Add(item);
                 }
             };
-            
+
             return result;
         }
 
         public IQuery Query()
         {
-            Demand();
-
             return new DefaultQuery(_connection, _transaction, this, _tablePrefix);
         }
 
@@ -361,16 +392,14 @@ namespace YesSql
 
             var queryState = _store.CompiledQueries.GetOrAdd(compiledQuery.GetType(), t =>
             {
-                Demand();
                 var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix)).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
-                
+
                 return defaultQuery._query._queryState;
             });
 
             queryState = queryState.Clone();
 
-            Demand();
             IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _tablePrefix, queryState, compiledQuery);
             return newQuery.For<T>(false);
         }
@@ -429,10 +458,11 @@ namespace YesSql
                 if (_connection != null)
                 {
                     _store.Configuration.ConnectionFactory.CloseConnection(_connection);
+                    _connection = null;
                 }
 
                 Release();
-            }            
+            }
         }
 
         /// <summary>
@@ -496,7 +526,7 @@ namespace YesSql
             // compute all reduce indexes
             await ReduceAsync();
 
-            Demand();
+            await DemandAsync();
 
             foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
             {
@@ -556,7 +586,7 @@ namespace YesSql
                     var deletedMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.Delete).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
-                    
+
                     var updatedMapsGroup =
                         _maps[descriptor].Where(x => x.State == MapStates.Update).Select(x => x.Map).Where(
                             x => descriptorGroup(x).Equals(currentKey)).ToArray();
@@ -659,7 +689,7 @@ namespace YesSql
 
         private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey)
         {
-            Demand();
+            await DemandAsync();
 
             var name = _tablePrefix + descriptor.IndexType.Name;
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
@@ -798,7 +828,7 @@ namespace YesSql
         /// <summary>
         /// Initializes a new transaction if none has been yet
         /// </summary>
-        public IDbTransaction Demand()
+        public async Task<IDbTransaction> DemandAsync()
         {
             CheckDisposed();
 
@@ -806,18 +836,23 @@ namespace YesSql
             {
                 if (_connection == null)
                 {
-                    _connection = _store.Configuration.ConnectionFactory.CreateConnection();
+                    _connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
+
+                    if (_connection == null)
+                    {
+                        throw new InvalidOperationException("The connection couldn't be covnerted to DbConnection");
+                    }
 
                     // The dialect could already be initialized if the session is reused
                     if (_dialect == null)
                     {
-                        _dialect = SqlDialectFactory.For(_connection);
+                        _dialect = Store.Dialect;
                     }
                 }
 
                 if (_connection.State == ConnectionState.Closed)
                 {
-                    _connection.Open();
+                    await _connection.OpenAsync();
                 }
 
                 // In the case of shared connections (InMemory) this can throw as the transation
@@ -838,7 +873,7 @@ namespace YesSql
         public IStore Store => _store;
 
         #region Storage implementation
-        
+
         private struct IdString
         {
 #pragma warning disable 0649
