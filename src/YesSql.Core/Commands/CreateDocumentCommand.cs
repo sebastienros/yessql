@@ -20,7 +20,7 @@ namespace YesSql.Commands
         {
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             var insertCmd = "insert into " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " (" + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Type") + ", " + dialect.QuoteForColumnName("Content") + ") values (@Id, @Type, @Content);";
-            return connection.ExecuteScalarAsync<int>(insertCmd, Document, transaction);
+            return connection.ExecuteScalarAsync<long>(insertCmd, Document, transaction);
         }
     }
 }

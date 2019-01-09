@@ -768,7 +768,7 @@ namespace YesSql.Services
             _queryState._sqlBuilder.ThenOrderByDescending(_queryState._builder.ToString());
         }
 
-        public async Task<int> CountAsync()
+        public async Task<long> CountAsync()
         {
             // Commit any pending changes before doing a query (auto-flush)
             await _session.CommitAsync();
@@ -796,7 +796,7 @@ namespace YesSql.Services
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
             return await _session._store.ProduceAsync(key, () =>
             {
-                return transaction.Connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, transaction);
+                return transaction.Connection.ExecuteScalarAsync<long>(sql, localBuilder.Parameters, transaction);
             });
         }
 
@@ -977,7 +977,7 @@ namespace YesSql.Services
                 return this;
             }
 
-            Task<int> IQuery<T>.CountAsync()
+            Task<long> IQuery<T>.CountAsync()
             {
                 return _query.CountAsync();
             }
@@ -1039,7 +1039,7 @@ namespace YesSql.Services
                 return this;
             }
 
-            async Task<int> IQueryIndex<T>.CountAsync()
+            async Task<long> IQueryIndex<T>.CountAsync()
             {
                 return await _query.CountAsync();
             }

@@ -106,7 +106,7 @@ namespace YesSql
             _saved.Add(entity);
         }
 
-        public bool Import(object entity, int id = 0)
+        public bool Import(object entity, long id = 0)
         {
             CheckDisposed();
 
@@ -237,7 +237,7 @@ namespace YesSql
             await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
         }
 
-        private async Task<Document> GetDocumentByIdAsync(int id)
+        private async Task<Document> GetDocumentByIdAsync(long id)
         {
             await DemandAsync();
 
@@ -296,7 +296,7 @@ namespace YesSql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(int[] ids) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids) where T : class
         {
             if (ids == null || !ids.Any())
             {
@@ -767,11 +767,11 @@ namespace YesSql
                         {
                             if (index.Id == 0)
                             {
-                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix));
+                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<long>(), _tablePrefix));
                             }
                             else
                             {
-                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix));
+                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<long>(), Enumerable.Empty<long>(), _tablePrefix));
                             }
                         }
                         else
@@ -877,7 +877,7 @@ namespace YesSql
         private struct IdString
         {
 #pragma warning disable 0649
-            public int Id;
+            public long Id;
             public string Content;
 #pragma warning restore 0649
         }

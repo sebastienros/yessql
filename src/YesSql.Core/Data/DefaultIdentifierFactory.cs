@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace YesSql.Data
@@ -21,13 +22,46 @@ namespace YesSql.Data
 
             var tProperty = propertyInfo.PropertyType;
 
-            var getType = typeof(Func<,>).MakeGenericType(new[] { tContainer, tProperty });
-            var setType = typeof(Action<,>).MakeGenericType(new[] { tContainer, tProperty });
+            Type accessorType;
+            Type getType;
+            Type setType;
+            Delegate getter;
+            Delegate setter;
 
-            var getter = propertyInfo.GetGetMethod().CreateDelegate(getType);
-            var setter = propertyInfo.GetSetMethod(true).CreateDelegate(setType);
+            if (typeof(T) != tProperty && typeof(T) == typeof(long) && tProperty == typeof(int))
+            {
+                // The entity has "Id" property of type "int". We have to cast it back and forth.
 
-            var accessorType = typeof(IdAccessor<,>).MakeGenericType(tContainer, tProperty);
+                getType = typeof(Func<,>).MakeGenericType(new[] { tContainer, typeof(long) });
+                setType = typeof(Action<,>).MakeGenericType(new[] { tContainer, typeof(long) });
+
+                var entityParamExpression = Expression.Parameter(tContainer, "entity");
+                var propertyExpression = Expression.Property(entityParamExpression, propertyName);
+
+                // Convert the property value to long before returning it ( int > long )
+                var convertToLongExpression = Expression.Convert(propertyExpression, typeof(long));
+
+                getter = Expression.Lambda(getType, convertToLongExpression, entityParamExpression).Compile();
+
+                // Convert the value to int before assigning it to the property ( long > int )
+                var idParamExpression = Expression.Variable(typeof(long), "id");
+                var convertToIntExpression = Expression.Convert(idParamExpression, typeof(int));
+                var assignExpression = Expression.Assign(propertyExpression, convertToIntExpression);
+
+                setter = Expression.Lambda(setType, assignExpression, entityParamExpression, idParamExpression).Compile();
+
+                accessorType = typeof(IdAccessor<,>).MakeGenericType(tContainer, typeof(long));
+            }
+            else
+            {
+                getType = typeof(Func<,>).MakeGenericType(new[] { tContainer, tProperty });
+                setType = typeof(Action<,>).MakeGenericType(new[] { tContainer, tProperty });
+
+                getter = propertyInfo.GetGetMethod().CreateDelegate(getType);
+                setter = propertyInfo.GetSetMethod(true).CreateDelegate(setType);
+
+                accessorType = typeof(IdAccessor<,>).MakeGenericType(tContainer, tProperty);
+            }
 
             return Activator.CreateInstance(accessorType, new object[] { getter, setter }) as IIdAccessor<T>;
         }

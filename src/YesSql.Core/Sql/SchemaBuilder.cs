@@ -56,8 +56,8 @@ namespace YesSql.Sql
                 var documentTable = collection.GetPrefixedName(Store.DocumentTable);
 
                 createTable
-                    .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
-                    .Column<int>("DocumentId");
+                    .Column<long>("Id", column => column.PrimaryKey().Identity().NotNull())
+                    .Column<long>("DocumentId");
 
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
@@ -84,7 +84,7 @@ namespace YesSql.Sql
                 var documentTable = collection.GetPrefixedName(Store.DocumentTable);
 
                 createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
+                    .Column<long>("Id", column => column.Identity().NotNull())
                     ;
 
                 table(createTable);
@@ -93,8 +93,8 @@ namespace YesSql.Sql
                 var bridgeTableName = name + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
-                    .Column<int>(name + "Id", column => column.NotNull())
-                    .Column<int>("DocumentId", column => column.NotNull())
+                    .Column<long>(name + "Id", column => column.NotNull())
+                    .Column<long>("DocumentId", column => column.NotNull())
                 );
 
                 CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { name + "Id" }, name, new[] { "Id" });

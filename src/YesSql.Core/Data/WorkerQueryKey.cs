@@ -18,7 +18,7 @@ namespace YesSql.Data
 
         private int? _hashcode;
 
-        public WorkerQueryKey(string prefix, int[] ids)
+        public WorkerQueryKey(string prefix, long[] ids)
         {
             if (prefix == null)
             {

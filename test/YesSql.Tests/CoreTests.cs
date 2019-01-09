@@ -2307,7 +2307,7 @@ namespace YesSql.Tests
         [Theory]
         public async Task ShouldReturnObjectsByIdsInCorrectOrder(int numberOfItems)
         {
-            var circleIds = new List<int>();
+            var circleIds = new List<long>();
 
             using (var session = _store.CreateSession())
             {
@@ -2330,7 +2330,7 @@ namespace YesSql.Tests
 
                 var circles = await session.GetAsync<object>(circleIds.ToArray());
 
-                Assert.Equal(circleIds, circles.Select(c => ((Circle)c).Id));
+                Assert.Equal(circleIds, circles.Select(c => (long)((Circle)c).Id));
             }
         }
 

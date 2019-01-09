@@ -34,8 +34,8 @@ namespace YesSql
         internal readonly ConcurrentDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
             new ConcurrentDictionary<string, IEnumerable<IndexDescriptor>>();
 
-        internal readonly ConcurrentDictionary<Type, IIdAccessor<int>> _idAccessors =
-            new ConcurrentDictionary<Type, IIdAccessor<int>>();
+        internal readonly ConcurrentDictionary<Type, IIdAccessor<long>> _idAccessors =
+            new ConcurrentDictionary<Type, IIdAccessor<long>>();
 
         internal readonly ConcurrentDictionary<Type, Func<IDescriptor>> DescriptorActivators =
             new ConcurrentDictionary<Type, Func<IDescriptor>>();
@@ -97,7 +97,7 @@ namespace YesSql
                 var builder = new SchemaBuilder(session);
 
                 builder.CreateTable("Document", table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                    .Column<long>("Id", column => column.PrimaryKey().NotNull())
                     .Column<string>("Type", column => column.NotNull())
                     .Column<string>("Content", column => column.Unlimited())
                 )
@@ -131,7 +131,7 @@ namespace YesSql
 
                 builder
                     .CreateTable(documentTable, table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                    .Column<long>("Id", column => column.PrimaryKey().NotNull())
                     .Column<string>("Type", column => column.NotNull())
                     .Column<string>("Content", column => column.Unlimited())
                 )
@@ -185,9 +185,9 @@ namespace YesSql
         {
         }
 
-        public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)
+        public IIdAccessor<long> GetIdAccessor(Type tContainer, string name)
         {
-            return _idAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name));
+            return _idAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierFactory.CreateAccessor<long>(tContainer, name));
         }
 
         /// <summary>
@@ -229,9 +229,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(ISession session, string collection)
+        public long GetNextId(ISession session, string collection)
         {
-            return (int)IdGenerator.GetNextId(session, collection);
+            return IdGenerator.GetNextId(session, collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)

@@ -21,7 +21,7 @@ namespace YesSql.Commands
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
 
             var updateCmd = "update " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " set " + dialect.QuoteForColumnName("Content") + " = @Content where " + dialect.QuoteForColumnName("Id") + " = @Id;";
-            return connection.ExecuteScalarAsync<int>(updateCmd, Document, transaction);
+            return connection.ExecuteScalarAsync<long>(updateCmd, Document, transaction);
         }
     }
 }
