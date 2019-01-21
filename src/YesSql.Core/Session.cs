@@ -21,13 +21,14 @@ namespace YesSql
 
         private readonly IdentityMap _identityMap = new IdentityMap();
         private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
-        private readonly IDictionary<IndexDescriptor, IList<MapState>> _maps = new Dictionary<IndexDescriptor, IList<MapState>>();
+        private readonly Dictionary<IndexDescriptor, List<MapState>> _maps = new Dictionary<IndexDescriptor, List<MapState>>();
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
+        private bool _committing;
         private IsolationLevel _isolationLevel;
         private DbConnection _connection;
         private ISqlDialect _dialect;
@@ -216,6 +217,10 @@ namespace YesSql
             {
                 throw new InvalidOperationException("The object to update was not found in identity map.");
             }
+
+            // TODO: Use optimistic concurrency by assuming we already have the latest
+            // document in the identity map. When the record is updated use a WHERE clause
+            // to ensure the timestamp is the same, if not reload the document and try again
 
             var oldDoc = await GetDocumentByIdAsync(id);
 
@@ -495,12 +500,26 @@ namespace YesSql
 
         public async Task CommitAsync()
         {
-            CheckDisposed();
-
             if (!HasWork())
             {
                 return;
             }
+
+            // prevent recursive calls in CommitAsync,
+            // when autoflush is triggered from an IndexProvider
+            // for instance.
+
+            if (_committing)
+            {
+                return;
+            }
+
+            _committing = true;
+
+            // we only check if the session is disposed if 
+            // there are no commands to commit.
+
+            CheckDisposed();
 
             // saving all updated entities
             foreach (var obj in _updated)
@@ -538,6 +557,7 @@ namespace YesSql
             _deleted.Clear();
             _commands.Clear();
             _maps.Clear();
+            _committing = false;
         }
 
         /// <summary>

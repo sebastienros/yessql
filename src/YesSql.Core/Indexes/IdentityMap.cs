@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace YesSql.Indexes
 {
     public class IdentityMap
     {
-        private readonly IDictionary<int, object> _documentIds = new Dictionary<int, object>();
-        private readonly IDictionary<object, int> _entities = new Dictionary<object, int>();
+        private readonly Dictionary<int, object> _documentIds = new Dictionary<int, object>();
+        private readonly Dictionary<object, int> _entities = new Dictionary<object, int>();
 
         public bool TryGetDocumentId(object item, out int id)
         {
