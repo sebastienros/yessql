@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -35,6 +35,17 @@ namespace YesSql.Sql.Schema
             if (DbTypes.TryGetValue(type, out dbType))
             {
                 return dbType;
+            }
+
+            // Nullable<T> ?
+            if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                var nullable = Nullable.GetUnderlyingType(type);
+
+                if (nullable != null)
+                {
+                    return ToDbType(nullable);
+                }
             }
 
             return DbType.Object;

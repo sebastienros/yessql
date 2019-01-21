@@ -7,7 +7,7 @@ namespace YesSql.Indexes
 {
     public class DescribeContext<T> : IDescriptor
     {
-        private readonly Dictionary<Type, IList<IDescribeFor>> _describes = new Dictionary<Type, IList<IDescribeFor>>();
+        private readonly Dictionary<Type, List<IDescribeFor>> _describes = new Dictionary<Type, List<IDescribeFor>>();
 
         public IEnumerable<IndexDescriptor> Describe(params Type[] types)
         {
@@ -37,7 +37,8 @@ namespace YesSql.Indexes
 
         public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
         {
-            IList<IDescribeFor> descriptors;
+            List<IDescribeFor> descriptors;
+
             if (!_describes.TryGetValue(typeof(T), out descriptors))
             {
                 descriptors = _describes[typeof(T)] = new List<IDescribeFor>();

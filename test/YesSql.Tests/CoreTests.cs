@@ -58,6 +58,7 @@ namespace YesSql.Tests
                 }
 
                 builder.DropMapIndexTable(nameof(PersonByAge));
+                builder.DropMapIndexTable(nameof(PersonByNullableAge));
                 builder.DropMapIndexTable(nameof(PublishedArticle));
                 builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
                 builder.DropTable(Store.DocumentTable);
@@ -113,6 +114,10 @@ namespace YesSql.Tests
                         .Column<int>(nameof(PersonByAge.Age))
                         .Column<bool>(nameof(PersonByAge.Adult))
                         .Column<string>(nameof(PersonByAge.Name))
+                    );
+
+                builder.CreateMapIndexTable(nameof(PersonByNullableAge), column => column
+                        .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
                     );
 
                 builder.CreateMapIndexTable(nameof(PublishedArticle), column => { });
@@ -3354,6 +3359,46 @@ namespace YesSql.Tests
                 var all = await session.Query<Person>().ListAsync();
                 Assert.Single(all);
                 Assert.Equal("Gates", all.First().Lastname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldHandleNullableFields()
+        {
+            _store.RegisterIndexes<PersonByNullableAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var isaac = new Person
+                {
+                    Firstname = "Isaac",
+                    Lastname = "Newton",
+                    Age = 376
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(isaac);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.Query<Person, PersonByNullableAge>().CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNullableAge>(x => x.Age == null).CountAsync());
             }
         }
     }
