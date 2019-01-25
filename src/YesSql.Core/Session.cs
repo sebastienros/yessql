@@ -169,7 +169,7 @@ namespace YesSql
 
             var doc = new Document
             {
-                Type = entity.GetType().SimplifiedTypeName()
+                Type = Store.KnownTypeNames.GetOrAdd(entity.GetType(), entity.GetType().SimplifiedTypeName())
             };
 
             // Get the entity's Id if assigned
@@ -337,7 +337,7 @@ namespace YesSql
             var result = new List<T>();
 
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
-            var typeName = typeof(T).SimplifiedTypeName();
+            var typeName = Store.KnownTypeNames.GetOrAdd(typeof(T), typeof(T).SimplifiedTypeName());
 
             // Are all the objects already in cache?
             foreach (var d in documents)
@@ -579,7 +579,9 @@ namespace YesSql
             {
                 // if the descriptor has no reduce behavior, ignore it
                 if (descriptor.Reduce == null)
+                {
                     continue;
+                }
 
                 if (descriptor.GroupKey == null)
                 {

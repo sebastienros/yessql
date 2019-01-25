@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Reflection;
 
@@ -37,11 +37,13 @@ namespace YesSql.Serialization
                 return "dynamic";
             }
 
+            var customName = typeInfo.GetCustomAttribute<SimplifiedTypeName>();
+
             // todo: make this a service and rename to GetCollection, could also
             // be used for sharding if generic enough
             return _typeNames.GetOrAdd(
                 typeInfo,
-                t => String.Concat(type.FullName, ", ", typeInfo.Assembly.GetName().Name));
+                t => String.IsNullOrEmpty(customName?.Name) ? String.Concat(type.FullName, ", ", typeInfo.Assembly.GetName().Name) : customName.Name);
         }
     }
 }

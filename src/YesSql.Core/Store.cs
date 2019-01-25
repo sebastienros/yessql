@@ -28,6 +28,9 @@ namespace YesSql
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
 
+        public ConcurrentDictionary<Type, string> KnownTypeNames { get; set; } =
+            new ConcurrentDictionary<Type, string>();
+
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
 

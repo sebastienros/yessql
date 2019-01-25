@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
@@ -28,6 +29,7 @@ namespace YesSql
         int GetNextId(ISession session, string collection);
         IEnumerable<IndexDescriptor> Describe(Type target);
         ISqlDialect Dialect { get; }
+        ConcurrentDictionary<Type, string> KnownTypeNames { get; set; }
     }
 
     public static class IStoreExtensions
