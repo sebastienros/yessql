@@ -10,8 +10,6 @@ namespace YesSql.Serialization
     /// </summary>
     public static class TypeExtensions
     {
-        private static ConcurrentDictionary<TypeInfo, string> _typeNames = new ConcurrentDictionary<TypeInfo, string>();
-
         /// <summary>
         /// Whether a <see cref="Type"/> is anonymous or not
         /// </summary>
@@ -39,11 +37,7 @@ namespace YesSql.Serialization
 
             var customName = typeInfo.GetCustomAttribute<SimplifiedTypeName>();
 
-            // todo: make this a service and rename to GetCollection, could also
-            // be used for sharding if generic enough
-            return _typeNames.GetOrAdd(
-                typeInfo,
-                t => String.IsNullOrEmpty(customName?.Name) ? String.Concat(type.FullName, ", ", typeInfo.Assembly.GetName().Name) : customName.Name);
+            return String.IsNullOrEmpty(customName?.Name) ? String.Concat(type.FullName, ", ", typeInfo.Assembly.GetName().Name) : customName.Name;
         }
     }
 }
