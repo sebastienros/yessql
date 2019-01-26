@@ -20,7 +20,7 @@ namespace YesSql
 
                 var customName = typeInfo.GetCustomAttribute<SimplifiedTypeName>();
 
-                return typeNames.GetOrAdd(t, String.IsNullOrEmpty(customName?.Name) ? String.Concat(t.FullName, ", ", typeInfo.Assembly.GetName().Name) : customName.Name);
+                return typeNames.GetOrAdd(t, type => { return String.IsNullOrEmpty(customName?.Name) ? String.Concat(type.FullName, ", ", typeInfo.Assembly.GetName().Name) : customName.Name; });
             }
 
             set
