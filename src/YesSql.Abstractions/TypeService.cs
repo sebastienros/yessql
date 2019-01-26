@@ -12,15 +12,18 @@ namespace YesSql
         {
             get
             {
-                var typeInfo = t.GetTypeInfo();
-                if (IsAnonymousType(typeInfo))
+                return typeNames.GetOrAdd(t, type => 
                 {
-                    return "dynamic";
-                }
+                    var typeInfo = t.GetTypeInfo();
+                    if (IsAnonymousType(typeInfo))
+                    {
+                        return "dynamic";
+                    }
 
-                var customName = typeInfo.GetCustomAttribute<SimplifiedTypeName>();
+                    var customName = typeInfo.GetCustomAttribute<SimplifiedTypeName>();
 
-                return typeNames.GetOrAdd(t, type => { return String.IsNullOrEmpty(customName?.Name) ? String.Concat(type.FullName, ", ", typeInfo.Assembly.GetName().Name) : customName.Name; });
+                    return String.IsNullOrEmpty(customName?.Name) ? String.Concat(type.FullName, ", ", typeInfo.Assembly.GetName().Name) : customName.Name;
+                });
             }
 
             set
