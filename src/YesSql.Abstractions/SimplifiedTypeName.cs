@@ -1,6 +1,6 @@
 using System;
 
-namespace YesSql.Serialization
+namespace YesSql
 {
     public class SimplifiedTypeName : Attribute
     {
