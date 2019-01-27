@@ -12,11 +12,11 @@ namespace YesSql.Tests
     {
         public InMemoryTests()
         {
-            _store = new Store(new Configuration().UseInMemory().SetTablePrefix(TablePrefix));
+        }
 
-
-            CleanDatabase(false);
-            CreateTables();
+        protected override IStore CreateStore(Configuration configuration)
+        {
+            return new Store(new Configuration().UseInMemory().SetTablePrefix(TablePrefix));
         }
 
         protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
