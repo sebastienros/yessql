@@ -15,7 +15,6 @@ namespace YesSql
             SessionPoolSize = 16;
             IdBlockSize = 20;
             QueryGatingEnabled = true;
-            LinearBlockSize = 20;
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
