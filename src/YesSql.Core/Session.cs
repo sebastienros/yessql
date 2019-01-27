@@ -99,7 +99,7 @@ namespace YesSql
             {
                 // it's a new entity
                 var collection = CollectionHelper.Current.GetSafeName();
-                id = _store.GetNextId(this, collection);
+                id = _store.GetNextId(collection);
                 accessor.Set(entity, id);
                 _identityMap.Add(id, entity);
             }
@@ -181,7 +181,7 @@ namespace YesSql
             else
             {
                 var collection = CollectionHelper.Current.GetSafeName();
-                doc.Id = _store.GetNextId(this, collection);
+                doc.Id = _store.GetNextId(collection);
             }
 
             await DemandAsync();

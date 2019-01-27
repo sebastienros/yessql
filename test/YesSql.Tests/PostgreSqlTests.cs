@@ -9,12 +9,10 @@ namespace YesSql.Tests
     public class PostgreSqlTests : CoreTests
     {
         public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
-        public PostgreSqlTests()
-        {
-            _store = new Store(new Configuration().UsePostgreSql(ConnectionString).SetTablePrefix(TablePrefix));
 
-            CleanDatabase(false);
-            CreateTables();
+        protected override IStore CreateStore(Configuration configuration)
+        {
+            return new Store(new Configuration().UsePostgreSql(ConnectionString).SetTablePrefix(TablePrefix));
         }
 
         protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)

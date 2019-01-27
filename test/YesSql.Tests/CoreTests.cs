@@ -23,7 +23,10 @@ namespace YesSql.Tests
 
         public CoreTests()
         {
+            _store = CreateStore(new Configuration());
 
+            CleanDatabase(false);
+            CreateTables();
         }
 
         public void Dispose()
@@ -33,6 +36,8 @@ namespace YesSql.Tests
 
             OnDispose();
         }
+
+        protected abstract IStore CreateStore(Configuration configuration);
 
         protected virtual void OnDispose()
         {
@@ -63,7 +68,7 @@ namespace YesSql.Tests
                 builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
                 builder.DropTable(Store.DocumentTable);
                 builder.DropTable("Collection1_Document");
-                builder.DropTable(LinearBlockIdGenerator.TableName);
+                builder.DropTable(DbBlockIdGenerator.TableName);
 
                 OnCleanDatabase(builder, session);
             }
@@ -3400,6 +3405,43 @@ namespace YesSql.Tests
                 Assert.Equal(3, await session.Query<Person, PersonByNullableAge>().CountAsync());
                 Assert.Equal(1, await session.Query<Person, PersonByNullableAge>(x => x.Age == null).CountAsync());
             }
+        }
+
+        [Fact]
+        public void ShouldCreateMoreObjectThanIdBlock()
+        {
+            using (var session = _store.CreateSession())
+            {
+                for (var k = 0; k < 1000; k++)
+                {
+                    session.Save(new Person { Firstname = "Bill" });
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ShouldGenerateIdsConcurrently()
+        {
+            var stopping = false;
+            var concurrency = 5;
+            var counter = 0;
+            var MaxTransactions = int.MaxValue;
+
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(() =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    var id = _store.GetNextId("");
+                }
+            })).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(2)));
+
+            await Task.WhenAny(tasks);
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
         }
     }
 }

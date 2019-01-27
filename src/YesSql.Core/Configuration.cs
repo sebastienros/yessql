@@ -13,6 +13,7 @@ namespace YesSql
             IsolationLevel = IsolationLevel.ReadCommitted;
             TablePrefix = "";
             SessionPoolSize = 16;
+            IdBlockSize = 20;
             QueryGatingEnabled = true;
         }
 
@@ -23,5 +24,6 @@ namespace YesSql
         public string TablePrefix { get; set; }
         public int SessionPoolSize { get; set; }
         public bool QueryGatingEnabled { get; set; }
+        public int IdBlockSize { get; set; }
     }
 }

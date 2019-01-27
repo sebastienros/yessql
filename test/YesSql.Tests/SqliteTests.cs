@@ -14,14 +14,14 @@ namespace YesSql.Tests
 
         public SqliteTests()
         {
+        }
+
+        protected override IStore CreateStore(Configuration configuration)
+        {
             _tempFolder = new TemporaryFolder();
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-            _store = new Store(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix));
-
-
-            CleanDatabase(false);
-            CreateTables();
+            return new Store(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix));
         }
 
         protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)

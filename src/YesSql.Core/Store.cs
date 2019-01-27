@@ -22,7 +22,7 @@ namespace YesSql
         protected List<IIndexProvider> Indexes;
         protected List<Type> ScopedIndexes;
 
-        protected LinearBlockIdGenerator IdGenerator;
+        protected IBlockIdGenerator BlockIdGenerator;
         private ObjectPool<Session> _sessionPool;
 
         public IConfiguration Configuration { get; set; }
@@ -84,7 +84,7 @@ namespace YesSql
             Indexes = new List<IIndexProvider>();
             ScopedIndexes = new List<Type>();
             ValidateConfiguration();
-            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
+            BlockIdGenerator = new DbBlockIdGenerator(this);
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
             Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
@@ -105,11 +105,11 @@ namespace YesSql
                     .CreateIndex("IX_Type", "Type")
                 );
 
-                builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
+                builder.CreateTable(DbBlockIdGenerator.TableName, table => table
                     .Column<string>("dimension", column => column.PrimaryKey().NotNull())
                     .Column<ulong>("nextval")
                 )
-                .AlterTable(LinearBlockIdGenerator.TableName, table => table
+                .AlterTable(DbBlockIdGenerator.TableName, table => table
                     .CreateIndex("IX_Dimension", "dimension")
                 );
             }
@@ -229,9 +229,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(ISession session, string collection)
+        public int GetNextId(string collection)
         {
-            return (int)IdGenerator.GetNextId(session, collection);
+            return (int)BlockIdGenerator.GetNextId(collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)
