@@ -1,6 +1,6 @@
 using Dapper;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Collections;
@@ -25,7 +25,7 @@ namespace YesSql.Commands
             _deletedDocumentIds = deletedDocumentIds;
         }
 
-        public override async Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
         {
             var type = Index.GetType();
 

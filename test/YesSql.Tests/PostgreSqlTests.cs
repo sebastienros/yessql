@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.PostgreSql;
@@ -15,9 +16,9 @@ namespace YesSql.Tests
             return new Store(new Configuration().UsePostgreSql(ConnectionString).SetTablePrefix(TablePrefix).UseBlockIdGenerator());
         }
 
-        protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
+        protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
         {
-            base.OnCleanDatabase(builder, session);
+            base.OnCleanDatabase(builder, transaction);
 
             try
             {

@@ -1,5 +1,5 @@
 using Dapper;
-using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Collections;
 
@@ -16,7 +16,7 @@ namespace YesSql.Commands
             _tablePrefix = tablePrefix;
         }
 
-        public override Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect)
+        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
         {
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
 

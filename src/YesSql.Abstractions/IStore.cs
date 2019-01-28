@@ -25,7 +25,6 @@ namespace YesSql
         Task InitializeAsync();
         Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
-        int GetNextId(IDbTransaction transaction, string collection);
         IEnumerable<IndexDescriptor> Describe(Type target);
         ISqlDialect Dialect { get; }
     }

@@ -90,47 +90,66 @@ namespace YesSql
 
         public async Task InitializeAsync()
         {
-            using (var session = CreateSession())
+            using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session);
+                await connection.OpenAsync();
 
-                builder.CreateTable("Document", table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                    .Column<string>("Content", column => column.Unlimited())
-                )
-                .AlterTable("Document", table => table
-                    .CreateIndex("IX_Type", "Type")
-                );
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(this, transaction);
 
-                await Configuration.IdGenerator.InitializeAsync(this, builder);
+                    builder.CreateTable("Document", table => table
+                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                        .Column<string>("Type", column => column.NotNull())
+                        .Column<string>("Content", column => column.Unlimited())
+                    )
+                    .AlterTable("Document", table => table
+                        .CreateIndex("IX_Type", "Type")
+                    );
+
+                    await Configuration.IdGenerator.InitializeAsync(this, builder);
+
+                    // Initialize the default collection's id generator
+                    await Configuration.IdGenerator.InitializeCollectionAsync(transaction, "", builder);
+
+                    transaction.Commit();
+                }
             }
         }
 
-        public Task InitializeCollectionAsync(string collectionName)
+        public async Task InitializeCollectionAsync(string collectionName)
         {
-            var documentTable = collectionName + "_" + "Document";
-
-            using (var session = CreateSession())
+            // The default collection is initialized automatically
+            if (String.IsNullOrEmpty(collectionName))
             {
-                var builder = new SchemaBuilder(session);
-
-                builder
-                    .CreateTable(documentTable, table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                    .Column<string>("Content", column => column.Unlimited())
-                )
-                .AlterTable(documentTable, table => table
-                    .CreateIndex("IX_" + documentTable + "_Type", "Type")
-                );
+                return;
             }
 
-#if NET451
-            return Task.FromResult(0);
-#else
-            return Task.CompletedTask;
-#endif
+            var documentTable = collectionName + "_" + "Document";
+
+            using (var connection = Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(this, transaction);
+
+                    builder
+                        .CreateTable(documentTable, table => table
+                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                        .Column<string>("Type", column => column.NotNull())
+                        .Column<string>("Content", column => column.Unlimited())
+                    )
+                    .AlterTable(documentTable, table => table
+                        .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                    );
+
+                    await Configuration.IdGenerator.InitializeCollectionAsync(transaction, collectionName, builder);
+
+                    transaction.Commit();
+                }
+            }
         }
 
         private void ValidateConfiguration()
@@ -215,9 +234,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(IDbTransaction transaction, string collection)
+        public int GetNextId(string collection)
         {
-            return (int)Configuration.IdGenerator.GetNextId(transaction, collection);
+            return (int)Configuration.IdGenerator.GetNextId(collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)
