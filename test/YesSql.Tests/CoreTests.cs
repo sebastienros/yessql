@@ -3419,19 +3419,28 @@ namespace YesSql.Tests
             }
         }
 
-        [Fact]
-        public async Task ShouldGenerateIdsConcurrently()
+        [Theory]
+        [InlineData("")]
+        [InlineData("othercollection")]
+        public async Task ShouldGenerateIdsConcurrently(string collection)
         {
+            await _store.InitializeCollectionAsync(collection);
+
             var stopping = false;
             var concurrency = 5;
             var counter = 0;
             var MaxTransactions = int.MaxValue;
 
-            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(() =>
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
-                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                using (var session = _store.CreateSession())
                 {
-                    var id = _store.GetNextId("");
+                    var transaction = await session.DemandAsync();
+
+                    while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                    {
+                        var id = _store.GetNextId(transaction, collection);
+                    }
                 }
             })).ToList();
 

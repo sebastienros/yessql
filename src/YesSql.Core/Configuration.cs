@@ -1,6 +1,7 @@
 using System.Data;
 using YesSql.Data;
 using YesSql.Serialization;
+using YesSql.Services;
 
 namespace YesSql
 {
@@ -10,10 +11,10 @@ namespace YesSql
         {
             IdentifierFactory = new DefaultIdentifierFactory();
             ContentSerializer = new JsonContentSerializer();
+            IdGenerator = new DefaultIdGenerator();
             IsolationLevel = IsolationLevel.ReadCommitted;
             TablePrefix = "";
             SessionPoolSize = 16;
-            IdBlockSize = 20;
             QueryGatingEnabled = true;
         }
 
@@ -24,6 +25,6 @@ namespace YesSql
         public string TablePrefix { get; set; }
         public int SessionPoolSize { get; set; }
         public bool QueryGatingEnabled { get; set; }
-        public int IdBlockSize { get; set; }
+        public IIdGenerator IdGenerator { get; set; }
     }
 }

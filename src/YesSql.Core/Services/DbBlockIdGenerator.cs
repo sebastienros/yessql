@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Threading;
+using System.Threading.Tasks;
+using YesSql.Sql;
 
 namespace YesSql.Services
 {
@@ -9,88 +13,93 @@ namespace YesSql.Services
     /// This class manages a linear identifiers block allocator
     /// c.f., http://literatejava.com/hibernate/linear-block-allocator-a-superior-alternative-to-hilo/
     /// </summary>
-    public class DbBlockIdGenerator : IBlockIdGenerator
+    public class DbBlockIdGenerator : IIdGenerator
     {
-        private static object _synLock = new object();
+        private object _synLock = new object();
 
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
 
-        private readonly int _range;
-        private bool _initialized;
-        private readonly ISqlDialect _dialect;
+        private ISqlDialect _dialect;
+        private IStore _store;
+
+        private int _blockSize;
+        private HashSet<string> _initializedCollections = new HashSet<string>();
         private long _start;
         private int _increment;
         private long _end;
         private string _tablePrefix;
 
-        private readonly string SelectCommand;
-        private readonly string UpdateCommand;
-        private readonly string InsertCommand;
-        private readonly IStore _store;
+        private string SelectCommand;
+        private string UpdateCommand;
+        private string InsertCommand;
 
-        public DbBlockIdGenerator(IStore store)
+        public DbBlockIdGenerator() : this(20)
+        {
+        }
+
+        public DbBlockIdGenerator(int blockSize)
+        {
+            _blockSize = blockSize;
+        }
+
+        public Task InitializeAsync(IStore store, ISchemaBuilder builder)
         {
             _dialect = SqlDialectFactory.For(store.Configuration.ConnectionFactory.DbConnectionType);
-            _range = store.Configuration.IdBlockSize;
             _tablePrefix = store.Configuration.TablePrefix;
             _store = store;
 
             SelectCommand = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
             UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
+
+            builder.CreateTable(DbBlockIdGenerator.TableName, table => table
+                .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                .Column<ulong>("nextval")
+            )
+            .AlterTable(DbBlockIdGenerator.TableName, table => table
+                .CreateIndex("IX_Dimension", "dimension")
+            );
+
+#if NET451
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
 
-        public long GetNextId(string dimension)
+        public long GetNextId(IDbTransaction transaction, string dimension)
         {
-            lock (_synLock)
+            // Initialize the range
+            if (_end == 0)
             {
-                // Initialize the range
-                if (_end == 0)
-                {
-                    var connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                    if (connection.State == ConnectionState.Closed)
-                    {
-                        connection.Open();
-                    }
-
-                    try
-                    {
-                        EnsureInitialized(connection, dimension);
-                        LeaseRange(connection, dimension);
-                    }
-                    finally
-                    {
-                        _store.Configuration.ConnectionFactory.CloseConnection(connection);
-                    }
-                }
-
-                var newIncrement = Interlocked.Increment(ref _increment);
-                var nextId = newIncrement + _start;
-
-                if (nextId > _end)
-                {
-                    var connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                    if (connection.State == ConnectionState.Closed)
-                    {
-                        connection.Open();
-                    }
-
-                    try
-                    {
-                        LeaseRange(connection, dimension);
-                        nextId = GetNextId(dimension);
-                    }
-                    finally
-                    {
-                        _store.Configuration.ConnectionFactory.CloseConnection(connection);
-                    }
-                }
-
-                return nextId;
+                EnsureInitialized(dimension);
             }
+
+            var newIncrement = Interlocked.Increment(ref _increment);
+            var nextId = newIncrement + _start;
+
+            if (nextId > _end)
+            {
+                var connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
+
+                if (connection.State == ConnectionState.Closed)
+                {
+                    connection.Open();
+                }
+
+                try
+                {
+                    LeaseRange(connection, dimension);
+                    nextId = GetNextId(transaction, dimension);
+                }
+                finally
+                {
+                    _store.Configuration.ConnectionFactory.CloseConnection(connection);
+                }
+            }
+
+            return nextId;
         }
 
         private void LeaseRange(DbConnection connection, string dimension)
@@ -99,96 +108,101 @@ namespace YesSql.Services
             long nextval;
             var retries = 0;
 
-            try
+            lock (_synLock)
             {
-                do
+                try
                 {
-                    // Ensure we overwrite the value that has been read by this
-                    // instance in case another client is trying to lease a range
-                    // at the same time
-                    var transaction = connection.BeginTransaction();
-
-                    using (transaction)
+                    do
                     {
-                        try
+                        // Ensure we overwrite the value that has been read by this
+                        // instance in case another client is trying to lease a range
+                        // at the same time
+                        var transaction = connection.BeginTransaction();
+
+                        using (transaction)
                         {
-                            var selectCommand = connection.CreateCommand();
-                            selectCommand.CommandText = SelectCommand;
+                            try
+                            {
+                                var selectCommand = connection.CreateCommand();
+                                selectCommand.CommandText = SelectCommand;
 
-                            var selectDimension = selectCommand.CreateParameter();
-                            selectDimension.Value = dimension;
-                            selectDimension.ParameterName = "@dimension";
-                            selectCommand.Parameters.Add(selectDimension);
+                                var selectDimension = selectCommand.CreateParameter();
+                                selectDimension.Value = dimension;
+                                selectDimension.ParameterName = "@dimension";
+                                selectCommand.Parameters.Add(selectDimension);
 
-                            selectCommand.Transaction = transaction;
+                                selectCommand.Transaction = transaction;
 
-                            nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
+                                nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
-                            var updateCommand = connection.CreateCommand();
-                            updateCommand.CommandText = UpdateCommand;
+                                var updateCommand = connection.CreateCommand();
+                                updateCommand.CommandText = UpdateCommand;
 
-                            var updateDimension = updateCommand.CreateParameter();
-                            updateDimension.Value = dimension;
-                            updateDimension.ParameterName = "@dimension";
-                            updateCommand.Parameters.Add(updateDimension);
+                                var updateDimension = updateCommand.CreateParameter();
+                                updateDimension.Value = dimension;
+                                updateDimension.ParameterName = "@dimension";
+                                updateCommand.Parameters.Add(updateDimension);
 
-                            var newValue = updateCommand.CreateParameter();
-                            newValue.Value = nextval + _range;
-                            newValue.ParameterName = "@new";
-                            updateCommand.Parameters.Add(newValue);
+                                var newValue = updateCommand.CreateParameter();
+                                newValue.Value = nextval + _blockSize;
+                                newValue.ParameterName = "@new";
+                                updateCommand.Parameters.Add(newValue);
 
-                            var previousValue = updateCommand.CreateParameter();
-                            previousValue.Value = nextval;
-                            previousValue.ParameterName = "@previous";
-                            updateCommand.Parameters.Add(previousValue);
+                                var previousValue = updateCommand.CreateParameter();
+                                previousValue.Value = nextval;
+                                previousValue.ParameterName = "@previous";
+                                updateCommand.Parameters.Add(previousValue);
 
-                            updateCommand.Transaction = transaction;
+                                updateCommand.Transaction = transaction;
 
-                            affectedRows = updateCommand.ExecuteNonQuery();
+                                affectedRows = updateCommand.ExecuteNonQuery();
 
-                            transaction.Commit();
+                                transaction.Commit();
+                            }
+                            catch
+                            {
+                                transaction.Rollback();
+                                throw;
+                            }
                         }
-                        catch
+
+                        if (retries++ > MaxRetries)
                         {
-                            transaction.Rollback();
-                            throw;
+                            throw new Exception("Too many retries while trying to lease a range for: " + dimension);
                         }
-                    }
 
-                    if (retries++ > MaxRetries)
-                    {
-                        throw new Exception("Too many retries while trying to lease a range for: " + dimension);
-                    }
+                    } while (affectedRows == 0);
 
-                } while (affectedRows == 0);
-
-                _increment = -1; // Start with -1 as it will be incremented
-                _start = nextval;
-                _end = nextval + _range - 1;
-            }
-            finally
-            {
-                _store.Configuration.ConnectionFactory.CloseConnection(connection);
+                    _increment = -1; // Start with -1 as it will be incremented
+                    _start = nextval;
+                    _end = nextval + _blockSize - 1;
+                }
+                finally
+                {
+                    _store.Configuration.ConnectionFactory.CloseConnection(connection);
+                }
             }
         }
 
-        private void EnsureInitialized(DbConnection connection, string dimension)
+        private void EnsureInitialized(string dimension)
         {
-            if (_initialized)
+            if (_initializedCollections.Contains(dimension))
             {
                 return;
             }
 
-            if (_initialized)
+            lock (_synLock)
             {
-                return;
-            }
+                // Create a specific connection
+                var connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
 
-            var transaction = connection.BeginTransaction();
+                if (connection.State == ConnectionState.Closed)
+                {
+                    connection.Open();
+                }
 
-            try
-            {
-                using (transaction)
+                var transaction = connection.BeginTransaction();
+                try
                 {
                     // Does the record already exist?
                     var selectCommand = transaction.Connection.CreateCommand();
@@ -227,13 +241,19 @@ namespace YesSql.Services
 
                     transaction.Commit();
 
-                    _initialized = true;
+                    // Copy the current collection to preserve thread-safety
+                    var newList = new HashSet<string>(_initializedCollections);
+                    _initializedCollections = newList;
                 }
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+                finally
+                {
+                    _store.Configuration.ConnectionFactory.CloseConnection(connection);
+                }
             }
         }
     }
