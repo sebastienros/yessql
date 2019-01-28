@@ -99,7 +99,7 @@ namespace YesSql
             {
                 // it's a new entity
                 var collection = CollectionHelper.Current.GetSafeName();
-                id = _store.GetNextId(collection);
+                id = _store.GetNextId(Demand(), collection);
                 accessor.Set(entity, id);
                 _identityMap.Add(id, entity);
             }
@@ -181,10 +181,10 @@ namespace YesSql
             else
             {
                 var collection = CollectionHelper.Current.GetSafeName();
-                doc.Id = _store.GetNextId(collection);
+                doc.Id = _store.GetNextId(Demand(), collection);
             }
 
-            await DemandAsync();
+            Demand();
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
@@ -873,6 +873,41 @@ namespace YesSql
                 if (_connection.State == ConnectionState.Closed)
                 {
                     await _connection.OpenAsync();
+                }
+
+                // In the case of shared connections (InMemory) this can throw as the transation
+                // might already be set by a concurrent thread on the same shared connection.
+                _transaction = _connection.BeginTransaction(_isolationLevel);
+            }
+
+            return _transaction;
+        }
+
+        private IDbTransaction Demand()
+        {
+            CheckDisposed();
+
+            if (_transaction == null)
+            {
+                if (_connection == null)
+                {
+                    _connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
+
+                    if (_connection == null)
+                    {
+                        throw new InvalidOperationException("The connection couldn't be covnerted to DbConnection");
+                    }
+
+                    // The dialect could already be initialized if the session is reused
+                    if (_dialect == null)
+                    {
+                        _dialect = Store.Dialect;
+                    }
+                }
+
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
                 }
 
                 // In the case of shared connections (InMemory) this can throw as the transation

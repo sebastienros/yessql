@@ -21,7 +21,7 @@ namespace YesSql.Tests
             _tempFolder = new TemporaryFolder();
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-            return new Store(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix));
+            return new Store(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
         }
 
         protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)

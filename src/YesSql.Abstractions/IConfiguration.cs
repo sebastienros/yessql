@@ -10,10 +10,10 @@ namespace YesSql
         IsolationLevel IsolationLevel { get; set; }
         IConnectionFactory ConnectionFactory { get; set; }
         IContentSerializer ContentSerializer { get; set; }
+        IIdGenerator IdGenerator { get; set; }
         string TablePrefix { get; set; }
         int SessionPoolSize { get; set; }
         bool QueryGatingEnabled { get; set; }
-        int IdBlockSize { get; set; }
     }
 
     public static class ConfigurationExtensions

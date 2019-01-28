@@ -13,7 +13,7 @@ namespace YesSql.Tests
 
         protected override IStore CreateStore(Configuration configuration)
         {
-            return new Store(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix));
+            return new Store(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix).UseBlockIdGenerator());
         }
 
         protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
