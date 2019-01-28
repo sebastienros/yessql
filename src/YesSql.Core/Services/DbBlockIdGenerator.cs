@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,10 +22,9 @@ namespace YesSql.Services
         private IStore _store;
 
         private int _blockSize;
-        private HashSet<string> _initializedCollections = new HashSet<string>();
         private long _start;
         private int _increment;
-        private long _end;
+        private Dictionary<string, long> _ends = new Dictionary<string, long>();
         private string _tablePrefix;
 
         private string SelectCommand;
@@ -68,41 +65,38 @@ namespace YesSql.Services
 #endif
         }
 
-        public long GetNextId(IDbTransaction transaction, string dimension)
+        public long GetNextId(string dimension)
         {
-            // Initialize the range
-            if (_end == 0)
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
-                EnsureInitialized(dimension);
+                connection.Open();
+                return GetNextIdInternal(connection, dimension);
             }
-
-            var newIncrement = Interlocked.Increment(ref _increment);
-            var nextId = newIncrement + _start;
-
-            if (nextId > _end)
-            {
-                var connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                if (connection.State == ConnectionState.Closed)
-                {
-                    connection.Open();
-                }
-
-                try
-                {
-                    LeaseRange(connection, dimension);
-                    nextId = GetNextId(transaction, dimension);
-                }
-                finally
-                {
-                    _store.Configuration.ConnectionFactory.CloseConnection(connection);
-                }
-            }
-
-            return nextId;
         }
 
-        private void LeaseRange(DbConnection connection, string dimension)
+        private long GetNextIdInternal(DbConnection connection, string collection)
+        {
+            lock (_synLock)
+            {
+                var newIncrement = Interlocked.Increment(ref _increment);
+                var nextId = newIncrement + _start;
+
+                if (!_ends.TryGetValue(collection, out var end))
+                {
+                    throw new InvalidOperationException($"The collection '{collection}' was not initialized");
+                }
+
+                if (nextId > end)
+                {
+                    LeaseRange(connection, collection);
+                    nextId = GetNextIdInternal(connection, collection);
+                }
+
+                return nextId;
+            }
+        }
+
+        private void LeaseRange(DbConnection connection, string collection)
         {
             var affectedRows = 0;
             long nextval;
@@ -110,151 +104,115 @@ namespace YesSql.Services
 
             lock (_synLock)
             {
-                try
+                do
                 {
-                    do
+                    // Ensure we overwrite the value that has been read by this
+                    // instance in case another client is trying to lease a range
+                    // at the same time
+                    using (var transaction = connection.BeginTransaction())
                     {
-                        // Ensure we overwrite the value that has been read by this
-                        // instance in case another client is trying to lease a range
-                        // at the same time
-                        var transaction = connection.BeginTransaction();
-
-                        using (transaction)
+                        try
                         {
-                            try
-                            {
-                                var selectCommand = connection.CreateCommand();
-                                selectCommand.CommandText = SelectCommand;
+                            var selectCommand = connection.CreateCommand();
+                            selectCommand.CommandText = SelectCommand;
 
-                                var selectDimension = selectCommand.CreateParameter();
-                                selectDimension.Value = dimension;
-                                selectDimension.ParameterName = "@dimension";
-                                selectCommand.Parameters.Add(selectDimension);
+                            var selectDimension = selectCommand.CreateParameter();
+                            selectDimension.Value = collection;
+                            selectDimension.ParameterName = "@dimension";
+                            selectCommand.Parameters.Add(selectDimension);
 
-                                selectCommand.Transaction = transaction;
+                            selectCommand.Transaction = transaction;
 
-                                nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
+                            nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
-                                var updateCommand = connection.CreateCommand();
-                                updateCommand.CommandText = UpdateCommand;
+                            var updateCommand = connection.CreateCommand();
+                            updateCommand.CommandText = UpdateCommand;
 
-                                var updateDimension = updateCommand.CreateParameter();
-                                updateDimension.Value = dimension;
-                                updateDimension.ParameterName = "@dimension";
-                                updateCommand.Parameters.Add(updateDimension);
+                            var updateDimension = updateCommand.CreateParameter();
+                            updateDimension.Value = collection;
+                            updateDimension.ParameterName = "@dimension";
+                            updateCommand.Parameters.Add(updateDimension);
 
-                                var newValue = updateCommand.CreateParameter();
-                                newValue.Value = nextval + _blockSize;
-                                newValue.ParameterName = "@new";
-                                updateCommand.Parameters.Add(newValue);
+                            var newValue = updateCommand.CreateParameter();
+                            newValue.Value = nextval + _blockSize;
+                            newValue.ParameterName = "@new";
+                            updateCommand.Parameters.Add(newValue);
 
-                                var previousValue = updateCommand.CreateParameter();
-                                previousValue.Value = nextval;
-                                previousValue.ParameterName = "@previous";
-                                updateCommand.Parameters.Add(previousValue);
+                            var previousValue = updateCommand.CreateParameter();
+                            previousValue.Value = nextval;
+                            previousValue.ParameterName = "@previous";
+                            updateCommand.Parameters.Add(previousValue);
 
-                                updateCommand.Transaction = transaction;
+                            updateCommand.Transaction = transaction;
 
-                                affectedRows = updateCommand.ExecuteNonQuery();
+                            affectedRows = updateCommand.ExecuteNonQuery();
 
-                                transaction.Commit();
-                            }
-                            catch
-                            {
-                                transaction.Rollback();
-                                throw;
-                            }
+                            transaction.Commit();
                         }
-
-                        if (retries++ > MaxRetries)
+                        catch
                         {
-                            throw new Exception("Too many retries while trying to lease a range for: " + dimension);
+                            transaction.Rollback();
+                            throw;
                         }
+                    }
 
-                    } while (affectedRows == 0);
+                    if (retries++ > MaxRetries)
+                    {
+                        throw new Exception("Too many retries while trying to lease a range for: " + collection);
+                    }
 
-                    _increment = -1; // Start with -1 as it will be incremented
-                    _start = nextval;
-                    _end = nextval + _blockSize - 1;
-                }
-                finally
-                {
-                    _store.Configuration.ConnectionFactory.CloseConnection(connection);
-                }
+                } while (affectedRows == 0);
+
+                _increment = -1; // Start with -1 as it will be incremented
+                _start = nextval;
+                _ends[collection] = nextval + _blockSize - 1;
             }
         }
 
-        private void EnsureInitialized(string dimension)
+        public async Task InitializeCollectionAsync(DbTransaction transaction, string collection, ISchemaBuilder builder)
         {
-            if (_initializedCollections.Contains(dimension))
+            if (_ends.ContainsKey(collection))
             {
                 return;
             }
 
-            lock (_synLock)
+            // Does the record already exist?
+            var selectCommand = transaction.Connection.CreateCommand();
+            selectCommand.CommandText = SelectCommand;
+
+            var selectDimension = selectCommand.CreateParameter();
+            selectDimension.Value = collection;
+            selectDimension.ParameterName = "@dimension";
+            selectCommand.Parameters.Add(selectDimension);
+
+            selectCommand.Transaction = transaction;
+
+            var nextVal = await selectCommand.ExecuteScalarAsync();
+
+            if (null != nextVal)
             {
-                // Create a specific connection
-                var connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                if (connection.State == ConnectionState.Closed)
-                {
-                    connection.Open();
-                }
-
-                var transaction = connection.BeginTransaction();
-                try
-                {
-                    // Does the record already exist?
-                    var selectCommand = transaction.Connection.CreateCommand();
-                    selectCommand.CommandText = SelectCommand;
-
-                    var selectDimension = selectCommand.CreateParameter();
-                    selectDimension.Value = dimension;
-                    selectDimension.ParameterName = "@dimension";
-                    selectCommand.Parameters.Add(selectDimension);
-
-                    selectCommand.Transaction = transaction;
-
-                    var nextVal = selectCommand.ExecuteScalar();
-
-                    if (null != nextVal)
-                    {
-                        return;
-                    }
-
-                    var command = transaction.Connection.CreateCommand();
-                    command.CommandText = InsertCommand;
-
-                    var dimensionParameter = command.CreateParameter();
-                    dimensionParameter.Value = dimension;
-                    dimensionParameter.ParameterName = "@dimension";
-                    command.Parameters.Add(dimensionParameter);
-
-                    var nextValParameter = command.CreateParameter();
-                    nextValParameter.Value = 1;
-                    nextValParameter.ParameterName = "@nextval";
-                    command.Parameters.Add(nextValParameter);
-
-                    command.Transaction = transaction;
-
-                    command.ExecuteNonQuery();
-
-                    transaction.Commit();
-
-                    // Copy the current collection to preserve thread-safety
-                    var newList = new HashSet<string>(_initializedCollections);
-                    _initializedCollections = newList;
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
-                finally
-                {
-                    _store.Configuration.ConnectionFactory.CloseConnection(connection);
-                }
+                _ends[collection] = Convert.ToInt64(nextVal);
+                return;
             }
+
+            var command = transaction.Connection.CreateCommand();
+            command.CommandText = InsertCommand;
+
+            var dimensionParameter = command.CreateParameter();
+            dimensionParameter.Value = collection;
+            dimensionParameter.ParameterName = "@dimension";
+            command.Parameters.Add(dimensionParameter);
+
+            var nextValParameter = command.CreateParameter();
+            nextValParameter.Value = 1;
+            nextValParameter.ParameterName = "@nextval";
+            command.Parameters.Add(nextValParameter);
+
+            command.Transaction = transaction;
+
+            await command.ExecuteNonQueryAsync();
+
+            _ends[collection] = 0;
         }
     }
 }

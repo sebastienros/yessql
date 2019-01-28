@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using YesSql.Provider.MySql;
 using YesSql.Sql;
 
@@ -16,9 +17,9 @@ namespace YesSql.Tests
             return new Store(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix).UseBlockIdGenerator());
         }
 
-        protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
+        protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
         {
-            base.OnCleanDatabase(builder, session);
+            base.OnCleanDatabase(builder, transaction);
 
             try
             {

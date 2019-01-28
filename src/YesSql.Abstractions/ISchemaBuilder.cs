@@ -1,5 +1,5 @@
 using System;
-using System.Data;
+using System.Data.Common;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
@@ -8,8 +8,8 @@ namespace YesSql.Sql
     {
         string TablePrefix { get; }
         ISqlDialect Dialect { get; }
-        IDbConnection Connection { get; }
-        IDbTransaction Transaction { get; }
+        DbConnection Connection { get; }
+        DbTransaction Transaction { get; }
 
         ISchemaBuilder AlterTable(string name, Action<IAlterTableCommand> table);
         ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns);

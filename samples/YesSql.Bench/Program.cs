@@ -24,15 +24,22 @@ namespace Bench
 
             await store.InitializeAsync();
 
-            using (var session = store.CreateSession())
+            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session);
+                await connection.OpenAsync();
 
-                builder.CreateMapIndexTable(nameof(UserByName), c => c
-                    .Column<string>("Name")
-                    .Column<bool>("Adult")
-                    .Column<int>("Age")
-                );
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(store, transaction);
+
+                    builder.CreateMapIndexTable(nameof(UserByName), c => c
+                        .Column<string>("Name")
+                        .Column<bool>("Adult")
+                        .Column<int>("Age")
+                    );
+
+                    transaction.Commit();
+                }
             }
 
             store.RegisterIndexes<UserIndexProvider>();

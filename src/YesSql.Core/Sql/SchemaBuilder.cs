@@ -1,7 +1,7 @@
 using Dapper;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.Common;
 using YesSql.Collections;
 using YesSql.Sql.Schema;
 
@@ -12,26 +12,18 @@ namespace YesSql.Sql
         private ICommandInterpreter _builder;
         public string TablePrefix { get; private set; }
         public ISqlDialect Dialect { get; private set; }
-        public IDbConnection Connection { get; private set; }
-        public IDbTransaction Transaction { get; private set; }
+        public DbConnection Connection { get; private set; }
+        public DbTransaction Transaction { get; private set; }
         public bool ThrowOnError { get; set; } = true;
+        
 
-        public SchemaBuilder(ISession session)
+        public SchemaBuilder(IStore store, DbTransaction transaction)
         {
-            Transaction = session.DemandAsync().GetAwaiter().GetResult();
+            Transaction = transaction;
             Connection = Transaction.Connection;
             _builder = CommandInterpreterFactory.For(Connection);
-            Dialect = session.Store.Dialect;
-            TablePrefix = session.Store.Configuration.TablePrefix;
-        }
-
-        public SchemaBuilder(IDbConnection connection, IDbTransaction transaction, string tablePrefix)
-        {
-            _builder = CommandInterpreterFactory.For(connection);
-            Dialect = SqlDialectFactory.For(connection);
-            TablePrefix = tablePrefix;
-            Connection = connection;
-            Transaction = transaction;
+            Dialect = store.Dialect;
+            TablePrefix = store.Configuration.TablePrefix;
         }
 
         private void Execute(IEnumerable<string> statements)

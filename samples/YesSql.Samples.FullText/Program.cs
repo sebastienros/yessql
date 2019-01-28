@@ -25,12 +25,19 @@ namespace YesSql.Samples.FullText
 
             await store.InitializeAsync();
 
-            using (var session = store.CreateSession())
+            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                new SchemaBuilder(session).CreateReduceIndexTable(nameof(ArticleByWord), table => table
-                        .Column<int>("Count")
-                        .Column<string>("Word")
-                    );
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    new SchemaBuilder(store, transaction).CreateReduceIndexTable(nameof(ArticleByWord), table => table
+                            .Column<int>("Count")
+                            .Column<string>("Word")
+                        );
+
+                    transaction.Commit();
+                }
             }
 
             // register available indexes

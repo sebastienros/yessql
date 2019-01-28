@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
-using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Indexes;
-using YesSql.Sql;
 
 namespace YesSql.Commands
 {
@@ -31,7 +30,7 @@ namespace YesSql.Commands
         public IIndex Index { get; }
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
 
         public static void ResetQueryCache()
         {

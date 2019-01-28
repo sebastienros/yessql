@@ -1,12 +1,11 @@
 using System;
-using System.Data;
+using System.Data.Common;
 
 namespace YesSql
 {
-    public interface IConnectionFactory : IDisposable
+    public interface IConnectionFactory
     {
-        IDbConnection CreateConnection();
-        void CloseConnection(IDbConnection connection);
+        DbConnection CreateConnection();
         Type DbConnectionType { get; }
     }
 }

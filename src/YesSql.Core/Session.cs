@@ -17,7 +17,7 @@ namespace YesSql
 {
     public class Session : ISession
     {
-        private IDbTransaction _transaction;
+        private DbTransaction _transaction;
 
         private readonly IdentityMap _identityMap = new IdentityMap();
         private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
@@ -99,7 +99,7 @@ namespace YesSql
             {
                 // it's a new entity
                 var collection = CollectionHelper.Current.GetSafeName();
-                id = _store.GetNextId(Demand(), collection);
+                id = _store.GetNextId(collection);
                 accessor.Set(entity, id);
                 _identityMap.Add(id, entity);
             }
@@ -181,7 +181,7 @@ namespace YesSql
             else
             {
                 var collection = CollectionHelper.Current.GetSafeName();
-                doc.Id = _store.GetNextId(Demand(), collection);
+                doc.Id = _store.GetNextId(collection);
             }
 
             Demand();
@@ -462,7 +462,8 @@ namespace YesSql
 
                 if (_connection != null)
                 {
-                    _store.Configuration.ConnectionFactory.CloseConnection(_connection);
+                    _connection.Close();
+                    _connection.Dispose();
                     _connection = null;
                 }
 
@@ -848,7 +849,7 @@ namespace YesSql
         /// <summary>
         /// Initializes a new transaction if none has been yet
         /// </summary>
-        public async Task<IDbTransaction> DemandAsync()
+        public async Task<DbTransaction> DemandAsync()
         {
             CheckDisposed();
 
@@ -883,7 +884,7 @@ namespace YesSql
             return _transaction;
         }
 
-        private IDbTransaction Demand()
+        private DbTransaction Demand()
         {
             CheckDisposed();
 
@@ -891,12 +892,7 @@ namespace YesSql
             {
                 if (_connection == null)
                 {
-                    _connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                    if (_connection == null)
-                    {
-                        throw new InvalidOperationException("The connection couldn't be covnerted to DbConnection");
-                    }
+                    _connection = _store.Configuration.ConnectionFactory.CreateConnection();
 
                     // The dialect could already be initialized if the session is reused
                     if (_dialect == null)

@@ -1,4 +1,4 @@
-using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Sql;
 
@@ -17,11 +17,19 @@ namespace YesSql
         Task InitializeAsync(IStore store, ISchemaBuilder builder);
 
         /// <summary>
+        /// Initializes a document collection.
+        /// </summary>
+        /// <param name="transaction"></param>
+        /// <param name="collectionName"></param>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        Task InitializeCollectionAsync(DbTransaction transaction, string collection, ISchemaBuilder builder);
+
+        /// <summary>
         /// Generates a unique identifier for the store.
         /// </summary>
-        /// <param name="transaction">The currently used transaction.</param>
         /// <param name="collection">The name of the collection to generate the identifier for.</param>
         /// <returns>A unique identifier</returns>
-        long GetNextId(IDbTransaction transaction, string collection);
+        long GetNextId(string collection);
     }
 }

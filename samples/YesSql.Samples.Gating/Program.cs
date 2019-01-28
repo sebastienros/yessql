@@ -42,24 +42,38 @@ namespace YesSql.Samples.Gating
 
             try
             {
-                using (var session = store.CreateSession())
+                using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
                 {
-                    new SchemaBuilder(session)
+                    connection.Open();
+
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        new SchemaBuilder(store, transaction)
                         .DropMapIndexTable(nameof(PersonByName))
                         .DropTable("Identifiers")
                         .DropTable("Document");
+
+                        transaction.Commit();
+                    }
                 }
             }
             catch { }
 
             store.InitializeAsync().GetAwaiter().GetResult();
 
-            using (var session = store.CreateSession())
+            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session)
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(store, transaction)
                     .CreateMapIndexTable(nameof(PersonByName), column => column
                         .Column<string>(nameof(PersonByName.SomeName))
                     );
+
+                    transaction.Commit();
+                }
             }
 
             store.RegisterIndexes<PersonIndexProvider>();

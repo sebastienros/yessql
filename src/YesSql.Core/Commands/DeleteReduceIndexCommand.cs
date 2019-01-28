@@ -1,10 +1,8 @@
-﻿using Dapper;
-using System.Data;
+using Dapper;
+using System.Data.Common;
 using System.Threading.Tasks;
-using YesSql.Indexes;
 using YesSql.Collections;
-using YesSql.Services;
-using YesSql.Sql;
+using YesSql.Indexes;
 
 namespace YesSql.Commands
 {
@@ -16,7 +14,7 @@ namespace YesSql.Commands
 
         public override int ExecutionOrder { get; } = 1;
 
-        public override async Task ExecuteAsync(IDbConnection connection, IDbTransaction transaction, ISqlDialect dialect)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
         {
             var name = Index.GetType().Name;
 

@@ -24,15 +24,22 @@ namespace YesSql.Samples.Hi
 
             await store.InitializeAsync();
 
-            using (var session = store.CreateSession())
+            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                new SchemaBuilder(session).CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    new SchemaBuilder(store, transaction).CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
                         .Column<string>("Author")
                     )
                     .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
                         .Column<int>("Count")
                         .Column<int>("Day")
                     );
+
+                    transaction.Commit();
+                }
             };
 
             // register available indexes

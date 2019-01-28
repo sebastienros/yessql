@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -244,14 +245,14 @@ namespace YesSql.Services
                 };
         }
 
-        public DefaultQuery(IDbConnection connection, IDbTransaction transaction, Session session, string tablePrefix)
+        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix)
         {
             _session = session;
             _dialect = session.Store.Dialect;
             _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix));
         }
 
-        public DefaultQuery(IDbConnection connection, IDbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
+        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
         {
             _queryState = queryState;
             _compiledQuery = compiledQuery;
