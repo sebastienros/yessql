@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Data;
 using YesSql.Indexes;
-using YesSql.Serialization;
 
 namespace YesSql.Services
 {

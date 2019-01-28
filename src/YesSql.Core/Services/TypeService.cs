@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Reflection;
 
-namespace YesSql
+namespace YesSql.Services
 {
     public class TypeService : ITypeService
     {
