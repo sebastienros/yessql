@@ -73,7 +73,6 @@ namespace YesSql.Services
                 {
 
                 }
-
             }
         }
 
@@ -91,18 +90,18 @@ namespace YesSql.Services
                 if (nextId > range.End)
                 {
                     LeaseRange(range);
-                    Debug.WriteLine($"~LeaseRange: '{range.Collection}' {range.Start}:{range.End}:{range.Cursor}");
+                    //Debug.WriteLine($"~LeaseRange: '{range.Collection}' {range.Start}:{range.End}:{range.Cursor}");
                     nextId = range.Next();
                 }
 
-                Debug.WriteLine($"nextId: {nextId}");
+                // Debug.WriteLine($"nextId: {nextId}");
                 return nextId;
             }
         }
 
         private void LeaseRange(Range range)
         {
-            Debug.WriteLine($"LeaseRange: '{range.Collection}' {range.Start}:{range.End}:{range.Cursor}");
+            //Debug.WriteLine($"LeaseRange: '{range.Collection}' {range.Start}:{range.End}:{range.Cursor}");
 
             var affectedRows = 0;
             long nextval = 0;
@@ -169,7 +168,7 @@ namespace YesSql.Services
                         throw new Exception("Too many retries while trying to lease a range for: " + range.Collection);
                     }
 
-                    Debug.WriteLine($"Affected Rows: {affectedRows}");
+                    //Debug.WriteLine($"Affected Rows: {affectedRows}");
 
                 } while (affectedRows == 0);
 
