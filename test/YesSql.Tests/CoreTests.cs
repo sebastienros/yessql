@@ -27,6 +27,9 @@ namespace YesSql.Tests
             _store = CreateStore(new Configuration());
 
             CleanDatabase(false);
+
+            _store = CreateStore(new Configuration());
+
             CreateTables();
         }
 
@@ -54,7 +57,7 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    var builder = new SchemaBuilder(_store, transaction) { ThrowOnError = throwOnError };
+                    var builder = new SchemaBuilder(_store.Configuration, transaction) { ThrowOnError = throwOnError };
 
                     builder.DropReduceIndexTable(nameof(ArticlesByDay));
                     builder.DropReduceIndexTable(nameof(AttachmentByDay));
@@ -89,9 +92,6 @@ namespace YesSql.Tests
 
         public void CreateTables()
         {
-            // Create tables
-            _store.InitializeAsync().Wait();
-
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
                 connection.Open();
@@ -99,7 +99,7 @@ namespace YesSql.Tests
                 using (var transaction = connection.BeginTransaction())
                 {
 
-                    var builder = new SchemaBuilder(_store, transaction);
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
                             .Column<int>(nameof(ArticlesByDay.Count))
@@ -1771,7 +1771,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
@@ -1800,7 +1800,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
@@ -1842,7 +1842,7 @@ namespace YesSql.Tests
                     indices[b] = tmp;
                 }
 
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
@@ -2836,9 +2836,10 @@ namespace YesSql.Tests
 
                     using (var transaction = connection.BeginTransaction())
                     {
-                        new SchemaBuilder(_store, transaction).CreateMapIndexTable(nameof(PersonByNameCol), column => column
-                        .Column<string>(nameof(PersonByNameCol.Name))
-                        );
+                        new SchemaBuilder(_store.Configuration, transaction)
+                            .CreateMapIndexTable(nameof(PersonByNameCol), column => column
+                                .Column<string>(nameof(PersonByNameCol.Name))
+                            );
 
                         transaction.Commit();
                     }
@@ -3187,7 +3188,7 @@ namespace YesSql.Tests
                 session.Save(bill);
                 session.Save(steve);
 
-                for (int i = 0; i < 20; i++)
+                for (var i = 0; i < 20; i++)
                 {
                     session.Save(new Person { Firstname = $"Foo {i}" });
                 }
@@ -3451,25 +3452,28 @@ namespace YesSql.Tests
         {
             await _store.InitializeCollectionAsync(collection);
 
-            var stopping = false;
+            var cts = new CancellationTokenSource(10000);
             var concurrency = 5;
-            var counter = 0;
-            var MaxTransactions = int.MaxValue;
+            var MaxTransactions = 10000;
+            long lastId = 0;
 
-            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(() =>
             {
-                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                while (!cts.IsCancellationRequested)
                 {
-                    var id = _store.Configuration.IdGenerator.GetNextId(collection);
+                    if ((lastId = _store.Configuration.IdGenerator.GetNextId(collection)) > MaxTransactions)
+                    {
+                        break;
+                    }
                 }
             })).ToList();
 
-            tasks.Add(Task.Delay(TimeSpan.FromSeconds(2)));
-
             await Task.WhenAny(tasks);
 
+            Assert.True(lastId >= MaxTransactions);
+
             // Flushing tasks
-            stopping = true;
+            cts.Cancel();
             await Task.WhenAll(tasks);
         }
     }

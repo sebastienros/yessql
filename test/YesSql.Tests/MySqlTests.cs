@@ -14,7 +14,7 @@ namespace YesSql.Tests
 
         protected override IStore CreateStore(Configuration configuration)
         {
-            return new Store(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix).UseBlockIdGenerator());
+            return StoreFactory.CreateAsync(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix).UseBlockIdGenerator()).GetAwaiter().GetResult();
         }
 
         protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)

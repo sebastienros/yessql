@@ -17,13 +17,13 @@ namespace YesSql.Sql
         public bool ThrowOnError { get; set; } = true;
         
 
-        public SchemaBuilder(IStore store, DbTransaction transaction)
+        public SchemaBuilder(IConfiguration configuration, DbTransaction transaction)
         {
             Transaction = transaction;
             Connection = Transaction.Connection;
             _builder = CommandInterpreterFactory.For(Connection);
-            Dialect = store.Dialect;
-            TablePrefix = store.Configuration.TablePrefix;
+            Dialect = SqlDialectFactory.For(configuration.ConnectionFactory.DbConnectionType);
+            TablePrefix = configuration.TablePrefix;
         }
 
         private void Execute(IEnumerable<string> statements)

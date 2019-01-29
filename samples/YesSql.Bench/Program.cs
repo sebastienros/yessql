@@ -16,21 +16,17 @@ namespace Bench
 
         static async Task MainAsync(string[] args)
         {
-            var store = new Store(
-                new Configuration()
+            var configuration = new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
-                    .SetTablePrefix("Bench")
-                );
+                    .SetTablePrefix("Bench");
 
-            await store.InitializeAsync();
-
-            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    var builder = new SchemaBuilder(store, transaction);
+                    var builder = new SchemaBuilder(configuration, transaction);
 
                     builder.CreateMapIndexTable(nameof(UserByName), c => c
                         .Column<string>("Name")
@@ -42,6 +38,7 @@ namespace Bench
                 }
             }
 
+            var store = await StoreFactory.CreateAsync(configuration);
             store.RegisterIndexes<UserIndexProvider>();
 
             using (var session = store.CreateSession())

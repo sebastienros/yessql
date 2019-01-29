@@ -75,8 +75,10 @@ namespace YesSql
 
         public DbConnection CreateConnection()
         {
-            var connection = new TDbConnection();
-            connection.ConnectionString = _connectionString;
+            var connection = new TDbConnection
+            {
+                ConnectionString = _connectionString
+            };
 
             return connection;
         }

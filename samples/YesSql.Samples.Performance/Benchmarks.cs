@@ -22,21 +22,19 @@ namespace YesSql.Samples.Performance
 
         private async Task InitializeAsync()
         {
-            _store = new Store(
-                new Configuration()
+            var configuration = new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
-                    .SetTablePrefix("Performance")
-                );
-
+                    .SetTablePrefix("Performance");
+            
             try
             {
-                using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+                using (var connection = configuration.ConnectionFactory.CreateConnection())
                 {
                     connection.Open();
 
                     using (var transaction = connection.BeginTransaction())
                     {
-                        new SchemaBuilder(_store, transaction)
+                        new SchemaBuilder(configuration, transaction)
                         .DropTable("UserByName")
                         .DropTable("Identifiers")
                         .DropTable("Document");
@@ -47,15 +45,15 @@ namespace YesSql.Samples.Performance
             }
             catch { }
 
-            await _store.InitializeAsync();
+            _store = await StoreFactory.CreateAsync(configuration);
 
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 connection.Open();
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    new SchemaBuilder(_store, transaction).CreateMapIndexTable("UserByName", table => table
+                    new SchemaBuilder(configuration, transaction).CreateMapIndexTable("UserByName", table => table
                         .Column<string>("Name")
                     )
                     .AlterTable("UserByName", table => table

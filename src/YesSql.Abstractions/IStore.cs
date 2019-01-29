@@ -21,8 +21,7 @@ namespace YesSql
         /// <returns>The <see cref="IStore"/> instance.</returns>
         IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders);
 
-        IConfiguration Configuration { get; set; }
-        Task InitializeAsync();
+        IConfiguration Configuration { get; }
         Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
         IEnumerable<IndexDescriptor> Describe(Type target);

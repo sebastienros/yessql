@@ -16,13 +16,11 @@ namespace YesSql.Samples.Hi
 
         static async Task MainAsync(string[] args)
         {
-            var store = new Store(
+            var store = await StoreFactory.CreateAsync(
                 new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
                     .SetTablePrefix("Hi")
                 );
-
-            await store.InitializeAsync();
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -30,12 +28,13 @@ namespace YesSql.Samples.Hi
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    new SchemaBuilder(store, transaction).CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
-                        .Column<string>("Author")
-                    )
-                    .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
-                        .Column<int>("Count")
-                        .Column<int>("Day")
+                    new SchemaBuilder(store.Configuration, transaction)
+                        .CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
+                            .Column<string>("Author")
+                        )
+                        .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
+                            .Column<int>("Count")
+                            .Column<int>("Day")
                     );
 
                     transaction.Commit();
