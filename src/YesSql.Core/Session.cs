@@ -94,14 +94,15 @@ namespace YesSql
                 }
             }
 
+            // it's a new entity
+            var collection = CollectionHelper.Current.GetSafeName();
+            id = _store.GetNextId(collection);
+            _identityMap.Add(id, entity);
+
             // Then assign a new identifier if it has one
             if (accessor != null)
             {
-                // it's a new entity
-                var collection = CollectionHelper.Current.GetSafeName();
-                id = _store.GetNextId(collection);
                 accessor.Set(entity, id);
-                _identityMap.Add(id, entity);
             }
 
             _saved.Add(entity);
@@ -172,19 +173,14 @@ namespace YesSql
                 Type = Store.TypeNames[entity.GetType()]
             };
 
-            // Get the entity's Id if assigned
-            var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
-            if (accessor != null)
+            if (!_identityMap.TryGetDocumentId(entity, out var id))
             {
-                doc.Id = accessor.Get(entity);
-            }
-            else
-            {
-                var collection = CollectionHelper.Current.GetSafeName();
-                doc.Id = _store.GetNextId(collection);
+                throw new InvalidOperationException("The object to save was not found in identity map.");
             }
 
-            Demand();
+            doc.Id = id;
+
+            await DemandAsync();
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
