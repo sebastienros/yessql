@@ -26,6 +26,7 @@ namespace YesSql
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
         IEnumerable<IndexDescriptor> Describe(Type target);
         ISqlDialect Dialect { get; }
+        ITypeService TypeNames { get; }
     }
 
     public static class IStoreExtensions

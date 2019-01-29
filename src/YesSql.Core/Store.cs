@@ -26,6 +26,7 @@ namespace YesSql
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
+        public ITypeService TypeNames { get; private set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
@@ -82,7 +83,8 @@ namespace YesSql
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
             Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
-
+            TypeNames = new TypeService();
+            
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();

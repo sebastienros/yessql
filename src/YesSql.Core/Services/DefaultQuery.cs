@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Data;
 using YesSql.Indexes;
-using YesSql.Serialization;
 
 namespace YesSql.Services
 {
@@ -812,7 +811,7 @@ namespace YesSql.Services
             if (filterType)
             {
                 _queryState._sqlBuilder.WhereAlso(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
-                _queryState._sqlBuilder.Parameters["@Type"] = typeof(T).SimplifiedTypeName();
+                _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
             }
 
             return new Query<T>(this);
