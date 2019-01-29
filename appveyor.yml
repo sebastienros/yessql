@@ -1,4 +1,9 @@
 image: Visual Studio 2017
+skip_branch_with_pr: true
+branches:
+  only:
+    - master
+    - dev
 init:
   - git config --global core.autocrlf true
 services:
@@ -28,7 +33,6 @@ test_script:
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServerTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release
-  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.InMemoryTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.ProviderTests" --configuration Release
 after_test:

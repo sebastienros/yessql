@@ -1,37 +1,29 @@
 using Dapper;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.Common;
 using YesSql.Collections;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
 {
-    public class SchemaBuilder
+    public class SchemaBuilder : ISchemaBuilder
     {
         private ICommandInterpreter _builder;
-        private string _tablePrefix;
-        private ISqlDialect _dialect;
-        public IDbConnection Connection { get; private set; }
-        public IDbTransaction Transaction { get; private set; }
+        public string TablePrefix { get; private set; }
+        public ISqlDialect Dialect { get; private set; }
+        public DbConnection Connection { get; private set; }
+        public DbTransaction Transaction { get; private set; }
         public bool ThrowOnError { get; set; } = true;
+        
 
-        public SchemaBuilder(ISession session)
+        public SchemaBuilder(IConfiguration configuration, DbTransaction transaction)
         {
-            Transaction = session.DemandAsync().GetAwaiter().GetResult();
+            Transaction = transaction;
             Connection = Transaction.Connection;
             _builder = CommandInterpreterFactory.For(Connection);
-            _dialect = session.Store.Dialect;
-            _tablePrefix = session.Store.Configuration.TablePrefix;
-        }
-
-        public SchemaBuilder(IDbConnection connection, IDbTransaction transaction, string tablePrefix)
-        {
-            _builder = CommandInterpreterFactory.For(connection);
-            _dialect = SqlDialectFactory.For(connection);
-            _tablePrefix = tablePrefix;
-            Connection = connection;
-            Transaction = transaction;
+            Dialect = SqlDialectFactory.For(configuration.ConnectionFactory.DbConnectionType);
+            TablePrefix = configuration.TablePrefix;
         }
 
         private void Execute(IEnumerable<string> statements)
@@ -44,10 +36,10 @@ namespace YesSql.Sql
 
         private string Prefix(string table)
         {
-            return _tablePrefix + table;
+            return TablePrefix + table;
         }
 
-        public SchemaBuilder CreateMapIndexTable(string name, Action<CreateTableCommand> table)
+        public ISchemaBuilder CreateMapIndexTable(string name, Action<ICreateTableCommand> table)
         {
             try
             {
@@ -75,7 +67,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder CreateReduceIndexTable(string name, Action<CreateTableCommand> table)
+        public ISchemaBuilder CreateReduceIndexTable(string name, Action<ICreateTableCommand> table)
         {
             try
             {
@@ -111,7 +103,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder DropReduceIndexTable(string name)
+        public ISchemaBuilder DropReduceIndexTable(string name)
         {
             try
             {
@@ -120,7 +112,7 @@ namespace YesSql.Sql
 
                 var bridgeTableName = name + "_" + documentTable;
 
-                if (String.IsNullOrEmpty(_dialect.CascadeConstraintsString))
+                if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
                     DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_Id");
                     DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_DocumentId");
@@ -140,11 +132,11 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder DropMapIndexTable(string name)
+        public ISchemaBuilder DropMapIndexTable(string name)
         {
             try
             {
-                if (String.IsNullOrEmpty(_dialect.CascadeConstraintsString))
+                if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
                     DropForeignKey(name, "FK_" + name);
                 }
@@ -162,7 +154,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder CreateTable(string name, Action<CreateTableCommand> table)
+        public ISchemaBuilder CreateTable(string name, Action<ICreateTableCommand> table)
         {
             try
             {
@@ -181,11 +173,11 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder AlterTable(string name, Action<AlterTableCommand> table)
+        public ISchemaBuilder AlterTable(string name, Action<IAlterTableCommand> table)
         {
             try
             {
-                var alterTable = new AlterTableCommand(Prefix(name), _dialect, _tablePrefix);
+                var alterTable = new AlterTableCommand(Prefix(name), Dialect, TablePrefix);
                 table(alterTable);
                 Execute(_builder.CreateSql(alterTable));
             }
@@ -200,7 +192,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder DropTable(string name)
+        public ISchemaBuilder DropTable(string name)
         {
             try
             {
@@ -218,7 +210,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
+        public ISchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
         {
             try
             {
@@ -236,7 +228,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
+        public ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
         {
             try
             {
@@ -253,7 +245,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
+        public ISchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
         {
             try
             {
@@ -272,7 +264,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
+        public ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
         {
             try
             {
@@ -290,7 +282,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public SchemaBuilder DropForeignKey(string srcTable, string name)
+        public ISchemaBuilder DropForeignKey(string srcTable, string name)
         {
             try
             {

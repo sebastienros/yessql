@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.Sqlite;
@@ -14,19 +15,19 @@ namespace YesSql.Tests
 
         public SqliteTests()
         {
+        }
+
+        protected override IStore CreateStore(Configuration configuration)
+        {
             _tempFolder = new TemporaryFolder();
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-            _store = new Store(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix));
-
-
-            CleanDatabase(false);
-            CreateTables();
+            return StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator()).GetAwaiter().GetResult();
         }
 
-        protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
+        protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
         {
-            base.OnCleanDatabase(builder, session);
+            base.OnCleanDatabase(builder, transaction);
 
             try
             {

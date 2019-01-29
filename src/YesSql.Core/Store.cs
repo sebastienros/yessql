@@ -22,7 +22,6 @@ namespace YesSql
         protected List<IIndexProvider> Indexes;
         protected List<Type> ScopedIndexes;
 
-        protected LinearBlockIdGenerator IdGenerator;
         private ObjectPool<Session> _sessionPool;
 
         public IConfiguration Configuration { get; set; }
@@ -60,93 +59,114 @@ namespace YesSql
         /// Initializes a <see cref="Store"/> instance and its new <see cref="Configuration"/>.
         /// </summary>
         /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
-        public Store(Action<IConfiguration> config)
+        internal Store(Action<IConfiguration> config)
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
-
-            AfterConfigurationAssigned();
         }
 
         /// <summary>
         /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
         /// </summary>
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
-        public Store(IConfiguration configuration)
+        internal Store(IConfiguration configuration)
         {
             Configuration = configuration;
-
-            AfterConfigurationAssigned();
         }
 
-        public void AfterConfigurationAssigned()
+        internal async Task InitializeAsync()
         {
             IndexCommand.ResetQueryCache();
             Indexes = new List<IIndexProvider>();
             ScopedIndexes = new List<Type>();
             ValidateConfiguration();
-            IdGenerator = new LinearBlockIdGenerator(Configuration.ConnectionFactory, 20, Configuration.TablePrefix);
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
             Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
             TypeNames = new TypeService();
-        }
-
-        public Task InitializeAsync()
-        {
-            using (var session = CreateSession())
+            
+            using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session);
+                await connection.OpenAsync();
 
-                builder.CreateTable("Document", table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                    .Column<string>("Content", column => column.Unlimited())
-                )
-                .AlterTable("Document", table => table
-                    .CreateIndex("IX_Type", "Type")
-                );
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(Configuration, transaction);
+                    await Configuration.IdGenerator.InitializeAsync(this, builder);
 
-                builder.CreateTable(LinearBlockIdGenerator.TableName, table => table
-                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                    .Column<ulong>("nextval")
-                )
-                .AlterTable(LinearBlockIdGenerator.TableName, table => table
-                    .CreateIndex("IX_Dimension", "dimension")
-                );
+                    transaction.Commit();
+                }
             }
 
-#if NET451
-            return Task.FromResult(0);
-#else
-            return Task.CompletedTask;
-#endif
+            // Pee-initialize the default collection
+            await InitializeCollectionAsync("");
         }
 
-        public Task InitializeCollectionAsync(string collectionName)
+        public async Task InitializeCollectionAsync(string collectionName)
         {
-            var documentTable = collectionName + "_" + "Document";
+            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
 
-            using (var session = CreateSession())
+            using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session);
+                await connection.OpenAsync();
 
-                builder
-                    .CreateTable(documentTable, table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                    .Column<string>("Content", column => column.Unlimited())
-                )
-                .AlterTable(documentTable, table => table
-                    .CreateIndex("IX_" + documentTable + "_Type", "Type")
-                );
+                try
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var selectCommand = transaction.Connection.CreateCommand();
+
+                        selectCommand.CommandText = $"SELECT 1 FROM {Dialect.QuoteForTableName(Configuration.TablePrefix + documentTable)}";
+                        var result = await selectCommand.ExecuteScalarAsync();
+
+                        transaction.Commit();
+                        
+                        // Table already exists?
+                        if (result != null && Convert.ToInt64(result) == 1)
+                        {
+                            return;
+                        }
+                    }
+                }
+                catch
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var builder = new SchemaBuilder(Configuration, transaction);
+
+                        try
+                        {
+                            // The table doesn't exist, create it
+                            builder
+                                .CreateTable(documentTable, table => table
+                                .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                                .Column<string>("Type", column => column.NotNull())
+                                .Column<string>("Content", column => column.Unlimited())
+                            )
+                            .AlterTable(documentTable, table => table
+                                .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                            );
+
+                            transaction.Commit();
+                        }
+                        catch
+                        {
+                            // Another thread must have created it
+                        }
+                    }
+                }
+                finally
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var builder = new SchemaBuilder(Configuration, transaction);
+
+                        await Configuration.IdGenerator.InitializeCollectionAsync(transaction, collectionName, builder);
+
+                        transaction.Commit();
+                    }
+                }
             }
-
-#if NET451
-            return Task.FromResult(0);
-#else
-            return Task.CompletedTask;
-#endif
         }
 
         private void ValidateConfiguration()
@@ -231,9 +251,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(ISession session, string collection)
+        public int GetNextId(string collection)
         {
-            return (int)IdGenerator.GetNextId(session, collection);
+            return (int)Configuration.IdGenerator.GetNextId(collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)

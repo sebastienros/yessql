@@ -17,7 +17,7 @@ namespace YesSql
 {
     public class Session : ISession
     {
-        private IDbTransaction _transaction;
+        private DbTransaction _transaction;
 
         private readonly IdentityMap _identityMap = new IdentityMap();
         private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
@@ -99,7 +99,7 @@ namespace YesSql
             {
                 // it's a new entity
                 var collection = CollectionHelper.Current.GetSafeName();
-                id = _store.GetNextId(this, collection);
+                id = _store.GetNextId(collection);
                 accessor.Set(entity, id);
                 _identityMap.Add(id, entity);
             }
@@ -181,10 +181,10 @@ namespace YesSql
             else
             {
                 var collection = CollectionHelper.Current.GetSafeName();
-                doc.Id = _store.GetNextId(this, collection);
+                doc.Id = _store.GetNextId(collection);
             }
 
-            await DemandAsync();
+            Demand();
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
@@ -462,7 +462,8 @@ namespace YesSql
 
                 if (_connection != null)
                 {
-                    _store.Configuration.ConnectionFactory.CloseConnection(_connection);
+                    _connection.Close();
+                    _connection.Dispose();
                     _connection = null;
                 }
 
@@ -850,7 +851,7 @@ namespace YesSql
         /// <summary>
         /// Initializes a new transaction if none has been yet
         /// </summary>
-        public async Task<IDbTransaction> DemandAsync()
+        public async Task<DbTransaction> DemandAsync()
         {
             CheckDisposed();
 
@@ -875,6 +876,36 @@ namespace YesSql
                 if (_connection.State == ConnectionState.Closed)
                 {
                     await _connection.OpenAsync();
+                }
+
+                // In the case of shared connections (InMemory) this can throw as the transation
+                // might already be set by a concurrent thread on the same shared connection.
+                _transaction = _connection.BeginTransaction(_isolationLevel);
+            }
+
+            return _transaction;
+        }
+
+        private DbTransaction Demand()
+        {
+            CheckDisposed();
+
+            if (_transaction == null)
+            {
+                if (_connection == null)
+                {
+                    _connection = _store.Configuration.ConnectionFactory.CreateConnection();
+
+                    // The dialect could already be initialized if the session is reused
+                    if (_dialect == null)
+                    {
+                        _dialect = Store.Dialect;
+                    }
+                }
+
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
                 }
 
                 // In the case of shared connections (InMemory) this can throw as the transation

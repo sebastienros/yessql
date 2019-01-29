@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.SqlServer;
@@ -12,15 +13,21 @@ namespace YesSql.Tests
 
         public SqlServerTests()
         {
-            _store = new Store(new Configuration().UseSqlServer(ConnectionString).SetTablePrefix(TablePrefix));
-
-            CleanDatabase(false);
-            CreateTables();
         }
 
-        protected override void OnCleanDatabase(SchemaBuilder builder, ISession session)
+        protected override IStore CreateStore(Configuration configuration)
         {
-            base.OnCleanDatabase(builder, session);
+            return StoreFactory.CreateAsync(
+                new Configuration()
+                    .UseSqlServer(ConnectionString)
+                    .SetTablePrefix(TablePrefix)
+                    .UseBlockIdGenerator())
+                .GetAwaiter().GetResult();
+        }
+
+        protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
+        {
+            base.OnCleanDatabase(builder, transaction);
 
             try
             {

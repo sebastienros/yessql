@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var config = new Configuration();
             setupAction.Invoke(config);
-            services.AddSingleton<IStore>(new Store(config));
+            services.AddSingleton<IStore>(StoreFactory.CreateAsync(config).GetAwaiter().GetResult());
 
             return services;
         }
