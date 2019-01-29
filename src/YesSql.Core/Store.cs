@@ -156,14 +156,7 @@ namespace YesSql
                 }
                 finally
                 {
-                    using (var transaction = connection.BeginTransaction())
-                    {
-                        var builder = new SchemaBuilder(Configuration, transaction);
-
-                        await Configuration.IdGenerator.InitializeCollectionAsync(transaction, collectionName, builder);
-
-                        transaction.Commit();
-                    }
+                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collectionName);
                 }
             }
         }

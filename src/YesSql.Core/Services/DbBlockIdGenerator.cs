@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Sql;
@@ -56,33 +56,25 @@ namespace YesSql.Services
                 {
                     using (var transaction = connection.BeginTransaction())
                     {
-                        var command = connection.CreateCommand();
-                        command.Transaction = transaction;
-                        command.CommandText = $"SELECT 1 FROM {_dialect.QuoteForTableName(_tablePrefix + TableName)} ;";
+                        var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
-                        var result = await command.ExecuteScalarAsync();
+                        localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
+                            .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                            .Column<ulong>("nextval")
+                            )
+                            .AlterTable(DbBlockIdGenerator.TableName, table => table
+                                .CreateIndex("IX_Dimension", "dimension")
+                            );
 
                         transaction.Commit();
-
-                        if (result != null && Convert.ToInt64(result) == 1)
-                        {
-                            return;
-                        }
                     }
                 }
                 catch
                 {
-                    // The table might already exist
-                }
-            }
 
-            builder.CreateTable(DbBlockIdGenerator.TableName, table => table
-                .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                .Column<ulong>("nextval")
-            )
-            .AlterTable(DbBlockIdGenerator.TableName, table => table
-                .CreateIndex("IX_Dimension", "dimension")
-            );
+                }
+
+            }
         }
 
         public long GetNextId(string collection)
@@ -94,21 +86,24 @@ namespace YesSql.Services
                     throw new InvalidOperationException($"The collection '{collection}' was not initialized");
                 }
 
-                range.Cursor += 1;
-                var nextId = range.Cursor + range.Start;
+                var nextId = range.Next();
 
                 if (nextId > range.End)
                 {
                     LeaseRange(range);
-                    nextId = GetNextId(collection);
+                    Debug.WriteLine($"~LeaseRange: '{range.Collection}' {range.Start}:{range.End}:{range.Cursor}");
+                    nextId = range.Next();
                 }
 
+                Debug.WriteLine($"nextId: {nextId}");
                 return nextId;
             }
         }
 
         private void LeaseRange(Range range)
         {
+            Debug.WriteLine($"LeaseRange: '{range.Collection}' {range.Start}:{range.End}:{range.Cursor}");
+
             var affectedRows = 0;
             long nextval = 0;
             var retries = 0;
@@ -122,7 +117,7 @@ namespace YesSql.Services
                     // Ensure we overwrite the value that has been read by this
                     // instance in case another client is trying to lease a range
                     // at the same time
-                    using (var transaction = connection.BeginTransaction())
+                    using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                     {
                         try
                         {
@@ -164,6 +159,7 @@ namespace YesSql.Services
                         }
                         catch
                         {
+                            affectedRows = 0;
                             transaction.Rollback();
                         }
                     }
@@ -173,56 +169,84 @@ namespace YesSql.Services
                         throw new Exception("Too many retries while trying to lease a range for: " + range.Collection);
                     }
 
+                    Debug.WriteLine($"Affected Rows: {affectedRows}");
+
                 } while (affectedRows == 0);
 
                 range.SetBlock(nextval, _blockSize);
             }
         }
 
-        public async Task InitializeCollectionAsync(DbTransaction transaction, string collection, ISchemaBuilder builder)
+        public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
         {
             if (_ranges.ContainsKey(collection))
             {
                 return;
             }
 
-            // Does the record already exist?
-            var selectCommand = transaction.Connection.CreateCommand();
-            selectCommand.CommandText = SelectCommand;
+            object nextval;
 
-            var selectDimension = selectCommand.CreateParameter();
-            selectDimension.Value = collection;
-            selectDimension.ParameterName = "@dimension";
-            selectCommand.Parameters.Add(selectDimension);
-
-            selectCommand.Transaction = transaction;
-
-            var nextVal = await selectCommand.ExecuteScalarAsync();
-
-            if (null != nextVal)
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                _ranges[collection] = new Range(collection).SetBlock(Convert.ToInt64(nextVal), _blockSize);
+                await connection.OpenAsync();
 
-                return;
-            }
+                using (var transaction = connection.BeginTransaction())
+                {
+                    // Does the record already exist?
+                    var selectCommand = transaction.Connection.CreateCommand();
+                    selectCommand.CommandText = SelectCommand;
 
-            var command = transaction.Connection.CreateCommand();
-            command.CommandText = InsertCommand;
-            command.Transaction = transaction;
+                    var selectDimension = selectCommand.CreateParameter();
+                    selectDimension.Value = collection;
+                    selectDimension.ParameterName = "@dimension";
+                    selectCommand.Parameters.Add(selectDimension);
 
-            var dimensionParameter = command.CreateParameter();
-            dimensionParameter.Value = collection;
-            dimensionParameter.ParameterName = "@dimension";
-            command.Parameters.Add(dimensionParameter);
+                    selectCommand.Transaction = transaction;
 
-            var nextValParameter = command.CreateParameter();
-            nextValParameter.Value = _blockSize + 1;
-            nextValParameter.ParameterName = "@nextval";
-            command.Parameters.Add(nextValParameter);
+                    nextval = await selectCommand.ExecuteScalarAsync();
 
-            await command.ExecuteNonQueryAsync();
+                    transaction.Commit();
+                }
 
-            _ranges[collection] = new Range(collection).SetBlock(1, _blockSize);
+                if (nextval == null)
+                {
+                    // Try to create a new record. If it fails, retry reading the record.
+                    try
+                    {
+                        using (var transaction = connection.BeginTransaction())
+                        {
+                            nextval = 1;
+
+                            // To prevent concurrency issues when creating this record (it must be unique)
+                            // we generate a random collection name, then update it safely
+
+                            var command = transaction.Connection.CreateCommand();
+                            command.CommandText = InsertCommand;
+                            command.Transaction = transaction;
+
+                            var dimensionParameter = command.CreateParameter();
+                            dimensionParameter.Value = collection;
+                            dimensionParameter.ParameterName = "@dimension";
+                            command.Parameters.Add(dimensionParameter);
+
+                            var nextValParameter = command.CreateParameter();
+                            nextValParameter.Value = 1;
+                            nextValParameter.ParameterName = "@nextval";
+                            command.Parameters.Add(nextValParameter);
+
+                            await command.ExecuteNonQueryAsync();
+
+                            transaction.Commit();
+                        }
+                    }
+                    catch
+                    {
+                        await InitializeCollectionAsync(configuration, collection);
+                    }
+                }
+
+                _ranges[collection] = new Range(collection);
+            }                
         }
 
         private class Range
@@ -230,15 +254,21 @@ namespace YesSql.Services
             public Range(string collection)
             {
                 Collection = collection;
+                Cursor = 1;
             }
 
             public Range SetBlock(long start, int blockSize)
             {
                 Start = start;
                 End = Start + blockSize - 1;
-                Cursor = -1;
+                Cursor = 0;
 
                 return this;
+            }
+
+            public long Next()
+            {
+                return Start + Cursor++;
             }
 
             public string Collection;

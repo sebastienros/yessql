@@ -3473,6 +3473,6 @@ namespace YesSql.Tests
             await Task.WhenAll(tasks);
 
             Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
-        }        
+        }
     }
 }

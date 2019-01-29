@@ -19,11 +19,8 @@ namespace YesSql
         /// <summary>
         /// Initializes a document collection.
         /// </summary>
-        /// <param name="transaction"></param>
-        /// <param name="collectionName"></param>
-        /// <param name="builder"></param>
         /// <returns></returns>
-        Task InitializeCollectionAsync(DbTransaction transaction, string collection, ISchemaBuilder builder);
+        Task InitializeCollectionAsync(IConfiguration configuration, string collection);
 
         /// <summary>
         /// Generates a unique identifier for the store.

@@ -1,5 +1,7 @@
 using System;
 using System.Data.Common;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.SqlServer;
@@ -84,6 +86,57 @@ namespace YesSql.Tests
                 Assert.Equal(21, p2.Id);
 
             }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("Collection1")]
+        public async Task ShouldGenerateIdsWithConcurrentStores(string collection)
+        {
+            var configuration = new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
+
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
+
+                    builder.DropTable("Document");
+                    builder.DropTable("Identifiers");
+
+                    transaction.Commit();
+                }
+            }
+
+
+            var cts = new CancellationTokenSource(10000);
+            var concurrency = 5;
+            var MaxTransactions = 5000;
+            long lastId = 0;
+            var results = new bool[2 * MaxTransactions];
+
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            {
+                var store1 = await StoreFactory.CreateAsync(configuration);
+                await store1.InitializeCollectionAsync(collection);
+
+                while (!cts.IsCancellationRequested)
+                {
+                    if ((lastId = store1.Configuration.IdGenerator.GetNextId(collection)) > MaxTransactions)
+                    {
+                        break;
+                    }
+
+                    Assert.False(results[lastId], $"Found duplicate identifier: '{lastId}'");
+                    results[lastId] = true;
+                }
+            })).ToList();
+
+            await Task.WhenAll(tasks);
+
+            Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
         }
 
     }

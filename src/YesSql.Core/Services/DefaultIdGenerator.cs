@@ -45,21 +45,31 @@ namespace YesSql.Services
 #endif
         }
 
-        public async Task InitializeCollectionAsync(DbTransaction transaction, string collection, ISchemaBuilder builder)
+        public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
         {
             // Extract the current max value from the database
 
-            var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
 
-            var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
 
-            var selectCommand = transaction.Connection.CreateCommand();
-            selectCommand.CommandText = sql;
-            selectCommand.Transaction = transaction;
+                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
 
-            var result = await selectCommand.ExecuteScalarAsync();
+                    var selectCommand = transaction.Connection.CreateCommand();
+                    selectCommand.CommandText = sql;
+                    selectCommand.Transaction = transaction;
 
-            _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                    var result = await selectCommand.ExecuteScalarAsync();
+
+                    transaction.Commit();
+
+                    _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                }
+            }
         }
     }
 }
