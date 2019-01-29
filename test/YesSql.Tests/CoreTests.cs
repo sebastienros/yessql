@@ -3466,7 +3466,7 @@ namespace YesSql.Tests
                         break;
                     }
                 }
-            }, cts.Token)).ToList();
+            })).ToList();
 
             await Task.WhenAny(tasks);
 
