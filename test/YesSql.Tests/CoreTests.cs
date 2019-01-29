@@ -3452,7 +3452,7 @@ namespace YesSql.Tests
 
             var cts = new CancellationTokenSource(10000);
             var concurrency = 5;
-            var MaxTransactions = 10000;
+            var MaxTransactions = 1000;
             long lastId = 0;
             var results = new bool[MaxTransactions + concurrency];
 
@@ -3470,13 +3470,9 @@ namespace YesSql.Tests
                 }
             })).ToList();
 
-            await Task.WhenAny(tasks);
+            await Task.WhenAll(tasks);
 
             Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
-
-            // Flushing tasks
-            cts.Cancel();
-            await Task.WhenAll(tasks);
         }        
     }
 }
