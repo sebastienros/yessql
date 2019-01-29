@@ -53,7 +53,7 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    var builder = new SchemaBuilder(configuration, transaction);
+                    var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
                     builder.DropTable("Document");
                     builder.DropTable("Identifiers");
