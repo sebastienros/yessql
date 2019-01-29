@@ -3452,24 +3452,34 @@ namespace YesSql.Tests
 
             var cts = new CancellationTokenSource(10000);
             var concurrency = 5;
+            var man = new ManualResetEventSlim();
             var MaxTransactions = 1000;
             long lastId = 0;
             var results = new bool[MaxTransactions + concurrency];
 
             var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(() =>
             {
+                long taskId;
+                man.Wait();
+
                 while (!cts.IsCancellationRequested)
                 {
-                    if ((lastId = _store.Configuration.IdGenerator.GetNextId(collection)) > MaxTransactions)
+                    lastId = taskId = _store.Configuration.IdGenerator.GetNextId(collection);
+
+                    if (taskId > MaxTransactions)
                     {
                         break;
                     }
 
-                    Assert.False(results[lastId], "Found duplicate identifier");
-                    results[lastId] = true;
+                    Assert.False(results[taskId], $"Found duplicate identifier: '{taskId}'");
+                    results[taskId] = true;
+
+                    System.Diagnostics.Debug.WriteLine($"{i}:{taskId}");
                 }
             })).ToList();
 
+            await Task.Delay(1000);
+            man.Set();
             await Task.WhenAll(tasks);
 
             Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
