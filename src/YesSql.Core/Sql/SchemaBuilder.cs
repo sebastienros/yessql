@@ -15,7 +15,6 @@ namespace YesSql.Sql
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
         public bool ThrowOnError { get; set; } = true;
-        
 
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction)
         {

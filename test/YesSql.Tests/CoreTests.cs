@@ -24,40 +24,30 @@ namespace YesSql.Tests
 
         public CoreTests()
         {
-            _store = CreateStore(new Configuration());
+            var configuration = CreateConfiguration();
 
-            CleanDatabase(false);
-
-            _store = CreateStore(new Configuration());
-
-            CreateTables();
+            CleanDatabase(configuration, false);
+            CreateTables(configuration);
         }
 
         public void Dispose()
         {
-            CleanDatabase(false);
             _store.Dispose();
-
-            OnDispose();
         }
 
-        protected abstract IStore CreateStore(Configuration configuration);
-
-        protected virtual void OnDispose()
-        {
-        }
+        protected abstract IConfiguration CreateConfiguration();
 
         //[DebuggerNonUserCode]
-        protected virtual void CleanDatabase(bool throwOnError)
+        protected virtual void CleanDatabase(IConfiguration configuration, bool throwOnError)
         {
             // Remove existing tables
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 connection.Open();
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    var builder = new SchemaBuilder(_store.Configuration, transaction) { ThrowOnError = throwOnError };
+                    var builder = new SchemaBuilder(configuration, transaction) { ThrowOnError = throwOnError };
 
                     builder.DropReduceIndexTable(nameof(ArticlesByDay));
                     builder.DropReduceIndexTable(nameof(AttachmentByDay));
@@ -90,8 +80,10 @@ namespace YesSql.Tests
 
         }
 
-        public void CreateTables()
+        public void CreateTables(IConfiguration configuration)
         {
+            _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
                 connection.Open();
@@ -3436,13 +3428,19 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldCreateMoreObjectThanIdBlock()
         {
+            var lastId = 0;
+
             using (var session = _store.CreateSession())
             {
                 for (var k = 0; k < 1000; k++)
                 {
-                    session.Save(new Person { Firstname = "Bill" });
+                    var person = new Person { Firstname = "Bill" };
+                    session.Save(person);
+                    lastId = person.Id;
                 }
             }
+
+            Assert.Equal(1000, lastId);
         }
 
         [Theory]
@@ -3456,6 +3454,7 @@ namespace YesSql.Tests
             var concurrency = 5;
             var MaxTransactions = 10000;
             long lastId = 0;
+            var results = new bool[MaxTransactions + concurrency];
 
             var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(() =>
             {
@@ -3465,16 +3464,19 @@ namespace YesSql.Tests
                     {
                         break;
                     }
+
+                    Assert.False(results[lastId], "Found duplicate identifier");
+                    results[lastId] = true;
                 }
             })).ToList();
 
             await Task.WhenAny(tasks);
 
-            Assert.True(lastId >= MaxTransactions);
+            Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
 
             // Flushing tasks
             cts.Cancel();
             await Task.WhenAll(tasks);
-        }
+        }        
     }
 }

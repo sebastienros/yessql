@@ -115,6 +115,7 @@ namespace YesSql
                         var selectCommand = transaction.Connection.CreateCommand();
 
                         selectCommand.CommandText = $"SELECT 1 FROM {Dialect.QuoteForTableName(Configuration.TablePrefix + documentTable)}";
+                        selectCommand.Transaction = transaction;
                         var result = await selectCommand.ExecuteScalarAsync();
 
                         transaction.Commit();

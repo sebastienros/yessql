@@ -12,9 +12,13 @@ namespace YesSql.Tests
         {
         }
 
-        protected override IStore CreateStore(Configuration configuration)
+        protected override IConfiguration CreateConfiguration()
         {
-            return StoreFactory.CreateAsync(new Configuration().UseMySql(ConnectionString).SetTablePrefix(TablePrefix).UseBlockIdGenerator()).GetAwaiter().GetResult();
+            return new Configuration()
+                .UseMySql(ConnectionString)
+                .SetTablePrefix(TablePrefix)
+                .UseBlockIdGenerator()
+                ;
         }
 
         protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)

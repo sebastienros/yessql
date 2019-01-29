@@ -11,11 +11,14 @@ namespace YesSql.Tests
     {
         public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
 
-        protected override IStore CreateStore(Configuration configuration)
+        protected override IConfiguration CreateConfiguration()
         {
-            return StoreFactory.CreateAsync(new Configuration().UsePostgreSql(ConnectionString).SetTablePrefix(TablePrefix).UseBlockIdGenerator()).GetAwaiter().GetResult();
+            return new Configuration()
+                .UsePostgreSql(ConnectionString)
+                .SetTablePrefix(TablePrefix)
+                .UseBlockIdGenerator()
+                ;
         }
-
         protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
         {
             base.OnCleanDatabase(builder, transaction);

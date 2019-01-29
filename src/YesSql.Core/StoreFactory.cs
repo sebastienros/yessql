@@ -23,7 +23,6 @@ namespace YesSql
         /// Initializes an <see cref="IStore"/> instance using a specific <see cref="Configuration"/> instance.
         /// </summary>
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
-
         public static async Task<IStore> CreateAsync(IConfiguration configuration)
         {
             var store = new Store(configuration);
