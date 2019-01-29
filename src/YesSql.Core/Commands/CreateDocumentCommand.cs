@@ -7,7 +7,7 @@ namespace YesSql.Commands
 {
     public class CreateDocumentCommand : DocumentCommand
     {
-        private string _tablePrefix;
+        private readonly string _tablePrefix;
 
         public override int ExecutionOrder { get; } = 0;
 

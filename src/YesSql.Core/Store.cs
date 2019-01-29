@@ -58,26 +58,22 @@ namespace YesSql
         /// Initializes a <see cref="Store"/> instance and its new <see cref="Configuration"/>.
         /// </summary>
         /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
-        public Store(Action<IConfiguration> config)
+        internal Store(Action<IConfiguration> config)
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
-
-            AfterConfigurationAssigned();
         }
 
         /// <summary>
         /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
         /// </summary>
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
-        public Store(IConfiguration configuration)
+        internal Store(IConfiguration configuration)
         {
             Configuration = configuration;
-
-            AfterConfigurationAssigned();
         }
 
-        public void AfterConfigurationAssigned()
+        internal async Task InitializeAsync()
         {
             IndexCommand.ResetQueryCache();
             Indexes = new List<IIndexProvider>();
@@ -86,68 +82,87 @@ namespace YesSql
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
             Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
-        }
 
-        public async Task InitializeAsync()
-        {
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    var builder = new SchemaBuilder(this, transaction);
-
-                    builder.CreateTable("Document", table => table
-                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                        .Column<string>("Type", column => column.NotNull())
-                        .Column<string>("Content", column => column.Unlimited())
-                    )
-                    .AlterTable("Document", table => table
-                        .CreateIndex("IX_Type", "Type")
-                    );
-
+                    var builder = new SchemaBuilder(Configuration, transaction);
                     await Configuration.IdGenerator.InitializeAsync(this, builder);
-
-                    // Initialize the default collection's id generator
-                    await Configuration.IdGenerator.InitializeCollectionAsync(transaction, "", builder);
 
                     transaction.Commit();
                 }
             }
+
+            // Pee-initialize the default collection
+            await InitializeCollectionAsync("");
         }
 
         public async Task InitializeCollectionAsync(string collectionName)
         {
-            // The default collection is initialized automatically
-            if (String.IsNullOrEmpty(collectionName))
-            {
-                return;
-            }
-
-            var documentTable = collectionName + "_" + "Document";
+            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction())
+                try
                 {
-                    var builder = new SchemaBuilder(this, transaction);
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var selectCommand = transaction.Connection.CreateCommand();
 
-                    builder
-                        .CreateTable(documentTable, table => table
-                        .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                        .Column<string>("Type", column => column.NotNull())
-                        .Column<string>("Content", column => column.Unlimited())
-                    )
-                    .AlterTable(documentTable, table => table
-                        .CreateIndex("IX_" + documentTable + "_Type", "Type")
-                    );
+                        selectCommand.CommandText = $"SELECT 1 FROM {Dialect.QuoteForTableName(Configuration.TablePrefix + documentTable)}";
+                        var result = await selectCommand.ExecuteScalarAsync();
 
-                    await Configuration.IdGenerator.InitializeCollectionAsync(transaction, collectionName, builder);
+                        transaction.Commit();
+                        
+                        // Table already exists?
+                        if (result != null && Convert.ToInt64(result) == 1)
+                        {
+                            return;
+                        }
+                    }
+                }
+                catch
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var builder = new SchemaBuilder(Configuration, transaction);
 
-                    transaction.Commit();
+                        try
+                        {
+                            // The table doesn't exist, create it
+                            builder
+                                .CreateTable(documentTable, table => table
+                                .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                                .Column<string>("Type", column => column.NotNull())
+                                .Column<string>("Content", column => column.Unlimited())
+                            )
+                            .AlterTable(documentTable, table => table
+                                .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                            );
+
+                            transaction.Commit();
+                        }
+                        catch
+                        {
+                            // Another thread must have created it
+                        }
+                    }
+                }
+                finally
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var builder = new SchemaBuilder(Configuration, transaction);
+
+                        await Configuration.IdGenerator.InitializeCollectionAsync(transaction, collectionName, builder);
+
+                        transaction.Commit();
+                    }
                 }
             }
         }

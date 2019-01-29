@@ -15,11 +15,9 @@ namespace YesSql.Samples.Gating
         {
             // Uncomment to use SQL Server
 
-            var store = new Store(
-                new Configuration()
+            var configuration = new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
-                    .SetTablePrefix("Gating")
-                );
+                    .SetTablePrefix("Gating");
 
             // Uncomment to use Sqlite
 
@@ -42,13 +40,13 @@ namespace YesSql.Samples.Gating
 
             try
             {
-                using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+                using (var connection = configuration.ConnectionFactory.CreateConnection())
                 {
                     connection.Open();
 
                     using (var transaction = connection.BeginTransaction())
                     {
-                        new SchemaBuilder(store, transaction)
+                        new SchemaBuilder(configuration, transaction)
                         .DropMapIndexTable(nameof(PersonByName))
                         .DropTable("Identifiers")
                         .DropTable("Document");
@@ -59,15 +57,13 @@ namespace YesSql.Samples.Gating
             }
             catch { }
 
-            store.InitializeAsync().GetAwaiter().GetResult();
-
-            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 connection.Open();
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    var builder = new SchemaBuilder(store, transaction)
+                    var builder = new SchemaBuilder(configuration, transaction)
                     .CreateMapIndexTable(nameof(PersonByName), column => column
                         .Column<string>(nameof(PersonByName.SomeName))
                     );
@@ -75,6 +71,8 @@ namespace YesSql.Samples.Gating
                     transaction.Commit();
                 }
             }
+
+            var store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
 
             store.RegisterIndexes<PersonIndexProvider>();
 

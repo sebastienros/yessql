@@ -15,9 +15,9 @@ namespace YesSql
 
         public static ISqlDialect For(Type dbConnectionType)
         {
-            string connectionName = dbConnectionType.Name.ToLower();
+            var connectionName = dbConnectionType.Name.ToLower();
 
-            if (!SqlDialects.TryGetValue(connectionName, out ISqlDialect dialect))
+            if (!SqlDialects.TryGetValue(connectionName, out var dialect))
             {
                 throw new ArgumentException("Unknown connection name: " + connectionName);
             }

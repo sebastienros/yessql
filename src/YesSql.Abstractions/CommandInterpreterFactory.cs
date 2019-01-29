@@ -10,7 +10,7 @@ namespace YesSql
         
         public static ICommandInterpreter For(DbConnection connection)
         {
-            string connectionName = connection.GetType().Name.ToLower();
+            var connectionName = connection.GetType().Name.ToLower();
 
             if (!CommandInterpreters.ContainsKey(connectionName))
             {
