@@ -23,6 +23,7 @@ namespace YesSql.Sql
             _builder = CommandInterpreterFactory.For(Connection);
             Dialect = SqlDialectFactory.For(configuration.ConnectionFactory.DbConnectionType);
             TablePrefix = configuration.TablePrefix;
+            ThrowOnError = throwOnError;
         }
 
         private void Execute(IEnumerable<string> statements)
