@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.Sqlite;
@@ -66,7 +67,7 @@ namespace YesSql.Tests
             {
                 var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-                var store1 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+                var store1 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator("ShouldSeedExistingIds"));
 
                 using (var session1 = store1.CreateSession())
                 {
@@ -77,7 +78,7 @@ namespace YesSql.Tests
                     Assert.Equal(1, p1.Id);
                 }
 
-                var store2 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+                var store2 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator("ShouldSeedExistingIds"));
 
                 using (var session2 = store2.CreateSession())
                 {
