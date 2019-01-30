@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Data.Common;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using YesSql.Sql;
 
@@ -13,23 +12,34 @@ namespace YesSql.Services
     {
         private object _synLock = new object();
 
-        private Dictionary<string, long> _seeds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        private static ConcurrentDictionary<string, Cursor> _cursors = new ConcurrentDictionary<string, Cursor>(StringComparer.OrdinalIgnoreCase);
 
         private string _tablePrefix;
         private ISqlDialect _dialect;
+        private readonly string _tenant;
+
+        public DefaultIdGenerator() : this("")
+        {
+        }
+
+        public DefaultIdGenerator(string tenant)
+        {
+            _tenant = tenant ?? "";
+        }
 
         public long GetNextId(string collection)
         {
+            collection = collection ?? "";
+
+            if (!_cursors.TryGetValue($"{_tenant}:{collection}", out var cursor))
+            {
+                throw new InvalidOperationException($"The collection '{collection}' was not initialized");
+            }
+
             lock (_synLock)
             {
-                collection = collection ?? "";
-
-                if (!_seeds.TryGetValue(collection, out var seed))
-                {
-                    throw new InvalidOperationException($"The collection '{collection}' was not initialized");
-                }
-
-                return _seeds[collection] = seed + 1;
+                cursor.Current += 1;
+                return cursor.Current;
             }
         }
 
@@ -48,12 +58,18 @@ namespace YesSql.Services
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
         {
             // Extract the current max value from the database
+            var key = $"{_tenant}:{collection}";
+
+            if (_cursors.ContainsKey(key))
+            {
+                return;
+            }
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
                 {
                     var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
 
@@ -67,9 +83,22 @@ namespace YesSql.Services
 
                     transaction.Commit();
 
-                    _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                    _cursors[key] = new Cursor { Key = key, Current = result == DBNull.Value ? 0 : Convert.ToInt64(result) };
                 }
             }
+        }
+
+        public static void Reset(string tenant = null, string collection = null)
+        {
+            tenant = tenant ?? "";
+            var cursor = new Cursor { Key = $"{tenant}:{collection}", Current = 0 };
+            _cursors.TryUpdate(cursor.Key, cursor, cursor);
+        }
+
+        private class Cursor
+        {
+            public string Key { get; set; }
+            public long Current { get; set; }
         }
     }
 }

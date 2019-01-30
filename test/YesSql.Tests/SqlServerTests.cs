@@ -135,8 +135,6 @@ namespace YesSql.Tests
 
                     Assert.False(results[taskId], $"Found duplicate identifier: '{taskId}'");
                     results[taskId] = true;
-
-                    System.Diagnostics.Debug.WriteLine($"{i}:{taskId}");
                 }
             })).ToList();
 

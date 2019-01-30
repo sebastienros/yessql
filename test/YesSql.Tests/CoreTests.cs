@@ -3429,6 +3429,7 @@ namespace YesSql.Tests
         public void ShouldCreateMoreObjectThanIdBlock()
         {
             var lastId = 0;
+            var firstId = 0;
 
             using (var session = _store.CreateSession())
             {
@@ -3437,10 +3438,15 @@ namespace YesSql.Tests
                     var person = new Person { Firstname = "Bill" };
                     session.Save(person);
                     lastId = person.Id;
+
+                    if (firstId == 0)
+                    {
+                        firstId = person.Id;
+                    }
                 }
             }
 
-            Assert.Equal(1000, lastId);
+            Assert.Equal(firstId + 1000 - 1, lastId);
         }
 
         [Theory]
