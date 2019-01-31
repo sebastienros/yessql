@@ -21,13 +21,12 @@ namespace YesSql
         /// <returns>The <see cref="IStore"/> instance.</returns>
         IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders);
 
-        IConfiguration Configuration { get; set; }
-        Task InitializeAsync();
+        IConfiguration Configuration { get; }
         Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
-        int GetNextId(IDbTransaction transaction, string collection);
         IEnumerable<IndexDescriptor> Describe(Type target);
         ISqlDialect Dialect { get; }
+        ITypeService TypeNames { get; }
     }
 
     public static class IStoreExtensions

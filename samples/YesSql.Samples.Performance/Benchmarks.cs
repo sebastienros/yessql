@@ -22,34 +22,46 @@ namespace YesSql.Samples.Performance
 
         private async Task InitializeAsync()
         {
-            _store = new Store(
-                new Configuration()
+            var configuration = new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
-                    .SetTablePrefix("Performance")
-                );
-
+                    .SetTablePrefix("Performance");
+            
             try
             {
-                using (var session = _store.CreateSession())
+                using (var connection = configuration.ConnectionFactory.CreateConnection())
                 {
-                    new SchemaBuilder(session)
+                    connection.Open();
+
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        new SchemaBuilder(configuration, transaction)
                         .DropTable("UserByName")
                         .DropTable("Identifiers")
                         .DropTable("Document");
+
+                        transaction.Commit();
+                    }
                 }
             }
             catch { }
 
-            await _store.InitializeAsync();
+            _store = await StoreFactory.CreateAsync(configuration);
 
-            using (var session = _store.CreateSession())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                new SchemaBuilder(session).CreateMapIndexTable("UserByName", table => table
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    new SchemaBuilder(configuration, transaction).CreateMapIndexTable("UserByName", table => table
                         .Column<string>("Name")
                     )
                     .AlterTable("UserByName", table => table
                         .CreateIndex("IX_Name", "Name")
                     );
+
+                    transaction.Commit();
+                }
             }
 
             _store.RegisterIndexes<UserIndexProvider>();

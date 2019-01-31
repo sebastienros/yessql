@@ -2,6 +2,7 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,109 +24,116 @@ namespace YesSql.Tests
 
         public CoreTests()
         {
-            _store = CreateStore(new Configuration());
+            var configuration = CreateConfiguration();
 
-            CleanDatabase(false);
-            CreateTables();
+            CleanDatabase(configuration, false);
+            CreateTables(configuration);
         }
 
         public void Dispose()
         {
-            CleanDatabase(false);
             _store.Dispose();
-
-            OnDispose();
         }
 
-        protected abstract IStore CreateStore(Configuration configuration);
-
-        protected virtual void OnDispose()
-        {
-        }
+        protected abstract IConfiguration CreateConfiguration();
 
         //[DebuggerNonUserCode]
-        protected virtual void CleanDatabase(bool throwOnError)
+        protected virtual void CleanDatabase(IConfiguration configuration, bool throwOnError)
         {
             // Remove existing tables
-            using (var session = _store.CreateSession())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session) { ThrowOnError = throwOnError };
+                connection.Open();
 
-                builder.DropReduceIndexTable(nameof(ArticlesByDay));
-                builder.DropReduceIndexTable(nameof(AttachmentByDay));
-                builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
-                builder.DropMapIndexTable(nameof(PersonByName));
-                builder.DropMapIndexTable(nameof(PersonIdentity));
-
-                using (new NamedCollection("Collection1"))
+                using (var transaction = connection.BeginTransaction())
                 {
-                    builder.DropMapIndexTable(nameof(PersonByNameCol));
+                    var builder = new SchemaBuilder(configuration, transaction) { ThrowOnError = throwOnError };
+
+                    builder.DropReduceIndexTable(nameof(ArticlesByDay));
+                    builder.DropReduceIndexTable(nameof(AttachmentByDay));
+                    builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
+                    builder.DropMapIndexTable(nameof(PersonByName));
+                    builder.DropMapIndexTable(nameof(PersonIdentity));
+
+                    using (new NamedCollection("Collection1"))
+                    {
+                        builder.DropMapIndexTable(nameof(PersonByNameCol));
+                    }
+
+                    builder.DropMapIndexTable(nameof(PersonByAge));
+                    builder.DropMapIndexTable(nameof(PersonByNullableAge));
+                    builder.DropMapIndexTable(nameof(PublishedArticle));
+                    builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
+                    builder.DropTable(Store.DocumentTable);
+                    builder.DropTable("Collection1_Document");
+                    builder.DropTable(DbBlockIdGenerator.TableName);
+
+                    OnCleanDatabase(builder, transaction);
+
+                    transaction.Commit();
                 }
-
-                builder.DropMapIndexTable(nameof(PersonByAge));
-                builder.DropMapIndexTable(nameof(PersonByNullableAge));
-                builder.DropMapIndexTable(nameof(PublishedArticle));
-                builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
-                builder.DropTable(Store.DocumentTable);
-                builder.DropTable("Collection1_Document");
-                builder.DropTable(DbBlockIdGenerator.TableName);
-
-                OnCleanDatabase(builder, session);
             }
         }
 
-        protected virtual void OnCleanDatabase(SchemaBuilder builder, ISession session)
+        protected virtual void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
         {
 
         }
 
-        public void CreateTables()
+        public void CreateTables(IConfiguration configuration)
         {
-            // Create tables
-            _store.InitializeAsync().Wait();
+            _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
 
-            using (var session = _store.CreateSession())
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session);
+                connection.Open();
 
-                builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
-                        .Column<int>(nameof(ArticlesByDay.Count))
-                        .Column<int>(nameof(ArticlesByDay.DayOfYear))
-                    );
-                builder.CreateReduceIndexTable(nameof(AttachmentByDay), column => column
-                        .Column<int>(nameof(AttachmentByDay.Count))
-                        .Column<int>(nameof(AttachmentByDay.Date))
-                    );
+                using (var transaction = connection.BeginTransaction())
+                {
 
-                builder.CreateReduceIndexTable(nameof(UserByRoleNameIndex), column => column
-                        .Column<int>(nameof(UserByRoleNameIndex.Count))
-                        .Column<string>(nameof(UserByRoleNameIndex.RoleName))
-                    );
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                builder.CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
-                        .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                        .Column<string>(nameof(ArticleByPublishedDate.Title))
-                    );
+                    builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
+                            .Column<int>(nameof(ArticlesByDay.Count))
+                            .Column<int>(nameof(ArticlesByDay.DayOfYear))
+                        );
+                    builder.CreateReduceIndexTable(nameof(AttachmentByDay), column => column
+                            .Column<int>(nameof(AttachmentByDay.Count))
+                            .Column<int>(nameof(AttachmentByDay.Date))
+                        );
 
-                builder.CreateMapIndexTable(nameof(PersonByName), column => column
-                        .Column<string>(nameof(PersonByName.SomeName))
-                    );
+                    builder.CreateReduceIndexTable(nameof(UserByRoleNameIndex), column => column
+                            .Column<int>(nameof(UserByRoleNameIndex.Count))
+                            .Column<string>(nameof(UserByRoleNameIndex.RoleName))
+                        );
 
-                builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
-                        .Column<string>(nameof(PersonIdentity.Identity))
-                    );
+                    builder.CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
+                            .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
+                            .Column<string>(nameof(ArticleByPublishedDate.Title))
+                        );
 
-                builder.CreateMapIndexTable(nameof(PersonByAge), column => column
-                        .Column<int>(nameof(PersonByAge.Age))
-                        .Column<bool>(nameof(PersonByAge.Adult))
-                        .Column<string>(nameof(PersonByAge.Name))
-                    );
+                    builder.CreateMapIndexTable(nameof(PersonByName), column => column
+                            .Column<string>(nameof(PersonByName.SomeName))
+                        );
 
-                builder.CreateMapIndexTable(nameof(PersonByNullableAge), column => column
-                        .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
-                    );
+                    builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
+                            .Column<string>(nameof(PersonIdentity.Identity))
+                        );
 
-                builder.CreateMapIndexTable(nameof(PublishedArticle), column => { });
+                    builder.CreateMapIndexTable(nameof(PersonByAge), column => column
+                            .Column<int>(nameof(PersonByAge.Age))
+                            .Column<bool>(nameof(PersonByAge.Adult))
+                            .Column<string>(nameof(PersonByAge.Name))
+                        );
+
+                    builder.CreateMapIndexTable(nameof(PersonByNullableAge), column => column
+                            .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
+                        );
+
+                    builder.CreateMapIndexTable(nameof(PublishedArticle), column => { });
+
+                    transaction.Commit();
+                }
             }
         }
 
@@ -1755,7 +1763,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
@@ -1784,7 +1792,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
@@ -1826,7 +1834,7 @@ namespace YesSql.Tests
                     indices[b] = tmp;
                 }
 
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
@@ -2814,11 +2822,19 @@ namespace YesSql.Tests
 
             using (new NamedCollection("Collection1"))
             {
-                using (var session = _store.CreateSession())
+                using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
                 {
-                    new SchemaBuilder(session).CreateMapIndexTable(nameof(PersonByNameCol), column => column
-                        .Column<string>(nameof(PersonByNameCol.Name))
-                        );
+                    await connection.OpenAsync();
+
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        new SchemaBuilder(_store.Configuration, transaction)
+                            .CreateMapIndexTable(nameof(PersonByNameCol), column => column
+                                .Column<string>(nameof(PersonByNameCol.Name))
+                            );
+
+                        transaction.Commit();
+                    }
                 }
 
                 _store.RegisterIndexes<PersonIndexProviderCol>();
@@ -3046,6 +3062,8 @@ namespace YesSql.Tests
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
+                await connection.OpenAsync();
+
                 var dialect = SqlDialectFactory.For(connection);
                 var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
@@ -3162,7 +3180,7 @@ namespace YesSql.Tests
                 session.Save(bill);
                 session.Save(steve);
 
-                for (int i = 0; i < 20; i++)
+                for (var i = 0; i < 20; i++)
                 {
                     session.Save(new Person { Firstname = $"Foo {i}" });
                 }
@@ -3410,47 +3428,67 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldCreateMoreObjectThanIdBlock()
         {
+            var lastId = 0;
+            var firstId = 0;
+
             using (var session = _store.CreateSession())
             {
                 for (var k = 0; k < 1000; k++)
                 {
-                    session.Save(new Person { Firstname = "Bill" });
+                    var person = new Person { Firstname = "Bill" };
+                    session.Save(person);
+                    lastId = person.Id;
+
+                    if (firstId == 0)
+                    {
+                        firstId = person.Id;
+                    }
                 }
             }
+
+            Assert.Equal(firstId + 1000 - 1, lastId);
         }
 
         [Theory]
         [InlineData("")]
-        [InlineData("othercollection")]
+        [InlineData("Collection1")]
         public async Task ShouldGenerateIdsConcurrently(string collection)
         {
             await _store.InitializeCollectionAsync(collection);
 
-            var stopping = false;
+            var cts = new CancellationTokenSource(10000);
             var concurrency = 5;
-            var counter = 0;
-            var MaxTransactions = int.MaxValue;
+            var man = new ManualResetEventSlim();
+            var MaxTransactions = 1000;
+            long lastId = 0;
+            var results = new bool[MaxTransactions + concurrency];
 
-            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(() =>
             {
-                using (var session = _store.CreateSession())
-                {
-                    var transaction = await session.DemandAsync();
+                long taskId;
+                man.Wait();
 
-                    while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                while (!cts.IsCancellationRequested)
+                {
+                    lastId = taskId = _store.Configuration.IdGenerator.GetNextId(collection);
+
+                    if (taskId > MaxTransactions)
                     {
-                        var id = _store.GetNextId(transaction, collection);
+                        break;
                     }
+
+                    Assert.False(results[taskId], $"Found duplicate identifier: '{taskId}'");
+                    results[taskId] = true;
+
+                    System.Diagnostics.Debug.WriteLine($"{i}:{taskId}");
                 }
             })).ToList();
 
-            tasks.Add(Task.Delay(TimeSpan.FromSeconds(2)));
-
-            await Task.WhenAny(tasks);
-
-            // Flushing tasks
-            stopping = true;
+            await Task.Delay(1000);
+            man.Set();
             await Task.WhenAll(tasks);
+
+            Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
         }
     }
 }

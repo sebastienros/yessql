@@ -17,7 +17,7 @@ namespace YesSql
 {
     public class Session : ISession
     {
-        private IDbTransaction _transaction;
+        private DbTransaction _transaction;
 
         private readonly IdentityMap _identityMap = new IdentityMap();
         private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
@@ -94,14 +94,15 @@ namespace YesSql
                 }
             }
 
+            // it's a new entity
+            var collection = CollectionHelper.Current.GetSafeName();
+            id = _store.GetNextId(collection);
+            _identityMap.Add(id, entity);
+
             // Then assign a new identifier if it has one
             if (accessor != null)
             {
-                // it's a new entity
-                var collection = CollectionHelper.Current.GetSafeName();
-                id = _store.GetNextId(Demand(), collection);
                 accessor.Set(entity, id);
-                _identityMap.Add(id, entity);
             }
 
             _saved.Add(entity);
@@ -169,22 +170,17 @@ namespace YesSql
 
             var doc = new Document
             {
-                Type = entity.GetType().SimplifiedTypeName()
+                Type = Store.TypeNames[entity.GetType()]
             };
 
-            // Get the entity's Id if assigned
-            var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
-            if (accessor != null)
+            if (!_identityMap.TryGetDocumentId(entity, out var id))
             {
-                doc.Id = accessor.Get(entity);
-            }
-            else
-            {
-                var collection = CollectionHelper.Current.GetSafeName();
-                doc.Id = _store.GetNextId(Demand(), collection);
+                throw new InvalidOperationException("The object to save was not found in identity map.");
             }
 
-            Demand();
+            doc.Id = id;
+
+            await DemandAsync();
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
@@ -337,7 +333,7 @@ namespace YesSql
             var result = new List<T>();
 
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
-            var typeName = typeof(T).SimplifiedTypeName();
+            var typeName = Store.TypeNames[typeof(T)];
 
             // Are all the objects already in cache?
             foreach (var d in documents)
@@ -462,7 +458,8 @@ namespace YesSql
 
                 if (_connection != null)
                 {
-                    _store.Configuration.ConnectionFactory.CloseConnection(_connection);
+                    _connection.Close();
+                    _connection.Dispose();
                     _connection = null;
                 }
 
@@ -579,7 +576,9 @@ namespace YesSql
             {
                 // if the descriptor has no reduce behavior, ignore it
                 if (descriptor.Reduce == null)
+                {
                     continue;
+                }
 
                 if (descriptor.GroupKey == null)
                 {
@@ -848,7 +847,7 @@ namespace YesSql
         /// <summary>
         /// Initializes a new transaction if none has been yet
         /// </summary>
-        public async Task<IDbTransaction> DemandAsync()
+        public async Task<DbTransaction> DemandAsync()
         {
             CheckDisposed();
 
@@ -883,7 +882,7 @@ namespace YesSql
             return _transaction;
         }
 
-        private IDbTransaction Demand()
+        private DbTransaction Demand()
         {
             CheckDisposed();
 
@@ -891,12 +890,7 @@ namespace YesSql
             {
                 if (_connection == null)
                 {
-                    _connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                    if (_connection == null)
-                    {
-                        throw new InvalidOperationException("The connection couldn't be covnerted to DbConnection");
-                    }
+                    _connection = _store.Configuration.ConnectionFactory.CreateConnection();
 
                     // The dialect could already be initialized if the session is reused
                     if (_dialect == null)

@@ -26,6 +26,7 @@ namespace YesSql
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
+        public ITypeService TypeNames { get; private set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
             new ConcurrentDictionary<Type, Func<IIndex, object>>();
@@ -58,26 +59,22 @@ namespace YesSql
         /// Initializes a <see cref="Store"/> instance and its new <see cref="Configuration"/>.
         /// </summary>
         /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
-        public Store(Action<IConfiguration> config)
+        internal Store(Action<IConfiguration> config)
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
-
-            AfterConfigurationAssigned();
         }
 
         /// <summary>
         /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
         /// </summary>
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
-        public Store(IConfiguration configuration)
+        internal Store(IConfiguration configuration)
         {
             Configuration = configuration;
-
-            AfterConfigurationAssigned();
         }
 
-        public void AfterConfigurationAssigned()
+        internal async Task InitializeAsync()
         {
             IndexCommand.ResetQueryCache();
             Indexes = new List<IIndexProvider>();
@@ -86,51 +83,84 @@ namespace YesSql
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
             Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
-        }
-
-        public async Task InitializeAsync()
-        {
-            using (var session = CreateSession())
+            TypeNames = new TypeService();
+            
+            using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session);
+                await connection.OpenAsync();
 
-                builder.CreateTable("Document", table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                    .Column<string>("Content", column => column.Unlimited())
-                )
-                .AlterTable("Document", table => table
-                    .CreateIndex("IX_Type", "Type")
-                );
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(Configuration, transaction);
+                    await Configuration.IdGenerator.InitializeAsync(this, builder);
 
-                await Configuration.IdGenerator.InitializeAsync(this, builder);
-            }
-        }
-
-        public Task InitializeCollectionAsync(string collectionName)
-        {
-            var documentTable = collectionName + "_" + "Document";
-
-            using (var session = CreateSession())
-            {
-                var builder = new SchemaBuilder(session);
-
-                builder
-                    .CreateTable(documentTable, table => table
-                    .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                    .Column<string>("Type", column => column.NotNull())
-                    .Column<string>("Content", column => column.Unlimited())
-                )
-                .AlterTable(documentTable, table => table
-                    .CreateIndex("IX_" + documentTable + "_Type", "Type")
-                );
+                    transaction.Commit();
+                }
             }
 
-#if NET451
-            return Task.FromResult(0);
-#else
-            return Task.CompletedTask;
-#endif
+            // Pee-initialize the default collection
+            await InitializeCollectionAsync("");
+        }
+
+        public async Task InitializeCollectionAsync(string collectionName)
+        {
+            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
+
+            using (var connection = Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                try
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var selectCommand = transaction.Connection.CreateCommand();
+
+                        selectCommand.CommandText = $"SELECT 1 FROM {Dialect.QuoteForTableName(Configuration.TablePrefix + documentTable)}";
+                        selectCommand.Transaction = transaction;
+                        var result = await selectCommand.ExecuteScalarAsync();
+
+                        transaction.Commit();
+                        
+                        // Table already exists?
+                        if (result != null && Convert.ToInt64(result) == 1)
+                        {
+                            return;
+                        }
+                    }
+                }
+                catch
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        var builder = new SchemaBuilder(Configuration, transaction);
+
+                        try
+                        {
+                            // The table doesn't exist, create it
+                            builder
+                                .CreateTable(documentTable, table => table
+                                .Column<int>("Id", column => column.PrimaryKey().NotNull())
+                                .Column<string>("Type", column => column.NotNull())
+                                .Column<string>("Content", column => column.Unlimited())
+                            )
+                            .AlterTable(documentTable, table => table
+                                .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                            );
+
+                            transaction.Commit();
+                        }
+                        catch
+                        {
+                            // Another thread must have created it
+                        }
+                    }
+                }
+                finally
+                {
+                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collectionName);
+                }
+            }
         }
 
         private void ValidateConfiguration()
@@ -215,9 +245,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(IDbTransaction transaction, string collection)
+        public int GetNextId(string collection)
         {
-            return (int)Configuration.IdGenerator.GetNextId(transaction, collection);
+            return (int)Configuration.IdGenerator.GetNextId(collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)

@@ -17,20 +17,26 @@ namespace YesSql.Samples.FullText
 
         static async Task MainAsync(string[] args)
         {
-            var store = new Store(
+            var store = await StoreFactory.CreateAsync(
                 new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
                     .SetTablePrefix("FullText")
                 );
 
-            await store.InitializeAsync();
-
-            using (var session = store.CreateSession())
+            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                new SchemaBuilder(session).CreateReduceIndexTable(nameof(ArticleByWord), table => table
-                        .Column<int>("Count")
-                        .Column<string>("Word")
-                    );
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    new SchemaBuilder(store.Configuration, transaction)
+                        .CreateReduceIndexTable(nameof(ArticleByWord), table => table
+                            .Column<int>("Count")
+                            .Column<string>("Word")
+                        );
+
+                    transaction.Commit();
+                }
             }
 
             // register available indexes

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Indexes;
@@ -69,7 +70,7 @@ namespace YesSql
         /// <summary>
         /// Returns a <see cref="DbTransaction"/> that is used by this instance.
         /// </summary>
-        Task<IDbTransaction> DemandAsync();
+        Task<DbTransaction> DemandAsync();
 
         /// <summary>
         /// Registers index providers that are used only during the lifetime of this session.

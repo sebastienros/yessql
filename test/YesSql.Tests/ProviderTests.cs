@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,19 +13,31 @@ using YesSql.Provider.SqlServer;
 
 namespace YesSql.Tests
 {
-    public class ProviderTests
+    public class ProviderTests : IDisposable
     {
-        private const string ConnectionString = "Data Source=:memory:";
+        private TemporaryFolder _tempFolder;
+
+        public ProviderTests()
+        {
+            _tempFolder = new TemporaryFolder();
+        }
+
+        public void Dispose()
+        {
+            _tempFolder.Dispose();
+        }
 
         [Fact]
         public async void AddedDbProviderStoreShouldPresentInDIContainer()
         {
+            var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
+
             // Arrange
             var builder = new WebHostBuilder()
                 .ConfigureServices(services =>
                 {
                     // Act
-                    services.AddDbProvider(config => config.UseSqLite(ConnectionString));
+                    services.AddDbProvider(config => config.UseSqLite(connectionString).UseDefaultIdGenerator());
                 })
                 .Configure(app =>
                 {

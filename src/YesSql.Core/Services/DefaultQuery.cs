@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,7 +12,6 @@ using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Data;
 using YesSql.Indexes;
-using YesSql.Serialization;
 
 namespace YesSql.Services
 {
@@ -244,14 +244,14 @@ namespace YesSql.Services
                 };
         }
 
-        public DefaultQuery(IDbConnection connection, IDbTransaction transaction, Session session, string tablePrefix)
+        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix)
         {
             _session = session;
             _dialect = session.Store.Dialect;
             _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix));
         }
 
-        public DefaultQuery(IDbConnection connection, IDbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
+        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
         {
             _queryState = queryState;
             _compiledQuery = compiledQuery;
@@ -811,7 +811,7 @@ namespace YesSql.Services
             if (filterType)
             {
                 _queryState._sqlBuilder.WhereAlso(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
-                _queryState._sqlBuilder.Parameters["@Type"] = typeof(T).SimplifiedTypeName();
+                _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
             }
 
             return new Query<T>(this);

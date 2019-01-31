@@ -14,12 +14,6 @@ namespace YesSql.Provider.Sqlite
             return configuration;
         }
 
-        public static IConfiguration UseInMemory(this IConfiguration configuration)
-        {
-            const string inMemoryConnectionString = "Data Source=:memory:";
-            return UseSqLite(configuration, inMemoryConnectionString, IsolationLevel.Serializable, shareConnection: true);
-        }
-
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
             string connectionString)
@@ -33,8 +27,7 @@ namespace YesSql.Provider.Sqlite
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
             string connectionString,
-            IsolationLevel isolationLevel,
-            bool shareConnection = false)
+            IsolationLevel isolationLevel)
         {
             if (configuration == null)
             {
@@ -47,7 +40,7 @@ namespace YesSql.Provider.Sqlite
             }
 
             RegisterSqLite(configuration);
-            configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString, shareConnection);
+            configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 
             return configuration;

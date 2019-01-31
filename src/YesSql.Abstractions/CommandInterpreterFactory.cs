@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
-using System.Data;
+using System.Data.Common;
 
 namespace YesSql
 {
@@ -8,9 +8,9 @@ namespace YesSql
     {
         public static readonly ConcurrentDictionary<string, Func<ISqlDialect, ICommandInterpreter>> CommandInterpreters = new ConcurrentDictionary<string, Func<ISqlDialect, ICommandInterpreter>>();
         
-        public static ICommandInterpreter For(IDbConnection connection)
+        public static ICommandInterpreter For(DbConnection connection)
         {
-            string connectionName = connection.GetType().Name.ToLower();
+            var connectionName = connection.GetType().Name.ToLower();
 
             if (!CommandInterpreters.ContainsKey(connectionName))
             {

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using YesSql.Sql;
 
@@ -18,7 +17,7 @@ namespace YesSql.Services
         private string _tablePrefix;
         private ISqlDialect _dialect;
 
-        public long GetNextId(IDbTransaction transaction, string collection)
+        public long GetNextId(string collection)
         {
             lock (_synLock)
             {
@@ -26,17 +25,7 @@ namespace YesSql.Services
 
                 if (!_seeds.TryGetValue(collection, out var seed))
                 {
-                    var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
-
-                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
-
-                    var selectCommand = transaction.Connection.CreateCommand();
-                    selectCommand.CommandText = sql;
-                    selectCommand.Transaction = transaction;
-
-                    var result = selectCommand.ExecuteScalar();
-
-                    seed = result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                    throw new InvalidOperationException($"The collection '{collection}' was not initialized");
                 }
 
                 return _seeds[collection] = seed + 1;
@@ -53,6 +42,33 @@ namespace YesSql.Services
 #else
             return Task.CompletedTask;
 #endif
+        }
+
+        public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
+        {
+            // Extract the current max value from the database
+
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
+
+                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
+
+                    var selectCommand = transaction.Connection.CreateCommand();
+                    selectCommand.CommandText = sql;
+                    selectCommand.Transaction = transaction;
+
+                    var result = await selectCommand.ExecuteScalarAsync();
+
+                    transaction.Commit();
+
+                    _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                }
+            }
         }
     }
 }

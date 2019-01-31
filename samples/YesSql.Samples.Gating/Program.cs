@@ -15,11 +15,9 @@ namespace YesSql.Samples.Gating
         {
             // Uncomment to use SQL Server
 
-            var store = new Store(
-                new Configuration()
+            var configuration = new Configuration()
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
-                    .SetTablePrefix("Gating")
-                );
+                    .SetTablePrefix("Gating");
 
             // Uncomment to use Sqlite
 
@@ -42,25 +40,39 @@ namespace YesSql.Samples.Gating
 
             try
             {
-                using (var session = store.CreateSession())
+                using (var connection = configuration.ConnectionFactory.CreateConnection())
                 {
-                    new SchemaBuilder(session)
+                    connection.Open();
+
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        new SchemaBuilder(configuration, transaction)
                         .DropMapIndexTable(nameof(PersonByName))
                         .DropTable("Identifiers")
                         .DropTable("Document");
+
+                        transaction.Commit();
+                    }
                 }
             }
             catch { }
 
-            store.InitializeAsync().GetAwaiter().GetResult();
-
-            using (var session = store.CreateSession())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                var builder = new SchemaBuilder(session)
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var builder = new SchemaBuilder(configuration, transaction)
                     .CreateMapIndexTable(nameof(PersonByName), column => column
                         .Column<string>(nameof(PersonByName.SomeName))
                     );
+
+                    transaction.Commit();
+                }
             }
+
+            var store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
 
             store.RegisterIndexes<PersonIndexProvider>();
 
