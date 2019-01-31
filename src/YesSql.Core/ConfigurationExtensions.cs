@@ -4,9 +4,9 @@ namespace YesSql
 {
     public static class ConfigurationExtensions
     {
-        public static IConfiguration UseDefaultIdGenerator(this IConfiguration configuration, string tenant = null)
+        public static IConfiguration UseDefaultIdGenerator(this IConfiguration configuration)
         {
-            configuration.IdGenerator = new DefaultIdGenerator(tenant);
+            configuration.IdGenerator = new DefaultIdGenerator();
 
             return configuration;
         }

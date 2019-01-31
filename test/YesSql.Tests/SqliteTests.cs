@@ -67,7 +67,7 @@ namespace YesSql.Tests
             {
                 var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-                var store1 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator("ShouldSeedExistingIds"));
+                var store1 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
                 using (var session1 = store1.CreateSession())
                 {
@@ -78,7 +78,7 @@ namespace YesSql.Tests
                     Assert.Equal(1, p1.Id);
                 }
 
-                var store2 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator("ShouldSeedExistingIds"));
+                var store2 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
                 using (var session2 = store2.CreateSession())
                 {
