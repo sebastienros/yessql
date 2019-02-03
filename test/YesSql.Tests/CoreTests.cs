@@ -452,7 +452,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(product);
-                await session.CommitAsync();
+                await session.FlushAsync();
                 productId = product.Id;
 
                 session.Save(new Order
@@ -527,6 +527,31 @@ namespace YesSql.Tests
                 var newBill = await session.GetAsync<Person>(bill.Id);
 
                 Assert.Same(newBill, bill);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldKeepIdentityMapOnCommitAsync()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+                var newBill = await session.GetAsync<Person>(bill.Id);
+
+                Assert.Equal(bill, newBill);
+
+                await session.CommitAsync();
+
+                newBill = await session.GetAsync<Person>(bill.Id);
+
+                Assert.Equal(bill, newBill);
+
             }
         }
 
@@ -2167,7 +2192,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldNotHaveWorkAfterCommit()
+        public async Task ShouldNotHaveWorkAfterFlush()
         {
             using (var session = (Session)_store.CreateSession())
             {
@@ -2180,7 +2205,7 @@ namespace YesSql.Tests
 
                 Assert.True(session.HasWork());
 
-                await session.CommitAsync();
+                await session.FlushAsync();
 
                 Assert.False(session.HasWork());
             }
@@ -2199,7 +2224,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                await session.CommitAsync();
+                await session.FlushAsync();
 
                 circleId = circle.Id;
             }
@@ -2226,7 +2251,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                await session.CommitAsync();
+                await session.FlushAsync();
 
                 circleId = circle.Id;
             }
@@ -2252,7 +2277,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                await session.CommitAsync();
+                await session.FlushAsync();
 
                 circleId = circle.Id;
             }
@@ -2278,7 +2303,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                await session.CommitAsync();
+                await session.FlushAsync();
 
                 circleId = circle.Id;
             }
@@ -2305,7 +2330,7 @@ namespace YesSql.Tests
                 };
 
                 session.Save(circle);
-                await session.CommitAsync();
+                await session.FlushAsync();
 
                 circleId = circle.Id;
             }
@@ -2339,7 +2364,7 @@ namespace YesSql.Tests
                     circleIds.Add(circle.Id);
                 }
 
-                await session.CommitAsync();
+                await session.FlushAsync();
             }
 
             using (var session = _store.CreateSession())
@@ -2630,7 +2655,7 @@ namespace YesSql.Tests
                     };
 
                     session1.Save(bill);
-                    await session1.CommitAsync();
+                    await session1.FlushAsync();
 
                     Assert.Equal(1, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -2667,7 +2692,7 @@ namespace YesSql.Tests
 
                     session2.Save(steve);
 
-                    await session2.CommitAsync();
+                    await session2.FlushAsync();
 
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -2720,7 +2745,7 @@ namespace YesSql.Tests
                     };
 
                     session1.Save(bill);
-                    await session1.CommitAsync();
+                    await session1.FlushAsync();
 
                     Assert.Equal(1, await session1.QueryIndex<PersonByName>().CountAsync());
 
@@ -2756,7 +2781,7 @@ namespace YesSql.Tests
 
                     session2.Save(steve);
 
-                    await session2.CommitAsync();
+                    await session2.FlushAsync();
 
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -2988,7 +3013,7 @@ namespace YesSql.Tests
             {
                 bill.Firstname = "Bill2";
                 session.Save(bill);
-                await session.CommitAsync();
+                await session.FlushAsync();
 
                 Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
                 Assert.Equal(0, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill").CountAsync());
