@@ -53,15 +53,24 @@ namespace YesSql
         IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class;
         
         /// <summary>
-        /// Cancels any pending command.
+        /// Cancels any pending commands.
         /// </summary>
         void Cancel();
 
         /// <summary>
-        /// Flushes the current commands asynchronously.
+        /// Flushes pending commands to the database.
         /// </summary>
         /// <remarks>
-        /// Sessions are automatically flushed when disposed, however calling <see cref="CommitAsync"/>
+        /// This doesn't commit the transaction. A call to <see cref="CommitAsync"/>
+        /// is still necessary for the changes to be visible from other transactions.
+        /// </remarks>
+        Task FlushAsync();
+
+        /// <summary>
+        /// Fluses and changes and commits the transaction.
+        /// </summary>
+        /// <remarks>
+        /// Sessions are automatically committed when disposed, however calling <see cref="CommitAsync"/>
         /// is recommended before the session is disposed to prevent it from being called on a non-async
         /// code path.
         /// </remarks>

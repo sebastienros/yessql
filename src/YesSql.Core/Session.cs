@@ -28,7 +28,7 @@ namespace YesSql
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
-        private bool _committing;
+        private bool _flushing;
         private IsolationLevel _isolationLevel;
         private DbConnection _connection;
         private ISqlDialect _dialect;
@@ -307,7 +307,7 @@ namespace YesSql
             CheckDisposed();
 
             // Auto-flush
-            await CommitAsync();
+            await FlushAsync();
 
             await DemandAsync();
 
@@ -420,51 +420,16 @@ namespace YesSql
                 return;
             }
 
-            try
+            if (!_cancel && HasWork())
             {
-                if (!_cancel)
-                {
-                    if (HasWork())
-                    {
-                        // Execute pending commands. This is a sync call over async
-                        // which is not recommended. Prefer to call CommitAsync() before 
-                        // disposing the session.
-
-                        CommitAsync().Wait();
-                    }
-
-                    if (_transaction != null)
-                    {
-                        _transaction.Commit();
-                    }
-                }
-                else
-                {
-                    if (_transaction != null)
-                    {
-                        _transaction.Rollback();
-                    }
-                }
+                FlushAsync().GetAwaiter().GetResult();
             }
-            finally
-            {
-                _disposed = true;
 
-                if (_transaction != null)
-                {
-                    _transaction.Dispose();
-                    _transaction = null;
-                }
+            _disposed = true;
 
-                if (_connection != null)
-                {
-                    _connection.Close();
-                    _connection.Dispose();
-                    _connection = null;
-                }
+            CommitTransaction();
 
-                Release();
-            }
+            Release();
         }
 
         /// <summary>
@@ -495,23 +460,23 @@ namespace YesSql
             _isolationLevel = isolationLevel;
         }
 
-        public async Task CommitAsync()
+        public async Task FlushAsync()
         {
             if (!HasWork())
             {
                 return;
             }
 
-            // prevent recursive calls in CommitAsync,
+            // prevent recursive calls in FlushAsync,
             // when autoflush is triggered from an IndexProvider
             // for instance.
 
-            if (_committing)
+            if (_flushing)
             {
                 return;
             }
 
-            _committing = true;
+            _flushing = true;
 
             // we only check if the session is disposed if 
             // there are no commands to commit.
@@ -554,7 +519,53 @@ namespace YesSql
             _deleted.Clear();
             _commands.Clear();
             _maps.Clear();
-            _committing = false;
+            _flushing = false;
+        }
+
+        public async Task CommitAsync()
+        {
+            if (!_cancel)
+            {
+                await FlushAsync();
+            }
+
+            CommitTransaction();
+        }
+
+        private void CommitTransaction()
+        {
+            try
+            {
+                if (!_cancel)
+                {
+                    if (_transaction != null)
+                    {
+                        _transaction.Commit();
+                    }
+                }
+                else
+                {
+                    if (_transaction != null)
+                    {
+                        _transaction.Rollback();
+                    }
+                }
+            }
+            finally
+            {
+                if (_transaction != null)
+                {
+                    _transaction.Dispose();
+                    _transaction = null;
+                }
+
+                if (_connection != null)
+                {
+                    _connection.Close();
+                    _connection.Dispose();
+                    _connection = null;
+                }
+            }
         }
 
         /// <summary>
