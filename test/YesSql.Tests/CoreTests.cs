@@ -3451,6 +3451,28 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public void ShouldLogSql()
+        {
+            var logger = new TestLogger();
+
+            _store.Configuration.Logger = logger;
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                session.Save(bill);
+            }
+
+            Assert.NotEmpty(logger.ToString());
+        }
+
+        [Fact]
         public void ShouldCreateMoreObjectThanIdBlock()
         {
             var lastId = 0;

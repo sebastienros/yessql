@@ -184,7 +184,7 @@ namespace YesSql
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
-            await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
+            await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
 
             await MapNew(doc, entity);
         }
@@ -235,7 +235,7 @@ namespace YesSql
             await DemandAsync();
 
             oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
-            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect);
+            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -511,7 +511,7 @@ namespace YesSql
 
             foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
             {
-                await command.ExecuteAsync(_connection, _transaction, _dialect);
+                await command.ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
             }
 
             _updated.Clear();

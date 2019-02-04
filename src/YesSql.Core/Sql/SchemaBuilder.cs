@@ -10,6 +10,8 @@ namespace YesSql.Sql
     public class SchemaBuilder : ISchemaBuilder
     {
         private ICommandInterpreter _builder;
+        private readonly ILogger _logger;
+
         public string TablePrefix { get; private set; }
         public ISqlDialect Dialect { get; private set; }
         public DbConnection Connection { get; private set; }
@@ -19,6 +21,7 @@ namespace YesSql.Sql
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
         {
             Transaction = transaction;
+            _logger = configuration.Logger;
             Connection = Transaction.Connection;
             _builder = CommandInterpreterFactory.For(Connection);
             Dialect = SqlDialectFactory.For(configuration.ConnectionFactory.DbConnectionType);
@@ -30,6 +33,7 @@ namespace YesSql.Sql
         {
             foreach (var statement in statements)
             {
+                _logger.LogSql(statement);
                 Connection.Execute(statement, null, Transaction);
             }
         }
