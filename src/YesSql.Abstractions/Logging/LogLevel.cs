@@ -1,4 +1,4 @@
-namespace YesSql
+namespace YesSql.Logging
 {
     public enum LogLevel
     {
