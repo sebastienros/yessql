@@ -89,7 +89,7 @@ namespace YesSql
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(Configuration, transaction);
                     await Configuration.IdGenerator.InitializeAsync(this, builder);
@@ -112,7 +112,7 @@ namespace YesSql
 
                 try
                 {
-                    using (var transaction = connection.BeginTransaction())
+                    using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
                     {
                         var selectCommand = transaction.Connection.CreateCommand();
 

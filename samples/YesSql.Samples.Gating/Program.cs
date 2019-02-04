@@ -44,7 +44,7 @@ namespace YesSql.Samples.Gating
                 {
                     connection.Open();
 
-                    using (var transaction = connection.BeginTransaction())
+                    using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                     {
                         new SchemaBuilder(configuration, transaction)
                         .DropMapIndexTable(nameof(PersonByName))
@@ -61,7 +61,7 @@ namespace YesSql.Samples.Gating
             {
                 connection.Open();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(configuration, transaction)
                     .CreateMapIndexTable(nameof(PersonByName), column => column

@@ -45,7 +45,7 @@ namespace YesSql.Tests
             {
                 connection.Open();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(configuration, transaction) { ThrowOnError = throwOnError };
 
@@ -88,7 +88,7 @@ namespace YesSql.Tests
             {
                 connection.Open();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
 
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
@@ -2851,7 +2851,7 @@ namespace YesSql.Tests
                 {
                     await connection.OpenAsync();
 
-                    using (var transaction = connection.BeginTransaction())
+                    using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                     {
                         new SchemaBuilder(_store.Configuration, transaction)
                             .CreateMapIndexTable(nameof(PersonByNameCol), column => column

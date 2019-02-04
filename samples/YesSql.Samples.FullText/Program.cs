@@ -27,7 +27,7 @@ namespace YesSql.Samples.FullText
             {
                 connection.Open();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                 {
                     new SchemaBuilder(store.Configuration, transaction)
                         .CreateReduceIndexTable(nameof(ArticleByWord), table => table
