@@ -93,7 +93,7 @@ namespace YesSql.Tests
         [InlineData("Collection1")]
         public async Task ShouldGenerateIdsWithConcurrentStores(string collection)
         {
-            var configuration = new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator().SetIsolationLevel();
+            var configuration = new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
