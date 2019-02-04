@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Indexes;
+using YesSql.Logging;
 
 namespace YesSql.Commands
 {

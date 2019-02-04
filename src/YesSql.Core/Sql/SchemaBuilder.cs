@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using YesSql.Collections;
+using YesSql.Logging;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql

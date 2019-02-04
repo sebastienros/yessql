@@ -2,6 +2,7 @@ using Dapper;
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Collections;
+using YesSql.Logging;
 
 namespace YesSql.Commands
 {

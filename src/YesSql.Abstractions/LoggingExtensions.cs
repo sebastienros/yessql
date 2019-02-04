@@ -1,13 +1,8 @@
 using System;
+using YesSql.Logging;
 
 namespace YesSql
 {
-    public interface ILogger
-    {
-        bool IsLevelEnabled(LogLevel logLevel);
-        void Log(LogLevel logLevel, string log);
-    }
-
     public static class ILoggerExtensions
     {
         public static bool LogDebug(this ILogger logger, string log)

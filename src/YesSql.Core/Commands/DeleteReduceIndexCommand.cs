@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Indexes;
+using YesSql.Logging;
 
 namespace YesSql.Commands
 {

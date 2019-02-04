@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Indexes;
+using YesSql.Logging;
 
 namespace YesSql.Commands
 {

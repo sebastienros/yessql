@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Reflection;
 using System.Threading.Tasks;
+using YesSql.Logging;
 
 namespace YesSql.Commands
 {
