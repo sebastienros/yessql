@@ -62,6 +62,7 @@ namespace YesSql.Services
                     selectCommand.CommandText = sql;
                     selectCommand.Transaction = transaction;
 
+                    configuration.Logger.LogSql(sql);
                     var result = await selectCommand.ExecuteScalarAsync();
 
                     transaction.Commit();

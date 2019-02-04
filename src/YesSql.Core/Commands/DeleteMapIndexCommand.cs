@@ -1,9 +1,7 @@
 using Dapper;
 using System;
-using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
-using YesSql.Sql;
 
 namespace YesSql.Commands
 {
@@ -22,9 +20,11 @@ namespace YesSql.Commands
             _tablePrefix = tablePrefix;
         }
 
-        public virtual Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
+        public virtual Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger )
         {
-            return connection.ExecuteAsync("delete from " + dialect.QuoteForTableName(_tablePrefix + _indexType.Name) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @Id", new { Id = _documentId }, transaction);
+            var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + _indexType.Name) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @Id";
+            logger.LogSql(command);
+            return connection.ExecuteAsync(command, new { Id = _documentId }, transaction);
         }
     }
 }

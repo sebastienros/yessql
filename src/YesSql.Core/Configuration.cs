@@ -1,5 +1,6 @@
 using System.Data;
 using YesSql.Data;
+using YesSql.Logging;
 using YesSql.Serialization;
 using YesSql.Services;
 
@@ -16,6 +17,7 @@ namespace YesSql
             TablePrefix = "";
             SessionPoolSize = 16;
             QueryGatingEnabled = true;
+            Logger = NullLogger.Instance;
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
@@ -26,5 +28,6 @@ namespace YesSql
         public int SessionPoolSize { get; set; }
         public bool QueryGatingEnabled { get; set; }
         public IIdGenerator IdGenerator { get; set; }
+        public ILogger Logger { get; set; }
     }
 }

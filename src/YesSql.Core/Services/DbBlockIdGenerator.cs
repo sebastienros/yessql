@@ -126,6 +126,7 @@ namespace YesSql.Services
 
                             selectCommand.Transaction = transaction;
 
+                            _store.Configuration.Logger.LogSql(SelectCommand);
                             nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
                             var updateCommand = connection.CreateCommand();
@@ -148,6 +149,7 @@ namespace YesSql.Services
 
                             updateCommand.Transaction = transaction;
 
+                            _store.Configuration.Logger.LogSql(UpdateCommand);
                             affectedRows = updateCommand.ExecuteNonQuery();
 
                             transaction.Commit();
@@ -196,6 +198,7 @@ namespace YesSql.Services
 
                     selectCommand.Transaction = transaction;
 
+                    _store.Configuration.Logger.LogSql(SelectCommand);
                     nextval = await selectCommand.ExecuteScalarAsync();
 
                     transaction.Commit();
@@ -227,6 +230,7 @@ namespace YesSql.Services
                             nextValParameter.ParameterName = "@nextval";
                             command.Parameters.Add(nextValParameter);
 
+                            _store.Configuration.Logger.LogSql(InsertCommand);
                             await command.ExecuteNonQueryAsync();
 
                             transaction.Commit();

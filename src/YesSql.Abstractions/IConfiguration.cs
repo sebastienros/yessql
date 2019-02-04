@@ -11,6 +11,7 @@ namespace YesSql
         IConnectionFactory ConnectionFactory { get; set; }
         IContentSerializer ContentSerializer { get; set; }
         IIdGenerator IdGenerator { get; set; }
+        ILogger Logger { get; set; }
         string TablePrefix { get; set; }
         int SessionPoolSize { get; set; }
         bool QueryGatingEnabled { get; set; }

@@ -25,6 +25,6 @@ namespace YesSql.Commands
 
         public Document Document { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
     }
 }
