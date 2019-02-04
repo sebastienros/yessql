@@ -52,7 +52,7 @@ namespace YesSql.Services
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
                     var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
 

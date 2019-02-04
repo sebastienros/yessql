@@ -24,7 +24,7 @@ namespace Bench
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(configuration, transaction);
 

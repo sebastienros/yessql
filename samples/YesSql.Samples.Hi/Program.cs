@@ -26,7 +26,7 @@ namespace YesSql.Samples.Hi
             {
                 connection.Open();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                 {
                     new SchemaBuilder(store.Configuration, transaction)
                         .CreateMapIndexTable(nameof(BlogPostByAuthor), table => table

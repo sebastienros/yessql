@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Sql;
 
@@ -54,7 +52,7 @@ namespace YesSql.Services
 
                 try
                 {
-                    using (var transaction = connection.BeginTransaction())
+                    using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                     {
                         var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
@@ -183,7 +181,7 @@ namespace YesSql.Services
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
                     // Does the record already exist?
                     var selectCommand = transaction.Connection.CreateCommand();
@@ -206,7 +204,7 @@ namespace YesSql.Services
                     // Try to create a new record. If it fails, retry reading the record.
                     try
                     {
-                        using (var transaction = connection.BeginTransaction())
+                        using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                         {
                             nextval = 1;
 
