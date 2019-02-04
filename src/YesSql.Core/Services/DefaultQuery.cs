@@ -771,7 +771,7 @@ namespace YesSql.Services
         public async Task<int> CountAsync()
         {
             // Commit any pending changes before doing a query (auto-flush)
-            await _session.CommitAsync();
+            await _session.FlushAsync();
 
             var transaction = await _session.DemandAsync();
 
@@ -854,8 +854,8 @@ namespace YesSql.Services
 
             protected async Task<T> FirstOrDefaultImpl()
             {
-                // Commit any pending changes before doing a query (auto-flush)
-                await _query._session.CommitAsync();
+                // Flush any pending changes before doing a query (auto-flush)
+                await _query._session.FlushAsync();
 
                 var transaction = await _query._session.DemandAsync();
 
@@ -905,8 +905,8 @@ namespace YesSql.Services
 
             public async Task<IEnumerable<T>> ListImpl()
             {
-                // Commit any pending changes before doing a query (auto-flush)
-                await _query._session.CommitAsync();
+                // Flush any pending changes before doing a query (auto-flush)
+                await _query._session.FlushAsync();
 
                 var transaction = await _query._session.DemandAsync();
 
