@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 
 namespace YesSql.Sql.Schema
 {
@@ -37,7 +37,7 @@ namespace YesSql.Sql.Schema
 
         public new IAlterColumnCommand Unlimited()
         {
-            return WithLength(10000);
+            return WithLength(16385);
         }
 
     }
