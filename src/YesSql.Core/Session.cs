@@ -524,11 +524,12 @@ namespace YesSql
             }
             catch
             {
-                _flushing = false;
                 throw;
             }
-
-            _flushing = false;
+            finally
+            {
+                _flushing = false;
+            }
         }
 
         public async Task CommitAsync()
