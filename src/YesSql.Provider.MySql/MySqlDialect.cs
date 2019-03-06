@@ -96,6 +96,33 @@ namespace YesSql.Provider.MySql
             return " drop foreign key " + name;
         }
 
+        public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)
+        {
+            var res = new StringBuilder(200);
+
+            if (SupportsForeignKeyConstraintInAlterTable)
+                res.Append(" add");
+
+            res.Append(" constraint ")
+                .Append(name)
+                .Append(" foreign key (")
+                .Append(String.Join(", ", srcColumns))
+                .Append(") references ")
+                .Append(destTable);
+
+            if (!primaryKey)
+            {
+                res.Append(" (")
+                    .Append(String.Join(", ", destColumns))
+                    .Append(')');
+            }
+
+            res.Append(" ON DELETE NO ACTION ")
+                .Append(" ON UPDATE NO ACTION ");
+
+            return res.ToString();
+        }
+
         public override string DefaultValuesInsert => "VALUES()";
 
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
