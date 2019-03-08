@@ -37,7 +37,7 @@ namespace YesSql.Provider.MySql
         public override string IdentitySelectString => "; select LAST_INSERT_ID()";
         public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
         public override bool SupportsIfExistsBeforeTableName => true;
-        
+
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
             if (length.HasValue)
@@ -46,17 +46,22 @@ namespace YesSql.Provider.MySql
                 {
                     if (dbType == DbType.String)
                     {
-                        return "TEXT";
+                        // Mysql uses up to 4 bytes per Unicode char depends on Encoding, so 65536/4 and 16MB/4 make sense
+                        return length.Value > 16384 ?
+                            length.Value > 4194304 ? "LONGTEXT" : "MEDIUMTEXT" : "TEXT";
                     }
 
                     if (dbType == DbType.AnsiString)
                     {
-                        return "TEXT";
+                        // Mysql uses up to 4 bytes per Unicode char depends on Encoding, so 65536/4 and 16MB/4 make sense
+                        return length.Value > 16384 ?
+                            length.Value > 4194304 ? "LONGTEXT" : "MEDIUMTEXT" : "TEXT";
                     }
 
                     if (dbType == DbType.Binary)
                     {
-                        return "BLOB";
+                        return length.Value > 65536 ?
+                            length.Value > 16777216 ? "LONGBLOB" : "MEDIUMBLOB" : "BLOB";
                     }
                 }
                 else

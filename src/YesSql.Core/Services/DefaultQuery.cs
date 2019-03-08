@@ -152,13 +152,20 @@ namespace YesSql.Services
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsNotIn")] =
                 (query, builder, dialect, expression) =>
                 {
-                    var values = (Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable<object>).ToArray();
+                    // Could be simplified if int[] could be casted to IEnumerable<object>
+                    var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
+                    var values = new List<object>();
 
-                    if (values.Length == 0)
+                    foreach (var o in objects)
+                    {
+                        values.Add(o);
+                    }
+
+                    if (values.Count == 0)
                     {
                         builder.Append(" 1 = 1");
                     }
-                    else if (values.Length == 1)
+                    else if (values.Count == 1)
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
                         builder.Append(" <> ");
@@ -168,10 +175,10 @@ namespace YesSql.Services
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
                         var elements = new StringBuilder();
-                        for (var i = 0; i < values.Length; i++)
+                        for (var i = 0; i < values.Count; i++)
                         {
                             query.ConvertFragment(elements, Expression.Constant(values[i]));
-                            if (i < values.Length - 1)
+                            if (i < values.Count - 1)
                             {
                                 elements.Append(", ");
                             }
