@@ -476,50 +476,60 @@ namespace YesSql
                 return;
             }
 
-            _flushing = true;
-
-            // we only check if the session is disposed if 
-            // there are no commands to commit.
-
-            CheckDisposed();
-
-            // saving all updated entities
-            foreach (var obj in _updated)
+            try
             {
-                if (!_deleted.Contains(obj))
+                _flushing = true;
+
+                // we only check if the session is disposed if 
+                // there are no commands to commit.
+
+                CheckDisposed();
+
+                // saving all updated entities
+                foreach (var obj in _updated)
                 {
-                    await UpdateEntityAsync(obj);
+                    if (!_deleted.Contains(obj))
+                    {
+                        await UpdateEntityAsync(obj);
+                    }
                 }
-            }
 
-            // saving all pending entities
-            foreach (var obj in _saved)
+                // saving all pending entities
+                foreach (var obj in _saved)
+                {
+                    await SaveEntityAsync(obj);
+                }
+
+                // deleting all pending entities
+                foreach (var obj in _deleted)
+                {
+                    await DeleteEntityAsync(obj);
+                }
+
+                // compute all reduce indexes
+                await ReduceAsync();
+
+                await DemandAsync();
+
+                foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
+                {
+                    await command.ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+                }
+
+                _updated.Clear();
+                _saved.Clear();
+                _deleted.Clear();
+                _commands.Clear();
+                _maps.Clear();
+            }
+            catch
             {
-                await SaveEntityAsync(obj);
+                throw;
             }
-
-            // deleting all pending entities
-            foreach (var obj in _deleted)
+            finally
             {
-                await DeleteEntityAsync(obj);
+                _flushing = false;
             }
-
-            // compute all reduce indexes
-            await ReduceAsync();
-
-            await DemandAsync();
-
-            foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
-            {
-                await command.ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
-            }
-
-            _updated.Clear();
-            _saved.Clear();
-            _deleted.Clear();
-            _commands.Clear();
-            _maps.Clear();
-            _flushing = false;
         }
 
         public async Task CommitAsync()
