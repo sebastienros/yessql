@@ -117,8 +117,8 @@ namespace YesSql.Provider.MySql
                     .Append(')');
             }
 
-            res.Append(" ON DELETE NO ACTION ")
-                .Append(" ON UPDATE NO ACTION ");
+            res.Append(" on delete cascade ")
+                .Append(" on update cascade ");
 
             return res.ToString();
         }
