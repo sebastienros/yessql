@@ -11,7 +11,7 @@ namespace YesSql.Tests
 {
     public class MySqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=user1;pwd=Password12!;database=yessql;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=root;pwd=Sami1355!;database=yessql;";
         public MySqlTests()
         {
         }
@@ -46,7 +46,7 @@ namespace YesSql.Tests
         public async Task ForeignKeyOfIndexesMustBe_DeleteCascated()
         {
             var configuration = CreateConfiguration();
-            _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+            _store = await StoreFactory.CreateAsync(configuration);
 
             // First store register the index
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -63,7 +63,7 @@ namespace YesSql.Tests
             }
 
             // second store, don't register the index
-            _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+            _store = await StoreFactory.CreateAsync(configuration);
             using (var session = _store.CreateSession())
             {
                 var person = await session.Query().For<Person>().FirstOrDefaultAsync();

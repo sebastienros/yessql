@@ -98,24 +98,9 @@ namespace YesSql.Provider.MySql
 
         public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)
         {
-            var res = new StringBuilder(200);
+            string sql = base.GetAddForeignKeyConstraintString(name, srcColumns, destTable, destColumns, primaryKey);
 
-            if (SupportsForeignKeyConstraintInAlterTable)
-                res.Append(" add");
-
-            res.Append(" constraint ")
-                .Append(name)
-                .Append(" foreign key (")
-                .Append(String.Join(", ", srcColumns))
-                .Append(") references ")
-                .Append(destTable);
-
-            if (!primaryKey)
-            {
-                res.Append(" (")
-                    .Append(String.Join(", ", destColumns))
-                    .Append(')');
-            }
+            var res = new StringBuilder(sql);
 
             res.Append(" on delete cascade ")
                 .Append(" on update cascade ");
