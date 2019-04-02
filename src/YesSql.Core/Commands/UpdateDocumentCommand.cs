@@ -6,7 +6,7 @@ using YesSql.Logging;
 
 namespace YesSql.Commands
 {
-    public class UpdateDocumentCommand : DocumentCommand
+    public sealed class UpdateDocumentCommand : DocumentCommand
     {
         private string _tablePrefix;
 

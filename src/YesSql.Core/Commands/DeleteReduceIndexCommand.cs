@@ -7,7 +7,7 @@ using YesSql.Logging;
 
 namespace YesSql.Commands
 {
-    public class DeleteReduceIndexCommand : IndexCommand
+    public sealed class DeleteReduceIndexCommand : IndexCommand
     {
         public DeleteReduceIndexCommand(IIndex index, string tablePrefix) : base(index, tablePrefix)
         {
