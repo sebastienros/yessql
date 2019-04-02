@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Collections;
+using YesSql.Commands;
 using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.CompiledQueries;
@@ -3540,6 +3541,30 @@ namespace YesSql.Tests
             await Task.WhenAll(tasks);
 
             Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
+        }
+
+        [Fact]
+        public async Task ShouldNotDuplicateCommandsWhenCommitFails()
+        {
+
+            using (var session = (Session)_store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+
+                // Create a command that will throw an exception
+                // Use DeleteDocumentCommand as it has an order of 4 and will be at the end of the list
+                session._commands.Add(new DeleteDocumentCommand(new Document(), "foo"));
+
+                await Assert.ThrowsAnyAsync<Exception>(() => session.CommitAsync());
+
+                Assert.Empty(session._commands);
+            }
         }
     }
 }

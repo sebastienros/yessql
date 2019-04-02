@@ -10,7 +10,6 @@ using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
-using YesSql.Serialization;
 using YesSql.Services;
 
 namespace YesSql
@@ -20,7 +19,7 @@ namespace YesSql
         private DbTransaction _transaction;
 
         private readonly IdentityMap _identityMap = new IdentityMap();
-        private readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
+        internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
         private readonly Dictionary<IndexDescriptor, List<MapState>> _maps = new Dictionary<IndexDescriptor, List<MapState>>();
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
@@ -420,16 +419,21 @@ namespace YesSql
                 return;
             }
 
-            if (!_cancel && HasWork())
+            try
             {
-                FlushAsync().GetAwaiter().GetResult();
+                if (!_cancel && HasWork())
+                {
+                    FlushAsync().GetAwaiter().GetResult();
+                }
             }
+            finally
+            {
+                _disposed = true;
 
-            _disposed = true;
+                CommitTransaction();
 
-            CommitTransaction();
-
-            Release();
+                Release();
+            }
         }
 
         /// <summary>
@@ -476,15 +480,15 @@ namespace YesSql
                 return;
             }
 
+            _flushing = true;
+
+            // we only check if the session is disposed if 
+            // there are no commands to commit.
+
+            CheckDisposed();
+
             try
             {
-                _flushing = true;
-
-                // we only check if the session is disposed if 
-                // there are no commands to commit.
-
-                CheckDisposed();
-
                 // saving all updated entities
                 foreach (var obj in _updated)
                 {
@@ -515,7 +519,15 @@ namespace YesSql
                 {
                     await command.ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
                 }
+            }
+            catch
+            {
+                Cancel();
 
+                throw;
+            }
+            finally
+            {
                 _updated.Clear();
                 _saved.Clear();
                 _deleted.Clear();
@@ -530,16 +542,22 @@ namespace YesSql
             {
                 _flushing = false;
             }
+            }
         }
 
         public async Task CommitAsync()
         {
-            if (!_cancel)
+            try
             {
-                await FlushAsync();
+                if (!_cancel)
+                {
+                    await FlushAsync();
+                }
             }
-
-            CommitTransaction();
+            finally
+            {
+                CommitTransaction();
+            }
         }
 
         private void CommitTransaction()

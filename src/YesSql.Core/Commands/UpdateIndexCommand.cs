@@ -9,7 +9,7 @@ using YesSql.Logging;
 
 namespace YesSql.Commands
 {
-    public class UpdateIndexCommand : IndexCommand
+    public sealed class UpdateIndexCommand : IndexCommand
     {
         private readonly IEnumerable<int> _addedDocumentIds;
         private readonly IEnumerable<int> _deletedDocumentIds;
