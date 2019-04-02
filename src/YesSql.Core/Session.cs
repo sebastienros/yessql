@@ -244,7 +244,7 @@ namespace YesSql
             var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
-            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new [] { id });
+            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
             var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
 
             return result.FirstOrDefault();
@@ -533,15 +533,7 @@ namespace YesSql
                 _deleted.Clear();
                 _commands.Clear();
                 _maps.Clear();
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
                 _flushing = false;
-            }
             }
         }
 
