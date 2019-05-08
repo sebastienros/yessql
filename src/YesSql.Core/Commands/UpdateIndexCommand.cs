@@ -1,11 +1,11 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Indexes;
-using YesSql.Logging;
 
 namespace YesSql.Commands
 {
@@ -31,7 +31,7 @@ namespace YesSql.Commands
             var type = Index.GetType();
 
             var sql = Updates(type, dialect);
-            logger.LogSql(sql);
+            logger.LogTrace(sql);
             await connection.ExecuteAsync(sql, Index, transaction);
 
             // Update the documents list
@@ -43,10 +43,10 @@ namespace YesSql.Commands
                 var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
                 var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
 
-                logger.LogSql(bridgeSqlAdd);
+                logger.LogTrace(bridgeSqlAdd);
                 await connection.ExecuteAsync(bridgeSqlAdd, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
 
-                logger.LogSql(bridgeSqlRemove);
+                logger.LogTrace(bridgeSqlRemove);
                 await connection.ExecuteAsync(bridgeSqlRemove, _deletedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
             }
         }

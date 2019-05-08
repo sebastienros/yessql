@@ -1,9 +1,9 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using YesSql.Collections;
-using YesSql.Logging;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
@@ -34,7 +34,7 @@ namespace YesSql.Sql
         {
             foreach (var statement in statements)
             {
-                _logger.LogSql(statement);
+                _logger.LogTrace(statement);
                 Connection.Execute(statement, null, Transaction);
             }
         }
