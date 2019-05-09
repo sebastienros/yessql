@@ -1,7 +1,7 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Data;
 using System.Data.Common;
-using YesSql.Logging;
 
 namespace YesSql
 {
@@ -59,6 +59,12 @@ namespace YesSql
         public static IConfiguration DisableQueryGating(this IConfiguration configuration)
         {
             configuration.QueryGatingEnabled = false;
+            return configuration;
+        }
+
+        public static IConfiguration UseLogger(this IConfiguration configuration, ILogger logger)
+        {
+            configuration.Logger = logger;
             return configuration;
         }
     }

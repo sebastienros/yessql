@@ -1,8 +1,8 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Collections;
-using YesSql.Logging;
 
 namespace YesSql.Commands
 {
@@ -22,7 +22,7 @@ namespace YesSql.Commands
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
 
             var updateCmd = "update " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " set " + dialect.QuoteForColumnName("Content") + " = @Content where " + dialect.QuoteForColumnName("Id") + " = @Id;";
-            logger.LogSql(updateCmd);
+            logger.LogTrace(updateCmd);
             return connection.ExecuteScalarAsync<int>(updateCmd, Document, transaction);
         }
     }

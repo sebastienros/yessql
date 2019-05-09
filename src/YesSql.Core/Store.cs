@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -118,7 +119,7 @@ namespace YesSql
 
                         selectCommand.CommandText = $"SELECT 1 FROM {Dialect.QuoteForTableName(Configuration.TablePrefix + documentTable)}";
                         selectCommand.Transaction = transaction;
-                        Configuration.Logger.LogSql(selectCommand.CommandText);
+                        Configuration.Logger.LogTrace(selectCommand.CommandText);
                         var result = await selectCommand.ExecuteScalarAsync();
 
                         transaction.Commit();

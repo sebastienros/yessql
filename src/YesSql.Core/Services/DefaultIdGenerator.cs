@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -62,7 +63,7 @@ namespace YesSql.Services
                     selectCommand.CommandText = sql;
                     selectCommand.Transaction = transaction;
 
-                    configuration.Logger.LogSql(sql);
+                    configuration.Logger.LogTrace(sql);
                     var result = await selectCommand.ExecuteScalarAsync();
 
                     transaction.Commit();
