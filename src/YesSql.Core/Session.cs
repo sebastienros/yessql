@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -245,6 +246,7 @@ namespace YesSql
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
+            _store.Configuration.Logger.LogTrace(command);
             var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
 
             return result.FirstOrDefault();
