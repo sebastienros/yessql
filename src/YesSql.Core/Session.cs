@@ -355,7 +355,7 @@ namespace YesSql
                     // If no type is specified, use the one from the document
                     if (typeof(T) == typeof(object))
                     {
-                        var itemType = Type.GetType(d.Type) ?? typeof(object);
+                        var itemType = Store.TypeNames.ReverseLookup(d.Type) ?? Type.GetType(d.Type) ?? typeof(object);  // I don't think the Type.GetType(d.Type) is necessary, but I left it in as a precaution
                         accessor = _store.GetIdAccessor(itemType, "Id");
 
                         item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, itemType);

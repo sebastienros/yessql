@@ -136,6 +136,8 @@ namespace YesSql.Tests
                     transaction.Commit();
                 }
             }
+
+            _store.TypeNames[typeof(Person)] = "People";
         }
 
         [Fact]
@@ -3564,6 +3566,36 @@ namespace YesSql.Tests
                 await Assert.ThrowsAnyAsync<Exception>(() => session.CommitAsync());
 
                 Assert.Empty(session._commands);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldResolveManyTypes()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                var lion = new Animal
+                {
+                    Name = "Lion"
+                };
+
+                session.Save(bill);
+                session.Save(lion);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var all = await session.Query().Any().ListAsync();
+
+                Assert.Equal(2, all.Count());
+                Assert.Contains(all, x => x is Person);
+                Assert.Contains(all, x => x is Animal);
             }
         }
     }

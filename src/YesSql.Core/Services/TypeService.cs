@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace YesSql.Services
@@ -7,6 +9,15 @@ namespace YesSql.Services
     public class TypeService : ITypeService
     {
         private readonly ConcurrentDictionary<Type, string> typeNames = new ConcurrentDictionary<Type, string>();
+
+        public IEnumerable<Type> Keys { get { return typeNames.Keys; } }
+
+        public IEnumerable<string> Values { get { return typeNames.Values; } }
+
+        public Type ReverseLookup(string value)
+        {
+            return typeNames.FirstOrDefault(t => t.Value == value).Key;
+        }
 
         public string this[Type t]
         {
