@@ -43,7 +43,7 @@ namespace YesSql.Services
             {
                 if (s == "dynamic")
                 {
-                    return null;
+                    return typeof(object);
                 }
 
                 return nameTypes[s];
