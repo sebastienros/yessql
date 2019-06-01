@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace YesSql.Services
@@ -10,20 +9,6 @@ namespace YesSql.Services
         private readonly ConcurrentDictionary<Type, string> typeNames = new ConcurrentDictionary<Type, string>();
 
         private readonly ConcurrentDictionary<string, Type> nameTypes = new ConcurrentDictionary<string, Type>();
-
-        public IEnumerable<Type> Keys { get { return typeNames.Keys; } }
-
-        public IEnumerable<string> Values { get { return typeNames.Values; } }
-
-        public Type ReverseLookup(string value)
-        {
-            if (value == "dynamic")
-            {
-                return null;
-            }
-
-            return nameTypes[value];
-        }
 
         public string this[Type t]
         {
@@ -49,6 +34,19 @@ namespace YesSql.Services
             {
                 typeNames[t] = value;
                 nameTypes[value] = t;
+            }
+        }
+
+        public Type this[string s]
+        {
+            get
+            {
+                if (s == "dynamic")
+                {
+                    return null;
+                }
+
+                return nameTypes[s];
             }
         }
 

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace YesSql
 {
@@ -7,10 +6,6 @@ namespace YesSql
     {
         string this[Type t] { get; set; }
 
-        IEnumerable<Type> Keys { get; }
-
-        IEnumerable<string> Values { get; }
-
-        Type ReverseLookup(string value);
+        Type this[string s] { get; }
     }
 }
