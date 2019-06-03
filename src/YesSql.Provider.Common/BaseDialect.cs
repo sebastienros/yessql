@@ -123,7 +123,7 @@ namespace YesSql.Provider
 
             if (SupportsTableNameAfterIndexName)
             {
-                sb.AppendFormat(" {0}", QuoteForTableName(tableName));
+                sb.AppendFormat(" on {0}", QuoteForTableName(tableName));
             }
 
             return sb.ToString();
