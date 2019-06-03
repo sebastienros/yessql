@@ -38,6 +38,9 @@ namespace YesSql.Provider.MySql
         public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
         public override bool SupportsIfExistsBeforeTableName => true;
 
+        // This is dependent on version of MySql < v10.1.4 does not support IF EXISTS
+        public override bool SupportsIfExistsBeforeIndexName => false;
+
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
             if (length.HasValue)

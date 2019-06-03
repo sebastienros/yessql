@@ -25,6 +25,7 @@ namespace YesSql
         string GetSqlValue(object value);
         string QuoteForTableName(string v);
         string GetDropTableString(string name);
+        string GetDropIndexString(string indexName, string tableName);
         string QuoteForColumnName(string columnName);
         string InOperator(string values);
         string InSelectOperator(string query);

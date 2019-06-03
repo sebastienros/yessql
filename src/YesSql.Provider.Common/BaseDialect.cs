@@ -89,6 +89,8 @@ namespace YesSql.Provider
         }
 
         public virtual bool SupportsIfExistsBeforeTableName => false;
+        public virtual bool SupportsIfExistsBeforeIndexName => true;
+        public virtual bool SupportsTableNameAfterIndexName => true;
         public virtual string CascadeConstraintsString => String.Empty;
         public virtual bool SupportsIfExistsAfterTableName => false;
         public virtual string GetDropTableString(string name)
@@ -104,6 +106,24 @@ namespace YesSql.Provider
             if (SupportsIfExistsAfterTableName)
             {
                 sb.Append(" if exists");
+            }
+
+            return sb.ToString();
+        }
+        public virtual string GetDropIndexString(string indexName, string tableName)
+        {
+
+            var sb = new StringBuilder("drop index ");
+            if (SupportsIfExistsBeforeIndexName)
+            {
+                sb.Append("if exists ");
+            }
+
+            sb.Append(QuoteForColumnName(indexName));
+
+            if (SupportsTableNameAfterIndexName)
+            {
+                sb.AppendFormat(" {0}", QuoteForTableName(tableName));
             }
 
             return sb.ToString();

@@ -203,9 +203,7 @@ namespace YesSql.Sql
 
         public virtual void Run(StringBuilder builder, IDropIndexCommand command)
         {
-            builder.AppendFormat("drop index {0} ON {1}",
-                _dialect.QuoteForColumnName(command.IndexName),
-                _dialect.QuoteForTableName(command.Name));
+            builder.Append(_dialect.GetDropIndexString(command.IndexName, command.Name));
         }
 
         public virtual IEnumerable<string> Run(ISqlStatementCommand command)
