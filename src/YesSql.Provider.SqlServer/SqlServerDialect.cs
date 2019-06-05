@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using YesSql.Sql;
 
 namespace YesSql.Provider.SqlServer
@@ -124,12 +123,7 @@ namespace YesSql.Provider.SqlServer
 
         public override string GetDropIndexString(string indexName, string tableName)
         {
-            var sb = new StringBuilder("drop index if exists ")
-                .Append(QuoteForColumnName(indexName))
-                .Append(" on ")
-                .Append(QuoteForTableName(tableName));
-
-            return sb.ToString();
+            return "drop index if exists " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName);
         }
 
         public override string QuoteForColumnName(string columnName)
