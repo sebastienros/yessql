@@ -122,6 +122,16 @@ namespace YesSql.Provider.SqlServer
             }
         }
 
+        public override string GetDropIndexString(string indexName, string tableName)
+        {
+            var sb = new StringBuilder("drop index if exists ")
+                .Append(QuoteForColumnName(indexName))
+                .Append(" on ")
+                .Append(QuoteForTableName(tableName));
+
+            return sb.ToString();
+        }
+
         public override string QuoteForColumnName(string columnName)
         {
             return "[" + columnName + "]";

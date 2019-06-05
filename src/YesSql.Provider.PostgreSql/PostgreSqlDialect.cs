@@ -52,7 +52,6 @@ namespace YesSql.Provider.PostgreSql
         public override string IdentityColumnString => "SERIAL PRIMARY KEY";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
-        public override bool SupportsTableNameAfterIndexName => false;
 
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
@@ -128,6 +127,14 @@ namespace YesSql.Provider.PostgreSql
                 sqlBuilder.Trail(" offset ");
                 sqlBuilder.Trail(offset);
             }
+        }
+
+        public override string GetDropIndexString(string indexName, string tableName)
+        {
+            var sb = new StringBuilder("drop index if exists ")
+                .Append(QuoteForColumnName(indexName));
+
+            return sb.ToString();
         }
 
         public override string QuoteForColumnName(string columnName)

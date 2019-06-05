@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
@@ -52,8 +53,6 @@ namespace YesSql.Provider.Sqlite
 
         public override string IdentitySelectString => "; select last_insert_rowid()";
 
-        public override bool SupportsTableNameAfterIndexName => false;
-
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
             if (ColumnTypes.TryGetValue(dbType, out string value))
@@ -85,6 +84,14 @@ namespace YesSql.Provider.Sqlite
                 sqlBuilder.Trail(" OFFSET ");
                 sqlBuilder.Trail(offset);
             }
+        }
+
+        public override string GetDropIndexString(string indexName, string tableName)
+        {
+            var sb = new StringBuilder("drop index if exists ")
+                .Append(QuoteForColumnName(indexName));
+
+            return sb.ToString();
         }
 
         public override string QuoteForColumnName(string columnName)
