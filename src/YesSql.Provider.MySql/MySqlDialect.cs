@@ -120,6 +120,12 @@ namespace YesSql.Provider.MySql
             }
         }
 
+        public override string GetDropIndexString(string indexName, string tableName)
+        {
+            // This is dependent on version of MySql < v10.1.4 does not support IF EXISTS
+            return "drop index " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName);
+        }
+
         public override string QuoteForColumnName(string columnName)
         {
             return "`" + columnName + "`";

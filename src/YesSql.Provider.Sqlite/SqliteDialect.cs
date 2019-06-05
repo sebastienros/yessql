@@ -85,6 +85,11 @@ namespace YesSql.Provider.Sqlite
             }
         }
 
+        public override string GetDropIndexString(string indexName, string tableName)
+        {
+            return "drop index if exists " + QuoteForColumnName(indexName);
+        }
+
         public override string QuoteForColumnName(string columnName)
         {
             return "[" + columnName + "]";

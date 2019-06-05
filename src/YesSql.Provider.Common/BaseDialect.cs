@@ -108,7 +108,7 @@ namespace YesSql.Provider
 
             return sb.ToString();
         }
-
+        public abstract string GetDropIndexString(string indexName, string tableName);
         public abstract string QuoteForColumnName(string columnName);
         public abstract string QuoteForTableName(string tableName);
 

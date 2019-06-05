@@ -129,6 +129,11 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
+        public override string GetDropIndexString(string indexName, string tableName)
+        {
+            return "drop index if exists " + QuoteForColumnName(indexName);
+        }
+
         public override string QuoteForColumnName(string columnName)
         {
             return QuoteString + columnName + QuoteString;
