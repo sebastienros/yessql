@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
@@ -88,10 +87,7 @@ namespace YesSql.Provider.Sqlite
 
         public override string GetDropIndexString(string indexName, string tableName)
         {
-            var sb = new StringBuilder("drop index if exists ")
-                .Append(QuoteForColumnName(indexName));
-
-            return sb.ToString();
+            return "drop index if exists " + QuoteForColumnName(indexName);
         }
 
         public override string QuoteForColumnName(string columnName)
