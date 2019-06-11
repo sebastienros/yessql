@@ -4,6 +4,8 @@ namespace YesSql
 {
     public interface ITypeService
     {
-         string this[Type t] { get; set; }
+        string this[Type t] { get; set; }
+
+        Type this[string s] { get; }
     }
 }
