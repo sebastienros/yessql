@@ -1,6 +1,7 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Data;
 using YesSql.Data;
-using YesSql.Logging;
 using YesSql.Serialization;
 using YesSql.Services;
 

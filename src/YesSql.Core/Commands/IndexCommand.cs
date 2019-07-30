@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Data.Common;
@@ -6,7 +7,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Indexes;
-using YesSql.Logging;
 
 namespace YesSql.Commands
 {
@@ -68,7 +68,9 @@ namespace YesSql.Commands
                         var property = allProperties.ElementAt(i);
                         sbColumnList.Append(dialect.QuoteForColumnName(property.Name));
                         if (i < allProperties.Count() - 1)
+                        {
                             sbColumnList.Append(", ");
+                        }
                     }
 
                     var sbParameterList = new StringBuilder(null);
@@ -77,7 +79,9 @@ namespace YesSql.Commands
                         var property = allProperties.ElementAt(i);
                         sbParameterList.Append("@" + property.Name);
                         if (i < allProperties.Count() - 1)
+                        {
                             sbParameterList.Append(", ");
+                        }
                     }
 
                     values = " (" + sbColumnList + ") VALUES (" + sbParameterList + ")";
@@ -101,7 +105,9 @@ namespace YesSql.Commands
                     var property = allProperties[i];
                     values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name);
                     if (i < allProperties.Length - 1)
+                    {
                         values.Append(", ");
+                    }
                 }
 
                 UpdatesList[type.FullName] = result = "UPDATE " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " SET " + values + " WHERE " + dialect.QuoteForColumnName("Id") + " = @Id;";

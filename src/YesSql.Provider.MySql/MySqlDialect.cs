@@ -96,6 +96,18 @@ namespace YesSql.Provider.MySql
             return " drop foreign key " + name;
         }
 
+        public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)
+        {
+            string sql = base.GetAddForeignKeyConstraintString(name, srcColumns, destTable, destColumns, primaryKey);
+
+            var res = new StringBuilder(sql);
+
+            res.Append(" on delete cascade ")
+                .Append(" on update cascade ");
+
+            return res.ToString();
+        }
+
         public override string DefaultValuesInsert => "VALUES()";
 
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
@@ -118,6 +130,12 @@ namespace YesSql.Provider.MySql
                     sqlBuilder.Trail(offset);
                 }
             }
+        }
+
+        public override string GetDropIndexString(string indexName, string tableName)
+        {
+            // This is dependent on version of MySql < v10.1.4 does not support IF EXISTS
+            return "drop index " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName);
         }
 
         public override string QuoteForColumnName(string columnName)

@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -803,7 +804,7 @@ namespace YesSql.Services
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
             return await _session._store.ProduceAsync(key, () =>
             {
-                _session._store.Configuration.Logger.LogSql(sql);
+                _session._store.Configuration.Logger.LogDebug(sql);
                 return transaction.Connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, transaction);
             });
         }
@@ -884,6 +885,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     return (await _query._session._store.ProduceAsync(key, () =>
                     {
+                        _query._session._store.Configuration.Logger.LogDebug(sql);
                         return transaction.Connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     })).FirstOrDefault();
                 }
@@ -894,6 +896,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     var documents = (await _query._session._store.ProduceAsync(key, () =>
                     {
+                        _query._session._store.Configuration.Logger.LogDebug(sql);
                         return transaction.Connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     })).ToArray();
 
@@ -940,6 +943,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     return await _query._session._store.ProduceAsync(key, () =>
                     {
+                        _query._session._store.Configuration.Logger.LogDebug(sql);
                         return transaction.Connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     });
                 }
@@ -956,6 +960,7 @@ namespace YesSql.Services
                     var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                     var documents = await _query._session._store.ProduceAsync(key, () =>
                     {
+                        _query._session._store.Configuration.Logger.LogDebug(sql);
                         return transaction.Connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
                     });
 

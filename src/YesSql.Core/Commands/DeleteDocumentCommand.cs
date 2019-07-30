@@ -1,8 +1,8 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Collections;
-using YesSql.Logging;
 
 namespace YesSql.Commands
 {
@@ -20,7 +20,7 @@ namespace YesSql.Commands
         {
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             var deleteCmd = "delete from " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
-            logger.LogSql(deleteCmd);
+            logger.LogTrace(deleteCmd);
             return connection.ExecuteAsync(deleteCmd, Document, transaction);
         }
     }

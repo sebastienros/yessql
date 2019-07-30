@@ -12,7 +12,8 @@ namespace YesSql.Provider
         public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
 
         public abstract string Name { get; }
-        public virtual string InOperator(string values) {
+        public virtual string InOperator(string values)
+        {
             if (values.StartsWith("@") && !values.Contains(","))
             {
                 return " IN " + values;
@@ -61,7 +62,9 @@ namespace YesSql.Provider
             var res = new StringBuilder(200);
 
             if (SupportsForeignKeyConstraintInAlterTable)
+            {
                 res.Append(" add");
+            }
 
             res.Append(" constraint ")
                 .Append(name)
@@ -102,9 +105,10 @@ namespace YesSql.Provider
             {
                 sb.Append(" if exists");
             }
+
             return sb.ToString();
         }
-
+        public abstract string GetDropIndexString(string indexName, string tableName);
         public abstract string QuoteForColumnName(string columnName);
         public abstract string QuoteForTableName(string tableName);
 
@@ -170,7 +174,7 @@ namespace YesSql.Provider
                 return method.Render(args);
             }
 
-            return name + "(" + String.Join(", ", args) +  ")";
+            return name + "(" + String.Join(", ", args) + ")";
         }
 
         public virtual void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -56,13 +57,13 @@ namespace YesSql.Services
                 {
                     var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
 
-                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
+                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
 
                     var selectCommand = transaction.Connection.CreateCommand();
                     selectCommand.CommandText = sql;
                     selectCommand.Transaction = transaction;
 
-                    configuration.Logger.LogSql(sql);
+                    configuration.Logger.LogTrace(sql);
                     var result = await selectCommand.ExecuteScalarAsync();
 
                     transaction.Commit();

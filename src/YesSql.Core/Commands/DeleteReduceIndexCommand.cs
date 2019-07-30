@@ -1,9 +1,9 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Indexes;
-using YesSql.Logging;
 
 namespace YesSql.Commands
 {
@@ -22,10 +22,10 @@ namespace YesSql.Commands
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             var bridgeTableName = name + "_" + documentTable;
             var bridgeSql = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = @Id";
-            logger.LogSql(bridgeSql);
+            logger.LogTrace(bridgeSql);
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
             var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + name) + " where " + dialect.QuoteForColumnName("Id") + " = @Id";
-            logger.LogSql(command);
+            logger.LogTrace(command);
             await connection.ExecuteAsync(command, new { Id = Index.Id }, transaction);
         }
     }
