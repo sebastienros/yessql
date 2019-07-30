@@ -115,9 +115,9 @@ namespace YesSql.Provider.SqlServer
             }
             else if (limit != null)
             {
-                // Insert LIMIT clause after the select
+                // Insert LIMIT clause after the select with brackets for parameters
                 sqlBuilder.InsertSelector(" ");
-                sqlBuilder.InsertSelector(limit);
+                sqlBuilder.InsertSelector("(" + limit + ")");
                 sqlBuilder.InsertSelector("TOP ");
             }
         }
