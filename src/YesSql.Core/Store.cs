@@ -278,11 +278,11 @@ namespace YesSql
         /// <param name="key">A key identifying the running work.</param>
         /// <param name="work">A function containing the logic to execute.</param>
         /// <returns>The result of the work.</returns>
-        public async Task<T> ProduceAsync<T>(WorkerQueryKey key, Func<Task<T>> work)
+        internal async Task<T> ProduceAsync<T>(WorkerQueryKey key, Func<object[], Task<T>> work, params object[] args)
         {
             if (!Configuration.QueryGatingEnabled)
             {
-                return await work();
+                return await work(args);
             }
 
             object content = null;
@@ -305,7 +305,7 @@ namespace YesSql
                     try
                     {
                         // The current worker is processed
-                        content = await work();
+                        content = await work(args);
                     }
                     catch
                     {

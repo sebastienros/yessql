@@ -800,13 +800,29 @@ namespace YesSql.Services
             }
 
             var sql = localBuilder.ToSqlString();
-
+            var parameters = localBuilder.Parameters;
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
-            return await _session._store.ProduceAsync(key, () =>
+
+            try
             {
-                _session._store.Configuration.Logger.LogDebug(sql);
-                return transaction.Connection.ExecuteScalarAsync<int>(sql, localBuilder.Parameters, transaction);
-            });
+                return await _session._store.ProduceAsync(key, (args) =>
+                {
+                    var localSession = (Session)args[0];
+                    var localSql = (string)args[1];
+                    var localParameters = (Dictionary<string, object>)args[2];
+                    var localTransaction = (DbTransaction)args[3];
+
+                    localSession._store.Configuration.Logger.LogDebug(localSql);
+                    return localTransaction.Connection.ExecuteScalarAsync<int>(localSql, localParameters, localTransaction);
+                }, 
+                _session, sql, parameters, transaction);
+            }
+            catch
+            {
+                _session.Cancel();
+
+                throw;
+            }
         }
 
         IQuery<T> IQuery.For<T>(bool filterType)
@@ -878,34 +894,58 @@ namespace YesSql.Services
 
                 _query.Page(1, 0);
 
-                if (typeof(IIndex).IsAssignableFrom(typeof(T)))
+                try
                 {
-                    _query._queryState._sqlBuilder.Selector("*");
-                    var sql = _query._queryState._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                    return (await _query._session._store.ProduceAsync(key, () =>
+                    if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                     {
-                        _query._session._store.Configuration.Logger.LogDebug(sql);
-                        return transaction.Connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
-                    })).FirstOrDefault();
-                }
-                else
-                {
-                    _query._queryState._sqlBuilder.Selector(_query._queryState._documentTable, "*");
-                    var sql = _query._queryState._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                    var documents = (await _query._session._store.ProduceAsync(key, () =>
-                    {
-                        _query._session._store.Configuration.Logger.LogDebug(sql);
-                        return transaction.Connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
-                    })).ToArray();
+                        _query._queryState._sqlBuilder.Selector("*");
+                        var sql = _query._queryState._sqlBuilder.ToSqlString();
+                        var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
+                        return (await _query._session._store.ProduceAsync(key, (args) =>
+                        {
+                            var localQuery = (DefaultQuery)args[0];
+                            var localSql = (string)args[1];
+                            var localTransaction = (DbTransaction)args[2];
 
-                    if (documents.Length == 0)
-                    {
-                        return default(T);
+                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
+                            return localTransaction.Connection.QueryAsync<T>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
+                        },
+                        _query,
+                        sql,
+                        transaction
+                        )).FirstOrDefault();
                     }
+                    else
+                    {
+                        _query._queryState._sqlBuilder.Selector(_query._queryState._documentTable, "*");
+                        var sql = _query._queryState._sqlBuilder.ToSqlString();
+                        var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
+                        var documents = (await _query._session._store.ProduceAsync(key, (args) =>
+                        {
+                            var localQuery = (DefaultQuery)args[0];
+                            var localSql = (string)args[1];
+                            var localTransaction = (DbTransaction)args[2];
 
-                    return _query._session.Get<T>(documents).FirstOrDefault();
+                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
+                            return localTransaction.Connection.QueryAsync<Document>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
+                        }, 
+                        _query,
+                        sql,
+                        transaction
+                        )).ToArray();
+
+                        if (documents.Length == 0)
+                        {
+                            return default(T);
+                        }
+
+                        return _query._session.Get<T>(documents).FirstOrDefault();
+                    }
+                }
+                catch
+                {
+                    _query._session.Cancel();
+                    throw;
                 }
             }
 
@@ -929,42 +969,67 @@ namespace YesSql.Services
                     }
                 }
 
-                if (typeof(IIndex).IsAssignableFrom(typeof(T)))
+                try
                 {
-                    _query._queryState._sqlBuilder.Selector("*");
-
-                    // If a page is requested without order add a default one
-                    if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
+                    if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                     {
-                        _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(typeof(T).Name, "Id"));
+                        _query._queryState._sqlBuilder.Selector("*");
+
+                        // If a page is requested without order add a default one
+                        if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
+                        {
+                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(typeof(T).Name, "Id"));
+                        }
+
+                        var sql = _query._queryState._sqlBuilder.ToSqlString();
+                        var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
+                        return await _query._session._store.ProduceAsync(key, (args) =>
+                        {
+                            var localQuery = (DefaultQuery)args[0];
+                            var localSql = (string)args[1];
+                            var localTransaction = (DbTransaction)args[2];
+
+                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
+                            return localTransaction.Connection.QueryAsync<T>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
+                        },
+                        _query,
+                        sql,
+                        transaction
+                        );
                     }
-
-                    var sql = _query._queryState._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                    return await _query._session._store.ProduceAsync(key, () =>
+                    else
                     {
-                        _query._session._store.Configuration.Logger.LogDebug(sql);
-                        return transaction.Connection.QueryAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
-                    });
+                        // If a page is requested without order add a default one
+                        if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
+                        {
+                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
+                        }
+
+                        _query._queryState._sqlBuilder.Selector(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "*"));
+                        var sql = _query._queryState._sqlBuilder.ToSqlString();
+                        var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
+                        var documents = await _query._session._store.ProduceAsync(key, (args) =>
+                        {
+                            var localQuery = (DefaultQuery)args[0];
+                            var localSql = (string)args[1];
+                            var localTransaction = (DbTransaction)args[2];
+
+                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
+                            return localTransaction.Connection.QueryAsync<Document>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
+                        },
+                        _query,
+                        sql,
+                        transaction
+                        );
+
+                        return _query._session.Get<T>(documents.ToArray());
+                    }
                 }
-                else
+                catch
                 {
-                    // If a page is requested without order add a default one
-                    if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
-                    {
-                        _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
-                    }
+                    _query._session.Cancel();
 
-                    _query._queryState._sqlBuilder.Selector(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "*"));
-                    var sql = _query._queryState._sqlBuilder.ToSqlString();
-                    var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                    var documents = await _query._session._store.ProduceAsync(key, () =>
-                    {
-                        _query._session._store.Configuration.Logger.LogDebug(sql);
-                        return transaction.Connection.QueryAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
-                    });
-
-                    return _query._session.Get<T>(documents.ToArray());
+                    throw;
                 }
             }
 

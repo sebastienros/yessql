@@ -246,10 +246,34 @@ namespace YesSql
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
-            _store.Configuration.Logger.LogTrace(command);
-            var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
 
-            return result.FirstOrDefault();
+            try
+            {
+                var result = await _store.ProduceAsync(key, (args) =>
+                {
+                    var localStore = (Store)args[0];
+                    var localConnection = (DbConnection)args[1];
+                    var localTransaction = (DbTransaction)args[2];
+                    var localCommand = (string)args[3];
+                    var localParameters = (object)args[4];
+
+                    localStore.Configuration.Logger.LogTrace(localCommand);
+                    return localConnection.QueryAsync<Document>(localCommand, localParameters, localTransaction);
+                },
+                _store,
+                _connection,
+                _transaction,
+                command,
+                new { Id = id });
+
+                return result.FirstOrDefault();
+            }
+            catch
+            {
+                Cancel();
+
+                throw;
+            }            
         }
 
         public void Delete(object obj)
@@ -316,12 +340,30 @@ namespace YesSql
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
-            var documents = await _store.ProduceAsync(key, () =>
+            try
             {
-                return _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
-            });
+                var documents = await _store.ProduceAsync(key, (args) =>
+                {
+                    var localConnection = (DbConnection)args[0];
+                    var localTransaction = (DbTransaction)args[1];
+                    var localCommand = (string)args[2];
+                    var localParamters = args[3];
 
-            return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray());
+                    return localConnection.QueryAsync<Document>(localCommand, localParamters, localTransaction);
+                },
+                _connection,
+                _transaction,
+                command,
+                new { Ids = ids });
+
+                return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray());
+            }
+            catch
+            {
+                Cancel();
+
+                throw;
+            }
         }
 
         public IEnumerable<T> Get<T>(IList<Document> documents) where T : class
