@@ -61,13 +61,13 @@ namespace YesSql
         /// Flushes pending commands to the database.
         /// </summary>
         /// <remarks>
-        /// This doesn't commit the transaction. A call to <see cref="CommitAsync"/>
+        /// This doesn't commit or dispose of the transaction. A call to <see cref="CommitAsync"/>
         /// is still necessary for the changes to be visible from other transactions.
         /// </remarks>
         Task FlushAsync();
 
         /// <summary>
-        /// Fluses and changes and commits the transaction.
+        /// Fluses any changes and commits the transaction, and disposes it.
         /// </summary>
         /// <remarks>
         /// Sessions are automatically committed when disposed, however calling <see cref="CommitAsync"/>

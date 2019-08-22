@@ -246,10 +246,34 @@ namespace YesSql
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
-            _store.Configuration.Logger.LogTrace(command);
-            var result = await _store.ProduceAsync(key, () => _connection.QueryAsync<Document>(command, new { Id = id }, _transaction));
 
-            return result.FirstOrDefault();
+            try
+            {
+                var result = await _store.ProduceAsync(key, (args) =>
+                {
+                    var localStore = (Store)args[0];
+                    var localConnection = (DbConnection)args[1];
+                    var localTransaction = (DbTransaction)args[2];
+                    var localCommand = (string)args[3];
+                    var localParameters = (object)args[4];
+
+                    localStore.Configuration.Logger.LogTrace(localCommand);
+                    return localConnection.QueryAsync<Document>(localCommand, localParameters, localTransaction);
+                },
+                _store,
+                _connection,
+                _transaction,
+                command,
+                new { Id = id });
+
+                return result.FirstOrDefault();
+            }
+            catch
+            {
+                Cancel();
+
+                throw;
+            }            
         }
 
         public void Delete(object obj)
@@ -316,12 +340,30 @@ namespace YesSql
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
-            var documents = await _store.ProduceAsync(key, () =>
+            try
             {
-                return _connection.QueryAsync<Document>(command, new { Ids = ids }, _transaction);
-            });
+                var documents = await _store.ProduceAsync(key, (args) =>
+                {
+                    var localConnection = (DbConnection)args[0];
+                    var localTransaction = (DbTransaction)args[1];
+                    var localCommand = (string)args[2];
+                    var localParamters = args[3];
 
-            return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray());
+                    return localConnection.QueryAsync<Document>(localCommand, localParamters, localTransaction);
+                },
+                _connection,
+                _transaction,
+                command,
+                new { Ids = ids });
+
+                return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray());
+            }
+            catch
+            {
+                Cancel();
+
+                throw;
+            }
         }
 
         public IEnumerable<T> Get<T>(IList<Document> documents) where T : class
@@ -414,17 +456,31 @@ namespace YesSql
             }
         }
 
+        ~Session()
+        {
+            // Ensure the session gets disposed if the user cannot wrap the session in a using block.
+            // For instance in OrchardCore the session is disposed from a middleware, so if an exception
+            // is thrown in a middleware, it might not get triggered.
+
+            _cancel = true;
+
+            Dispose();
+        }
+
         public void Dispose()
         {
+            // Do nothing if Dispose() was already called
             if (_disposed)
             {
-                return;
+                return; 
             }
 
             try
             {
                 if (!_cancel && HasWork())
                 {
+                    // This should never go there, CommitAsync() should be called explicitely
+                    // and asynchronously before Dispose() is invoked
                     FlushAsync().GetAwaiter().GetResult();
                 }
             }
@@ -434,14 +490,26 @@ namespace YesSql
 
                 CommitTransaction();
 
-                Release();
+                ReleaseSession();
             }
         }
 
         /// <summary>
-        /// Called when the instance is available to an object pool.
+        /// Clears all the resources associated to the session.
         /// </summary>
-        internal void Release()
+        private void ReleaseSession()
+        {
+            _identityMap.Clear();
+            _descriptors.Clear();
+            _indexes?.Clear();
+
+            _store.ReleaseSession(this);
+        }
+
+        /// <summary>
+        /// Clears all the resources associated to the unit of work.
+        /// </summary>
+        private void ReleaseTransaction()
         {
             _updated.Clear();
             _saved.Clear();
@@ -449,10 +517,23 @@ namespace YesSql
             _commands.Clear();
             _maps.Clear();
 
-            _identityMap.Clear();
-            _descriptors.Clear();
-            _indexes?.Clear();
-            _store.ReleaseSession(this);
+            if (_transaction != null)
+            {
+                _transaction.Dispose();
+                _transaction = null;
+            }
+        }
+
+        private void ReleaseConnection()
+        {
+            ReleaseTransaction();
+
+            if (_connection != null)
+            {
+                _connection.Close();
+                _connection.Dispose();
+                _connection = null;
+            }
         }
 
         /// <summary>
@@ -575,18 +656,7 @@ namespace YesSql
             }
             finally
             {
-                if (_transaction != null)
-                {
-                    _transaction.Dispose();
-                    _transaction = null;
-                }
-
-                if (_connection != null)
-                {
-                    _connection.Close();
-                    _connection.Dispose();
-                    _connection = null;
-                }
+                ReleaseConnection();
             }
         }
 
@@ -910,36 +980,8 @@ namespace YesSql
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.
                 _transaction = _connection.BeginTransaction(_isolationLevel);
-            }
 
-            return _transaction;
-        }
-
-        private DbTransaction Demand()
-        {
-            CheckDisposed();
-
-            if (_transaction == null)
-            {
-                if (_connection == null)
-                {
-                    _connection = _store.Configuration.ConnectionFactory.CreateConnection();
-
-                    // The dialect could already be initialized if the session is reused
-                    if (_dialect == null)
-                    {
-                        _dialect = Store.Dialect;
-                    }
-                }
-
-                if (_connection.State == ConnectionState.Closed)
-                {
-                    _connection.Open();
-                }
-
-                // In the case of shared connections (InMemory) this can throw as the transation
-                // might already be set by a concurrent thread on the same shared connection.
-                _transaction = _connection.BeginTransaction(_isolationLevel);
+                _cancel = false;
             }
 
             return _transaction;
@@ -950,6 +992,8 @@ namespace YesSql
             CheckDisposed();
 
             _cancel = true;
+
+            ReleaseTransaction();
         }
 
         public IStore Store => _store;
