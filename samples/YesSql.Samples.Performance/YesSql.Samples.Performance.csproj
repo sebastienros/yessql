@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net46;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
     <DebugType>portable</DebugType>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>YesSql.Samples.Performance</AssemblyName>
@@ -11,17 +11,6 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.11.1" />
     <PackageReference Include="xunit" Version="2.4.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="1.1.1" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
