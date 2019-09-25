@@ -7,12 +7,12 @@ namespace YesSql.Tests.Models
     public class Email
     {
         public int Id { get; set; }
-        public List<Attachement> Attachements { get; set; }
+        public List<Attachment> Attachments { get; set; }
         public DateTime Date { get; set; }
     }
-    public class Attachement
+    public class Attachment
     {
-        public Attachement(string Name)
+        public Attachment(string Name)
         {
             this.Name = Name;
         }
