@@ -20,6 +20,7 @@ namespace YesSql.Sql
         protected List<string> _having;
         protected List<string> _order;
         protected List<string> _trail;
+        protected string _distinct;
         protected string _skip;
         protected string _count;
 
@@ -114,6 +115,11 @@ namespace YesSql.Sql
             }
         }
 
+        public void Distinct()
+        {
+            _distinct = "DISTINCT ";
+        }
+
         public virtual string FormatColumn(string table, string column)
         {
             if (column != "*")
@@ -133,6 +139,8 @@ namespace YesSql.Sql
 
             WhereSegments.Add(where);
         }
+
+        public bool HasJoin => _join != null && _join.Count > 0;
 
         public bool HasOrder => _order != null && _order.Count > 0;
 
@@ -189,7 +197,7 @@ namespace YesSql.Sql
         {
             if (String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
-                if ((_skip != null || _count != null))
+                if (_skip != null || _count != null)
                 {
                     _dialect.Page(this, _skip, _count);
                 }
@@ -197,6 +205,11 @@ namespace YesSql.Sql
                 var sb = new StringBuilder();
 
                 sb.Append("SELECT ");
+
+                if (_distinct != null)
+                {
+                    sb.Append(_distinct);
+                }
 
                 foreach (var s in _select)
                 {
