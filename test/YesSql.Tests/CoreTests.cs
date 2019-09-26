@@ -3634,5 +3634,35 @@ namespace YesSql.Tests
                 Assert.Single(result);
             }
         }
+
+        [Fact]
+        public async Task ShouldCountSingleDocument()
+        {
+            _store.RegisterIndexes<EmailByAttachmentProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var email = new Email()
+                {
+                    Date = DateTime.Now,
+                    Attachments = new List<Attachment>()
+                    {
+                        new Attachment("resume.doc"),
+                        new Attachment("letter.doc"),
+                        new Attachment("photo.jpg")
+                    }
+                };
+
+                session.Save(email);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // Get all emails that have '.doc' attachments
+                var count = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).CountAsync();
+
+                Assert.Equal(1, count);
+            }
+        }
     }
 }
