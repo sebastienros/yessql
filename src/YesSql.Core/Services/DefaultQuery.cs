@@ -791,7 +791,7 @@ namespace YesSql.Services
             }
             else
             {
-                localBuilder.Selector($"count(*)");
+                localBuilder.Selector("count(*)");
             }
 
             // Clear paging and order when counting 
