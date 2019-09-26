@@ -21,7 +21,7 @@ namespace YesSql.Sql
         protected List<string> _having;
         protected List<string> _order;
         protected List<string> _trail;
-        protected string _distinct;
+        protected bool _distinct;
         protected string _skip;
         protected string _count;
 
@@ -118,7 +118,7 @@ namespace YesSql.Sql
 
         public void Distinct()
         {
-            _distinct = "DISTINCT ";
+            _distinct = true;
         }
 
         public virtual string FormatColumn(string table, string column)
@@ -207,10 +207,11 @@ namespace YesSql.Sql
 
                 sb.Append("SELECT ");
 
-                if (_distinct != null)
+                if (_distinct)
                 {
-                    sb.Append(_distinct);
+                    sb.Append("DISTINCT ");
 
+                    // This hacky bit needs a better solution
                     if (_order != null && _order[0] != _dialect.QuoteForColumnName("Id"))
                     {
                         _select.Add(",");
