@@ -211,7 +211,7 @@ namespace YesSql.Sql
                 {
                     sb.Append(_distinct);
 
-                    if (_order != null && _order[0] != "[Id]")
+                    if (_order != null && _order[0] != _dialect.QuoteForColumnName("Id"))
                     {
                         _select.Add(",");
                         _select.AddRange(_order.Where(o => o != " DESC"));
