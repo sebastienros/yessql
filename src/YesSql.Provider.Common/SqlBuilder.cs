@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace YesSql.Sql
@@ -209,6 +210,12 @@ namespace YesSql.Sql
                 if (_distinct != null)
                 {
                     sb.Append(_distinct);
+
+                    if (_order != null && _order[0] != "[Id]")
+                    {
+                        _select.Add(",");
+                        _select.AddRange(_order.Where(o => o != " DESC"));
+                    }
                 }
 
                 foreach (var s in _select)
