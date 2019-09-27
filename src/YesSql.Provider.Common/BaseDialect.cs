@@ -193,5 +193,10 @@ namespace YesSql.Provider
 
             builder.Append(")");
         }
+
+        public virtual List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
+        {
+            return select;
+        }
     }
 }

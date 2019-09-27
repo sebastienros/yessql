@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
@@ -33,6 +34,7 @@ namespace YesSql
         string NotInSelectOperator(string query);
         string GetDropForeignKeyConstraintString(string name);
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
+        List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy);
         void Concat(StringBuilder builder, params Action<StringBuilder>[] generators);
         string DefaultValuesInsert { get; }
         void Page(ISqlBuilder sqlBuilder, string offset, string limit);

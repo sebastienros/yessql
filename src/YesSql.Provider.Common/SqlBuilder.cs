@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace YesSql.Sql
@@ -20,6 +21,7 @@ namespace YesSql.Sql
         protected List<string> _having;
         protected List<string> _order;
         protected List<string> _trail;
+        protected bool _distinct;
         protected string _skip;
         protected string _count;
 
@@ -75,7 +77,7 @@ namespace YesSql.Sql
                 }
             );
         }
-        
+
         public void Select()
         {
             _clause = "SELECT";
@@ -114,6 +116,11 @@ namespace YesSql.Sql
             }
         }
 
+        public void Distinct()
+        {
+            _distinct = true;
+        }
+
         public virtual string FormatColumn(string table, string column)
         {
             if (column != "*")
@@ -133,6 +140,8 @@ namespace YesSql.Sql
 
             WhereSegments.Add(where);
         }
+
+        public bool HasJoin => _join != null && _join.Count > 0;
 
         public bool HasOrder => _order != null && _order.Count > 0;
 
@@ -189,7 +198,7 @@ namespace YesSql.Sql
         {
             if (String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
-                if ((_skip != null || _count != null))
+                if (_skip != null || _count != null)
                 {
                     _dialect.Page(this, _skip, _count);
                 }
@@ -197,6 +206,16 @@ namespace YesSql.Sql
                 var sb = new StringBuilder();
 
                 sb.Append("SELECT ");
+
+                if (_distinct)
+                {
+                    sb.Append("DISTINCT ");
+
+                    if (_order != null)
+                    {
+                        _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
+                    }
+                }
 
                 foreach (var s in _select)
                 {
@@ -211,7 +230,7 @@ namespace YesSql.Sql
                     {
                         sb.Append(s);
                     }
-                }                    
+                }
 
                 if (_join != null)
                 {

@@ -784,7 +784,15 @@ namespace YesSql.Services
             var transaction = await _session.DemandAsync();
 
             var localBuilder = _queryState._sqlBuilder.Clone();
-            localBuilder.Selector("count(*)");
+
+            if (localBuilder.HasJoin)
+            {
+                localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id")})");
+            }
+            else
+            {
+                localBuilder.Selector("count(*)");
+            }
 
             // Clear paging and order when counting 
             localBuilder.ClearOrder();
@@ -1006,6 +1014,7 @@ namespace YesSql.Services
                         }
 
                         _query._queryState._sqlBuilder.Selector(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "*"));
+                        _query._queryState._sqlBuilder.Distinct();
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                         var documents = await _query._session._store.ProduceAsync(key, (args) =>
@@ -1037,7 +1046,7 @@ namespace YesSql.Services
             {
                 if (!_query._queryState._sqlBuilder.HasOrder)
                 {
-                    _query._queryState._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
+                    _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
                 }
 
                 _query._queryState._sqlBuilder.Skip(count.ToString());
@@ -1048,7 +1057,7 @@ namespace YesSql.Services
             {
                 if (!_query._queryState._sqlBuilder.HasOrder)
                 {
-                    _query._queryState._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
+                    _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
                 }
 
                 _query._queryState._sqlBuilder.Take(count.ToString());

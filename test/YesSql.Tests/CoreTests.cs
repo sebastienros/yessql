@@ -55,6 +55,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
                     builder.DropMapIndexTable(nameof(PersonByName));
                     builder.DropMapIndexTable(nameof(PersonIdentity));
+                    builder.DropMapIndexTable(nameof(EmailByAttachment));
 
                     using (new NamedCollection("Collection1"))
                     {
@@ -132,6 +133,11 @@ namespace YesSql.Tests
                         );
 
                     builder.CreateMapIndexTable(nameof(PublishedArticle), column => { });
+
+                    builder.CreateMapIndexTable(nameof(EmailByAttachment), column => column
+                            .Column<DateTime>(nameof(EmailByAttachment.Date))
+                            .Column<string>(nameof(EmailByAttachment.AttachmentName))
+                        );
 
                     transaction.Commit();
                 }
@@ -1299,7 +1305,7 @@ namespace YesSql.Tests
             //Create one Email with 3 attachments
             using (var session = _store.CreateSession())
             {
-                var email = new Email() { Date = new DateTime(2018, 06, 11), Attachements = new System.Collections.Generic.List<Attachement>(){ new Attachement("A1"), new Attachement("A2"), new Attachement("A3") }};
+                var email = new Email() { Date = new DateTime(2018, 06, 11), Attachments = new System.Collections.Generic.List<Attachment>(){ new Attachment("A1"), new Attachment("A2"), new Attachment("A3") }};
                 session.Save(email);
             }
 
@@ -1322,11 +1328,11 @@ namespace YesSql.Tests
                 var email = new Email()
                 {
                     Date = date,
-                    Attachements = new List<Attachement>()
+                    Attachments = new List<Attachment>()
                     {
-                        new Attachement("A1"),
-                        new Attachement("A2"),
-                        new Attachement("A3")
+                        new Attachment("A1"),
+                        new Attachment("A2"),
+                        new Attachment("A3")
                     }
                 };
 
@@ -1346,8 +1352,8 @@ namespace YesSql.Tests
                     .Where(m => m.Date == date.DayOfYear)
                     .FirstOrDefaultAsync();
 
-                email.Attachements.Add(new Attachement("A4"));
-                email.Attachements.Add(new Attachement("A5"));
+                email.Attachments.Add(new Attachment("A4"));
+                email.Attachments.Add(new Attachment("A5"));
 
                 session.Save(email);
             }
@@ -1359,7 +1365,7 @@ namespace YesSql.Tests
                     .Where(m => m.Date == date.DayOfYear)
                     .FirstOrDefaultAsync();
 
-                Assert.Equal(5, email.Attachements.Count);
+                Assert.Equal(5, email.Attachments.Count);
                 Assert.Equal(1, await session.QueryIndex<AttachmentByDay>().CountAsync());
             }
 
@@ -3596,6 +3602,66 @@ namespace YesSql.Tests
                 Assert.Equal(2, all.Count());
                 Assert.Contains(all, x => x is Person);
                 Assert.Contains(all, x => x is Animal);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldReturnSingleDocument()
+        {
+            _store.RegisterIndexes<EmailByAttachmentProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var email = new Email()
+                {
+                    Date = DateTime.Now,
+                    Attachments = new List<Attachment>()
+                    {
+                        new Attachment("resume.doc"),
+                        new Attachment("letter.doc"),
+                        new Attachment("photo.jpg")
+                    }
+                };
+
+                session.Save(email);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // Get all emails that have '.doc' attachments
+                var result = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).ListAsync();
+
+                Assert.Single(result);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCountSingleDocument()
+        {
+            _store.RegisterIndexes<EmailByAttachmentProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var email = new Email()
+                {
+                    Date = DateTime.Now,
+                    Attachments = new List<Attachment>()
+                    {
+                        new Attachment("resume.doc"),
+                        new Attachment("letter.doc"),
+                        new Attachment("photo.jpg")
+                    }
+                };
+
+                session.Save(email);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // Get all emails that have '.doc' attachments
+                var count = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).CountAsync();
+
+                Assert.Equal(1, count);
             }
         }
     }

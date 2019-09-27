@@ -9,6 +9,7 @@ namespace YesSql
         string FormatColumn(string table, string column);
         string GetSelector();
         void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn);
+        bool HasJoin { get; }
         bool HasOrder { get; }
         void ClearOrder();
         void OrderBy(string orderBy);
@@ -18,6 +19,7 @@ namespace YesSql
         void Selector(string table, string column);
         void AddSelector(string select);
         void InsertSelector(string select);
+        void Distinct();
         bool HasPaging { get; }
         void Skip(string skip);
         void Take(string take);
