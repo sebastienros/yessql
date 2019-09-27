@@ -1046,7 +1046,7 @@ namespace YesSql.Services
             {
                 if (!_query._queryState._sqlBuilder.HasOrder)
                 {
-                    _query._queryState._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
+                    _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
                 }
 
                 _query._queryState._sqlBuilder.Skip(count.ToString());
@@ -1057,7 +1057,7 @@ namespace YesSql.Services
             {
                 if (!_query._queryState._sqlBuilder.HasOrder)
                 {
-                    _query._queryState._sqlBuilder.OrderBy(_query._dialect.QuoteForColumnName("Id"));
+                    _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
                 }
 
                 _query._queryState._sqlBuilder.Take(count.ToString());

@@ -77,7 +77,7 @@ namespace YesSql.Sql
                 }
             );
         }
-        
+
         public void Select()
         {
             _clause = "SELECT";
@@ -211,11 +211,9 @@ namespace YesSql.Sql
                 {
                     sb.Append("DISTINCT ");
 
-                    // This hacky bit needs a better solution
-                    if (_order != null && _order[0] != _dialect.QuoteForColumnName("Id"))
+                    if (_order != null)
                     {
-                        _select.Add(",");
-                        _select.AddRange(_order.Where(o => o != " DESC"));
+                        _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
                     }
                 }
 
@@ -232,7 +230,7 @@ namespace YesSql.Sql
                     {
                         sb.Append(s);
                     }
-                }                    
+                }
 
                 if (_join != null)
                 {

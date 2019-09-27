@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Text;
 using YesSql.Sql;
 
@@ -152,6 +153,20 @@ namespace YesSql.Provider.SqlServer
             }
 
             builder.Append(")");
+        }
+
+        public override List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
+        {
+            foreach(var o in orderBy.Where(o => o.Trim() != "," && o.Trim() != "DESC" && o.Trim() != "ASC"))
+            {
+                if (!select.Contains(o))
+                {
+                    select.Add(",");
+                    select.Add(o);
+                }
+            }
+
+            return select;
         }
     }
 }
