@@ -787,7 +787,7 @@ namespace YesSql.Services
 
             if (localBuilder.HasJoin)
             {
-                localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "id")})");
+                localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id")})");
             }
             else
             {
