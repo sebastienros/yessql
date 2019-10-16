@@ -46,6 +46,14 @@ namespace YesSql.Sql.Schema
             TableCommands.Add(command);
         }
 
+        public void RenameColumn(string columnName, string newColumnName)
+        {
+            var command = new RenameColumnCommand(Name, columnName, newColumnName);
+
+            TableCommands.Add(command);
+        }
+
+
         public void CreateIndex(string indexName, params string[] columnNames)
         {
             if (_dialect.PrefixIndex)

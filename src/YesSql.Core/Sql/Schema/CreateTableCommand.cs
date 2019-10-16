@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 
 namespace YesSql.Sql.Schema
@@ -15,10 +15,8 @@ namespace YesSql.Sql.Schema
             var command = new CreateColumnCommand(Name, columnName);
             command.WithType(dbType);
 
-            if (column != null)
-            {
-                column(command);
-            }
+            column?.Invoke(command);
+
             TableCommands.Add(command);
             return this;
         }

@@ -1,10 +1,11 @@
-﻿using System.Data;
+using System.Data;
 
 namespace YesSql.Sql.Schema
 {
     public interface IColumnCommand : ITableCommand
     {
-        string ColumnName { get; set; }
+        string ColumnName { get; }
+
         byte Scale { get; }
 
         byte Precision { get; }
