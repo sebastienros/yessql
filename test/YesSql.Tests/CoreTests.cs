@@ -3666,7 +3666,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldRenameColumn()
+        public virtual void ShouldRenameColumn()
         {
             var table = "Table1";
             var prefixedTable = TablePrefix + table;
