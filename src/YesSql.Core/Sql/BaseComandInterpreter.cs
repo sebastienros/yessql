@@ -112,13 +112,12 @@ namespace YesSql.Sql
                 yield break;
             }
 
-            var commands = new List<string>();
-
             // drop columns
             foreach (var dropColumn in command.TableCommands.OfType<DropColumnCommand>())
             {
                 var builder = new StringBuilder();
                 Run(builder, dropColumn);
+                yield return builder.ToString();
             }
 
             // add columns
@@ -134,6 +133,14 @@ namespace YesSql.Sql
             {
                 var builder = new StringBuilder();
                 Run(builder, alterColumn);
+                yield return builder.ToString();
+            }
+
+            // rename columns
+            foreach (var renameColumn in command.TableCommands.OfType<RenameColumnCommand>())
+            {
+                var builder = new StringBuilder();
+                Run(builder, renameColumn);
                 yield return builder.ToString();
             }
 
@@ -191,6 +198,15 @@ namespace YesSql.Sql
             {
                 builder.Append(" set default ").Append(_dialect.GetSqlValue(command.Default)).Append(Space);
             }
+        }
+
+        public virtual void Run(StringBuilder builder, IRenameColumnCommand command)
+        {
+            builder.AppendFormat("alter table {0} rename column {1} to {2}",
+                _dialect.QuoteForTableName(command.Name),
+                _dialect.QuoteForColumnName(command.ColumnName),
+                _dialect.QuoteForColumnName(command.NewColumnName)
+                );
         }
 
         public virtual void Run(StringBuilder builder, IAddIndexCommand command)

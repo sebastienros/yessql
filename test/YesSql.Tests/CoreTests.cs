@@ -1940,7 +1940,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var person = new Person
                     {
@@ -1981,7 +1981,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     var person = new Person
                     {
@@ -2008,7 +2008,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     var person = new Person
                     {
@@ -3662,6 +3662,98 @@ namespace YesSql.Tests
                 var count = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).CountAsync();
 
                 Assert.Equal(1, count);
+            }
+        }
+
+        [Fact]
+        public virtual void ShouldRenameColumn()
+        {
+            var table = "Table1";
+            var prefixedTable = TablePrefix + table;
+            var column1 = "Column1";
+            var column2 = "Column2";
+            var value = "Value";
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                connection.Open();
+
+                try
+                {
+                    using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                    {
+
+                        var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                        builder.DropTable(table);
+
+                        transaction.Commit();
+                    }
+                }
+                catch
+                {
+                    // Do nothing if the table can't be dropped
+                }
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder.CreateTable(table, column => column
+                            .Column<string>(column1)
+                        );
+
+                    var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
+                        _store.Dialect.QuoteForTableName(prefixedTable),
+                        _store.Dialect.QuoteForColumnName(column1),
+                        _store.Dialect.GetSqlValue(value)
+                        );
+
+                    connection.Execute(sqlInsert, transaction: transaction);
+
+                    transaction.Commit();
+                }
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                        _store.Dialect.QuoteForColumnName(column1),
+                        _store.Dialect.QuoteForTableName(prefixedTable)
+                        );
+
+                    var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
+
+                    Assert.Equal(value, result.Column1);
+
+                    transaction.Commit();
+                }
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder.AlterTable(table, column => column
+                            .RenameColumn(column1, column2)
+                        );
+
+                    transaction.Commit();
+                }
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                        _store.Dialect.QuoteForColumnName(column2),
+                        _store.Dialect.QuoteForTableName(prefixedTable)
+                        );
+
+                    var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
+
+                    Assert.Equal(value, result.Column2);
+
+                    transaction.Commit();
+                }
+
             }
         }
     }

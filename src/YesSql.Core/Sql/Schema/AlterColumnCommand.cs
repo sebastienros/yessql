@@ -39,6 +39,5 @@ namespace YesSql.Sql.Schema
         {
             return WithLength(16385);
         }
-
     }
 }
