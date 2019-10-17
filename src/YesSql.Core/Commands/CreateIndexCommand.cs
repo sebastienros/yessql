@@ -30,7 +30,7 @@ namespace YesSql.Commands
 
             if (Index is MapIndex)
             {
-                var sql = Inserts(type, dialect) + " " + dialect.IdentitySelectString + " " + dialect.QuoteForColumnName("Id");
+                var sql = Inserts(type, dialect);
                 logger.LogTrace(sql);
                 Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
                 var command = "update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + dialect.QuoteForColumnName("DocumentId") + " = @mapid where " + dialect.QuoteForColumnName("Id") + " = @Id";

@@ -4,6 +4,7 @@ using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
@@ -29,23 +30,23 @@ namespace YesSql
         public ISqlDialect Dialect { get; private set; }
         public ITypeService TypeNames { get; private set; }
 
-        internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods =
-            new ConcurrentDictionary<Type, Func<IIndex, object>>();
+        internal ImmutableDictionary<Type, Func<IIndex, object>> GroupMethods =
+            ImmutableDictionary<Type, Func<IIndex, object>>.Empty;
 
-        internal readonly ConcurrentDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
-            new ConcurrentDictionary<string, IEnumerable<IndexDescriptor>>();
+        internal ImmutableDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
+            ImmutableDictionary<string, IEnumerable<IndexDescriptor>>.Empty;
 
-        internal readonly ConcurrentDictionary<Type, IIdAccessor<int>> _idAccessors =
-            new ConcurrentDictionary<Type, IIdAccessor<int>>();
+        internal ImmutableDictionary<Type, IIdAccessor<int>> _idAccessors =
+            ImmutableDictionary<Type, IIdAccessor<int>>.Empty;
 
-        internal readonly ConcurrentDictionary<Type, Func<IDescriptor>> DescriptorActivators =
-            new ConcurrentDictionary<Type, Func<IDescriptor>>();
+        internal ImmutableDictionary<Type, Func<IDescriptor>> DescriptorActivators =
+            ImmutableDictionary<Type, Func<IDescriptor>>.Empty;
 
-        internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
+        internal static ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
             new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
 
-        internal readonly ConcurrentDictionary<Type, QueryState> CompiledQueries = 
-            new ConcurrentDictionary<Type, QueryState>();
+        internal ImmutableDictionary<Type, QueryState> CompiledQueries = 
+            ImmutableDictionary<Type, QueryState>.Empty;
 
         public const string DocumentTable = "Document";
         
@@ -205,7 +206,13 @@ namespace YesSql
 
         public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)
         {
-            return _idAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name));
+            if (!_idAccessors.TryGetValue(tContainer, out var result))
+            {
+                result = Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name);
+                _idAccessors = _idAccessors.Add(tContainer, result);
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -221,12 +228,23 @@ namespace YesSql
             var collection = CollectionHelper.Current.GetSafeName();
             var cacheKey = target.FullName + ":" + collection;
 
-            return Descriptors.GetOrAdd(cacheKey, key => CreateDescriptors(target, collection, Indexes));
+            if (!Descriptors.TryGetValue(cacheKey, out var result))
+            {
+                result = CreateDescriptors(target, collection, Indexes);
+                Descriptors = Descriptors.Add(cacheKey, result);
+            }
+
+            return result;
         }
 
         internal IEnumerable<IndexDescriptor> CreateDescriptors(Type target, string collection, IEnumerable<IIndexProvider> indexProviders)
         {
-            var activator = DescriptorActivators.GetOrAdd(target, type => MakeDescriptorActivator(type));
+            if (!DescriptorActivators.TryGetValue(target, out var activator))
+            {
+                activator = MakeDescriptorActivator(target);
+                DescriptorActivators = DescriptorActivators.Add(target, activator);
+            }
+
             var context = activator();
 
             foreach (var provider in indexProviders)
