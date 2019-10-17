@@ -8,7 +8,6 @@ using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using YesSql.Collections;
 using YesSql.Commands;
@@ -42,7 +41,7 @@ namespace YesSql
         internal ImmutableDictionary<Type, Func<IDescriptor>> DescriptorActivators =
             ImmutableDictionary<Type, Func<IDescriptor>>.Empty;
 
-        internal static ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
+        internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
             new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
 
         internal ImmutableDictionary<Type, QueryState> CompiledQueries = 
