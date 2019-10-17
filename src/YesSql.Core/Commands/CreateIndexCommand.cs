@@ -28,11 +28,13 @@ namespace YesSql.Commands
             var type = Index.GetType();
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
 
+            var sql = Inserts(type, dialect);
+            logger.LogTrace(sql);
+            Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
+
+
             if (Index is MapIndex)
             {
-                var sql = Inserts(type, dialect) + " " + dialect.IdentitySelectString + " " + dialect.QuoteForColumnName("Id");
-                logger.LogTrace(sql);
-                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
                 var command = "update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + dialect.QuoteForColumnName("DocumentId") + " = @mapid where " + dialect.QuoteForColumnName("Id") + " = @Id";
                 logger.LogTrace(command);
                 await connection.ExecuteAsync(command, new { mapid = Index.GetAddedDocuments().Single().Id, Id = Index.Id }, transaction);
@@ -40,10 +42,6 @@ namespace YesSql.Commands
             else
             {
                 var reduceIndex = Index as ReduceIndex;
-
-                var sql = Inserts(type, dialect) + " " + dialect.IdentitySelectString + " " + dialect.QuoteForColumnName("Id");
-                logger.LogTrace(sql);
-                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
 
                 var bridgeTableName = type.Name + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") +", " + dialect.QuoteForColumnName("DocumentId");

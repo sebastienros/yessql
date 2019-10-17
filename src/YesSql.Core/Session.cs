@@ -434,13 +434,16 @@ namespace YesSql
                 throw new ArgumentNullException(nameof(compiledQuery));
             }
 
-            var queryState = _store.CompiledQueries.GetOrAdd(compiledQuery.GetType(), t =>
+            var compiledQueryType = compiledQuery.GetType();
+
+            if (!_store.CompiledQueries.TryGetValue(compiledQueryType, out var queryState))
             {
                 var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix)).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
+                queryState = defaultQuery._query._queryState;
 
-                return defaultQuery._query._queryState;
-            });
+                _store.CompiledQueries.Add(compiledQueryType, queryState);
+            }
 
             queryState = queryState.Clone();
 
@@ -826,7 +829,7 @@ namespace YesSql
         /// </summary>
         private Func<IIndex, object> GetGroupingMetod(IndexDescriptor descriptor)
         {
-            return _store.GroupMethods.GetOrAdd(descriptor.Type, (Type key) =>
+            if (!_store.GroupMethods.TryGetValue(descriptor.Type, out var result))
             {
                 // IIndex i => i
                 var instance = Expression.Parameter(typeof(IIndex), "i");
@@ -837,8 +840,12 @@ namespace YesSql
                 // i => (object)(((TIndex)i).{Property})
                 var convert = Expression.Convert(property, typeof(object));
 
-                return Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
-            });
+                result = Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
+
+                _store.GroupMethods.Add(descriptor.Type, result);
+            }
+
+            return result;
         }
 
         /// <summary>
