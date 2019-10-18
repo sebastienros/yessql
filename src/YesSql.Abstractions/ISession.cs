@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,7 +16,9 @@ namespace YesSql
         /// Saves a new or existing object to the store, and updates
         /// the corresponding indexes.
         /// </summary>
-        void Save(object obj);
+        /// <param name="obj">The entity to save.</param>
+        /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
+        void Save(object obj, bool checkConcurrency = false);
 
         /// <summary>
         /// Deletes an object and its indexes from the store.
@@ -51,7 +52,7 @@ namespace YesSql
         IQuery Query();
 
         IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class;
-        
+
         /// <summary>
         /// Cancels any pending commands.
         /// </summary>

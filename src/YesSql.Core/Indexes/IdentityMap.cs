@@ -5,17 +5,12 @@ namespace YesSql.Indexes
     public class IdentityMap
     {
         private readonly Dictionary<int, object> _documentIds = new Dictionary<int, object>();
-        private readonly Dictionary<int, long> _documentVersions = new Dictionary<int, long>();
         private readonly Dictionary<object, int> _entities = new Dictionary<object, int>();
+        private readonly Dictionary<int, Document> _documents = new Dictionary<int, Document>();
 
         public bool TryGetDocumentId(object item, out int id)
         {
             return _entities.TryGetValue(item, out id);
-        }
-
-        public bool TryGetVersionById(int id, out long version)
-        {
-            return _documentVersions.TryGetValue(id, out version);
         }
 
         public bool TryGetEntityById(int id, out object document)
@@ -34,9 +29,14 @@ namespace YesSql.Indexes
             _documentIds.Add(id, entity);
         }
 
-        public void SetVersion(int id, long version)
+        public void AddDocument(Document doc)
         {
-            _documentVersions[id] = version;
+            _documents[doc.Id] = doc;
+        }
+
+        public bool TryGetDocument(int id, out Document doc)
+        {
+            return _documents.TryGetValue(id, out doc);
         }
 
         public void Remove(int id, object entity)

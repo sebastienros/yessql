@@ -3760,8 +3760,6 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldHandleConcurrency()
         {
-            _store.Configuration.CheckConcurrentUpdates<Person>();
-
             using (var session = _store.CreateSession())
             {
                 var email = new Person { Firstname = "Bill" };
@@ -3791,7 +3789,7 @@ namespace YesSql.Tests
 
                     person.Lastname = "Gates";
                     
-                    session.Save(person);
+                    session.Save(person, true);
                     Assert.NotNull(person);
                 }
 
@@ -3820,7 +3818,7 @@ namespace YesSql.Tests
                         }
 
                         person.Lastname = "Doors";
-                        session.Save(person);
+                        session.Save(person, true);
                         Assert.NotNull(person);
                     }
                 });
