@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Text;
 using YesSql.Sql;
 
@@ -26,9 +25,9 @@ namespace YesSql.Provider.SqlServer
             {DbType.Int16, "SMALLINT"},
             {DbType.UInt16, "SMALLINT"},
             {DbType.Int32, "INT"},
-            {DbType.UInt32, "INT"},
+            {DbType.UInt32, "BIGINT"},
             {DbType.Int64, "BIGINT"},
-            {DbType.UInt64, "BIGINT"},
+            {DbType.UInt64, "NUMERIC(20)"},
             {DbType.Single, "REAL"},
             {DbType.AnsiStringFixedLength, "CHAR(255)"},
             {DbType.AnsiString, "VARCHAR(255)"},

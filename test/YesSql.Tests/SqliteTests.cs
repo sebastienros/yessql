@@ -90,5 +90,11 @@ namespace YesSql.Tests
                 }
             }
         }
+
+        [Fact(Skip = "Locking prevents Sqlite from concurrency issues")]
+        public override Task ShouldHandleConcurrency()
+        {
+            return base.ShouldHandleConcurrency();
+        }
     }
 }

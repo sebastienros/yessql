@@ -142,9 +142,10 @@ namespace YesSql
                             // The table doesn't exist, create it
                             builder
                                 .CreateTable(documentTable, table => table
-                                .Column<int>("Id", column => column.PrimaryKey().NotNull())
-                                .Column<string>("Type", column => column.NotNull())
-                                .Column<string>("Content", column => column.Unlimited())
+                                .Column<int>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
+                                .Column<string>(nameof(Document.Type), column => column.NotNull())
+                                .Column<string>(nameof(Document.Content), column => column.Unlimited())
+                                .Column<long>(nameof(Document.Version), column => column.WithDefault(0))
                             )
                             .AlterTable(documentTable, table => table
                                 .CreateIndex("IX_" + documentTable + "_Type", "Type")
@@ -155,6 +156,21 @@ namespace YesSql
                         catch
                         {
                             // Another thread must have created it
+
+                            try
+                            {
+                                // Check if the Version column exists
+                                builder
+                                    .AlterTable(documentTable, table => table
+                                    .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                );
+
+                                transaction.Commit();
+                            }
+                            catch
+                            {
+                                // Another thread must have created it
+                            }
                         }
                     }
                 }

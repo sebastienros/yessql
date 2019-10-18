@@ -88,7 +88,7 @@ namespace YesSql
 
                 if (id > 0)
                 {
-                    _identityMap.Add(id, entity);
+                    _identityMap.AddEntity(id, entity);
                     _updated.Add(entity);
                     return;
                 }
@@ -97,7 +97,7 @@ namespace YesSql
             // it's a new entity
             var collection = CollectionHelper.Current.GetSafeName();
             id = _store.GetNextId(collection);
-            _identityMap.Add(id, entity);
+            _identityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
             if (accessor != null)
@@ -120,7 +120,7 @@ namespace YesSql
 
             if (id != 0)
             {
-                _identityMap.Add(id, entity);
+                _identityMap.AddEntity(id, entity);
                 _updated.Add(entity);
 
                 return true;
@@ -135,7 +135,7 @@ namespace YesSql
 
                     if (id > 0)
                     {
-                        _identityMap.Add(id, entity);
+                        _identityMap.AddEntity(id, entity);
                         _updated.Add(entity);
                         return true;
                     }
@@ -183,6 +183,7 @@ namespace YesSql
             await DemandAsync();
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
+            doc.Version = 1;
 
             await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
 
@@ -198,7 +199,7 @@ namespace YesSql
 
             var index = entity as IIndex;
 
-            if (entity is Document document)
+            if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitely");
             }
@@ -225,6 +226,16 @@ namespace YesSql
                 throw new InvalidOperationException("Incorrect attempt to update an object that doesn't exist. Ensure a new object was not saved with an identifier value.");
             }
 
+            long version = -1;
+
+            if (_store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
+            {
+                if (!_identityMap.TryGetVersionById(id, out version))
+                {
+                    throw new InvalidOperationException("The object to update was not found in the versions map.");
+                }
+            }
+
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
 
             // Update map index
@@ -235,7 +246,11 @@ namespace YesSql
             await DemandAsync();
 
             oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
-            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+            oldDoc.Version += 1;
+
+            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+
+            _identityMap.SetVersion(id, oldDoc.Version);
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -413,7 +428,8 @@ namespace YesSql
                     }
 
                     // track the loaded object
-                    _identityMap.Add(d.Id, item);
+                    _identityMap.AddEntity(d.Id, item);
+                    _identityMap.SetVersion(d.Id, d.Version);
 
                     result.Add(item);
                 }

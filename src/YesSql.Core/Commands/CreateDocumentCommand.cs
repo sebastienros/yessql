@@ -20,11 +20,11 @@ namespace YesSql.Commands
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-            var insertCmd = "insert into " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " (" + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Type") + ", " + dialect.QuoteForColumnName("Content") + ") values (@Id, @Type, @Content);";
+            var insertCmd = "insert into " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " (" + dialect.QuoteForColumnName("Id") + ", " + dialect.QuoteForColumnName("Type") + ", " + dialect.QuoteForColumnName("Content") + ", " + dialect.QuoteForColumnName("Version") + ") values (@Id, @Type, @Content, @Version);";
 
             logger.LogTrace(insertCmd);
 
-            return connection.ExecuteScalarAsync<int>(insertCmd, Document, transaction);
+            return connection.ExecuteAsync(insertCmd, Document, transaction);
         }
     }
 }
