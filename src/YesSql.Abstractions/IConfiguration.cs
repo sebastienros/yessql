@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 
@@ -16,6 +17,7 @@ namespace YesSql
         string TablePrefix { get; set; }
         int SessionPoolSize { get; set; }
         bool QueryGatingEnabled { get; set; }
+        HashSet<Type> ConcurrentTypes { get; }
     }
 
     public static class ConfigurationExtensions
@@ -66,6 +68,17 @@ namespace YesSql
         {
             configuration.Logger = logger;
             return configuration;
+        }
+
+        public static IConfiguration CheckConcurrentUpdates(this IConfiguration configuration, Type type)
+        {
+            configuration.ConcurrentTypes.Add(type);
+            return configuration;
+        }
+
+        public static IConfiguration CheckConcurrentUpdates<T>(this IConfiguration configuration)
+        {
+            return CheckConcurrentUpdates(configuration, typeof(T));
         }
     }
 

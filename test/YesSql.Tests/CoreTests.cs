@@ -3756,5 +3756,123 @@ namespace YesSql.Tests
 
             }
         }
+
+        [Fact]
+        public virtual async Task ShouldHandleConcurrency()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var email = new Person { Firstname = "Bill" };
+
+                session.Save(email);
+            }
+
+            var task1Saved = new ManualResetEvent(false);
+            var task2Loaded = new ManualResetEvent(false);
+            var task1Loaded = new ManualResetEvent(false);
+
+            var task1 = Task.Run(async () =>
+            {
+                using (var session = _store.CreateSession())
+                {
+                    var person = await session.Query<Person>().FirstOrDefaultAsync();
+                    Assert.NotNull(person);
+
+                    task1Loaded.Set();
+
+                    // Wait for the other thread to load the person before updating it
+                    if (!task2Loaded.WaitOne(1000))
+                    {
+                        Assert.True(false, "task2Loaded timeout");
+                        session.Cancel();
+                    }
+
+                    person.Lastname = "Gates";
+                    
+                    session.Save(person, true);
+                    Assert.NotNull(person);
+                }
+
+                // Noify the other thread to save
+                task1Saved.Set();
+            });
+
+            var task2 = Task.Run(async () =>
+            {
+                task1Loaded.WaitOne(1000);
+
+                await Assert.ThrowsAsync<ConcurrencyException>(async () =>
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        var person = await session.Query<Person>().FirstOrDefaultAsync();
+                        Assert.NotNull(person);
+
+                        task2Loaded.Set();
+
+                        // Wait for the other thread to save the person before updating it
+                        if (!task1Saved.WaitOne(1000))
+                        {
+                            Assert.True(false, "task1Saved timeout");
+                            session.Cancel();
+                        }
+
+                        person.Lastname = "Doors";
+                        session.Save(person, true);
+                        Assert.NotNull(person);
+                    }
+                });
+            });
+
+            await Task.WhenAll(task1, task2);
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+                Assert.Equal("Gates", person.Lastname);
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldNotThrowConcurrencyException()
+        {
+            _store.Configuration.CheckConcurrentUpdates<Person>();
+
+            using (var session = _store.CreateSession())
+            {
+                var email = new Person { Firstname = "Bill" };
+
+                session.Save(email);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                person.Lastname = "Gates";
+
+                session.Save(person);
+                Assert.NotNull(person);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                person.Lastname = "Doors";
+                session.Save(person);
+                Assert.NotNull(person);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+                Assert.Equal("Doors", person.Lastname);
+            }
+        }
     }
 }

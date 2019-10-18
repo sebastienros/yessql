@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using YesSql.Data;
 using YesSql.Serialization;
@@ -19,6 +21,7 @@ namespace YesSql
             SessionPoolSize = 16;
             QueryGatingEnabled = true;
             Logger = NullLogger.Instance;
+            ConcurrentTypes = new HashSet<Type>();
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
@@ -30,5 +33,6 @@ namespace YesSql
         public bool QueryGatingEnabled { get; set; }
         public IIdGenerator IdGenerator { get; set; }
         public ILogger Logger { get; set; }
+        public HashSet<Type> ConcurrentTypes { get; }
     }
 }

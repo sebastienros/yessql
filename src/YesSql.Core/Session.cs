@@ -24,6 +24,7 @@ namespace YesSql
         private readonly Dictionary<IndexDescriptor, List<MapState>> _maps = new Dictionary<IndexDescriptor, List<MapState>>();
         private readonly HashSet<object> _saved = new HashSet<object>();
         private readonly HashSet<object> _updated = new HashSet<object>();
+        private readonly HashSet<int> _concurrent = new HashSet<int>();
         private readonly HashSet<object> _deleted = new HashSet<object>();
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
@@ -63,7 +64,7 @@ namespace YesSql
             return this;
         }
 
-        public void Save(object entity)
+        public void Save(object entity, bool checkConcurrency = false)
         {
             CheckDisposed();
 
@@ -77,6 +78,13 @@ namespace YesSql
             if (_identityMap.TryGetDocumentId(entity, out var id))
             {
                 _updated.Add(entity);
+
+                // If this entity needs to be checked for concurrency, track its version
+                if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
+                {
+                    _concurrent.Add(id);
+                }
+
                 return;
             }
 
@@ -88,8 +96,15 @@ namespace YesSql
 
                 if (id > 0)
                 {
-                    _identityMap.Add(id, entity);
+                    _identityMap.AddEntity(id, entity);
                     _updated.Add(entity);
+                    
+                    // If this entity needs to be checked for concurrency, track its version
+                    if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
+                    {
+                        _concurrent.Add(id);
+                    }
+
                     return;
                 }
             }
@@ -97,7 +112,7 @@ namespace YesSql
             // it's a new entity
             var collection = CollectionHelper.Current.GetSafeName();
             id = _store.GetNextId(collection);
-            _identityMap.Add(id, entity);
+            _identityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
             if (accessor != null)
@@ -118,10 +133,20 @@ namespace YesSql
                 return false;
             }
 
+            var doc = new Document
+            {
+                Type = Store.TypeNames[entity.GetType()],
+                Content = Store.Configuration.ContentSerializer.Serialize(entity),
+                Version = 0
+            };
+
             if (id != 0)
             {
-                _identityMap.Add(id, entity);
+                _identityMap.AddEntity(id, entity);
                 _updated.Add(entity);
+
+                doc.Id = id;
+                _identityMap.AddDocument(doc);
 
                 return true;
             }
@@ -135,8 +160,12 @@ namespace YesSql
 
                     if (id > 0)
                     {
-                        _identityMap.Add(id, entity);
+                        _identityMap.AddEntity(id, entity);
                         _updated.Add(entity);
+
+                        doc.Id = id;
+                        _identityMap.AddDocument(doc);
+
                         return true;
                     }
                     else
@@ -183,8 +212,11 @@ namespace YesSql
             await DemandAsync();
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
+            doc.Version = 1;
 
             await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+
+            _identityMap.AddDocument(doc);
 
             await MapNew(doc, entity);
         }
@@ -198,7 +230,7 @@ namespace YesSql
 
             var index = entity as IIndex;
 
-            if (entity is Document document)
+            if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitely");
             }
@@ -214,15 +246,16 @@ namespace YesSql
                 throw new InvalidOperationException("The object to update was not found in identity map.");
             }
 
-            // TODO: Use optimistic concurrency by assuming we already have the latest
-            // document in the identity map. When the record is updated use a WHERE clause
-            // to ensure the timestamp is the same, if not reload the document and try again
-
-            var oldDoc = await GetDocumentByIdAsync(id);
-
-            if (oldDoc == null)
+            if (!_identityMap.TryGetDocument(id, out var oldDoc))
             {
                 throw new InvalidOperationException("Incorrect attempt to update an object that doesn't exist. Ensure a new object was not saved with an identifier value.");
+            }
+
+            long version = -1;
+
+            if (_concurrent.Contains(id))
+            {
+                version = oldDoc.Version;
             }
 
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
@@ -235,7 +268,11 @@ namespace YesSql
             await DemandAsync();
 
             oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
-            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+            oldDoc.Version += 1;
+
+            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+
+            _concurrent.Remove(id);
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -413,7 +450,8 @@ namespace YesSql
                     }
 
                     // track the loaded object
-                    _identityMap.Add(d.Id, item);
+                    _identityMap.AddEntity(d.Id, item);
+                    _identityMap.AddDocument(d);
 
                     result.Add(item);
                 }
@@ -515,6 +553,7 @@ namespace YesSql
         private void ReleaseTransaction()
         {
             _updated.Clear();
+            _concurrent.Clear();
             _saved.Clear();
             _deleted.Clear();
             _commands.Clear();
@@ -615,6 +654,7 @@ namespace YesSql
             finally
             {
                 _updated.Clear();
+                _concurrent.Clear();
                 _saved.Clear();
                 _deleted.Clear();
                 _commands.Clear();
