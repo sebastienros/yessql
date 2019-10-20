@@ -130,31 +130,35 @@ namespace YesSql
                         {
                             transaction.Commit();
 
-                            if (result != null && result.FieldCount == 4)
+                            if (result != null)
                             {
-                                return;
-                            }
-                            else if (result != null && result.FieldCount == 3)
-                            {
-                                using (var migrationTransaction = connection.BeginTransaction())
+                                try
                                 {
-                                    var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
-
-                                    try
+                                    // Check if the Version column exists
+                                    result.GetOrdinal(nameof(Document.Version));
+                                }
+                                catch
+                                {
+                                    using (var migrationTransaction = connection.BeginTransaction())
                                     {
-                                        // Check if the Version column exists
-                                        migrationBuilder
-                                            .AlterTable(documentTable, table => table
-                                                .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                            );
+                                        var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
-                                        migrationTransaction.Commit();
-                                    }
-                                    catch
-                                    {
-                                        // Another thread must have altered it
+                                        try
+                                        {
+                                            migrationBuilder
+                                                .AlterTable(documentTable, table => table
+                                                    .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                                );
+
+                                            migrationTransaction.Commit();
+                                        }
+                                        catch
+                                        {
+                                            // Another thread must have altered it
+                                        }
                                     }
                                 }
+                                return;
                             }
                         }
                     }
