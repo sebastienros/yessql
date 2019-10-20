@@ -126,33 +126,34 @@ namespace YesSql
                         selectCommand.CommandText = selectBuilder.ToSqlString();
                         selectCommand.Transaction = transaction;
                         Configuration.Logger.LogTrace(selectCommand.CommandText);
-                        var result = await selectCommand.ExecuteReaderAsync();
-
-                        transaction.Commit();
-
-                        if (result != null && result.FieldCount == 4)
+                        using (var result = await selectCommand.ExecuteReaderAsync())
                         {
-                            return;
-                        }
-                        else if (result != null && result.FieldCount == 3)
-                        {
-                            using (var migrationTransaction = connection.BeginTransaction())
+                            transaction.Commit();
+
+                            if (result != null && result.FieldCount == 4)
                             {
-                                var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
-
-                                try
+                                return;
+                            }
+                            else if (result != null && result.FieldCount == 3)
+                            {
+                                using (var migrationTransaction = connection.BeginTransaction())
                                 {
-                                    // Check if the Version column exists
-                                    migrationBuilder
-                                        .AlterTable(documentTable, table => table
-                                            .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                        );
+                                    var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
-                                    migrationTransaction.Commit();
-                                }
-                                catch
-                                {
-                                    // Another thread must have altered it
+                                    try
+                                    {
+                                        // Check if the Version column exists
+                                        migrationBuilder
+                                            .AlterTable(documentTable, table => table
+                                                .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                            );
+
+                                        migrationTransaction.Commit();
+                                    }
+                                    catch
+                                    {
+                                        // Another thread must have altered it
+                                    }
                                 }
                             }
                         }
@@ -188,7 +189,6 @@ namespace YesSql
                 }
                 finally
                 {
-                    connection.Close();
                     await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collectionName);
                 }
             }
