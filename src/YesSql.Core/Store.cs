@@ -44,11 +44,11 @@ namespace YesSql
         internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
             new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
 
-        internal ImmutableDictionary<Type, QueryState> CompiledQueries = 
+        internal ImmutableDictionary<Type, QueryState> CompiledQueries =
             ImmutableDictionary<Type, QueryState>.Empty;
 
         public const string DocumentTable = "Document";
-        
+
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
@@ -85,7 +85,7 @@ namespace YesSql
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
             Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
             TypeNames = new TypeService();
-            
+
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
@@ -117,21 +117,48 @@ namespace YesSql
                     {
                         var selectCommand = transaction.Connection.CreateCommand();
 
-                        selectCommand.CommandText = $"SELECT 1 FROM {Dialect.QuoteForTableName(Configuration.TablePrefix + documentTable)}";
+                        var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
+                        selectBuilder.Select();
+                        selectBuilder.AddSelector("*");
+                        selectBuilder.From(Configuration.TablePrefix + documentTable);
+                        selectBuilder.Take("1");
+
+                        selectCommand.CommandText = selectBuilder.ToSqlString();
                         selectCommand.Transaction = transaction;
                         Configuration.Logger.LogTrace(selectCommand.CommandText);
-                        var result = await selectCommand.ExecuteScalarAsync();
+                        var result = await selectCommand.ExecuteReaderAsync();
 
                         transaction.Commit();
-                        
-                        // Table already exists?
-                        if (result != null && Convert.ToInt64(result) == 1)
+
+                        if (result != null && result.FieldCount == 4)
                         {
                             return;
                         }
+                        else if (result != null && result.FieldCount == 3)
+                        {
+                            using (var migrationTransaction = connection.BeginTransaction())
+                            {
+                                var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
+
+                                try
+                                {
+                                    // Check if the Version column exists
+                                    migrationBuilder
+                                        .AlterTable(documentTable, table => table
+                                            .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                        );
+
+                                    migrationTransaction.Commit();
+                                }
+                                catch
+                                {
+                                    // Another thread must have altered it
+                                }
+                            }
+                        }
                     }
                 }
-                catch
+                catch 
                 {
                     using (var transaction = connection.BeginTransaction())
                     {
@@ -156,26 +183,12 @@ namespace YesSql
                         catch
                         {
                             // Another thread must have created it
-
-                            try
-                            {
-                                // Check if the Version column exists
-                                builder
-                                    .AlterTable(documentTable, table => table
-                                    .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                );
-
-                                transaction.Commit();
-                            }
-                            catch
-                            {
-                                // Another thread must have created it
-                            }
                         }
                     }
                 }
                 finally
                 {
+                    connection.Close();
                     await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collectionName);
                 }
             }
@@ -365,7 +378,7 @@ namespace YesSql
                 }
             }
 
-            return (T) content;
+            return (T)content;
         }
     }
 }
