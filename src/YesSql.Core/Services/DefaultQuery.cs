@@ -1232,9 +1232,21 @@ namespace YesSql.Services
                 return this;
             }
 
+            IQuery<T, TIndex> IQuery<T, TIndex>.OrderBy(string sql)
+            {
+                _query._queryState._sqlBuilder.OrderBy(sql);
+                return this;
+            }
+
             IQuery<T, TIndex> IQuery<T, TIndex>.ThenBy(Expression<Func<TIndex, object>> keySelector)
             {
                 _query.ThenBy(keySelector);
+                return this;
+            }
+
+            IQuery<T, TIndex> IQuery<T, TIndex>.ThenBy(string sql)
+            {
+                _query._queryState._sqlBuilder.ThenOrderBy(sql);
                 return this;
             }
 
@@ -1244,9 +1256,21 @@ namespace YesSql.Services
                 return this;
             }
 
+            IQuery<T, TIndex> IQuery<T, TIndex>.OrderByDescending(string sql)
+            {
+                _query._queryState._sqlBuilder.OrderByDescending(sql);
+                return this;
+            }
+
             IQuery<T, TIndex> IQuery<T, TIndex>.ThenByDescending(Expression<Func<TIndex, object>> keySelector)
             {
                 _query.ThenByDescending(keySelector);
+                return this;
+            }
+
+            IQuery<T, TIndex> IQuery<T, TIndex>.ThenByDescending(string sql)
+            {
+                _query._queryState._sqlBuilder.ThenOrderByDescending(sql);
                 return this;
             }
         }

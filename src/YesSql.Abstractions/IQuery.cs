@@ -79,8 +79,12 @@ namespace YesSql
         IQuery<T, TIndex> WithParameter(string name, object value);
         IQuery<T, TIndex> Where(Expression<Func<TIndex, bool>> predicate);
         IQuery<T, TIndex> OrderBy(Expression<Func<TIndex, object>> keySelector);
+        IQuery<T, TIndex> OrderBy(string sql);
         IQuery<T, TIndex> OrderByDescending(Expression<Func<TIndex, object>> keySelector);
+        IQuery<T, TIndex> OrderByDescending(string sql);
         IQuery<T, TIndex> ThenBy(Expression<Func<TIndex, object>> keySelector);
+        IQuery<T, TIndex> ThenBy(string sql);
         IQuery<T, TIndex> ThenByDescending(Expression<Func<TIndex, object>> keySelector);
+        IQuery<T, TIndex> ThenByDescending(string sql);
     }
 }
