@@ -248,7 +248,12 @@ namespace YesSql
 
             if (!_identityMap.TryGetDocument(id, out var oldDoc))
             {
-                throw new InvalidOperationException("Incorrect attempt to update an object that doesn't exist. Ensure a new object was not saved with an identifier value.");
+                oldDoc = await GetDocumentByIdAsync(id);
+
+                if (oldDoc == null)
+                {
+                    throw new InvalidOperationException("Incorrect attempt to update an object that doesn't exist. Ensure a new object was not saved with an identifier value.");
+                }
             }
 
             long version = -1;

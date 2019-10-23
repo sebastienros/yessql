@@ -3874,5 +3874,42 @@ namespace YesSql.Tests
                 Assert.Equal("Doors", person.Lastname);
             }
         }
+
+        [Fact]
+        public async Task ShouldReloadDetachedObject()
+        {
+            var bill = new Person
+            {
+                Firstname = "Bill",
+            };
+
+            using (var session = _store.CreateSession())
+            {
+
+                session.Save(bill);
+
+                Assert.Single(await session.Query<Person>().ListAsync());
+                Assert.True(bill.Id > 0);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                bill = new Person
+                {
+                    Id = bill.Id,
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var all = await session.Query<Person>().ListAsync();
+                Assert.Single(all);
+                Assert.Equal("Gates", all.First().Lastname);
+            }
+        }
     }
 }
