@@ -54,6 +54,7 @@ namespace YesSql.Indexes
         {
             _entities.Clear();
             _documentIds.Clear();
+            _documents.Clear();
         }
     }
 }

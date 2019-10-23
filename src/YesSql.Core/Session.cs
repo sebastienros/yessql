@@ -32,16 +32,20 @@ namespace YesSql
         private bool _flushing;
         private IsolationLevel _isolationLevel;
         private DbConnection _connection;
-        private ISqlDialect _dialect;
         protected bool _cancel;
         protected List<IIndexProvider> _indexes;
+
         protected string _tablePrefix;
+        private ISqlDialect _dialect;
+        private ILogger _logger;
 
         public Session(Store store, IsolationLevel isolationLevel)
         {
             _store = store;
             _isolationLevel = isolationLevel;
             _tablePrefix = _store.Configuration.TablePrefix;
+            _dialect = store.Dialect;
+            _logger = store.Configuration.Logger;
         }
 
         public ISession RegisterIndexes(params IIndexProvider[] indexProviders)
@@ -214,7 +218,7 @@ namespace YesSql
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             doc.Version = 1;
 
-            await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+            await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect, _logger);
 
             _identityMap.AddDocument(doc);
 
@@ -275,7 +279,7 @@ namespace YesSql
             oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             oldDoc.Version += 1;
 
-            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version).ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version).ExecuteAsync(_connection, _transaction, _dialect, _logger);
 
             _concurrent.Remove(id);
         }
@@ -358,7 +362,7 @@ namespace YesSql
                     // Update impacted indexes
                     await MapDeleted(doc, obj);
 
-                    // The command needs to come after any index deletiong because of the database constraints
+                    // The command needs to come after any index deletion because of the database constraints
                     _commands.Add(new DeleteDocumentCommand(doc, _tablePrefix));
                 }
             }
@@ -647,7 +651,7 @@ namespace YesSql
 
                 foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
                 {
-                    await command.ExecuteAsync(_connection, _transaction, _dialect, Store.Configuration.Logger);
+                    await command.ExecuteAsync(_connection, _transaction, _dialect, _logger);
                 }
             }
             catch
@@ -1015,12 +1019,6 @@ namespace YesSql
                     if (_connection == null)
                     {
                         throw new InvalidOperationException("The connection couldn't be covnerted to DbConnection");
-                    }
-
-                    // The dialect could already be initialized if the session is reused
-                    if (_dialect == null)
-                    {
-                        _dialect = Store.Dialect;
                     }
                 }
 
