@@ -43,6 +43,7 @@ namespace YesSql.Indexes
         {
             _entities.Remove(entity);
             _documentIds.Remove(id);
+            _documents.Remove(id);
         }
 
         public IEnumerable<object> GetAll()

@@ -40,6 +40,15 @@ namespace YesSql
         bool Import(object item, int id);
 
         /// <summary>
+        /// Removes an item from the identity map.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to remove an item that should not be served again from the cache.
+        /// For instance when its state as changed and any subsequent query should not return the 
+        /// modified instance but a fresh one.
+        void Detach(object item);
+
+        /// <summary>
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>

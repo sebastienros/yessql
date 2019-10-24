@@ -3911,5 +3911,31 @@ namespace YesSql.Tests
                 Assert.Equal("Gates", all.First().Lastname);
             }
         }
+
+        [Fact]
+        public async Task ShouldDetachEntity()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill);
+
+                var newBill = await session.GetAsync<Person>(bill.Id);
+
+                Assert.Equal(bill, newBill);
+
+                session.Detach(bill);
+
+                newBill = await session.GetAsync<Person>(bill.Id);
+
+                Assert.NotEqual(bill, newBill);
+
+            }
+        }
     }
 }

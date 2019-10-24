@@ -184,6 +184,20 @@ namespace YesSql
             }
         }
 
+        public void Detach(object entity)
+        {
+            CheckDisposed();
+
+            _saved.Remove(entity);
+            _updated.Remove(entity);
+            _deleted.Remove(entity);
+
+            if (_identityMap.TryGetDocumentId(entity, out var id))
+            {
+                _identityMap.Remove(id, entity);
+            }
+        }
+
         private async Task SaveEntityAsync(object entity)
         {
             if (entity == null)
