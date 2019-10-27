@@ -23,7 +23,7 @@ namespace YesSql.Tests.Indexes
                 .Map(person => new Binary {
                     Content1 = new byte[255],
                     Content2 = new byte[65535],
-                    Content3 = new byte[16777215],
+                    //Content3 = new byte[16777215],
                     //Content4 = new byte[16777216],
                     Content5 = new byte[8000]
                 });
