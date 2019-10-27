@@ -142,7 +142,10 @@ namespace YesSql.Tests
                         );
 
                     builder.CreateMapIndexTable(nameof(Binary), column => column
-                            .Column<byte[]>(nameof(Binary.Content))
+                            .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(256))
+                            .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(65536))
+                            .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(16777216))
+                            .Column<byte[]>(nameof(Binary.Content4))
                         );
 
                     transaction.Commit();
@@ -3960,7 +3963,10 @@ namespace YesSql.Tests
                 var binary = await session.QueryIndex<Binary>().FirstOrDefaultAsync();
 
                 Assert.NotNull(binary);
-                Assert.Equal(Encoding.UTF8.GetBytes("Bill"), binary.Content);
+                Assert.Equal(256, binary.Content1.Length);
+                Assert.Equal(65536, binary.Content2.Length);
+                Assert.Equal(16777216, binary.Content3.Length);
+                Assert.Equal(8000, binary.Content4.Length);
             }
         }
     }

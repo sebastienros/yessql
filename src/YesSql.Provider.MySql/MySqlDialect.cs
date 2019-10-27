@@ -11,7 +11,7 @@ namespace YesSql.Provider.MySql
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
-            {DbType.Binary, "varbinary"},
+            {DbType.Binary, "longblog"},
             {DbType.Time, "time"},
             {DbType.Date, "datetime"},
             {DbType.DateTime, "datetime" },
@@ -78,7 +78,22 @@ namespace YesSql.Provider.MySql
 
                     if (dbType == DbType.Binary)
                     {
-                        return "varbinary(" + length + ")";
+                        if (length <= 256)
+                        {
+                            return "tinyblob";
+                        }
+
+                        if (length <= 65536)
+                        {
+                            return "blob";
+                        }
+
+                        if (length <= 16777216)
+                        {
+                            return "mediumblob";
+                        }
+
+                        return "blob";
                     }
                 }
             }
