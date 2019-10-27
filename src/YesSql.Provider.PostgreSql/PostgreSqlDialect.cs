@@ -12,7 +12,7 @@ namespace YesSql.Provider.PostgreSql
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
-            {DbType.Binary, "varbinary"},
+            {DbType.Binary, "bytea"},
             {DbType.Date, "date"},
             {DbType.Time, "time"},
             {DbType.DateTime, "timestamp" },
@@ -69,11 +69,6 @@ namespace YesSql.Provider.PostgreSql
                     {
                         return "text";
                     }
-
-                    if (dbType == DbType.Binary)
-                    {
-                        return "bytea";
-                    }
                 }
                 else
                 {
@@ -85,11 +80,6 @@ namespace YesSql.Provider.PostgreSql
                     if (dbType == DbType.AnsiString)
                     {
                         return "varchar(" + length + ")";
-                    }
-
-                    if (dbType == DbType.Binary)
-                    {
-                        return "bytea";
                     }
                 }
             }

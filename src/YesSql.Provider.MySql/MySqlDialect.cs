@@ -11,7 +11,7 @@ namespace YesSql.Provider.MySql
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
-            {DbType.Binary, "varbinary"},
+            {DbType.Binary, "varbinary(8000)"},
             {DbType.Time, "time"},
             {DbType.Date, "datetime"},
             {DbType.DateTime, "datetime" },
@@ -42,6 +42,26 @@ namespace YesSql.Provider.MySql
         {
             if (length.HasValue)
             {
+                if (dbType == DbType.Binary)
+                {
+                    if (length < 256)
+                    {
+                        return "TINYBLOB";
+                    }
+
+                    if (length < 65536)
+                    {
+                        return "BLOB";
+                    }
+
+                    if (length < 16777216)
+                    {
+                        return "MEDIUMBLOB";
+                    }
+
+                    return "LONGBLOB";
+                }
+
                 if (length.Value > 4000)
                 {
                     if (dbType == DbType.String)
@@ -57,12 +77,6 @@ namespace YesSql.Provider.MySql
                         return length.Value > 16384 ?
                             length.Value > 4194304 ? "LONGTEXT" : "MEDIUMTEXT" : "TEXT";
                     }
-
-                    if (dbType == DbType.Binary)
-                    {
-                        return length.Value > 65536 ?
-                            length.Value > 16777216 ? "LONGBLOB" : "MEDIUMBLOB" : "BLOB";
-                    }
                 }
                 else
                 {
@@ -74,11 +88,6 @@ namespace YesSql.Provider.MySql
                     if (dbType == DbType.AnsiString)
                     {
                         return "varchar(" + length + ")";
-                    }
-
-                    if (dbType == DbType.Binary)
-                    {
-                        return "varbinary(" + length + ")";
                     }
                 }
             }

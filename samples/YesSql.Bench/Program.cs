@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using Xunit;
 using YesSql;
 using YesSql.Indexes;
 using YesSql.Provider.SqlServer;
@@ -44,7 +43,6 @@ namespace Bench
             using (var session = store.CreateSession())
             {
                 var user = await session.Query<User>().FirstOrDefaultAsync();
-                Assert.Null(user);
 
                 var bill = new User
                 {
@@ -61,16 +59,12 @@ namespace Bench
             using (var session = store.CreateSession())
             {
                 var user = await session.Query<User, UserByName>().Where(x => x.Adult == true).FirstOrDefaultAsync();
-                Assert.NotNull(user);
 
                 user = await session.Query<User, UserByName>().Where(x => x.Age == 1).FirstOrDefaultAsync();
-                Assert.NotNull(user);
 
                 user = await session.Query<User, UserByName>().Where(x => x.Age == 1 && x.Adult).FirstOrDefaultAsync();
-                Assert.NotNull(user);
 
                 user = await session.Query<User, UserByName>().Where(x => x.Name.StartsWith("B")).FirstOrDefaultAsync();
-                Assert.NotNull(user);
             }
         }
     }
