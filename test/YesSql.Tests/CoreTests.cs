@@ -142,10 +142,11 @@ namespace YesSql.Tests
                         );
 
                     builder.CreateMapIndexTable(nameof(Binary), column => column
-                            .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(256))
-                            .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(65536))
-                            .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(16777216))
-                            .Column<byte[]>(nameof(Binary.Content4))
+                            .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
+                            .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(65535))
+                            .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(16777215))
+                            .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(16777216))
+                            .Column<byte[]>(nameof(Binary.Content5))
                         );
 
                     transaction.Commit();
@@ -3963,10 +3964,11 @@ namespace YesSql.Tests
                 var binary = await session.QueryIndex<Binary>().FirstOrDefaultAsync();
 
                 Assert.NotNull(binary);
-                Assert.Equal(256, binary.Content1.Length);
-                Assert.Equal(65536, binary.Content2.Length);
-                Assert.Equal(16777216, binary.Content3.Length);
-                Assert.Equal(8000, binary.Content4.Length);
+                Assert.Equal(255, binary.Content1.Length);
+                Assert.Equal(65535, binary.Content2.Length);
+                Assert.Equal(16777215, binary.Content3.Length);
+                Assert.Equal(16777216, binary.Content4.Length);
+                Assert.Equal(8000, binary.Content5.Length);
             }
         }
     }
