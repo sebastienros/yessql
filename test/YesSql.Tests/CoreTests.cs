@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -69,6 +70,7 @@ namespace YesSql.Tests
                     builder.DropTable(Store.DocumentTable);
                     builder.DropTable("Collection1_Document");
                     builder.DropTable(DbBlockIdGenerator.TableName);
+                    builder.DropMapIndexTable(nameof(Binary));
 
                     OnCleanDatabase(builder, transaction);
 
@@ -137,6 +139,10 @@ namespace YesSql.Tests
                     builder.CreateMapIndexTable(nameof(EmailByAttachment), column => column
                             .Column<DateTime>(nameof(EmailByAttachment.Date))
                             .Column<string>(nameof(EmailByAttachment.AttachmentName))
+                        );
+
+                    builder.CreateMapIndexTable(nameof(Binary), column => column
+                            .Column<byte[]>(nameof(Binary.Content))
                         );
 
                     transaction.Commit();
@@ -3935,6 +3941,26 @@ namespace YesSql.Tests
 
                 Assert.NotEqual(bill, newBill);
 
+            }
+        }
+
+        [Fact]
+        public async Task ShouldStoreBinaryInIndex()
+        {
+            _store.RegisterIndexes<BinaryIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill" };
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var binary = await session.QueryIndex<Binary>().FirstOrDefaultAsync();
+
+                Assert.NotNull(binary);
+                Assert.Equal(Encoding.UTF8.GetBytes("Bill"), binary.Content);
             }
         }
     }
