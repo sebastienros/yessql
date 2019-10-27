@@ -65,12 +65,12 @@ namespace YesSql.Tests
 
                     builder.DropMapIndexTable(nameof(PersonByAge));
                     builder.DropMapIndexTable(nameof(PersonByNullableAge));
+                    builder.DropMapIndexTable(nameof(Binary));
                     builder.DropMapIndexTable(nameof(PublishedArticle));
                     builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
                     builder.DropTable(Store.DocumentTable);
                     builder.DropTable("Collection1_Document");
                     builder.DropTable(DbBlockIdGenerator.TableName);
-                    builder.DropMapIndexTable(nameof(Binary));
 
                     OnCleanDatabase(builder, transaction);
 
