@@ -113,57 +113,54 @@ namespace YesSql
 
                 try
                 {
-                    using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
+                    var selectCommand = connection.CreateCommand();
+
+                    var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
+                    selectBuilder.Select();
+                    selectBuilder.AddSelector("*");
+                    selectBuilder.From(Configuration.TablePrefix + documentTable);
+                    selectBuilder.Take("1");
+
+                    selectCommand.CommandText = selectBuilder.ToSqlString();
+                    Configuration.Logger.LogTrace(selectCommand.CommandText);
+
+                    using (var result = await selectCommand.ExecuteReaderAsync())
                     {
-                        var selectCommand = transaction.Connection.CreateCommand();
-
-                        var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
-                        selectBuilder.Select();
-                        selectBuilder.AddSelector("*");
-                        selectBuilder.From(Configuration.TablePrefix + documentTable);
-                        selectBuilder.Take("1");
-
-                        selectCommand.CommandText = selectBuilder.ToSqlString();
-                        selectCommand.Transaction = transaction;
-                        Configuration.Logger.LogTrace(selectCommand.CommandText);
-                        using (var result = await selectCommand.ExecuteReaderAsync())
+                        if (result != null)
                         {
-                            transaction.Commit();
-
-                            if (result != null)
+                            try
                             {
-                                try
+                                // Check if the Version column exists
+                                result.GetOrdinal(nameof(Document.Version));
+                            }
+                            catch
+                            {
+                                result.Close();
+                                using (var migrationTransaction = connection.BeginTransaction())
                                 {
-                                    // Check if the Version column exists
-                                    result.GetOrdinal(nameof(Document.Version));
-                                }
-                                catch
-                                {
-                                    using (var migrationTransaction = connection.BeginTransaction())
+                                    var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
+
+                                    try
                                     {
-                                        var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
+                                        migrationBuilder
+                                            .AlterTable(documentTable, table => table
+                                                .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                            );
 
-                                        try
-                                        {
-                                            migrationBuilder
-                                                .AlterTable(documentTable, table => table
-                                                    .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                                );
+                                        migrationTransaction.Commit();
+                                    }
+                                    catch
+                                    {
 
-                                            migrationTransaction.Commit();
-                                        }
-                                        catch
-                                        {
-                                            // Another thread must have altered it
-                                        }
+                                        // Another thread must have altered it
                                     }
                                 }
-                                return;
                             }
+                            return;
                         }
                     }
                 }
-                catch 
+                catch
                 {
                     using (var transaction = connection.BeginTransaction())
                     {
