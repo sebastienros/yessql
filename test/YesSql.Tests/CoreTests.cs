@@ -849,6 +849,52 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldSupportAsyncEnumerable()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var eilon = new Person
+                {
+                    Firstname = "Eilon",
+                    Lastname = "Lipton",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(eilon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = new List<Person>();
+
+                await foreach(var person in session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ToAsyncEnumerable())
+                {
+                    results.Add(person);
+                }
+
+                Assert.Equal(2, results.Count());
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryInnerSelect()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();

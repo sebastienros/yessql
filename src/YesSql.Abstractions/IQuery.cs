@@ -39,6 +39,7 @@ namespace YesSql
         IQuery<T> Take(int count);
         Task<T> FirstOrDefaultAsync();
         Task<IEnumerable<T>> ListAsync();
+        IAsyncEnumerable<T> ToAsyncEnumerable();
         Task<int> CountAsync();
     }
 
@@ -62,6 +63,7 @@ namespace YesSql
         IQueryIndex<T> Take(int count);
         Task<T> FirstOrDefaultAsync();
         Task<IEnumerable<T>> ListAsync();
+        IAsyncEnumerable<T> ToAsyncEnumerable();
         Task<int> CountAsync();
     }
 

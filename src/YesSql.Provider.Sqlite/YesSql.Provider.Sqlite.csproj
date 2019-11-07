@@ -7,7 +7,7 @@
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
         <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
     </ItemGroup>
-    <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+    <ItemGroup>
         <PackageReference Include="Microsoft.Data.Sqlite" Version="3.0.0" />
     </ItemGroup>
 </Project>
