@@ -962,8 +962,19 @@ namespace YesSql.Services
                 return ListImpl();
             }
 
-            public async Task<IEnumerable<T>> ListImpl()
+            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
             {
+                // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
+                foreach(var item in await ListImpl())
+                {
+                    yield return item;
+                }
+            }
+
+            internal async Task<IEnumerable<T>> ListImpl()
+            {
+                // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can return it by default, and buffer it in ListAsync instead
+
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync();
 
@@ -1096,6 +1107,15 @@ namespace YesSql.Services
             Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
             {
                 return ListImpl();
+            }
+
+            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable()
+            {
+                // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
+                foreach (var item in await ListImpl())
+                {
+                    yield return item;
+                }
             }
 
             IQueryIndex<T> IQueryIndex<T>.Skip(int count)
