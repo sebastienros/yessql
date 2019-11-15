@@ -35,7 +35,7 @@ namespace YesSql
         internal ImmutableDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
             ImmutableDictionary<string, IEnumerable<IndexDescriptor>>.Empty;
 
-        internal ImmutableDictionary<Type, IIdAccessor<int>> _idAccessors =
+        internal ImmutableDictionary<Type, IIdAccessor<int>> IdAccessors =
             ImmutableDictionary<Type, IIdAccessor<int>>.Empty;
 
         internal ImmutableDictionary<Type, Func<IDescriptor>> DescriptorActivators =
@@ -235,10 +235,13 @@ namespace YesSql
 
         public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)
         {
-            if (!_idAccessors.TryGetValue(tContainer, out var result))
+            if (!IdAccessors.TryGetValue(tContainer, out var result))
             {
                 result = Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name);
-                _idAccessors = _idAccessors.Add(tContainer, result);
+
+                // Don't use Add as two thread could concurrently reach this point.
+                // We don't mind losing some values as the next call will restore it if it's not cached.
+                IdAccessors = IdAccessors.SetItem(tContainer, result);
             }
 
             return result;
@@ -260,7 +263,10 @@ namespace YesSql
             if (!Descriptors.TryGetValue(cacheKey, out var result))
             {
                 result = CreateDescriptors(target, collection, Indexes);
-                Descriptors = Descriptors.Add(cacheKey, result);
+
+                // Don't use Add as two thread could concurrently reach this point.
+                // We don't mind losing some values as the next call will restore it if it's not cached.
+                Descriptors = Descriptors.SetItem(cacheKey, result);
             }
 
             return result;
@@ -271,7 +277,10 @@ namespace YesSql
             if (!DescriptorActivators.TryGetValue(target, out var activator))
             {
                 activator = MakeDescriptorActivator(target);
-                DescriptorActivators = DescriptorActivators.Add(target, activator);
+
+                // Don't use Add as two thread could concurrently reach this point.
+                // We don't mind losing some values as the next call will restore it if it's not cached.
+                DescriptorActivators = DescriptorActivators.SetItem(target, activator);
             }
 
             var context = activator();

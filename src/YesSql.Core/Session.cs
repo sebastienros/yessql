@@ -503,7 +503,9 @@ namespace YesSql
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
                 queryState = defaultQuery._query._queryState;
 
-                _store.CompiledQueries.Add(compiledQueryType, queryState);
+                // Don't use Add as two thread could concurrently reach this point.
+                // We don't mind losing some values as the next call will restore it if it's not cached.
+                _store.CompiledQueries = _store.CompiledQueries.SetItem(compiledQueryType, queryState);
             }
 
             queryState = queryState.Clone();
@@ -905,7 +907,9 @@ namespace YesSql
 
                 result = Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
 
-                _store.GroupMethods.Add(descriptor.Type, result);
+                // Don't use Add as two thread could concurrently reach this point.
+                // We don't mind losing some values as the next call will restore it if it's not cached.
+                _store.GroupMethods = _store.GroupMethods.SetItem(descriptor.Type, result);
             }
 
             return result;
