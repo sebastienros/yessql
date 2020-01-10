@@ -65,6 +65,17 @@ namespace YesSql.Sql.Schema
             TableCommands.Add(command);
         }
 
+        public void CreateIndex(string indexName, params Action<ICreateColumnIndexCommand>[] columns)
+        {
+            if (_dialect.PrefixIndex)
+            {
+                indexName = _tablePrefix + indexName;
+            }
+
+            var command = new AddColumnIndexCommand(Name, indexName, columns);
+            TableCommands.Add(command);
+        }
+
         public void DropIndex(string indexName)
         {
             if (_dialect.PrefixIndex)

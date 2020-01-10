@@ -67,6 +67,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable(nameof(PersonByNullableAge));
                     builder.DropMapIndexTable(nameof(Binary));
                     builder.DropMapIndexTable(nameof(PublishedArticle));
+                    builder.DropMapIndexTable(nameof(PropertyIndex));
                     builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
                     builder.DropTable(Store.DocumentTable);
                     builder.DropTable("Collection1_Document");
@@ -117,7 +118,7 @@ namespace YesSql.Tests
                         );
 
                     builder.CreateMapIndexTable(nameof(PersonByName), column => column
-                            .Column<string>(nameof(PersonByName.SomeName))
+                            .Column<string>(nameof(PersonByName.SomeName), col => col.WithLength(1000))
                         );
 
                     builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
@@ -140,6 +141,12 @@ namespace YesSql.Tests
                             .Column<DateTime>(nameof(EmailByAttachment.Date))
                             .Column<string>(nameof(EmailByAttachment.AttachmentName))
                         );
+
+                    builder.CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                    );
 
                     builder.CreateMapIndexTable(nameof(Binary), column => column
                             .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
@@ -4018,5 +4025,7 @@ namespace YesSql.Tests
                 Assert.Equal(8000, binary.Content5.Length);
             }
         }
+
+
     }
 }

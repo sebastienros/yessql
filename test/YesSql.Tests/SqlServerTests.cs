@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using System;
 using System.Data.Common;
 using System.Linq;
@@ -6,13 +7,14 @@ using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.SqlServer;
 using YesSql.Sql;
+using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
     public class SqlServerTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING") ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING") ?? @"Data Source=.;Initial Catalog=yessqltests;Integrated Security=True";
 
         public SqlServerTests()
         {
@@ -145,5 +147,183 @@ namespace YesSql.Tests
             Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
         }
 
+        [Fact]
+        public async Task ThrowsExceptionWhenIndexValueExceeded()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    new SchemaBuilder(_store.Configuration, transaction)
+                        .AlterTable(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            ISession session = null;
+            try
+            {
+                session = _store.CreateSession();
+                var property = new Property
+                {
+                    // Maximum length of standard nonclustered index column is 1700 bytes 850 * 2 = 1700
+                    Name = new string('*', 850),
+                    // Bits do not count.
+                    IsOccupied = true,
+                    ForRent = true
+                };
+                session.Save(property);
+            }
+            finally
+            {
+                if (session != null)
+                {
+                    Assert.Throws<SqlException>(() => session.Dispose());
+                }
+            }
+        }
+
+
+        [Fact]
+        public async Task ShouldStoreShortPropertyInIndex()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    new SchemaBuilder(_store.Configuration, transaction)
+                        .AlterTable(nameof(PersonByName), table => table
+                            .CreateIndex("IDX_PersonByName_Short", "SomeName"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var person = new Person
+                {
+                    // Maximum length of standard nonclustered index is 1700 bytes 850 * 2 = 1700
+                    Firstname = new string('*', 850)
+                };
+
+                session.Save(person);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldIndexProperty()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    new SchemaBuilder(_store.Configuration, transaction)
+                        .AlterTable(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var property = new Property
+                {
+                    // Maximum length of standard nonclustered index is 1700 bytes 850 * 2 = 1700
+                    Name = new string('*', 849),
+                    IsOccupied = true,
+                    ForRent = true
+                };
+
+                session.Save(property);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldRetrieveFromIndex()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    new SchemaBuilder(_store.Configuration, transaction)
+                        .AlterTable(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var property = new Property
+                {
+                    Name = "Search",
+                    IsOccupied = true,
+                    ForRent = true
+                };
+
+                session.Save(property);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.QueryIndex<PropertyIndex>(x => x.Name == "Search");
+                var result = await query.FirstOrDefaultAsync();
+                Assert.NotNull(result);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCreateIndexWithAction()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    new SchemaBuilder(_store.Configuration, transaction)
+                        .AlterTable(nameof(PersonByName), table => table
+                            .CreateIndex("IDX_PersonByName_IndexBuilderShort", cmd => cmd
+                                .WithColumn("SomeName")
+                            ));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var person = new Person
+                {
+                    // Maximum length of standard nonclustered index is 1700 bytes 850 * 2 = 1700
+                    Firstname = new string('*', 850)
+                };
+
+                session.Save(person);
+            }
+        }
     }
 }

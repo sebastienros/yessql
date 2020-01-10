@@ -1,4 +1,7 @@
-﻿namespace YesSql.Sql.Schema
+using System;
+using System.Collections.Generic;
+
+namespace YesSql.Sql.Schema
 {
     public class AddIndexCommand : TableCommand, IAddIndexCommand
     {
