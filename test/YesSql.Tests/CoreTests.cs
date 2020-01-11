@@ -147,7 +147,6 @@ namespace YesSql.Tests
                         .Column<bool>(nameof(PropertyIndex.ForRent))
                         .Column<bool>(nameof(PropertyIndex.IsOccupied))
                         .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
-
                     );
 
                     builder.CreateMapIndexTable(nameof(Binary), column => column
@@ -4029,7 +4028,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldCreateAndIndexPropertyWithMaxBitKeys()
+        public async Task ShouldCreateAndIndexPropertyWithMaximumKeyLengths()
         {
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
