@@ -1,3 +1,4 @@
+using MySql.Data.MySqlClient;
 using System;
 using System.Data.Common;
 using System.Threading.Tasks;
@@ -81,6 +82,190 @@ namespace YesSql.Tests
         public override void ShouldRenameColumn()
         {
             base.ShouldRenameColumn();
+        }
+
+        [Fact]
+        public async Task ThrowsWhenIndexKeyLengthExceeded()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(769))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(768))
+                        );
+
+                    Assert.Throws<MySqlException>(() => builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name")));
+
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ThrowsWhenIndexKeysWithBitsLengthExceeded()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(384))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(384))
+                        );
+
+                    Assert.Throws<MySqlException>(() => builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location")));
+
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ThrowsWhenIndexKeysLengthExceeded()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(385))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(384))
+                        );
+
+                    Assert.Throws<MySqlException>(() => builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "Location")));
+
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCreatePropertyIndexWithMaxKey()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(768))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(768))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name"));
+
+                    transaction.Commit();
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCreateIndexPropertyWithMaxKeys()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(384))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(384))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "Location"));
+
+                    transaction.Commit();
+                }
+            }
+        }
+
+
+        [Fact]
+        public async Task ShouldCreateIndexPropertyWithMaxBitKeys()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(384))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                    transaction.Commit();
+                }
+            }
         }
     }
 }

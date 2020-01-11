@@ -11,6 +11,7 @@ namespace YesSql.Tests.Indexes
         public string Name { get; set; }
         public bool ForRent { get; set; }
         public bool IsOccupied { get; set; }
+        public string Location { get; set; }
     }
 
     public class PropertyIndexProvider : IndexProvider<Property>
@@ -23,7 +24,8 @@ namespace YesSql.Tests.Indexes
                 {
                     Name = property.Name,
                     ForRent = property.ForRent,
-                    IsOccupied = property.IsOccupied
+                    IsOccupied = property.IsOccupied,
+                    Location = property.Location
                 });
         }
     }

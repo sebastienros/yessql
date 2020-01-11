@@ -148,7 +148,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ThrowsExceptionWhenIndexValueExceeded()
+        public async Task ThrowsWhenIndexKeyLengthExceeded()
         {
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -156,8 +156,72 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(_store.Configuration, transaction)
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        );
+
+                    builder
                         .AlterTable(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            ISession session = null;
+            try
+            {
+                session = _store.CreateSession();
+                var property = new Property
+                {
+                    // Maximum length of standard nonclustered index column is 1700 bytes 850 * 2 = 1700
+                    Name = new string('*', 851)
+                };
+                session.Save(property);
+            }
+            finally
+            {
+                if (session != null)
+                {
+                    Assert.Throws<SqlException>(() => session.Dispose());
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ThrowsWhenIndexKeysWithBitsLengthExceeded()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        );
+
+                    builder.AlterTable(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
 
                     transaction.Commit();
@@ -174,9 +238,8 @@ namespace YesSql.Tests
                 {
                     // Maximum length of standard nonclustered index column is 1700 bytes 850 * 2 = 1700
                     Name = new string('*', 850),
-                    // Bits do not count.
-                    IsOccupied = true,
-                    ForRent = true
+                    ForRent = true,
+                    IsOccupied = true
                 };
                 session.Save(property);
             }
@@ -189,9 +252,8 @@ namespace YesSql.Tests
             }
         }
 
-
         [Fact]
-        public async Task ShouldStoreShortPropertyInIndex()
+        public async Task ThrowsWhenIndexKeysLengthExceeded()
         {
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -199,30 +261,52 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(_store.Configuration, transaction)
-                        .AlterTable(nameof(PersonByName), table => table
-                            .CreateIndex("IDX_PersonByName_Short", "SomeName"));
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name", "Location"));
 
                     transaction.Commit();
                 }
             }
 
-            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PropertyIndexProvider>();
 
-            using (var session = _store.CreateSession())
+            ISession session = null;
+            try
             {
-                var person = new Person
+                session = _store.CreateSession();
+                var property = new Property
                 {
-                    // Maximum length of standard nonclustered index is 1700 bytes 850 * 2 = 1700
-                    Firstname = new string('*', 850)
+                    // Maximum length of standard nonclustered index column is 1700 bytes 850 / 2 = 425
+                    Name = new string('*', 425),
+                    Location = new string('*', 426), // Max length + 2 bytes
                 };
-
-                session.Save(person);
+                session.Save(property);
+            }
+            finally
+            {
+                if (session != null)
+                {
+                    Assert.Throws<SqlException>(() => session.Dispose());
+                }
             }
         }
 
         [Fact]
-        public async Task ShouldIndexProperty()
+        public async Task ShouldIndexPropertyKey()
         {
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -230,9 +314,22 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(_store.Configuration, transaction)
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        );
+
+                    builder
                         .AlterTable(nameof(PropertyIndex), table => table
-                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+                            .CreateIndex("IDX_Property", "Name"));
 
                     transaction.Commit();
                 }
@@ -245,17 +342,16 @@ namespace YesSql.Tests
                 var property = new Property
                 {
                     // Maximum length of standard nonclustered index is 1700 bytes 850 * 2 = 1700
-                    Name = new string('*', 849),
-                    IsOccupied = true,
-                    ForRent = true
+                    Name = new string('*', 850)
                 };
 
                 session.Save(property);
             }
         }
 
+
         [Fact]
-        public async Task ShouldRetrieveFromIndex()
+        public async Task ShouldIndexPropertyKeys()
         {
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -263,9 +359,22 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(_store.Configuration, transaction)
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        );
+
+                    builder
                         .AlterTable(nameof(PropertyIndex), table => table
-                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+                            .CreateIndex("IDX_Property", "Name","Location"));
 
                     transaction.Commit();
                 }
@@ -277,19 +386,59 @@ namespace YesSql.Tests
             {
                 var property = new Property
                 {
-                    Name = "Search",
-                    IsOccupied = true,
-                    ForRent = true
+                    // Maximum length of standard nonclustered index is 1700 bytes 850 / 2 = 425
+                    Name = new string('*', 425),
+                    Location = new string('*', 425)
                 };
 
                 session.Save(property);
             }
+        }
+
+        [Fact]
+        public async Task ShouldIndexPropertyKeysWithBits()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
+                    builder
+                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
-                var query = session.QueryIndex<PropertyIndex>(x => x.Name == "Search");
-                var result = await query.FirstOrDefaultAsync();
-                Assert.NotNull(result);
+                var property = new Property
+                {
+                    // Maximum length of standard nonclustered index is 1700 bytes 850 * 2 = 1700
+                    Name = new string('*', 425),
+                    IsOccupied = true,
+                    ForRent = true,
+                    Location = new string('*', 424)
+                };
+
+                session.Save(property);
             }
         }
 
