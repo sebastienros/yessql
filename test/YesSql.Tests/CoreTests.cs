@@ -118,7 +118,7 @@ namespace YesSql.Tests
                         );
 
                     builder.CreateMapIndexTable(nameof(PersonByName), column => column
-                            .Column<string>(nameof(PersonByName.SomeName), col => col.WithLength(1000))
+                            .Column<string>(nameof(PersonByName.SomeName))
                         );
 
                     builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
@@ -4047,7 +4047,7 @@ namespace YesSql.Tests
                         .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
                         .Column<bool>(nameof(PropertyIndex.ForRent))
                         .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        .Column<string>(nameof(PropertyIndex.Location))
                         );
 
                     builder

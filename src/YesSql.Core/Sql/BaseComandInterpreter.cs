@@ -152,14 +152,6 @@ namespace YesSql.Sql
                 yield return builder.ToString();
             }
 
-            // add column index
-            foreach (var addIndex in command.TableCommands.OfType<AddColumnIndexCommand>())
-            {
-                var builder = new StringBuilder();
-                Run(builder, addIndex);
-                yield return builder.ToString();
-            }
-
             // drop index
             foreach (var dropIndex in command.TableCommands.OfType<DropIndexCommand>())
             {
@@ -223,31 +215,6 @@ namespace YesSql.Sql
                 _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.IndexName),
                 String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray()));
-        }
-
-        public virtual void Run(StringBuilder builder, IAddColumnIndexCommand command)
-        {
-            builder.AppendFormat("create index {1} on {0} (",
-                _dialect.QuoteForTableName(command.Name),
-                _dialect.QuoteForColumnName(command.IndexName));
-
-            foreach (var createColumn in command.TableCommands.OfType<CreateColumnIndexCommand>())
-            {
-                //if (appendComma)
-                //{
-                //    builder.Append(", ");
-                //}
-                //appendComma = true;
-
-                Run(builder, createColumn);
-            }
-            builder.Append(')');
-            var t = builder.ToString();
-        }
-
-        public virtual void Run(StringBuilder builder, ICreateColumnIndexCommand command)
-        {
-            builder.Append(_dialect.QuoteForColumnName(command.ColumnName));
         }
 
         public virtual void Run(StringBuilder builder, IDropIndexCommand command)

@@ -11,7 +11,6 @@ namespace YesSql.Sql.Schema
         void RenameColumn(string columnName, string newName);
         void DropColumn(string columnName);
         void CreateIndex(string indexName, params string[] columnNames);
-        void CreateIndex(string indexName, params Action<ICreateColumnIndexCommand>[] columns);
         void DropIndex(string indexName);
     }
 }

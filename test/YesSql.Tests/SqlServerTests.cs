@@ -441,38 +441,5 @@ namespace YesSql.Tests
                 session.Save(property);
             }
         }
-
-        [Fact]
-        public async Task ShouldCreateIndexWithAction()
-        {
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    new SchemaBuilder(_store.Configuration, transaction)
-                        .AlterTable(nameof(PersonByName), table => table
-                            .CreateIndex("IDX_PersonByName_IndexBuilderShort", cmd => cmd
-                                .WithColumn("SomeName")
-                            ));
-
-                    transaction.Commit();
-                }
-            }
-
-            _store.RegisterIndexes<PersonIndexProvider>();
-
-            using (var session = _store.CreateSession())
-            {
-                var person = new Person
-                {
-                    // Maximum length of standard nonclustered index is 1700 bytes 850 * 2 = 1700
-                    Firstname = new string('*', 850)
-                };
-
-                session.Save(person);
-            }
-        }
     }
 }
