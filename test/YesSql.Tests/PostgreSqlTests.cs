@@ -11,7 +11,7 @@ namespace YesSql.Tests
 {
     public class PostgreSqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessqltests;User Id=yessqltests;Password=Password12!;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
 
         protected override IConfiguration CreateConfiguration()
         {

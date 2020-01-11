@@ -98,7 +98,6 @@ namespace YesSql.Tests
             return base.ShouldHandleConcurrency();
         }
 
-
         [Fact]
         public async Task ShouldIndexPropertyKeys()
         {
