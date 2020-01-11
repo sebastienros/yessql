@@ -107,14 +107,11 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(_store.Configuration, transaction)
-                        .DropMapIndexTable(nameof(PropertyIndex));
-                    transaction.Commit();
-                }
-
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable(nameof(PropertyIndex));
+
                     builder
                         .CreateMapIndexTable(nameof(PropertyIndex), column => column
                         .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
