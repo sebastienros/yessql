@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using Dapper;
 using YesSql.Sql;
 
 namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "UNIQUEIDENTIFIER"},
             {DbType.Binary, "VARBINARY(8000)"},
@@ -40,6 +41,7 @@ namespace YesSql.Provider.SqlServer
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));
             Methods.Add("hour", new TemplateFunction("datepart(hour, {0})"));
+            SqlMapper.AddTypeMap(typeof(uint), DbType.Int32);// Fixed System.ArgumentException : No mapping exists from DbType UInt32 to a known SqlDbType.
 
             // These are not necessary since SQL Server 2008 
             //Methods.Add("day", new TemplateFunction("datepart(day, {0})"));

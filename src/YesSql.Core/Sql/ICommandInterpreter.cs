@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text;
+using System.Collections.Generic;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql

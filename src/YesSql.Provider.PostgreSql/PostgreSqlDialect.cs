@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
+using System.Data.Common;
+using Dapper;
+using YesSql.Indexes;
 using YesSql.Sql;
 
 namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
             {DbType.Binary, "bytea"},
@@ -84,7 +85,7 @@ namespace YesSql.Provider.PostgreSql
                 }
             }
 
-            if (ColumnTypes.TryGetValue(dbType, out string value))
+            if (ColumnTypes.TryGetValue(dbType, out var value))
             {
                 return value;
             }
@@ -136,6 +137,12 @@ namespace YesSql.Provider.PostgreSql
         }
 
         public override string CascadeConstraintsString => " cascade ";
+
+        public override int InsertReturningIndexId(DbConnection connection, IIndex index, string insertSql, DbTransaction transaction)
+        {
+            var sql = insertSql + " " + IdentitySelectString + " " + QuoteForColumnName("Id");
+            return connection.ExecuteScalar<int>(sql, index, transaction);
+        }
 
         public override string GetSqlValue(object value)
         {

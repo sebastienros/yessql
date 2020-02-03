@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions.Internal;
 using System;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions.Internal;
 
 namespace YesSql.Tests
 {

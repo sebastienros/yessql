@@ -20,19 +20,14 @@ namespace YesSql.Data
 
         public WorkerQueryKey(string prefix, int[] ids)
         {
-            if (prefix == null)
-            {
-                throw new ArgumentNullException(nameof(prefix));
-            }
-
             if (ids == null)
             {
                 throw new ArgumentNullException(nameof(ids));
             }
 
-            _prefix = prefix;
+            _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
 
-            if (ids != null && ids.Length > 0)
+            if (ids.Length > 0)
             {
                 var stringBuilder = _stringBuilder.Value;
                 stringBuilder.Clear();

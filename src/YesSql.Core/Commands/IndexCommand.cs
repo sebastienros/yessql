@@ -22,7 +22,7 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, string tablePrefix)
+        protected IndexCommand(IIndex index, string tablePrefix)
         {
             Index = index;
             _tablePrefix = tablePrefix;
@@ -54,7 +54,6 @@ namespace YesSql.Commands
         protected string Inserts(Type type, ISqlDialect dialect)
         {
             var key = new CompoundKey(dialect.Name, type.FullName, _tablePrefix);
-
             if (!InsertsList.TryGetValue(key, out string result))
             {
                 var values = dialect.DefaultValuesInsert;
@@ -79,17 +78,15 @@ namespace YesSql.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbParameterList.Append("@" + property.Name);
+                        sbParameterList.Append(dialect.QuoteForParameter(property.Name));
                         if (i < allProperties.Count() - 1)
-                        {
                             sbParameterList.Append(", ");
-                        }
                     }
 
                     values = $"({sbColumnList}) VALUES ({sbParameterList})";
                 }
 
-                InsertsList[key] = result = $"INSERT INTO {dialect.QuoteForTableName(_tablePrefix + type.Name)} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")}";
+                InsertsList[key] = result = $"INSERT INTO {dialect.QuoteForTableName(_tablePrefix + type.Name)} {values}";
             }
 
             return result;            
@@ -107,14 +104,12 @@ namespace YesSql.Commands
                 for (var i = 0; i < allProperties.Length; i++)
                 {
                     var property = allProperties[i];
-                    values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name);
+                    values.Append(dialect.QuoteForColumnName(property.Name) + " = " + dialect.QuoteForParameter(property.Name));
                     if (i < allProperties.Length - 1)
-                    {
                         values.Append(", ");
-                    }
                 }
 
-                UpdatesList[key] = result = $"UPDATE {dialect.QuoteForTableName(_tablePrefix + type.Name)} SET {values} WHERE {dialect.QuoteForColumnName("Id")} = @Id;";
+                UpdatesList[key] = result = $"UPDATE {dialect.QuoteForTableName(_tablePrefix + type.Name)} SET {values} WHERE {dialect.QuoteForColumnName("Id")} = {dialect.QuoteForParameter("Id")}{dialect.StatementEnd}";
             }
 
             return result;
@@ -126,8 +121,7 @@ namespace YesSql.Commands
                 pi.Name != nameof(IIndex.Id) &&
                 // don't read DocumentId when on a MapIndex as it might be used to 
                 // read the DocumentId directly from an Index query
-                pi.Name != "DocumentId"
-                ;
+                pi.Name != "DocumentId";
         }
 
         public struct CompoundKey : IEquatable<CompoundKey>

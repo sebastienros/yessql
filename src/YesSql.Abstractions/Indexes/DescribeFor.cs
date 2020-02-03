@@ -47,7 +47,7 @@ namespace YesSql.Indexes
         private IDescribeFor _reduceDescribeFor;
 
         public PropertyInfo GroupProperty { get; set; }
-        public Type IndexType { get { return typeof(TIndex); } }
+        public Type IndexType => typeof(TIndex);
 
         public IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map)
         {
@@ -155,10 +155,7 @@ namespace YesSql.Indexes
             _enumerable = enumerable;
         }
 
-        public TKey Key
-        {
-            get { return (TKey)_key; }
-        }
+        public TKey Key => (TKey)_key;
 
         public IEnumerator<TIndex> GetEnumerator()
         {

@@ -1,10 +1,9 @@
 using System.Data.Common;
-using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
 using YesSql.Tests.Models;
+using Xunit;
 
 namespace YesSql.Tests
 {

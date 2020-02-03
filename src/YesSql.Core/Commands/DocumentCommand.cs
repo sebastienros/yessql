@@ -7,12 +7,12 @@ namespace YesSql.Commands
 {
     public abstract class DocumentCommand : IIndexCommand
     {
-        protected static readonly PropertyInfo[] AllProperties = new PropertyInfo[]
+        protected static readonly PropertyInfo[] AllProperties =
         {
             typeof(Document).GetProperty("Type")
         };
 
-        protected static readonly PropertyInfo[] AllKeys = new PropertyInfo[]
+        protected static readonly PropertyInfo[] AllKeys =
         {
             typeof(Document).GetProperty("Id")
         };

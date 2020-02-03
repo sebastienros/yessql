@@ -1,15 +1,16 @@
+using System;
+using System.Net;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Net;
-using System.Threading.Tasks;
-using Xunit;
 using YesSql.Provider.MySql;
+using YesSql.Provider.Oracle;
 using YesSql.Provider.PostgreSql;
 using YesSql.Provider.Sqlite;
 using YesSql.Provider.SqlServer;
+using Xunit;
 
 namespace YesSql.Tests
 {
@@ -69,7 +70,8 @@ namespace YesSql.Tests
                     .RegisterMySql()
                     .RegisterSqLite()
                     .RegisterPostgreSql()
-                    .RegisterSqlServer();
+                    .RegisterSqlServer()
+                    .RegisterOracle();
             }
         }
     }

@@ -42,7 +42,7 @@ namespace YesSql.Sql
             _dialect = dialect;
         }
 
-        public string Clause { get { return _clause; } }
+        public string Clause => _clause;
 
         public void Table(string table)
         {
@@ -109,10 +109,8 @@ namespace YesSql.Sql
             {
                 return SelectSegments[0];
             }
-            else
-            {
-                return string.Join("", SelectSegments);
-            }
+
+            return string.Join("", SelectSegments);
         }
 
         public void Distinct()
@@ -295,23 +293,23 @@ namespace YesSql.Sql
 
         public ISqlBuilder Clone()
         {
-            var clone = new SqlBuilder(_tablePrefix, _dialect);
+            var clone = new SqlBuilder(_tablePrefix, _dialect)
+            {
+                _clause = _clause,
+                _table = _table,
+                _select = _select == null ? null : new List<string>(_select),
+                _from = _from == null ? null : new List<string>(_from),
+                _join = _join == null ? null : new List<string>(_join),
+                _where = _where == null ? null : new List<string>(_where),
+                _group = _group == null ? null : new List<string>(_group),
+                _having = _having == null ? null : new List<string>(_having),
+                _order = _order == null ? null : new List<string>(_order),
+                _trail = _trail == null ? null : new List<string>(_trail),
+                _skip = _skip,
+                _count = _count,
+                Parameters = new Dictionary<string, object>(Parameters)
+            };
 
-            clone._clause = _clause;
-            clone._table = _table;
-
-            clone._select = _select == null ? null : new List<string>(_select);
-            clone._from = _from == null ? null : new List<string>(_from);
-            clone._join = _join == null ? null : new List<string>(_join);
-            clone._where = _where == null ? null : new List<string>(_where);
-            clone._group = _group == null ? null : new List<string>(_group);
-            clone._having = _having == null ? null : new List<string>(_having);
-            clone._order = _order == null ? null : new List<string>(_order);
-            clone._trail = _trail == null ? null : new List<string>(_trail);
-            clone._skip = _skip;
-            clone._count = _count;
-
-            clone.Parameters = new Dictionary<string, object>(Parameters);
             return clone;
         }
     }

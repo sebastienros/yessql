@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace YesSql.Collections
 {
@@ -14,12 +14,7 @@ namespace YesSql.Collections
 
         private CollectionStack(CollectionStack previous, Collection collection)
         {
-            if (previous == null)
-            {
-                throw new ArgumentNullException(nameof(previous));
-            }
-
-            _previous = previous;
+            _previous = previous ?? throw new ArgumentNullException(nameof(previous));
             _collection = collection;
         }
 

@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 
 namespace YesSql.Data
 {
@@ -31,6 +30,5 @@ namespace YesSql.Data
 
             return Activator.CreateInstance(accessorType, new object[] { getter, setter }) as IIdAccessor<T>;
         }
-
     }
 }

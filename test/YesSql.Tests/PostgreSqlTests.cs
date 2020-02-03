@@ -1,15 +1,15 @@
 using System;
 using System.Data.Common;
 using System.Threading.Tasks;
-using Xunit;
 using YesSql.Provider.PostgreSql;
 using YesSql.Sql;
+using Xunit;
 
 namespace YesSql.Tests
 {
     public class PostgreSqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=postgres;User Id=postgres;Password=admin123;";
 
         protected override IConfiguration CreateConfiguration()
         {
@@ -46,6 +46,11 @@ namespace YesSql.Tests
         public override Task ShouldReadUncommittedRecords()
         {
             return base.ShouldReadUncommittedRecords();
+        }
+        [Fact(Skip = "System.NotSupportedException : The parameter type DbType.UInt32 isn't supported by PostgreSQL or Npgsql")]
+        public override void ShouldUseUintIndexInfo()
+        {
+            
         }
     }
 }

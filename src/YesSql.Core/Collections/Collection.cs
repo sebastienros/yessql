@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.Text;
 
 namespace YesSql.Collections
 {
     public abstract class Collection : IDisposable
     {
-        IDisposable _scope;
+        readonly IDisposable _scope;
 
-        public Collection()
+        protected Collection()
         {
             _scope = CollectionHelper.EnterScope(this);
         }
@@ -21,7 +21,7 @@ namespace YesSql.Collections
             }
 
             var builder = new StringBuilder();
-            bool first = true;
+            var first = true;
             foreach (var c in name)
             {
                 if (Char.IsLetter(c) || (!first && Char.IsDigit(c)))
@@ -47,22 +47,17 @@ namespace YesSql.Collections
         {
             var name = collection.GetSafeName();
 
-            if (String.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
             {
                 return table;
             }
 
-            return String.Concat(name, "_", table);
+            return string.Concat(name, "_", table);
         }
     }
 
     public class DefaultCollection : Collection
     {
-        public DefaultCollection()
-        {
-
-        }
-
         public override string GetSafeName()
         {
             return "";

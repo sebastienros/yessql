@@ -100,12 +100,12 @@ namespace YesSql
             }
 
             // Pee-initialize the default collection
-            await InitializeCollectionAsync("");
+            await InitializeCollectionAsync(Dialect.NullString);
         }
 
         public async Task InitializeCollectionAsync(string collectionName)
         {
-            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
+            var documentTable = (String.IsNullOrEmpty(collectionName) || collectionName == Dialect.NullString) ? "Document" : collectionName + "_" + "Document";
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
@@ -118,7 +118,7 @@ namespace YesSql
                     var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
                     selectBuilder.Select();
                     selectBuilder.AddSelector("*");
-                    selectBuilder.Table(documentTable);
+                    selectBuilder.Table(documentTable); ;
                     selectBuilder.Take("1");
 
                     selectCommand.CommandText = selectBuilder.ToSqlString();

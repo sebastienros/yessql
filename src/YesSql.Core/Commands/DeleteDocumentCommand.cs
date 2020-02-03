@@ -19,7 +19,7 @@ namespace YesSql.Commands
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-            var deleteCmd = "delete from " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
+            var deleteCmd = "delete from " + dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + dialect.QuoteForColumnName("Id") + " = " + dialect.QuoteForParameter("Id") + dialect.StatementEnd;
             logger.LogTrace(deleteCmd);
             return connection.ExecuteAsync(deleteCmd, Document, transaction);
         }

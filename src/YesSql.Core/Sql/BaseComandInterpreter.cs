@@ -12,7 +12,7 @@ namespace YesSql.Sql
         protected readonly ISqlDialect _dialect;
         private const char Space = ' ';
 
-        public BaseCommandInterpreter(ISqlDialect dialect)
+        protected BaseCommandInterpreter(ISqlDialect dialect)
         {
             _dialect = dialect;
         }

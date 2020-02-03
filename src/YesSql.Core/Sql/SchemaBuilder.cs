@@ -141,7 +141,7 @@ namespace YesSql.Sql
         {
             try
             {
-                if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
+                if (string.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
                     DropForeignKey(name, "FK_" + name);
                 }

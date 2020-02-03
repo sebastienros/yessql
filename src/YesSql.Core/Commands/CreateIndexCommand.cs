@@ -27,25 +27,21 @@ namespace YesSql.Commands
         {
             var type = Index.GetType();
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-
-            var sql = Inserts(type, dialect);
-            logger.LogTrace(sql);
-            Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
-
+            var insertSql = Inserts(type, dialect);
+            logger.LogTrace(insertSql);
+            Index.Id = dialect.InsertReturningIndexId(connection, Index, insertSql, transaction);
 
             if (Index is MapIndex)
             {
-                var command = "update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + dialect.QuoteForColumnName("DocumentId") + " = @mapid where " + dialect.QuoteForColumnName("Id") + " = @Id";
+                var command = "update " + dialect.QuoteForTableName(_tablePrefix + type.Name) + " set " + dialect.QuoteForColumnName("DocumentId") + " =" + dialect.QuoteForParameter("mapid") + " where " + dialect.QuoteForColumnName("Id") + " = " + dialect.QuoteForParameter("Id");
                 logger.LogTrace(command);
                 await connection.ExecuteAsync(command, new { mapid = Index.GetAddedDocuments().Single().Id, Id = Index.Id }, transaction);
             }
             else
             {
-                var reduceIndex = Index as ReduceIndex;
-
                 var bridgeTableName = type.Name + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") +", " + dialect.QuoteForColumnName("DocumentId");
-                var bridgeSql = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
+                var bridgeSql = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (" + dialect.QuoteForParameter("Id") + ", " + dialect.QuoteForParameter("DocumentId") + ")" + dialect.StatementEnd;
                 logger.LogTrace(bridgeSql);
                 await connection.ExecuteAsync(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
             }

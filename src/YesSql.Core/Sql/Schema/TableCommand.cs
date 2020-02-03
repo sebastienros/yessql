@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace YesSql.Sql.Schema
@@ -9,7 +9,7 @@ namespace YesSql.Sql.Schema
 
         public List<ITableCommand> TableCommands { get; private set; }
 
-        public TableCommand(string tableName)
+        protected TableCommand(string tableName)
         {
             Name = tableName;
         }

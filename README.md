@@ -1,6 +1,8 @@
 YesSql
 =============
 
+Based on solution https://github.com/mguzzardi/yessql
+
 A .NET document database interface for relational databases, because in SQL we (still) trust !
 
 [![Build status](https://ci.appveyor.com/api/projects/status/38x1yf40wbefpvo5?svg=true)](https://ci.appveyor.com/project/SebastienRos/yessql-un1yf)

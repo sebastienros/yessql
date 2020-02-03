@@ -6,7 +6,7 @@ namespace YesSql.Sql.Schema
 {
     public static class SchemaUtils
     {
-        private static Dictionary<Type, DbType> DbTypes = new Dictionary<Type, DbType>
+        private static readonly Dictionary<Type, DbType> DbTypes = new Dictionary<Type, DbType>
         {
             { typeof(object), DbType.Binary },
             { typeof(byte[]), DbType.Binary },
@@ -31,9 +31,7 @@ namespace YesSql.Sql.Schema
 
         public static DbType ToDbType(Type type)
         {
-            DbType dbType;
-
-            if (DbTypes.TryGetValue(type, out dbType))
+            if (DbTypes.TryGetValue(type, out var dbType))
             {
                 return dbType;
             }

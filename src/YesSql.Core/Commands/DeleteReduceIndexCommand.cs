@@ -21,10 +21,10 @@ namespace YesSql.Commands
 
             var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
             var bridgeTableName = name + "_" + documentTable;
-            var bridgeSql = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = @Id";
+            var bridgeSql = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName(name + "Id") + " = " + dialect.QuoteForParameter("Id") + dialect.StatementEnd;
             logger.LogTrace(bridgeSql);
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
-            var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + name) + " where " + dialect.QuoteForColumnName("Id") + " = @Id";
+            var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + name) + " where " + dialect.QuoteForColumnName("Id") + " = " + dialect.QuoteForParameter("Id") + dialect.StatementEnd;
             logger.LogTrace(command);
             await connection.ExecuteAsync(command, new { Id = Index.Id }, transaction);
         }

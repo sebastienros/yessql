@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Text;
+using YesSql.Indexes;
 
 namespace YesSql
 {
@@ -40,5 +42,14 @@ namespace YesSql
         void Page(ISqlBuilder sqlBuilder, string offset, string limit);
         ISqlBuilder CreateBuilder(string tablePrefix);
         string RenderMethod(string name, params string[] args);
+        string QuoteForParameter(string parameterName);
+        string ParameterNamePrefix { get; }
+        string StatementEnd { get; }
+        string NullString { get; }
+        bool IsSpecialDistinctRequired { get; }
+        IDbCommand ConfigureCommand(IDbCommand command);
+        int InsertReturningIndexId(DbConnection connection, IIndex index, string insertSql, DbTransaction transaction);
+        object GetDynamicParameters(DbConnection connection, object parameters, string tableName);
+        object GetSafeIndexParameters(IIndex index);
     }
 }

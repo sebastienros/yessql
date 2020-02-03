@@ -1,5 +1,3 @@
-using System;
-using System.Text;
 using YesSql.Indexes;
 using YesSql.Tests.Models;
 
@@ -20,7 +18,8 @@ namespace YesSql.Tests.Indexes
         {
             context
                 .For<Binary>()
-                .Map(person => new Binary {
+                .Map(person => new Binary
+                {
                     Content1 = new byte[255],
                     Content2 = new byte[65535],
                     //Content3 = new byte[16777215],

@@ -32,11 +32,13 @@
         <Reference Include="Microsoft.CSharp" />
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
-        <ProjectReference Include="..\..\src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
-        <ProjectReference Include="..\..\src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
-        <ProjectReference Include="..\..\src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
-        <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.Oracle\YesSql.Provider.Oracle.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
     </ItemGroup>
     <ItemGroup>
         <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />

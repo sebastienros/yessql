@@ -8,7 +8,7 @@ namespace YesSql.Provider.MySql
 {
     public class MySqlDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
             {DbType.Binary, "varbinary(8000)"},

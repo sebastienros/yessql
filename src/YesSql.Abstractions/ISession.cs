@@ -46,6 +46,7 @@ namespace YesSql
         /// This method can be used to remove an item that should not be served again from the cache.
         /// For instance when its state as changed and any subsequent query should not return the 
         /// modified instance but a fresh one.
+        /// </remarks>
         void Detach(object item);
 
         /// <summary>
@@ -107,7 +108,7 @@ namespace YesSql
         /// Loads an object by its id.
         /// </summary>
         /// <returns>The object or <c>null</c>.</returns>
-        public async static Task<T> GetAsync<T>(this ISession session, int id) where T : class
+        public static async Task<T> GetAsync<T>(this ISession session, int id) where T : class
         {
             return (await session.GetAsync<T>(new[] { id })).FirstOrDefault();
         }

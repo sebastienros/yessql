@@ -31,7 +31,7 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (String.IsNullOrWhiteSpace(connectionString))
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentException(nameof(connectionString));
             }

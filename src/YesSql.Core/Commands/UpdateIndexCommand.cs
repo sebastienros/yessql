@@ -32,7 +32,8 @@ namespace YesSql.Commands
 
             var sql = Updates(type, dialect);
             logger.LogTrace(sql);
-            await connection.ExecuteAsync(sql, Index, transaction);
+            var parameter = dialect.GetSafeIndexParameters(Index);
+            await connection.ExecuteAsync(sql, parameter, transaction);
 
             // Update the documents list
             if (Index is ReduceIndex reduceIndex)
@@ -40,8 +41,8 @@ namespace YesSql.Commands
                 var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
                 var bridgeTableName = type.Name + "_" + documentTable;
                 var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
-                var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
-                var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
+                var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (" + dialect.QuoteForParameter("Id") + ", " + dialect.QuoteForParameter("DocumentId") + ")" + dialect.StatementEnd;
+                var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = " + dialect.QuoteForParameter("DocumentId") + " and " + dialect.QuoteForColumnName(type.Name + "Id") + " = " + dialect.QuoteForParameter("Id") + dialect.StatementEnd;
 
                 logger.LogTrace(bridgeSqlAdd);
                 await connection.ExecuteAsync(bridgeSqlAdd, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
@@ -50,5 +51,6 @@ namespace YesSql.Commands
                 await connection.ExecuteAsync(bridgeSqlRemove, _deletedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
             }
         }
+
     }
 }

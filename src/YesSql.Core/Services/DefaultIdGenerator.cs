@@ -22,7 +22,7 @@ namespace YesSql.Services
         {
             lock (_synLock)
             {
-                collection = collection ?? "";
+                collection = string.IsNullOrEmpty(collection) ? _dialect.NullString : collection;
 
                 if (!_seeds.TryGetValue(collection, out var seed))
                 {

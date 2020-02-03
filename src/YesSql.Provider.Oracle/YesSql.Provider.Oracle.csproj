@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+  
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'netstandard2.'"> RUN_NETSTANDARD2_0  </DefineConstants>
+    <Authors>Sebastien Ros, SCC Portal, mazuryv</Authors>
+    <AssemblyName>YesSql.Provider.Oracle</AssemblyName>
+    <RootNamespace>YesSql.Provider.Oracle</RootNamespace>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Dapper.Oracle.StrongName" Version="1.2.1" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
+    <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+      <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="2.19.60" />
+  </ItemGroup>
+</Project>

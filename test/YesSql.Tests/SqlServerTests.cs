@@ -3,10 +3,10 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using YesSql.Provider.SqlServer;
 using YesSql.Sql;
 using YesSql.Tests.Models;
+using Xunit;
 
 namespace YesSql.Tests
 {

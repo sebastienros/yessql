@@ -5,7 +5,7 @@ namespace YesSql.Serialization
 {
     public class JsonContentSerializer : IContentSerializer
     {
-        private readonly static JsonSerializerSettings _jsonSettings = new JsonSerializerSettings {
+        private static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings {
             TypeNameHandling = TypeNameHandling.Auto,
             DateTimeZoneHandling = DateTimeZoneHandling.Utc
         };

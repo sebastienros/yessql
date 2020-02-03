@@ -37,9 +37,7 @@ namespace YesSql.Indexes
 
         public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
         {
-            List<IDescribeFor> descriptors;
-
-            if (!_describes.TryGetValue(typeof(T), out descriptors))
+            if (!_describes.TryGetValue(typeof(T), out var descriptors))
             {
                 descriptors = _describes[typeof(T)] = new List<IDescribeFor>();
             }

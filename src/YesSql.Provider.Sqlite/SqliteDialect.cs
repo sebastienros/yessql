@@ -7,7 +7,7 @@ namespace YesSql.Provider.Sqlite
 {
     public class SqliteDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             { DbType.Binary, "BLOB" },
             { DbType.Byte, "TINYINT" },

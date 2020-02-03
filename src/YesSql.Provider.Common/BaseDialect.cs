@@ -1,8 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Globalization;
 using System.Text;
+using System.Threading.Tasks;
+using Dapper;
+using Microsoft.Extensions.Logging;
+using YesSql.Indexes;
 using YesSql.Sql;
 
 namespace YesSql.Provider
@@ -14,7 +19,7 @@ namespace YesSql.Provider
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {
-            if (values.StartsWith("@") && !values.Contains(","))
+            if (values.StartsWith(ParameterNamePrefix) && !values.Contains(","))
             {
                 return " IN " + values;
             }
@@ -211,6 +216,39 @@ namespace YesSql.Provider
             }
 
             return select;
+        }
+
+        public virtual string QuoteForParameter(string parameterName)
+        {
+            return ParameterNamePrefix + parameterName;
+        }
+
+        public virtual string ParameterNamePrefix => "@";
+        public virtual string StatementEnd => ";";
+
+        public virtual string NullString => String.Empty;
+
+        public virtual bool IsSpecialDistinctRequired => false;
+
+        public virtual IDbCommand ConfigureCommand(IDbCommand command)
+        {
+            return command;
+        }
+
+        public virtual int InsertReturningIndexId(DbConnection connection, IIndex index, string insertSql, DbTransaction transaction)
+        {
+            var sql = insertSql + " " + IdentitySelectString;
+            return connection.ExecuteScalar<int>(sql, index, transaction);
+        }
+
+        public virtual object GetDynamicParameters(DbConnection connection, object parameters, string tableName)
+        {
+            return new DynamicParameters(parameters);
+        }
+
+        public virtual object GetSafeIndexParameters(IIndex index)
+        {
+            return new DynamicParameters(index);
         }
     }
 }
