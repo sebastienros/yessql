@@ -9,7 +9,7 @@ using YesSql.Tests.Models;
 namespace YesSql.Tests
 {
     /// <summary>
-    /// Run all tests with a SqlServer document storage
+    /// Run all tests with a Sqlite document storage
     /// </summary>
     public class SqliteTests : CoreTests
     {

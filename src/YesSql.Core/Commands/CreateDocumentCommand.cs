@@ -1,5 +1,7 @@
 using Dapper;
 using Microsoft.Extensions.Logging;
+using System.Collections;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Collections;
@@ -11,6 +13,11 @@ namespace YesSql.Commands
         private readonly string _tablePrefix;
 
         public override int ExecutionOrder { get; } = 0;
+
+        public CreateDocumentCommand(IEnumerable<Document> documents, string tablePrefix) : base(documents)
+        {
+            _tablePrefix = tablePrefix;
+        }
 
         public CreateDocumentCommand(Document document, string tablePrefix) : base(document)
         {
@@ -24,7 +31,7 @@ namespace YesSql.Commands
 
             logger.LogTrace(insertCmd);
 
-            return connection.ExecuteAsync(insertCmd, Document, transaction);
+            return connection.ExecuteAsync(insertCmd, Documents, transaction);
         }
     }
 }

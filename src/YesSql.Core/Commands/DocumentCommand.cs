@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -21,10 +22,15 @@ namespace YesSql.Commands
 
         public DocumentCommand(Document document)
         {
-            Document = document;
+            Documents = new[] { document };
         }
 
-        public Document Document { get; }
+        public DocumentCommand(IEnumerable<Document> documents)
+        {
+            Documents = documents;
+        }
+
+        public IEnumerable<Document> Documents { get; }
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
     }
