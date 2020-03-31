@@ -1602,7 +1602,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (var i = 0; i < 5; i++)
+                for (var i = 0; i < 2099; i++)
                 {
                     session.Save(new Person
                     {
