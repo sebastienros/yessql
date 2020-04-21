@@ -13,6 +13,7 @@ using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
+using YesSql.Naming;
 using YesSql.Services;
 using YesSql.Sql;
 
@@ -47,6 +48,10 @@ namespace YesSql
         internal ImmutableDictionary<Type, QueryState> CompiledQueries =
             ImmutableDictionary<Type, QueryState>.Empty;
 
+        private readonly NamingCaseProvider _namingCaseProvider;
+
+        protected string N(string input) => _namingCaseProvider.GetName(input);
+
         public const string DocumentTable = "Document";
 
         static Store()
@@ -64,6 +69,8 @@ namespace YesSql
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
+
+            _namingCaseProvider = new NamingCaseProvider(Configuration.NamingCase);
         }
 
         /// <summary>
@@ -73,6 +80,7 @@ namespace YesSql
         internal Store(IConfiguration configuration)
         {
             Configuration = configuration;
+            _namingCaseProvider = new NamingCaseProvider(Configuration.NamingCase);
         }
 
         internal async Task InitializeAsync()
@@ -105,7 +113,7 @@ namespace YesSql
 
         public async Task InitializeCollectionAsync(string collectionName)
         {
-            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
+            var documentTable = String.IsNullOrEmpty(collectionName) ? N("Document") : collectionName + "_" + N("Document");
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
@@ -171,13 +179,13 @@ namespace YesSql
                             // The table doesn't exist, create it
                             builder
                                 .CreateTable(documentTable, table => table
-                                .Column<int>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
-                                .Column<string>(nameof(Document.Type), column => column.NotNull())
-                                .Column<string>(nameof(Document.Content), column => column.Unlimited())
-                                .Column<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                .Column<int>(N(nameof(Document.Id)), column => column.PrimaryKey().NotNull())
+                                .Column<string>(N(nameof(Document.Type)), column => column.NotNull())
+                                .Column<string>(N(nameof(Document.Content)), column => column.Unlimited())
+                                .Column<long>(N(nameof(Document.Version)), column => column.WithDefault(0))
                             )
                             .AlterTable(documentTable, table => table
-                                .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                                .CreateIndex("IX_" + documentTable + "_" + N("Type"), N("Type"))
                             );
 
                             transaction.Commit();

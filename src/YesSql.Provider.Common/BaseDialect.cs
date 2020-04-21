@@ -3,15 +3,26 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Text;
+using YesSql.Naming;
 using YesSql.Sql;
 
 namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
+        private NamingCaseProvider NamingCaseProvider { get; }
+
+        protected BaseDialect(IConfiguration configuration)
+        {
+            NamingCaseProvider = new NamingCaseProvider(configuration.NamingCase);
+        }
+
+        protected string N(string input) => NamingCaseProvider.GetName(input);
+        public string GetNamingCase(string input) => N(input);
         public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
 
         public abstract string Name { get; }
+
         public virtual string InOperator(string values)
         {
             if (values.StartsWith("@") && !values.Contains(","))

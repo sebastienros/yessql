@@ -302,7 +302,7 @@ namespace YesSql
         {
             await DemandAsync();
 
-            var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
+            var documentTable = CollectionHelper.Current.GetPrefixedName(_dialect.GetNamingCase(YesSql.Store.DocumentTable));
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
@@ -396,7 +396,7 @@ namespace YesSql
 
             await DemandAsync();
 
-            var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
+            var documentTable = CollectionHelper.Current.GetPrefixedName(_dialect.GetNamingCase(YesSql.Store.DocumentTable));
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
@@ -807,7 +807,9 @@ namespace YesSql
                         // reduce over the two objects
                         var reductions = new[] { dbIndex, index };
 
-                        var grouppedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault();
+                        var grouppedReductionsResult = reductions.GroupBy(descriptorGroup);
+
+                        var grouppedReductions = grouppedReductionsResult.SingleOrDefault();
 
                         if (grouppedReductions == null)
                         {
@@ -881,7 +883,7 @@ namespace YesSql
         {
             await DemandAsync();
 
-            var name = _tablePrefix + descriptor.IndexType.Name;
+            var name = _tablePrefix + _dialect.GetNamingCase(descriptor.IndexType.Name);
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
             var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);

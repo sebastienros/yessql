@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using YesSql.Naming;
 using YesSql.Sql;
 
 namespace YesSql.Services
@@ -48,14 +49,15 @@ namespace YesSql.Services
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
         {
             // Extract the current max value from the database
-
+            var namingCaseProvider = new NamingCaseProvider(configuration.NamingCase);
+            var documentTableName = namingCaseProvider.GetName("Document");
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
-                    var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
+                    var tableName = String.IsNullOrEmpty(collection) ? documentTableName : collection + "_" + documentTableName;
 
                     var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
 

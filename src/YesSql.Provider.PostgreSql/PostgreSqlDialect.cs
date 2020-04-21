@@ -36,7 +36,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.Currency, "decimal(16,4)"}
         };
 
-        public PostgreSqlDialect()
+        public PostgreSqlDialect(IConfiguration configuration) : base(configuration)
         {
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
@@ -127,12 +127,12 @@ namespace YesSql.Provider.PostgreSql
 
         public override string QuoteForColumnName(string columnName)
         {
-            return QuoteString + columnName + QuoteString;
+            return QuoteString + N(columnName) + QuoteString;
         }
 
         public override string QuoteForTableName(string tableName)
         {
-            return QuoteString + tableName + QuoteString;
+            return QuoteString + N(tableName) + QuoteString;
         }
 
         public override string CascadeConstraintsString => " cascade ";

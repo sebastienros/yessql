@@ -4,12 +4,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Collections;
 using YesSql.Commands;
+using YesSql.Naming;
 using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.CompiledQueries;
@@ -21,6 +21,7 @@ namespace YesSql.Tests
     public abstract class CoreTests : IDisposable
     {
         protected virtual string TablePrefix => "tp";
+        protected virtual NamingCase NamingCase => NamingCase.PascalCase;
 
         protected IStore _store;
 
@@ -3779,8 +3780,17 @@ namespace YesSql.Tests
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
-
-                    Assert.Equal(value, result.Column1);
+                    switch (NamingCase)
+                    {
+                        case NamingCase.SnakeCase:
+                        case NamingCase.CamelCase:
+                            Assert.Equal(value, result.column1);
+                            break;
+                        default:
+                            Assert.Equal(value, result.Column1);
+                            break;
+                    }
+                    
 
                     transaction.Commit();
                 }
@@ -3805,7 +3815,16 @@ namespace YesSql.Tests
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
 
-                    Assert.Equal(value, result.Column2);
+                    switch (NamingCase)
+                    {
+                        case NamingCase.SnakeCase:
+                        case NamingCase.CamelCase:
+                            Assert.Equal(value, result.column2);
+                            break;
+                        default:
+                            Assert.Equal(value, result.Column2);
+                            break;
+                    }
 
                     transaction.Commit();
                 }

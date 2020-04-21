@@ -19,7 +19,7 @@ namespace YesSql.Commands
         {
             var name = Index.GetType().Name;
 
-            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            var documentTable = CollectionHelper.Current.GetPrefixedName(dialect.GetNamingCase(Store.DocumentTable));
             var bridgeTableName = name + "_" + documentTable;
             var bridgeSql = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = @Id";
             logger.LogTrace(bridgeSql);

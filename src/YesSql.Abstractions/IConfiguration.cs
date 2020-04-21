@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using YesSql.Naming;
 
 namespace YesSql
 {
@@ -18,6 +19,7 @@ namespace YesSql
         int SessionPoolSize { get; set; }
         bool QueryGatingEnabled { get; set; }
         HashSet<Type> ConcurrentTypes { get; }
+        NamingCase NamingCase { get; set; }
     }
 
     public static class ConfigurationExtensions

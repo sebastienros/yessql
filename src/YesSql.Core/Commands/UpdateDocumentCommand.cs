@@ -21,7 +21,7 @@ namespace YesSql.Commands
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
-            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            var documentTable = CollectionHelper.Current.GetPrefixedName(dialect.GetNamingCase(Store.DocumentTable));
 
             var updateCmd = "update " + dialect.QuoteForTableName(_tablePrefix + documentTable)
                 + " set " + dialect.QuoteForColumnName("Content") + " = @Content, " + dialect.QuoteForColumnName("Version")  + " = @Version where "

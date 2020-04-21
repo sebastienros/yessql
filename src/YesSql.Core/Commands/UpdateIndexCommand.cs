@@ -37,7 +37,7 @@ namespace YesSql.Commands
             // Update the documents list
             if (Index is ReduceIndex reduceIndex)
             {
-                var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+                var documentTable = CollectionHelper.Current.GetPrefixedName(dialect.GetNamingCase(Store.DocumentTable));
                 var bridgeTableName = type.Name + "_" + documentTable;
                 var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";

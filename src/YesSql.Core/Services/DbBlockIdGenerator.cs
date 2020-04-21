@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using YesSql.Naming;
 using YesSql.Sql;
 
 namespace YesSql.Services
@@ -42,10 +43,12 @@ namespace YesSql.Services
             _dialect = SqlDialectFactory.For(store.Configuration.ConnectionFactory.DbConnectionType);
             _tablePrefix = store.Configuration.TablePrefix;
             _store = store;
+            var namingCaseProvider = new NamingCaseProvider(store.Configuration.NamingCase);
+            var tableName = namingCaseProvider.GetName(TableName);
 
-            SelectCommand = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
-            UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
-            InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
+            SelectCommand = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
+            UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + tableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
+            InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + tableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -57,11 +60,11 @@ namespace YesSql.Services
                     {
                         var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
-                        localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
+                        localBuilder.CreateTable(tableName, table => table
                             .Column<string>("dimension", column => column.PrimaryKey().NotNull())
                             .Column<ulong>("nextval")
                             )
-                            .AlterTable(DbBlockIdGenerator.TableName, table => table
+                            .AlterTable(tableName, table => table
                                 .CreateIndex("IX_Dimension", "dimension")
                             );
 

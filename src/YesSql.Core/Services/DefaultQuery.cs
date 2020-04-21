@@ -18,9 +18,9 @@ namespace YesSql.Services
 {
     public class QueryState
     {
-        public QueryState(ISqlBuilder sqlBuilder)
+        public QueryState(ISqlBuilder sqlBuilder, string documentTableName)
         {
-            _documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            _documentTable = documentTableName;
             _sqlBuilder = sqlBuilder;
         }
 
@@ -33,7 +33,7 @@ namespace YesSql.Services
 
         public QueryState Clone()
         {
-            var clone = new QueryState(_sqlBuilder.Clone());
+            var clone = new QueryState(_sqlBuilder.Clone(), _documentTable);
 
             clone._bound = new List<Type>(_bound);
             clone._lastParameterName = _lastParameterName;
@@ -55,6 +55,8 @@ namespace YesSql.Services
         private readonly Session _session;
         private readonly ISqlDialect _dialect;
         private object _compiledQuery = null;
+
+        protected string N(string input) => _dialect.GetNamingCase(input);
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
             new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>>();
@@ -256,7 +258,8 @@ namespace YesSql.Services
         {
             _session = session;
             _dialect = session.Store.Dialect;
-            _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix));
+            var documentTableName = CollectionHelper.Current.GetPrefixedName(N(Store.DocumentTable));
+            _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix), documentTableName);
         }
 
         public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
@@ -285,17 +288,17 @@ namespace YesSql.Services
             if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
             {
                 // inner join [PersonByName] on [PersonByName].[Id] = [Document].[Id]
-                _queryState._sqlBuilder.InnerJoin(name, name, "DocumentId", _queryState._documentTable, "Id");
+                _queryState._sqlBuilder.InnerJoin(N(name), N(name), N("DocumentId"), _queryState._documentTable, N("Id"));
             }
             else
             {
-                var bridgeName = name + "_" + _queryState._documentTable;
+                var bridgeName = N(name) + "_" + _queryState._documentTable;
 
                 // inner join [ArticlesByDay_Document] on [Document].[Id] = [ArticlesByDay_Document].[DocumentId]
-                _queryState._sqlBuilder.InnerJoin(bridgeName, _queryState._documentTable, "Id", bridgeName, "DocumentId");
+                _queryState._sqlBuilder.InnerJoin(bridgeName, _queryState._documentTable, N("Id"), bridgeName, N("DocumentId"));
 
                 // inner join [ArticlesByDay] on [ArticlesByDay_Document].[ArticlesByDayId] = [ArticlesByDay].[Id]
-                _queryState._sqlBuilder.InnerJoin(name, bridgeName, name + "Id", name, "Id");
+                _queryState._sqlBuilder.InnerJoin(N(name), bridgeName, N(name + "Id"), N(name), N("Id"));
             }
         }
 
@@ -321,8 +324,8 @@ namespace YesSql.Services
                 _queryState._bound.Add(typeof(TIndex));
 
                 _queryState._sqlBuilder.Select();
-                _queryState._sqlBuilder.Table(typeof(TIndex).Name);
-                _queryState._sqlBuilder.Selector(typeof(TIndex).Name, "DocumentId");
+                _queryState._sqlBuilder.Table(N(typeof(TIndex).Name));
+                _queryState._sqlBuilder.Selector(N(typeof(TIndex).Name), N("DocumentId"));
             }
 
             _queryState._builder.Clear();

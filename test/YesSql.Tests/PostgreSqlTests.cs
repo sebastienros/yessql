@@ -2,6 +2,7 @@ using System;
 using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
+using YesSql.Naming;
 using YesSql.Provider.PostgreSql;
 using YesSql.Sql;
 
@@ -9,15 +10,16 @@ namespace YesSql.Tests
 {
     public class PostgreSqlTests : CoreTests
     {
+        protected override NamingCase NamingCase => NamingCase.SnakeCase;
         public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
 
         protected override IConfiguration CreateConfiguration()
         {
-            return new Configuration()
+            var configuration = new Configuration {NamingCase = NamingCase};
+            return configuration
                 .UsePostgreSql(ConnectionString)
                 .SetTablePrefix(TablePrefix)
-                .UseBlockIdGenerator()
-                ;
+                .UseBlockIdGenerator();
         }
         protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
         {
