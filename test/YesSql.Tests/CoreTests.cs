@@ -1851,6 +1851,54 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task AutoflushCanHappenMultipleTimes()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+
+                session.Save(d1);
+                session.Save(d2);
+
+                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+
+                d1.PublishedUtc = new DateTime(2011, 11, 2);
+
+                articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306);
+
+                Assert.Equal(1, await articles.CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ChangesAfterAutoflushAreSaved()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+
+                session.Save(d1);
+                session.Save(d2);
+
+                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+
+                d1.PublishedUtc = new DateTime(2011, 11, 2);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306);
+                Assert.Equal(1, await articles.CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldOrderOnValueType()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();
