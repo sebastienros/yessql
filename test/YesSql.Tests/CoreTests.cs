@@ -1863,11 +1863,11 @@ namespace YesSql.Tests
                 session.Save(d1);
                 session.Save(d2);
 
-                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+                var article = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).FirstOrDefaultAsync();
 
                 d1.PublishedUtc = new DateTime(2011, 11, 2);
 
-                articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306);
+                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306);
 
                 Assert.Equal(1, await articles.CountAsync());
             }
@@ -1886,7 +1886,7 @@ namespace YesSql.Tests
                 session.Save(d1);
                 session.Save(d2);
 
-                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).ListAsync();
 
                 d1.PublishedUtc = new DateTime(2011, 11, 2);
             }
