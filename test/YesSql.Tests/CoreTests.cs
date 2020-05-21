@@ -1886,6 +1886,54 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task AutoflushCanHappenMultipleTimes()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+
+                session.Save(d1);
+                session.Save(d2);
+
+                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).ListAsync();
+
+                d1.PublishedUtc = new DateTime(2011, 11, 2);
+
+                articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306).ListAsync();
+
+                Assert.Single(articles);
+            }
+        }
+
+        [Fact]
+        public async Task ChangesAfterAutoflushAreSaved()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+
+                session.Save(d1);
+                session.Save(d2);
+
+                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).ListAsync();
+
+                d1.PublishedUtc = new DateTime(2011, 11, 2);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306).ListAsync();
+                Assert.Single(articles);
+            }
+        }
+
+        [Fact]
         public async Task ShouldOrderOnValueType()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();
@@ -2296,26 +2344,6 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldNotHaveWorkAfterFlush()
-        {
-            using (var session = (Session)_store.CreateSession())
-            {
-                var circle = new Circle
-                {
-                    Radius = 10
-                };
-
-                session.Save(circle);
-
-                Assert.True(session.HasWork());
-
-                await session.FlushAsync();
-
-                Assert.False(session.HasWork());
-            }
-        }
-
-        [Fact]
         public async Task ShouldGetTypeById()
         {
             int circleId;
@@ -2549,6 +2577,64 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(0, await session.Query().For<Circle>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldNotCreatDocumentInCanceledSessions()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+
+                session.Cancel();
+
+                circle.Radius = 20;
+
+                await session.Query().For<Circle>().CountAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.Query().For<Circle>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldNotUpdateDocumentInCanceledSessions()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                session.Cancel();
+
+                var circle = await session.Query().For<Circle>().FirstOrDefaultAsync();
+
+                circle.Radius = 20;
+
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+
+                var circle = await session.Query().For<Circle>().FirstOrDefaultAsync();
+
+                Assert.Equal(10, circle.Radius);
             }
         }
 

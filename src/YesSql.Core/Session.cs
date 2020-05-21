@@ -22,9 +22,20 @@ namespace YesSql
         private readonly IdentityMap _identityMap = new IdentityMap();
         internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
         private readonly Dictionary<IndexDescriptor, List<MapState>> _maps = new Dictionary<IndexDescriptor, List<MapState>>();
+        
+        // entities that need to be created in the next flush
         private readonly HashSet<object> _saved = new HashSet<object>();
+
+        // entities that already exist and need to be updated in the next flush
         private readonly HashSet<object> _updated = new HashSet<object>();
+
+        // entities that are already saved or updated in a previous flush
+        private readonly HashSet<object> _tracked = new HashSet<object>();
+
+        // ids of entities that are checked for concurrency
         private readonly HashSet<int> _concurrent = new HashSet<int>();
+
+        // entities that need to be deleted in the next flush
         private readonly HashSet<object> _deleted = new HashSet<object>();
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
@@ -72,11 +83,14 @@ namespace YesSql
         {
             CheckDisposed();
 
-            // already being saved or updated?
+            // already being saved or updated or tracked?
             if (_saved.Contains(entity) || _updated.Contains(entity))
             {
                 return;
             }
+
+            // remove from tracked entities if explicitly saved
+            _tracked.Remove(entity);
 
             // is it a new object?
             if (_identityMap.TryGetDocumentId(entity, out var id))
@@ -132,7 +146,7 @@ namespace YesSql
             CheckDisposed();
 
             // already known?
-            if (_saved.Contains(entity) || _updated.Contains(entity))
+            if (_identityMap.HasEntity(entity))
             {
                 return false;
             }
@@ -190,6 +204,7 @@ namespace YesSql
 
             _saved.Remove(entity);
             _updated.Remove(entity);
+            _tracked.Remove(entity);
             _deleted.Remove(entity);
 
             if (_identityMap.TryGetDocumentId(entity, out var id))
@@ -239,7 +254,7 @@ namespace YesSql
             await MapNew(doc, entity);
         }
 
-        private async Task UpdateEntityAsync(object entity)
+        private async Task UpdateEntityAsync(object entity, bool tracked)
         {
             if (entity == null)
             {
@@ -274,6 +289,15 @@ namespace YesSql
                 }
             }
 
+            var newContent = Store.Configuration.ContentSerializer.Serialize(entity);
+
+            // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
+            // been changed before doing another query
+            if (tracked && String.Equals(newContent, oldDoc.Content))
+            {
+                return;
+            }
+
             long version = -1;
 
             if (_concurrent.Contains(id))
@@ -290,12 +314,10 @@ namespace YesSql
 
             await DemandAsync();
 
-            oldDoc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
+            oldDoc.Content = newContent;
             oldDoc.Version += 1;
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version));
-
-            _concurrent.Remove(id);
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -577,9 +599,10 @@ namespace YesSql
         /// </summary>
         private void ReleaseTransaction()
         {
-            _updated.Clear();
             _concurrent.Clear();
             _saved.Clear();
+            _updated.Clear();
+            _tracked.Clear();
             _deleted.Clear();
             _commands.Clear();
             _maps.Clear();
@@ -639,12 +662,21 @@ namespace YesSql
 
             try
             {
+                // saving all tracked entities
+                foreach (var obj in _tracked)
+                {
+                    if (!_deleted.Contains(obj))
+                    {
+                        await UpdateEntityAsync(obj, true);
+                    }
+                }
+
                 // saving all updated entities
                 foreach (var obj in _updated)
                 {
                     if (!_deleted.Contains(obj))
                     {
-                        await UpdateEntityAsync(obj);
+                        await UpdateEntityAsync(obj, false);
                     }
                 }
 
@@ -680,10 +712,22 @@ namespace YesSql
             }
             finally
             {
-                _updated.Clear();
-                _concurrent.Clear();
+                // Track all saved and updated entities in case they are modified before
+                // CommitAsync is called
+                foreach(var saved in _saved)
+                {
+                    _tracked.Add(saved);
+                }
+
+                foreach (var updated in _updated)
+                {
+                    _tracked.Add(updated);
+                }
+
                 _saved.Clear();
+                _updated.Clear();
                 _deleted.Clear();
+
                 _commands.Clear();
                 _maps.Clear();
                 _flushing = false;
@@ -808,9 +852,10 @@ namespace YesSql
         internal bool HasWork()
         {
             return
-                _saved.Count != 0 ||
-                _updated.Count != 0 ||
-                _deleted.Count != 0
+                _saved.Count +
+                _updated.Count +
+                _tracked.Count +
+                _deleted.Count > 0
                 ;
         }
 
@@ -1122,8 +1167,6 @@ namespace YesSql
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.
                 _transaction = _connection.BeginTransaction(_isolationLevel);
-
-                _cancel = false;
             }
 
             return _transaction;
