@@ -1863,13 +1863,13 @@ namespace YesSql.Tests
                 session.Save(d1);
                 session.Save(d2);
 
-                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).ListAsync();
 
                 d1.PublishedUtc = new DateTime(2011, 11, 2);
 
-                articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306);
+                articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306).ListAsync();
 
-                Assert.Equal(1, await articles.CountAsync());
+                Assert.Single(articles);
             }
         }
 
@@ -1886,15 +1886,15 @@ namespace YesSql.Tests
                 session.Save(d1);
                 session.Save(d2);
 
-                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).ListAsync();
 
                 d1.PublishedUtc = new DateTime(2011, 11, 2);
             }
 
             using (var session = _store.CreateSession())
             {
-                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306);
-                Assert.Equal(1, await articles.CountAsync());
+                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306).ListAsync();
+                Assert.Single(articles);
             }
         }
 
@@ -2305,26 +2305,6 @@ namespace YesSql.Tests
                 Assert.NotNull(dog);
                 Assert.Equal("Doggy", dog.Name);
                 Assert.Null(dog.Color);
-            }
-        }
-
-        [Fact]
-        public async Task ShouldNotHaveWorkAfterFlush()
-        {
-            using (var session = (Session)_store.CreateSession())
-            {
-                var circle = new Circle
-                {
-                    Radius = 10
-                };
-
-                session.Save(circle);
-
-                Assert.True(session.HasWork());
-
-                await session.FlushAsync();
-
-                Assert.False(session.HasWork());
             }
         }
 
