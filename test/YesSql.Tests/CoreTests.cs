@@ -2581,6 +2581,64 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public virtual async Task ShouldNotCreatDocumentInCanceledSessions()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+
+                session.Cancel();
+
+                circle.Radius = 20;
+
+                await session.Query().For<Circle>().CountAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.Query().For<Circle>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldNotUpdateDocumentInCanceledSessions()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                session.Cancel();
+
+                var circle = await session.Query().For<Circle>().FirstOrDefaultAsync();
+
+                circle.Radius = 20;
+
+                session.Save(circle);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+
+                var circle = await session.Query().For<Circle>().FirstOrDefaultAsync();
+
+                Assert.Equal(10, circle.Radius);
+            }
+        }
+
+        [Fact]
         public async Task ShouldSaveChangesExplicitly()
         {
             using (var session = _store.CreateSession())

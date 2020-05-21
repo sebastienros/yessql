@@ -1167,8 +1167,6 @@ namespace YesSql
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.
                 _transaction = _connection.BeginTransaction(_isolationLevel);
-
-                _cancel = false;
             }
 
             return _transaction;
