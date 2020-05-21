@@ -247,7 +247,7 @@ namespace YesSql
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             doc.Version = 1;
 
-            await new CreateDocumentCommand(doc, _tablePrefix).ExecuteAsync(_connection, _transaction, _dialect, _logger);
+            _commands.Add(new CreateDocumentCommand(doc, _tablePrefix));
 
             _identityMap.AddDocument(doc);
 
@@ -317,7 +317,7 @@ namespace YesSql
             oldDoc.Content = newContent;
             oldDoc.Version += 1;
 
-            await new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version).ExecuteAsync(_connection, _transaction, _dialect, _logger);
+            _commands.Add(new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version));
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -697,6 +697,8 @@ namespace YesSql
 
                 await DemandAsync();
 
+                BatchCommands();
+
                 foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
                 {
                     await command.ExecuteAsync(_connection, _transaction, _dialect, _logger);
@@ -729,6 +731,78 @@ namespace YesSql
                 _commands.Clear();
                 _maps.Clear();
                 _flushing = false;
+            }
+        }
+
+        private void BatchCommands()
+        {
+            if (_commands.Count == 0)
+            {
+                return;
+            }
+
+            List<CreateDocumentCommand> createDocumentCommands = null;
+            List<DeleteDocumentCommand> deleteDocumentCommands = null;
+            Dictionary<Type, List<DeleteMapIndexCommand>> deleteMapIndexCommandsDictionary = null;
+
+            for (var i = _commands.Count - 1; i >= 0; i--)
+            {
+                var command = _commands[i];
+
+                switch (command)
+                {
+
+                    case CreateDocumentCommand createDocumentCommand:
+                        createDocumentCommands ??= new List<CreateDocumentCommand>();
+                        createDocumentCommands.Add(createDocumentCommand);
+                        _commands.RemoveAt(i);
+                        break;
+
+                    case DeleteDocumentCommand deleteDocumentCommand:
+                        deleteDocumentCommands ??= new List<DeleteDocumentCommand>();
+                        deleteDocumentCommands.Add(deleteDocumentCommand);
+                        _commands.RemoveAt(i);
+                        break;
+
+                    case DeleteMapIndexCommand deleteMapIndexCommand:
+                        deleteMapIndexCommandsDictionary ??= new Dictionary<Type, List<DeleteMapIndexCommand>>();
+                        if (!deleteMapIndexCommandsDictionary.TryGetValue(deleteMapIndexCommand.IndexType, out var deleteMapIndexCommands))
+                        {
+                            deleteMapIndexCommands = new List<DeleteMapIndexCommand>();
+                            deleteMapIndexCommandsDictionary.Add(deleteMapIndexCommand.IndexType, deleteMapIndexCommands);
+                        }
+
+                        deleteMapIndexCommands.Add(deleteMapIndexCommand);
+                        _commands.RemoveAt(i);
+                        break;
+                }
+            }
+
+            if (createDocumentCommands != null)
+            {
+                foreach (var page in createDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize))
+                {
+                    _commands.Add(new CreateDocumentCommand(page.SelectMany(x => x.Documents), _tablePrefix));
+                }
+            }
+
+            if (deleteDocumentCommands != null)
+            {
+                foreach (var page in deleteDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize))
+                {
+                    _commands.Add(new DeleteDocumentCommand(page.SelectMany(x => x.Documents), _tablePrefix));
+                }
+            }
+
+            if (deleteMapIndexCommandsDictionary != null)
+            {
+                foreach (var entry in deleteMapIndexCommandsDictionary)
+                {
+                    foreach (var page in entry.Value.PagesOf(_store.Configuration.CommandsPageSize))
+                    {
+                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.SelectMany(x => x.DocumentIds), _tablePrefix, _dialect));
+                    }
+                }
             }
         }
 
@@ -1042,7 +1116,7 @@ namespace YesSql
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id, _tablePrefix, _dialect));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, _tablePrefix, _dialect));
                 }
                 else
                 {

@@ -16,6 +16,7 @@ namespace YesSql
         ILogger Logger { get; set; }
         string TablePrefix { get; set; }
         int SessionPoolSize { get; set; }
+        int CommandsPageSize { get; set; }
         bool QueryGatingEnabled { get; set; }
         HashSet<Type> ConcurrentTypes { get; }
     }
@@ -55,6 +56,12 @@ namespace YesSql
         public static IConfiguration SetSessionPoolSize(this IConfiguration configuration, int size)
         {
             configuration.SessionPoolSize = size;
+            return configuration;
+        }
+
+        public static IConfiguration SetCommandsPageSize(this IConfiguration configuration, int size)
+        {
+            configuration.CommandsPageSize = size;
             return configuration;
         }
 

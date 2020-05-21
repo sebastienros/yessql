@@ -12,6 +12,7 @@ using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Services;
 using YesSql.Sql;
+using YesSql.Tests.Commands;
 using YesSql.Tests.CompiledQueries;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
@@ -1585,6 +1586,40 @@ namespace YesSql.Tests
                 Assert.NotNull(person);
 
                 session.Delete(person);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query().For<Person>().FirstOrDefaultAsync();
+                Assert.Null(person);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldDeleteCustomObjectBatch()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 2099; i++)
+                {
+                    session.Save(new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Gates"
+                    });
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var persons = await session.Query().For<Person>().ListAsync();
+
+                foreach (var person in persons)
+                {
+                    session.Delete(person);
+                }
             }
 
             using (var session = _store.CreateSession())
@@ -3650,8 +3685,8 @@ namespace YesSql.Tests
                 session.Save(bill);
 
                 // Create a command that will throw an exception
-                // Use DeleteDocumentCommand as it has an order of 4 and will be at the end of the list
-                session._commands.Add(new DeleteDocumentCommand(new Document(), "foo"));
+                // Use an order of 4 so it will be at the end of the list
+                session._commands.Add(new FailingCommand(new Document()));
 
                 await Assert.ThrowsAnyAsync<Exception>(() => session.CommitAsync());
 
