@@ -31,7 +31,7 @@ namespace YesSql.Commands
 
             logger.LogTrace(updateCmd);
 
-            var updatedCount = await connection.ExecuteAsync(updateCmd, Document, transaction);
+            var updatedCount = await connection.ExecuteAsync(updateCmd, Documents, transaction);
 
             if (_checkVersion > -1 && updatedCount != 1)
             {
