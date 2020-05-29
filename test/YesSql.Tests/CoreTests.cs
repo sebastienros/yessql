@@ -3518,9 +3518,10 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldConvertDateTimeToUtc()
         {
+            var publishedDate = new DateTime(2013, 1, 21, 0, 0, 0, DateTimeKind.Local);
             using (var session = _store.CreateSession())
             {
-                session.Save(new Article { PublishedUtc = new DateTime(2013, 1, 21, 0, 0, 0, DateTimeKind.Local) });
+                session.Save(new Article { PublishedUtc = publishedDate });
             }
 
             using (var session = _store.CreateSession())
@@ -3529,7 +3530,7 @@ namespace YesSql.Tests
 
                 Assert.NotNull(article);
                 Assert.Equal(DateTimeKind.Utc, article.PublishedUtc.Kind);
-                Assert.Equal(new DateTime(2013, 1, 21, 0, 0, 0, DateTimeKind.Local).ToUniversalTime(), article.PublishedUtc.ToUniversalTime());
+                Assert.Equal(publishedDate.ToUniversalTime(), article.PublishedUtc.ToUniversalTime());
             }
         }
 
