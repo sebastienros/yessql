@@ -9,15 +9,27 @@ namespace YesSql
     public interface IConfiguration
     {
         IIdentifierFactory IdentifierFactory { get; set; }
+
         IsolationLevel IsolationLevel { get; set; }
+
         IConnectionFactory ConnectionFactory { get; set; }
+
         IContentSerializer ContentSerializer { get; set; }
+
         IIdGenerator IdGenerator { get; set; }
+
         ILogger Logger { get; set; }
+
+        NamingPolicy NamingPolicy { get; set; }
+
         string TablePrefix { get; set; }
+
         int SessionPoolSize { get; set; }
+
         int CommandsPageSize { get; set; }
+
         bool QueryGatingEnabled { get; set; }
+
         HashSet<Type> ConcurrentTypes { get; }
     }
 
