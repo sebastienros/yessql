@@ -47,7 +47,7 @@ namespace YesSql.Sql
         public void Table(string table)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            FromSegments.Add(_dialect.QuoteForTableName(table, _tablePrefix));
         }
 
         public void From(string from)
@@ -70,9 +70,9 @@ namespace YesSql.Sql
         public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
         {
             JoinSegments.AddRange(new[] {
-                " INNER JOIN ", _dialect.QuoteForTableName(_tablePrefix + table),
-                " ON ", _dialect.QuoteForTableName(_tablePrefix + onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.QuoteForTableName(_tablePrefix + toTable), ".", _dialect.QuoteForColumnName(toColumn), " "
+                " INNER JOIN ", _dialect.QuoteForTableName(table, _tablePrefix),
+                " ON ", _dialect.QuoteForTableName(onTable, _tablePrefix), ".", _dialect.QuoteForColumnName(onColumn),
+                " = ", _dialect.QuoteForTableName(toTable, _tablePrefix), ".", _dialect.QuoteForColumnName(toColumn), " "
                 }
             );
         }
@@ -127,7 +127,7 @@ namespace YesSql.Sql
                 column = _dialect.QuoteForColumnName(column);
             }
 
-            return _dialect.QuoteForTableName(_tablePrefix + table) + "." + column;
+            return _dialect.QuoteForTableName(table, _tablePrefix) + "." + column;
         }
 
         public virtual void WhereAlso(string where)

@@ -3280,7 +3280,7 @@ namespace YesSql.Tests
                 await connection.OpenAsync();
 
                 var dialect = SqlDialectFactory.For(connection);
-                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
+                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(nameof(ArticleByPublishedDate), TablePrefix);
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
 
@@ -3846,7 +3846,6 @@ namespace YesSql.Tests
         public virtual void ShouldRenameColumn()
         {
             var table = "Table1";
-            var prefixedTable = TablePrefix + table;
             var column1 = "Column1";
             var column2 = "Column2";
             var value = "Value";
@@ -3882,7 +3881,7 @@ namespace YesSql.Tests
                         );
 
                     var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
-                        _store.Dialect.QuoteForTableName(prefixedTable),
+                        _store.Dialect.QuoteForTableName(table, TablePrefix),
                         _store.Dialect.QuoteForColumnName(column1),
                         _store.Dialect.GetSqlValue(value)
                         );
@@ -3896,7 +3895,7 @@ namespace YesSql.Tests
                 {
                     var sqlSelect = String.Format("SELECT {0} FROM {1}",
                         _store.Dialect.QuoteForColumnName(column1),
-                        _store.Dialect.QuoteForTableName(prefixedTable)
+                        _store.Dialect.QuoteForTableName(table, TablePrefix)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -3921,7 +3920,7 @@ namespace YesSql.Tests
                 {
                     var sqlSelect = String.Format("SELECT {0} FROM {1}",
                         _store.Dialect.QuoteForColumnName(column2),
-                        _store.Dialect.QuoteForTableName(prefixedTable)
+                        _store.Dialect.QuoteForTableName(table, TablePrefix)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();

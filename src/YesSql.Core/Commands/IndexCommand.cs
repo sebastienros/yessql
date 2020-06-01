@@ -89,7 +89,7 @@ namespace YesSql.Commands
                     values = $"({sbColumnList}) VALUES ({sbParameterList})";
                 }
 
-                InsertsList[key] = result = $"INSERT INTO {dialect.QuoteForTableName(_tablePrefix + type.Name)} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")}";
+                InsertsList[key] = result = $"INSERT INTO {dialect.QuoteForTableName(type.Name, _tablePrefix)} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")}";
             }
 
             return result;            
@@ -114,7 +114,7 @@ namespace YesSql.Commands
                     }
                 }
 
-                UpdatesList[key] = result = $"UPDATE {dialect.QuoteForTableName(_tablePrefix + type.Name)} SET {values} WHERE {dialect.QuoteForColumnName("Id")} = @Id;";
+                UpdatesList[key] = result = $"UPDATE {dialect.QuoteForTableName(type.Name, _tablePrefix)} SET {values} WHERE {dialect.QuoteForColumnName("Id")} = @Id;";
             }
 
             return result;

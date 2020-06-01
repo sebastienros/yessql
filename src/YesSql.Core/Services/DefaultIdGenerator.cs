@@ -57,7 +57,7 @@ namespace YesSql.Services
                 {
                     var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
 
-                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
+                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(tableName, _tablePrefix);
 
                     var selectCommand = transaction.Connection.CreateCommand();
                     selectCommand.CommandText = sql;
