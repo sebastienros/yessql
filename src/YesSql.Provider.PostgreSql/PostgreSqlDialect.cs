@@ -130,9 +130,9 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + columnName + QuoteString;
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, string tablePrefix = "")
         {
-            return QuoteString + tableName + QuoteString;
+            return QuoteString + tablePrefix + tableName + QuoteString;
         }
 
         public override string CascadeConstraintsString => " cascade ";

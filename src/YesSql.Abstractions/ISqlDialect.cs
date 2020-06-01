@@ -24,7 +24,7 @@ namespace YesSql
         string IdentitySelectString { get; }
         string GetTypeName(DbType dbType, int? length, byte precision, byte scale);
         string GetSqlValue(object value);
-        string QuoteForTableName(string v);
+        string QuoteForTableName(string tableName, string tablePrefix = "");
         string GetDropTableString(string name);
         string GetDropIndexString(string indexName, string tableName);
         string QuoteForColumnName(string columnName);

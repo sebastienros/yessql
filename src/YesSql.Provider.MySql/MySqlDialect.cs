@@ -157,9 +157,9 @@ namespace YesSql.Provider.MySql
             return "`" + NamingPolicy.ConvertName(columnName) + "`";
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, string tablePrefix = "")
         {
-            return "`" + NamingPolicy.ConvertName(tableName) + "`";
+            return "`" + tablePrefix + NamingPolicy.ConvertName(tableName) + "`";
         }
 
         public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)

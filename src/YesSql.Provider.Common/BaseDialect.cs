@@ -116,7 +116,7 @@ namespace YesSql.Provider
         }
         public abstract string GetDropIndexString(string indexName, string tableName);
         public abstract string QuoteForColumnName(string columnName);
-        public abstract string QuoteForTableName(string tableName);
+        public abstract string QuoteForTableName(string tableName, string tablePrefix = "");
 
         public virtual string QuoteString => "\"";
         public virtual string DoubleQuoteString => "\"\"";
