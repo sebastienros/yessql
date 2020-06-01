@@ -23,7 +23,7 @@ namespace YesSql
             QueryGatingEnabled = true;
             Logger = NullLogger.Instance;
             ConcurrentTypes = new HashSet<Type>();
-            NamingPolicy = NamingPolicy.PascalCase;
+            NamingPolicy = NamingPolicy.DefaultCase;
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
