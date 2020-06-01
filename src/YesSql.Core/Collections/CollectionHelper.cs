@@ -50,6 +50,16 @@ namespace YesSql.Collections
             }
         }
 
+        internal static string GetPrefixedName(string collectionSafeName, string table)
+        {
+            if (String.IsNullOrEmpty(collectionSafeName))
+            {
+                return table;
+            }
+
+            return String.Concat(collectionSafeName, "_", table);
+        }
+
         internal static IDisposable EnterScope(Collection collection)
         {
             var scopes = GetOrCreateScopes();

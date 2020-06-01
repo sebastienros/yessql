@@ -1,61 +1,108 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace YesSql.Indexes
 {
     public class IdentityMap
     {
-        private readonly Dictionary<int, object> _documentIds = new Dictionary<int, object>();
-        private readonly Dictionary<object, int> _entities = new Dictionary<object, int>();
-        private readonly Dictionary<int, Document> _documents = new Dictionary<int, Document>();
-
-        public bool TryGetDocumentId(object item, out int id)
+        class Maps
         {
-            return _entities.TryGetValue(item, out id);
+            internal readonly Dictionary<int, object> DocumentIds = new Dictionary<int, object>();
+            internal readonly Dictionary<object, int> Entities = new Dictionary<object, int>();
+            internal readonly Dictionary<int, Document> Documents = new Dictionary<int, Document>();
         }
 
-        public bool TryGetEntityById(int id, out object document)
+        private readonly Dictionary<string, Maps> _collectionMaps = new Dictionary<string, Maps>();
+
+        public bool TryGetDocumentId(string collectionName, object item, out int id)
         {
-            return _documentIds.TryGetValue(id, out document);
+            if (!_collectionMaps.TryGetValue(collectionName, out var maps))
+            {
+                id = 0;
+                return false;
+            }
+            return maps.Entities.TryGetValue(item, out id);
         }
 
-        public bool HasEntity(object entity)
+        public bool TryGetEntityById(string collectionName, int id, out object document)
         {
-            return _entities.ContainsKey(entity);
+            if (!_collectionMaps.TryGetValue(collectionName, out var maps))
+            {
+                document = null;
+                return false;
+            }
+            return maps.DocumentIds.TryGetValue( id, out document);
         }
 
-        public void AddEntity(int id, object entity)
+        public bool HasEntity(string collectionName, object entity)
         {
-            _entities.Add(entity, id);
-            _documentIds.Add(id, entity);
+            if (!_collectionMaps.TryGetValue(collectionName, out var maps))
+            {
+                entity = null;
+                return false;
+            }
+            return maps.Entities.ContainsKey(entity);
         }
 
-        public void AddDocument(Document doc)
+        public void AddEntity(string collectionName, int id, object entity)
         {
-            _documents[doc.Id] = doc;
+            if (!_collectionMaps.TryGetValue(collectionName, out var maps))
+            {
+                maps = new Maps();
+                _collectionMaps.Add(collectionName, maps);
+            }
+            maps.Entities.Add(entity, id);
+            maps.DocumentIds.Add(id, entity);
         }
 
-        public bool TryGetDocument(int id, out Document doc)
+        public void AddDocument(string collectionName, Document doc)
         {
-            return _documents.TryGetValue(id, out doc);
+            if (!_collectionMaps.TryGetValue(collectionName, value: out var maps))
+            {
+                maps = new Maps();
+                _collectionMaps.Add(collectionName, maps);
+            }
+            maps.Documents[doc.Id] = doc;
         }
 
-        public void Remove(int id, object entity)
+        public bool TryGetDocument(string collectionName, int id, out Document doc)
         {
-            _entities.Remove(entity);
-            _documentIds.Remove(id);
-            _documents.Remove(id);
+            if (!_collectionMaps.TryGetValue(collectionName, out var maps))
+            {
+                doc = null;
+                return false;
+            }
+            return maps.Documents.TryGetValue(id, out doc);
         }
 
-        public IEnumerable<object> GetAll()
+        public void Remove(string collectionName, int id, object entity)
         {
-            return _entities.Keys;
+            if (!_collectionMaps.TryGetValue(collectionName, out var maps))
+            {
+                return;
+            }
+            maps.Entities.Remove(entity);
+            maps.DocumentIds.Remove(id);
+            maps.Documents.Remove(id);
+        }
+
+        public IEnumerable<object> GetAll(string collectionName)
+        {
+            if (!_collectionMaps.TryGetValue(collectionName, out var maps))
+            {
+                return Enumerable.Empty<object>();
+            }
+            return maps.Entities.Keys;
         }
 
         public void Clear()
         {
-            _entities.Clear();
-            _documentIds.Clear();
-            _documents.Clear();
+            foreach(var maps in _collectionMaps.Values)
+            {
+                maps.Entities.Clear();
+                maps.DocumentIds.Clear();
+                maps.Documents.Clear();
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 
 namespace YesSql.Collections
@@ -47,12 +47,7 @@ namespace YesSql.Collections
         {
             var name = collection.GetSafeName();
 
-            if (String.IsNullOrEmpty(name))
-            {
-                return table;
-            }
-
-            return String.Concat(name, "_", table);
+            return CollectionHelper.GetPrefixedName(name, Store.DocumentTable);
         }
     }
 

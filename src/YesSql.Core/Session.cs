@@ -23,20 +23,20 @@ namespace YesSql
         internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
         private readonly Dictionary<IndexDescriptor, List<MapState>> _maps = new Dictionary<IndexDescriptor, List<MapState>>();
         
-        // entities that need to be created in the next flush
-        private readonly HashSet<object> _saved = new HashSet<object>();
+        // entities that need to be created in the next flush on a collection
+        private readonly Dictionary<object, string> _saved = new Dictionary<object, string>();
 
-        // entities that already exist and need to be updated in the next flush
-        private readonly HashSet<object> _updated = new HashSet<object>();
+        // entities that already exist and need to be updated in the next flush on a collection
+        private readonly Dictionary<object, string> _updated = new Dictionary<object, string>();
 
-        // entities that are already saved or updated in a previous flush
-        private readonly HashSet<object> _tracked = new HashSet<object>();
+        // entities that are already saved or updated in a previous flush on a collection
+        private readonly Dictionary<object, string> _tracked = new Dictionary<object, string>();
 
         // ids of entities that are checked for concurrency
         private readonly HashSet<int> _concurrent = new HashSet<int>();
 
         // entities that need to be deleted in the next flush
-        private readonly HashSet<object> _deleted = new HashSet<object>();
+        private readonly Dictionary<object, string> _deleted = new Dictionary<object, string>();
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
@@ -84,7 +84,7 @@ namespace YesSql
             CheckDisposed();
 
             // already being saved or updated or tracked?
-            if (_saved.Contains(entity) || _updated.Contains(entity))
+            if (_saved.ContainsKey(entity) || _updated.ContainsKey(entity))
             {
                 return;
             }
@@ -93,9 +93,10 @@ namespace YesSql
             _tracked.Remove(entity);
 
             // is it a new object?
-            if (_identityMap.TryGetDocumentId(entity, out var id))
+            var collectionName = CollectionHelper.Current.GetSafeName();
+            if (_identityMap.TryGetDocumentId(collectionName, entity, out var id))
             {
-                _updated.Add(entity);
+                _updated.Add(entity, collectionName);
 
                 // If this entity needs to be checked for concurrency, track its version
                 if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
@@ -114,8 +115,8 @@ namespace YesSql
 
                 if (id > 0)
                 {
-                    _identityMap.AddEntity(id, entity);
-                    _updated.Add(entity);
+                    _identityMap.AddEntity(collectionName, id, entity);
+                    _updated.Add(entity, collectionName);
                     
                     // If this entity needs to be checked for concurrency, track its version
                     if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
@@ -128,9 +129,8 @@ namespace YesSql
             }
 
             // it's a new entity
-            var collection = CollectionHelper.Current.GetSafeName();
-            id = _store.GetNextId(collection);
-            _identityMap.AddEntity(id, entity);
+            id = _store.GetNextId(collectionName);
+            _identityMap.AddEntity(collectionName, id, entity);
 
             // Then assign a new identifier if it has one
             if (accessor != null)
@@ -138,7 +138,7 @@ namespace YesSql
                 accessor.Set(entity, id);
             }
 
-            _saved.Add(entity);
+            _saved.Add(entity, collectionName);
         }
 
         public bool Import(object entity, int id = 0)
@@ -146,7 +146,8 @@ namespace YesSql
             CheckDisposed();
 
             // already known?
-            if (_identityMap.HasEntity(entity))
+            var collectionName = CollectionHelper.Current.GetSafeName();
+            if (_identityMap.HasEntity(collectionName, entity))
             {
                 return false;
             }
@@ -160,11 +161,11 @@ namespace YesSql
 
             if (id != 0)
             {
-                _identityMap.AddEntity(id, entity);
-                _updated.Add(entity);
+                _identityMap.AddEntity(collectionName, id, entity);
+                _updated.Add(entity, collectionName);
 
                 doc.Id = id;
-                _identityMap.AddDocument(doc);
+                _identityMap.AddDocument(collectionName, doc);
 
                 return true;
             }
@@ -178,11 +179,11 @@ namespace YesSql
 
                     if (id > 0)
                     {
-                        _identityMap.AddEntity(id, entity);
-                        _updated.Add(entity);
+                        _identityMap.AddEntity(collectionName, id, entity);
+                        _updated.Add(entity, collectionName);
 
                         doc.Id = id;
-                        _identityMap.AddDocument(doc);
+                        _identityMap.AddDocument(collectionName, doc);
 
                         return true;
                     }
@@ -207,13 +208,14 @@ namespace YesSql
             _tracked.Remove(entity);
             _deleted.Remove(entity);
 
-            if (_identityMap.TryGetDocumentId(entity, out var id))
+            var collectionName = CollectionHelper.Current.GetSafeName();
+            if (_identityMap.TryGetDocumentId(collectionName, entity, out var id))
             {
-                _identityMap.Remove(id, entity);
+                _identityMap.Remove(collectionName, id, entity);
             }
         }
 
-        private async Task SaveEntityAsync(object entity)
+        private async Task SaveEntityAsync(string collectionName, object entity)
         {
             if (entity == null)
             {
@@ -235,7 +237,7 @@ namespace YesSql
                 Type = Store.TypeNames[entity.GetType()]
             };
 
-            if (!_identityMap.TryGetDocumentId(entity, out var id))
+            if (!_identityMap.TryGetDocumentId(collectionName, entity, out var id))
             {
                 throw new InvalidOperationException("The object to save was not found in identity map.");
             }
@@ -247,14 +249,14 @@ namespace YesSql
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             doc.Version = 1;
 
-            _commands.Add(new CreateDocumentCommand(doc, _tablePrefix));
+            _commands.Add(new CreateDocumentCommand(collectionName, doc, _tablePrefix));
 
-            _identityMap.AddDocument(doc);
+            _identityMap.AddDocument(collectionName, doc);
 
             await MapNew(doc, entity);
         }
 
-        private async Task UpdateEntityAsync(object entity, bool tracked)
+        private async Task UpdateEntityAsync(string collectionName, object entity, bool tracked)
         {
             if (entity == null)
             {
@@ -274,12 +276,12 @@ namespace YesSql
             }
 
             // Reload to get the old map
-            if (!_identityMap.TryGetDocumentId(entity, out var id))
+            if (!_identityMap.TryGetDocumentId(collectionName, entity, out var id))
             {
                 throw new InvalidOperationException("The object to update was not found in identity map.");
             }
 
-            if (!_identityMap.TryGetDocument(id, out var oldDoc))
+            if (!_identityMap.TryGetDocument(collectionName, id, out var oldDoc))
             {
                 oldDoc = await GetDocumentByIdAsync(id);
 
@@ -317,7 +319,7 @@ namespace YesSql
             oldDoc.Content = newContent;
             oldDoc.Version += 1;
 
-            _commands.Add(new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version));
+            _commands.Add(new UpdateDocumentCommand(collectionName, oldDoc, Store.Configuration.TablePrefix, version));
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id)
@@ -362,10 +364,11 @@ namespace YesSql
         {
             CheckDisposed();
 
-            _deleted.Add(obj);
+            var collectionName = CollectionHelper.Current.GetSafeName();
+            _deleted.Add(obj, collectionName);
         }
 
-        private async Task DeleteEntityAsync(object obj)
+        private async Task DeleteEntityAsync(string collectionName, object obj)
         {
             if (obj == null)
             {
@@ -377,7 +380,7 @@ namespace YesSql
             }
             else
             {
-                if (!_identityMap.TryGetDocumentId(obj, out var id))
+                if (!_identityMap.TryGetDocumentId(collectionName, obj, out var id))
                 {
                     var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
                     if (accessor == null)
@@ -393,13 +396,13 @@ namespace YesSql
                 if (doc != null)
                 {
                     // Untrack the deleted object
-                    _identityMap.Remove(id, obj);
+                    _identityMap.Remove(collectionName, id, obj);
 
                     // Update impacted indexes
                     await MapDeleted(doc, obj);
 
                     // The command needs to come after any index deletion because of the database constraints
-                    _commands.Add(new DeleteDocumentCommand(doc, _tablePrefix));
+                    _commands.Add(new DeleteDocumentCommand(collectionName, doc, _tablePrefix));
                 }
             }
         }
@@ -459,6 +462,7 @@ namespace YesSql
 
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
             var typeName = Store.TypeNames[typeof(T)];
+            var collectionName = CollectionHelper.Current.GetSafeName();
 
             // Are all the objects already in cache?
             foreach (var d in documents)
@@ -468,7 +472,7 @@ namespace YesSql
                     continue;
                 }
 
-                if (_identityMap.TryGetEntityById(d.Id, out var entity))
+                if (_identityMap.TryGetEntityById(collectionName, d.Id, out var entity))
                 {
                     result.Add((T)entity);
                 }
@@ -495,8 +499,8 @@ namespace YesSql
                     }
 
                     // track the loaded object
-                    _identityMap.AddEntity(d.Id, item);
-                    _identityMap.AddDocument(d);
+                    _identityMap.AddEntity(collectionName, d.Id, item);
+                    _identityMap.AddDocument(collectionName, d);
 
                     result.Add(item);
                 }
@@ -665,31 +669,31 @@ namespace YesSql
                 // saving all tracked entities
                 foreach (var obj in _tracked)
                 {
-                    if (!_deleted.Contains(obj))
+                    if (!_deleted.ContainsKey(obj.Key))
                     {
-                        await UpdateEntityAsync(obj, true);
+                        await UpdateEntityAsync(obj.Value, obj.Key, true);
                     }
                 }
 
                 // saving all updated entities
                 foreach (var obj in _updated)
                 {
-                    if (!_deleted.Contains(obj))
+                    if (!_deleted.ContainsKey(obj.Key))
                     {
-                        await UpdateEntityAsync(obj, false);
+                        await UpdateEntityAsync(obj.Value, obj.Key, false);
                     }
                 }
 
                 // saving all pending entities
                 foreach (var obj in _saved)
                 {
-                    await SaveEntityAsync(obj);
+                    await SaveEntityAsync(obj.Value, obj.Key);
                 }
 
                 // deleting all pending entities
                 foreach (var obj in _deleted)
                 {
-                    await DeleteEntityAsync(obj);
+                    await DeleteEntityAsync(obj.Value, obj.Key);
                 }
 
                 // compute all reduce indexes
@@ -716,12 +720,12 @@ namespace YesSql
                 // CommitAsync is called
                 foreach(var saved in _saved)
                 {
-                    _tracked.Add(saved);
+                    _tracked.Add(saved.Key, saved.Value);
                 }
 
                 foreach (var updated in _updated)
                 {
-                    _tracked.Add(updated);
+                    _tracked.Add(updated.Key, updated.Value);
                 }
 
                 _saved.Clear();
@@ -780,17 +784,19 @@ namespace YesSql
 
             if (createDocumentCommands != null)
             {
-                foreach (var page in createDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize))
+                foreach (var page in createDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize)
+                    .SplitPagesBy(c=>c.CollectionName))
                 {
-                    _commands.Add(new CreateDocumentCommand(page.SelectMany(x => x.Documents), _tablePrefix));
+                    _commands.Add(new CreateDocumentCommand(page.First().CollectionName, page.SelectMany(x => x.Documents), _tablePrefix));
                 }
             }
 
             if (deleteDocumentCommands != null)
             {
-                foreach (var page in deleteDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize))
+                foreach (var page in deleteDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize)
+                    .SplitPagesBy(c => c.CollectionName))
                 {
-                    _commands.Add(new DeleteDocumentCommand(page.SelectMany(x => x.Documents), _tablePrefix));
+                    _commands.Add(new DeleteDocumentCommand(page.First().CollectionName, page.SelectMany(x => x.Documents), _tablePrefix));
                 }
             }
 
@@ -1047,8 +1053,8 @@ namespace YesSql
 
                 if (_indexes != null)
                 {
-                    var collection = CollectionHelper.Current.GetSafeName();
-                    typedDescriptors = typedDescriptors.Union(_store.CreateDescriptors(t, collection, _indexes)).ToArray();
+                    var collectionName = CollectionHelper.Current.GetSafeName();
+                    typedDescriptors = typedDescriptors.Union(_store.CreateDescriptors(t, collectionName, _indexes)).ToArray();
                 }
 
                 _descriptors.Add(cacheKey, typedDescriptors);

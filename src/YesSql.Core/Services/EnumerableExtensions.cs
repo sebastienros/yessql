@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace System
@@ -19,6 +19,42 @@ namespace System
             {
                 yield return list.Skip(page * pageSize).Take(pageSize);
                 page++;
+            }
+        }
+        public static IEnumerable<IEnumerable<T>> SplitPagesBy<T>(this IEnumerable<IEnumerable<T>> pages, Func<T, string> stringForSplit)
+        {
+            if (!pages.Any())
+            {
+                yield break;
+            }
+            
+            foreach (var list in pages)
+            {
+                if (stringForSplit == null)
+                {
+                    yield return list;
+                    continue;
+                }
+                var resultList = new List<T>();
+                string previousGroupString = null;
+                foreach (var elem in list)
+                {
+                    var groupString = stringForSplit(elem);
+                    if (previousGroupString != null && previousGroupString != groupString)
+                    {
+                        yield return resultList;
+                        resultList = new List<T>(new T[] { elem });
+                    }
+                    else
+                    {
+                        resultList.Add(elem);
+                    }
+                    previousGroupString = groupString;
+                }
+                if (resultList.Any())
+                {
+                    yield return resultList;
+                }
             }
         }
     }

@@ -11,7 +11,7 @@ namespace YesSql.Tests.Commands
 {
     public sealed class FailingCommand : DocumentCommand
     {
-        public FailingCommand(Document document) : base(document)
+        public FailingCommand(Document document) : base(null, document)
         {
 
         }

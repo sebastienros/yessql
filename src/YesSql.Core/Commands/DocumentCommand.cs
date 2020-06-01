@@ -20,15 +20,19 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public DocumentCommand(Document document)
+        public DocumentCommand(string collectionName, Document document)
         {
+            CollectionName = collectionName;
             Documents = new[] { document };
         }
 
-        public DocumentCommand(IEnumerable<Document> documents)
+        public DocumentCommand(string collectionSafeName, IEnumerable<Document> documents)
         {
+            CollectionName = collectionSafeName;
             Documents = documents;
         }
+
+        public string CollectionName { get; }
 
         public IEnumerable<Document> Documents { get; }
 

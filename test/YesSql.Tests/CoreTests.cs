@@ -3029,7 +3029,43 @@ namespace YesSql.Tests
                 }
             }
         }
+        [Fact]
+        public async Task ShouldCommitInMultipleCollections()
+        {
+            await _store.InitializeCollectionAsync("Collection1");
 
+            using (var session = _store.CreateSession())
+            {
+                var steve = new
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+                session.Save(steve);
+
+                using (new NamedCollection("Collection1"))
+                {
+                    var bill = new
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Gates"
+                    };
+
+                    session.Save(bill);
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var count = await session.Query().Any().CountAsync();
+                Assert.Equal(1, count);
+                using (new NamedCollection("Collection1"))
+                {
+                    count = await session.Query().Any().CountAsync();
+                    Assert.Equal(1,count);
+                }
+            }
+        }
         [Fact]
         public async Task ShouldFilterMapIndexPerCollection()
         {
