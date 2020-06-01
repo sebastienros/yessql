@@ -36,7 +36,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.Currency, "decimal(16,4)"}
         };
 
-        public PostgreSqlDialect()
+        public PostgreSqlDialect(NamingPolicy namingPolicy) : base(namingPolicy)
         {
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));

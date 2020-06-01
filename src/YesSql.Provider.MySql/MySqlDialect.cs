@@ -33,6 +33,11 @@ namespace YesSql.Provider.MySql
             {DbType.String, "varchar(255)"},
         };
 
+        public MySqlDialect(NamingPolicy namingPolicy) : base(namingPolicy)
+        {
+
+        }
+
         public override string Name => "MySql";
         public override string IdentitySelectString => "; select LAST_INSERT_ID()";
         public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
@@ -149,12 +154,12 @@ namespace YesSql.Provider.MySql
 
         public override string QuoteForColumnName(string columnName)
         {
-            return "`" + columnName + "`";
+            return "`" + NamingPolicy.ConvertName(columnName) + "`";
         }
 
         public override string QuoteForTableName(string tableName)
         {
-            return "`" + tableName + "`";
+            return "`" + NamingPolicy.ConvertName(tableName) + "`";
         }
 
         public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)

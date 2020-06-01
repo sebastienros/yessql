@@ -36,7 +36,7 @@ namespace YesSql.Provider.Sqlite
             { DbType.Guid, "UNIQUEIDENTIFIER" }
         };
 
-        public SqliteDialect()
+        public SqliteDialect(NamingPolicy namingPolicy) : base(namingPolicy)
         {
             Methods.Add("second", new TemplateFunction("cast(strftime('%S', {0}) as int)"));
             Methods.Add("minute", new TemplateFunction("cast(strftime('%M', {0}) as int)"));
@@ -92,12 +92,12 @@ namespace YesSql.Provider.Sqlite
 
         public override string QuoteForColumnName(string columnName)
         {
-            return "[" + columnName + "]";
+            return "[" + NamingPolicy.ConvertName(columnName) + "]";
         }
 
         public override string QuoteForTableName(string tableName)
         {
-            return "[" + tableName + "]";
+            return "[" + NamingPolicy.ConvertName(tableName) + "]";
         }
     }
 }

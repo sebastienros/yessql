@@ -8,7 +8,7 @@ namespace YesSql.Provider.Sqlite
     {
         public static IConfiguration RegisterSqLite(this IConfiguration configuration)
         {
-            SqlDialectFactory.SqlDialects["sqliteconnection"] = new SqliteDialect();
+            SqlDialectFactory.SqlDialects["sqliteconnection"] = new SqliteDialect(configuration.NamingPolicy);
             CommandInterpreterFactory.CommandInterpreters["sqliteconnection"] = d => new SqliteCommandInterpreter(d);
 
             return configuration;

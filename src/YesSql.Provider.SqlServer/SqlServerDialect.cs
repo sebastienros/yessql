@@ -35,7 +35,7 @@ namespace YesSql.Provider.SqlServer
             {DbType.String, "NVARCHAR(255)"},
         };
 
-        public SqlServerDialect()
+        public SqlServerDialect(NamingPolicy namingPolicy) : base(namingPolicy)
         {
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));
@@ -129,12 +129,12 @@ namespace YesSql.Provider.SqlServer
 
         public override string QuoteForColumnName(string columnName)
         {
-            return "[" + columnName + "]";
+            return "[" + NamingPolicy.ConvertName(columnName) + "]";
         }
 
         public override string QuoteForTableName(string tableName)
         {
-            return "[" + tableName + "]";
+            return "[" + NamingPolicy.ConvertName(tableName) + "]";
         }
 
         public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)

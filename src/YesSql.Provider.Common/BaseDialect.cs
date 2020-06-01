@@ -9,7 +9,13 @@ namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
+        protected readonly NamingPolicy NamingPolicy;
         public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
+
+        public BaseDialect(NamingPolicy namingPolicy)
+        {
+            NamingPolicy = namingPolicy;
+        }
 
         public abstract string Name { get; }
         public virtual string InOperator(string values)
