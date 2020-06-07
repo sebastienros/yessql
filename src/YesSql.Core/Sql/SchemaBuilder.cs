@@ -48,10 +48,10 @@ namespace YesSql.Sql
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
                 var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
-
+                var tableName = Prefix(collection.GetPrefixedName(name));
+                var createTable = new CreateTableCommand(tableName);
+                
                 createTable
                     .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
                     .Column<int>("DocumentId");
@@ -59,7 +59,7 @@ namespace YesSql.Sql
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
 
-                CreateForeignKey("FK_" + name, name, new[] { "DocumentId" }, documentTable, new[] { "Id" });
+                CreateForeignKey("FK_" + tableName, name, new[] { "DocumentId" }, Store.DocumentTable, new[] { "Id" });
             }
             catch
             {
@@ -76,10 +76,10 @@ namespace YesSql.Sql
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
                 var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
-
+                var tableName = Prefix(collection.GetPrefixedName(name));
+                var createTable = new CreateTableCommand(tableName);
+                
                 createTable
                     .Column<int>("Id", column => column.Identity().NotNull())
                     ;
@@ -87,15 +87,16 @@ namespace YesSql.Sql
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
 
-                var bridgeTableName = name + "_" + documentTable;
+                var bridgeTableName = name + "_" + Store.DocumentTable;
+                var bridgeTableNameFK = "FK_" + Prefix(collection.GetPrefixedName(bridgeTableName));
 
                 CreateTable(bridgeTableName, bridge => bridge
                     .Column<int>(name + "Id", column => column.NotNull())
                     .Column<int>("DocumentId", column => column.NotNull())
                 );
 
-                CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { name + "Id" }, name, new[] { "Id" });
-                CreateForeignKey("FK_" + bridgeTableName + "_DocumentId", bridgeTableName, new[] { "DocumentId" }, documentTable, new[] { "Id" });
+                CreateForeignKey(bridgeTableNameFK + "_Id", bridgeTableName, new[] { name + "Id" }, name, new[] { "Id" });
+                CreateForeignKey(bridgeTableNameFK + "_DocumentId", bridgeTableName, new[] { "DocumentId" }, Store.DocumentTable, new[] { "Id" });
             }
             catch
             {
@@ -113,14 +114,13 @@ namespace YesSql.Sql
             try
             {
                 var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
-
-                var bridgeTableName = name + "_" + documentTable;
-
+                
+                var bridgeTableName = name + "_" + Store.DocumentTable;
+                var bridgeTableNameFK = "FK_" + Prefix(collection.GetPrefixedName(bridgeTableName));
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
-                    DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_Id");
-                    DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_DocumentId");
+                    DropForeignKey(bridgeTableName, bridgeTableNameFK + "_Id");
+                    DropForeignKey(bridgeTableName, bridgeTableNameFK + "_DocumentId");
                 }
 
                 DropTable(bridgeTableName);
@@ -141,9 +141,11 @@ namespace YesSql.Sql
         {
             try
             {
+                var collection = CollectionHelper.Current;
+                var tableName = Prefix(collection.GetPrefixedName(name));
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
-                    DropForeignKey(name, "FK_" + name);
+                    DropForeignKey(name, "FK_" + tableName);
                 }
 
                 DropTable(name);
@@ -163,7 +165,9 @@ namespace YesSql.Sql
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
+                var collection = CollectionHelper.Current;
+                var tableName = Prefix(collection.GetPrefixedName(name));
+                var createTable = new CreateTableCommand(tableName);
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
             }
@@ -182,7 +186,9 @@ namespace YesSql.Sql
         {
             try
             {
-                var alterTable = new AlterTableCommand(Prefix(name), Dialect, TablePrefix);
+                var collection = CollectionHelper.Current;
+                var tableName = Prefix(collection.GetPrefixedName(name));
+                var alterTable = new AlterTableCommand(tableName, Dialect, TablePrefix);
                 table(alterTable);
                 Execute(_builder.CreateSql(alterTable));
             }
@@ -201,7 +207,9 @@ namespace YesSql.Sql
         {
             try
             {
-                var deleteTable = new DropTableCommand(Prefix(name));
+                var collection = CollectionHelper.Current;
+                var tableName = Prefix(collection.GetPrefixedName(name));
+                var deleteTable = new DropTableCommand(tableName);
                 Execute(_builder.CreateSql(deleteTable));
             }
             catch
@@ -219,7 +227,10 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
+                var collection = CollectionHelper.Current;
+                var srcTableName = Prefix(collection.GetPrefixedName(srcTable));
+                var destTableName = Prefix(collection.GetPrefixedName(destTable));
+                var command = new CreateForeignKeyCommand(name, srcTable, srcColumns, destTableName, destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -237,7 +248,10 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
+                var collection = CollectionHelper.Current;
+                var srcTableName = Prefix(collection.GetPrefixedName(srcTable));
+                var destTableName = Prefix(collection.GetPrefixedName(destTable));
+                var command = new CreateForeignKeyCommand(name, srcTableName, srcColumns, destTable, destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -254,7 +268,10 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
+                var collection = CollectionHelper.Current;
+                var srcTableName = Prefix(collection.GetPrefixedName(srcTable));
+                var destTableName = Prefix(collection.GetPrefixedName(destTable));
+                var command = new CreateForeignKeyCommand(name, srcTableName, srcColumns, destTableName, destColumns);
                 Execute(_builder.CreateSql(command));
 
             }
@@ -273,7 +290,10 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
+                var collection = CollectionHelper.Current;
+                var srcTableName = Prefix(collection.GetPrefixedName(srcTable));
+                var destTableName = Prefix(collection.GetPrefixedName(destTable));
+                var command = new CreateForeignKeyCommand(name, srcTableName, srcColumns, destTableName, destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -291,7 +311,9 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new DropForeignKeyCommand(Prefix(srcTable), Prefix(name));
+                var collection = CollectionHelper.Current;
+                var srcTableName = Prefix(collection.GetPrefixedName(srcTable));
+                var command = new DropForeignKeyCommand(srcTableName, name);
                 Execute(_builder.CreateSql(command));
             }
             catch

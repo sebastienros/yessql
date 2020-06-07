@@ -47,7 +47,7 @@ namespace YesSql.Collections
         {
             var name = collection.GetSafeName();
 
-            return CollectionHelper.GetPrefixedName(name, Store.DocumentTable);
+            return CollectionHelper.GetPrefixedName(name, table);
         }
     }
 

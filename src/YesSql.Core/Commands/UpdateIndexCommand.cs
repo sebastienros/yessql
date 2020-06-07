@@ -29,6 +29,8 @@ namespace YesSql.Commands
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var type = Index.GetType();
+            var indexTypeName = Index.GetType().Name;
+            var indexTableName = CollectionHelper.Current.GetPrefixedName(indexTypeName);
 
             var sql = Updates(type, dialect);
             logger.LogTrace(sql);
@@ -38,10 +40,10 @@ namespace YesSql.Commands
             if (Index is ReduceIndex reduceIndex)
             {
                 var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-                var bridgeTableName = type.Name + "_" + documentTable;
-                var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
-                var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
-                var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
+                var bridgeTableName = _tablePrefix + indexTableName + "_" + documentTable;
+                var columnList = dialect.QuoteForTableName(indexTypeName + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
+                var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName( bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
+                var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName( bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
 
                 logger.LogTrace(bridgeSqlAdd);
                 await connection.ExecuteAsync(bridgeSqlAdd, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);

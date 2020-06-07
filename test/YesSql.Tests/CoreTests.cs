@@ -56,6 +56,7 @@ namespace YesSql.Tests
                     builder.DropReduceIndexTable(nameof(AttachmentByDay));
                     builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
                     builder.DropMapIndexTable(nameof(PersonByName));
+                    builder.DropMapIndexTable(nameof(PersonByNameCol));
                     builder.DropMapIndexTable(nameof(PersonIdentity));
                     builder.DropMapIndexTable(nameof(EmailByAttachment));
 
@@ -120,7 +121,9 @@ namespace YesSql.Tests
                     builder.CreateMapIndexTable(nameof(PersonByName), column => column
                             .Column<string>(nameof(PersonByName.SomeName))
                         );
-
+                    builder.CreateMapIndexTable(nameof(PersonByNameCol), column => column
+                                .Column<string>(nameof(PersonByNameCol.Name))
+                            );
                     builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
                             .Column<string>(nameof(PersonIdentity.Identity))
                         );
@@ -3069,8 +3072,9 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldFilterMapIndexPerCollection()
         {
-            await _store.InitializeCollectionAsync("Collection1");
+            _store.RegisterIndexes<PersonIndexProviderCol>();
 
+            await _store.InitializeCollectionAsync("Collection1");
             using (new NamedCollection("Collection1"))
             {
                 using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
@@ -3132,7 +3136,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.Query<Person>().CountAsync());
-                Assert.Equal(2, await session.QueryIndex<PersonByNameCol>().CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByNameCol>().CountAsync());
             }
         }
 
