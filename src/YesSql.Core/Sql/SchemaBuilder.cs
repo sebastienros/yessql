@@ -230,7 +230,7 @@ namespace YesSql.Sql
                 var collection = CollectionHelper.Current;
                 var srcTableName = Prefix(collection.GetPrefixedName(srcTable));
                 var destTableName = Prefix(collection.GetPrefixedName(destTable));
-                var command = new CreateForeignKeyCommand(name, srcTable, srcColumns, destTableName, destColumns);
+                var command = new CreateForeignKeyCommand(name, srcTableName, srcColumns, destTableName, destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
@@ -251,7 +251,7 @@ namespace YesSql.Sql
                 var collection = CollectionHelper.Current;
                 var srcTableName = Prefix(collection.GetPrefixedName(srcTable));
                 var destTableName = Prefix(collection.GetPrefixedName(destTable));
-                var command = new CreateForeignKeyCommand(name, srcTableName, srcColumns, destTable, destColumns);
+                var command = new CreateForeignKeyCommand(name, srcTableName, srcColumns, destTableName, destColumns);
                 Execute(_builder.CreateSql(command));
             }
             catch
