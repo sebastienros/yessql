@@ -24,7 +24,7 @@ namespace YesSql.Commands
             var bridgeSql = "delete from " + dialect.QuoteForTableName(bridgeTableName) +" where " + dialect.QuoteForColumnName(indexTypeName + "Id") + " = @Id";
             logger.LogTrace(bridgeSql);
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
-            var command = "delete from " + _tablePrefix + indexTableName + " where " + dialect.QuoteForColumnName("Id") + " = @Id";
+            var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + indexTableName) + " where " + dialect.QuoteForColumnName("Id") + " = @Id";
             logger.LogTrace(command);
             await connection.ExecuteAsync(command, new { Id = Index.Id }, transaction);
         }
