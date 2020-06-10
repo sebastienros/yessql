@@ -20,12 +20,13 @@ namespace YesSql.Services
     {
         public QueryState(ISqlBuilder sqlBuilder)
         {
-            _documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            _collection = CollectionHelper.Current;
+            _documentTable = _collection.GetPrefixedName(Store.DocumentTable);
             _sqlBuilder = sqlBuilder;
         }
-
+        public Collection _collection;
         public List<Type> _bound = new List<Type>();
-        public readonly string _documentTable;
+        public string _documentTable;
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;
         public List<Action<object, ISqlBuilder>> _parameterBindings;
@@ -240,7 +241,7 @@ namespace YesSql.Services
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
-                    sqlBuilder.Table(CollectionHelper.Current.GetPrefixedName(query._queryState._bound.Last().Name));
+                    sqlBuilder.Table(query._queryState._collection.GetPrefixedName(query._queryState._bound.Last().Name));
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     sqlBuilder.WhereAlso(_builder.ToString());
 
@@ -278,9 +279,14 @@ namespace YesSql.Services
             {
                 return;
             }
+            if (_queryState._documentTable == Store.DocumentTable)
+            {
+                _queryState._collection = CollectionHelper.Current;
+                _queryState._documentTable = _queryState._collection.GetPrefixedName(Store.DocumentTable);
+            }
 
             var indexTypeName = typeof(TIndex).Name;
-            var indexTableName = CollectionHelper.Current.GetPrefixedName(indexTypeName);
+            var indexTableName = _queryState._collection.GetPrefixedName(indexTypeName);
             _queryState._bound.Add(typeof(TIndex));
 
             if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
@@ -321,7 +327,7 @@ namespace YesSql.Services
                 _queryState._bound.Clear();
                 _queryState._bound.Add(typeof(TIndex));
 
-                string indexTableName = CollectionHelper.Current.GetPrefixedName(typeof(TIndex).Name);
+                string indexTableName = _queryState._collection.GetPrefixedName(typeof(TIndex).Name);
                 _queryState._sqlBuilder.Select();
                 _queryState._sqlBuilder.Table(indexTableName);
                 _queryState._sqlBuilder.Selector(indexTableName, "DocumentId");
@@ -550,7 +556,7 @@ namespace YesSql.Services
                     break;
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)expression;
-                    builder.Append(_queryState._sqlBuilder.FormatColumn(CollectionHelper.Current.GetPrefixedName(_queryState._bound.Last().Name), memberExpression.Member.Name));
+                    builder.Append(_queryState._sqlBuilder.FormatColumn(_queryState._collection.GetPrefixedName(_queryState._bound.Last().Name), memberExpression.Member.Name));
                     break;
                 case ExpressionType.Constant:
                     _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
@@ -840,6 +846,11 @@ namespace YesSql.Services
             _queryState._bound.Clear();
             _queryState._bound.Add(typeof(Document));
 
+            if (_queryState._documentTable == Store.DocumentTable)
+            {
+                _queryState._collection = CollectionHelper.Current;
+                _queryState._documentTable = _queryState._collection.GetPrefixedName(Store.DocumentTable);
+            }
             _queryState._sqlBuilder.Select();
             _queryState._sqlBuilder.Table(_queryState._documentTable);
 
@@ -857,7 +868,12 @@ namespace YesSql.Services
             _queryState._bound.Clear();
             _queryState._bound.Add(typeof(TIndex));
             _queryState._sqlBuilder.Select();
-            string indexTableName = CollectionHelper.Current.GetPrefixedName(typeof(TIndex).Name);
+            if (_queryState._documentTable == Store.DocumentTable)
+            {
+                _queryState._collection = CollectionHelper.Current;
+                _queryState._documentTable = _queryState._collection.GetPrefixedName(Store.DocumentTable);
+            }
+            string indexTableName = _queryState._collection.GetPrefixedName(typeof(TIndex).Name);
             _queryState._sqlBuilder.Table(indexTableName);
 
             return new QueryIndex<TIndex>(this);
