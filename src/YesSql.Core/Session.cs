@@ -253,7 +253,7 @@ namespace YesSql
 
             _identityMap.AddDocument(collectionName, doc);
 
-            await MapNew(doc, entity);
+            await MapNew(doc, entity, collectionName);
         }
 
         private async Task UpdateEntityAsync(string collectionName, object entity, bool tracked)
@@ -310,9 +310,9 @@ namespace YesSql
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
 
             // Update map index
-            await MapDeleted(oldDoc, oldObj);
+            await MapDeleted(oldDoc, oldObj, collectionName);
 
-            await MapNew(oldDoc, entity);
+            await MapNew(oldDoc, entity, collectionName);
 
             await DemandAsync();
 
@@ -399,7 +399,7 @@ namespace YesSql
                     _identityMap.Remove(collectionName, id, obj);
 
                     // Update impacted indexes
-                    await MapDeleted(doc, obj);
+                    await MapDeleted(doc, obj, collectionName);
 
                     // The command needs to come after any index deletion because of the database constraints
                     _commands.Add(new DeleteDocumentCommand(collectionName, doc, _tablePrefix));
@@ -450,8 +450,11 @@ namespace YesSql
                 throw;
             }
         }
-
         public IEnumerable<T> Get<T>(IList<Document> documents) where T : class
+        {
+            return Get<T>(documents, CollectionHelper.Current);
+        }
+        public IEnumerable<T> Get<T>(IList<Document> documents, Collection collection) where T : class
         {
             if (documents == null || !documents.Any())
             {
@@ -462,7 +465,7 @@ namespace YesSql
 
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
             var typeName = Store.TypeNames[typeof(T)];
-            var collectionName = CollectionHelper.Current.GetSafeName();
+            var collectionName = collection.GetSafeName();
 
             // Are all the objects already in cache?
             foreach (var d in documents)
@@ -804,9 +807,10 @@ namespace YesSql
             {
                 foreach (var entry in deleteMapIndexCommandsDictionary)
                 {
-                    foreach (var page in entry.Value.PagesOf(_store.Configuration.CommandsPageSize))
+                    foreach (var page in entry.Value.PagesOf(_store.Configuration.CommandsPageSize)
+                        .SplitPagesBy(c => c.CollectionName))
                     {
-                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.SelectMany(x => x.DocumentIds), _tablePrefix, _dialect));
+                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.SelectMany(x => x.DocumentIds), _tablePrefix, _dialect, page.First().CollectionName));
                     }
                 }
             }
@@ -976,7 +980,7 @@ namespace YesSql
                     {
                         if (index == null)
                         {
-                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _tablePrefix));
+                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _tablePrefix, descriptor.CollectionName));
                         }
                         else
                         {
@@ -987,7 +991,7 @@ namespace YesSql
                             deletedDocumentIds = deletedDocumentIds.Where(x => !common.Contains(x)).ToArray();
 
                             // Update updated, new and deleted linked documents
-                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _tablePrefix));
+                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _tablePrefix, descriptor.CollectionName));
                         }
                     }
                     else
@@ -995,7 +999,7 @@ namespace YesSql
                         if (index != null)
                         {
                             // The index is new
-                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _tablePrefix));
+                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _tablePrefix, descriptor.CollectionName));
                         }
                     }
                 }
@@ -1006,7 +1010,7 @@ namespace YesSql
         {
             await DemandAsync();
 
-            var name = _tablePrefix + descriptor.IndexType.Name;
+            var name = _tablePrefix + CollectionHelper.GetPrefixedName(descriptor.CollectionName, descriptor.IndexType.Name);
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
             var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);
@@ -1043,17 +1047,16 @@ namespace YesSql
         /// <summary>
         /// Resolves all the descriptors registered on the Store and the Session
         /// </summary>
-        private IEnumerable<IndexDescriptor> GetDescriptors(Type t)
+        private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collectionName)
         {
-            var cacheKey = t.FullName + ":" + CollectionHelper.Current.GetSafeName();
+            var cacheKey = t.FullName + ":" + collectionName;
 
             if (!_descriptors.TryGetValue(cacheKey, out var typedDescriptors))
             {
-                typedDescriptors = _store.Describe(t);
+                typedDescriptors = _store.Describe(t, collectionName);
 
                 if (_indexes != null)
                 {
-                    var collectionName = CollectionHelper.Current.GetSafeName();
                     typedDescriptors = typedDescriptors.Union(_store.CreateDescriptors(t, collectionName, _indexes)).ToArray();
                 }
 
@@ -1063,9 +1066,9 @@ namespace YesSql
             return typedDescriptors;
         }
 
-        private async Task MapNew(Document document, object obj)
+        private async Task MapNew(Document document, object obj, string collectionName)
         {
-            var descriptors = GetDescriptors(obj.GetType());
+            var descriptors = GetDescriptors(obj.GetType(), collectionName);
 
             foreach (var descriptor in descriptors)
             {
@@ -1088,11 +1091,11 @@ namespace YesSql
                         {
                             if (index.Id == 0)
                             {
-                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix));
+                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix, collectionName));
                             }
                             else
                             {
-                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix));
+                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix, collectionName));
                             }
                         }
                         else
@@ -1113,16 +1116,16 @@ namespace YesSql
         /// <summary>
         /// Update map and reduce indexes when an entity is deleted.
         /// </summary>
-        private async Task MapDeleted(Document document, object obj)
+        private async Task MapDeleted(Document document, object obj, string collectionName)
         {
-            var descriptors = GetDescriptors(obj.GetType());
+            var descriptors = GetDescriptors(obj.GetType(), collectionName);
 
             foreach (var descriptor in descriptors)
             {
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, _tablePrefix, _dialect));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, _tablePrefix, _dialect, collectionName));
                 }
                 else
                 {

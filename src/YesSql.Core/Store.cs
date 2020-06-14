@@ -250,19 +250,18 @@ namespace YesSql
         /// <summary>
         /// Returns the available indexers for a specified type
         /// </summary>
-        public IEnumerable<IndexDescriptor> Describe(Type target)
+        public IEnumerable<IndexDescriptor> Describe(Type target, string collectionName)
         {
             if (target == null)
             {
                 throw new ArgumentNullException();
             }
 
-            var collection = CollectionHelper.Current.GetSafeName();
-            var cacheKey = target.FullName + ":" + collection;
+            var cacheKey = target.FullName + ":" + collectionName;
 
             if (!Descriptors.TryGetValue(cacheKey, out var result))
             {
-                result = CreateDescriptors(target, collection, Indexes);
+                result = CreateDescriptors(target, collectionName, Indexes);
 
                 // Don't use Add as two thread could concurrently reach this point.
                 // We don't mind losing some values as the next call will restore it if it's not cached.
@@ -294,7 +293,7 @@ namespace YesSql
                 }
             }
 
-            return context.Describe(new[] { target }).ToList();
+            return context.Describe(new[] { target }).Select(d=> { d.CollectionName = collection; return d; }).ToList();
         }
 
         private static Func<IDescriptor> MakeDescriptorActivator(Type type)

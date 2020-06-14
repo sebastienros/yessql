@@ -22,11 +22,12 @@ namespace YesSql.Commands
         protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
         public abstract int ExecutionOrder { get; }
-
-        public IndexCommand(IIndex index, string tablePrefix)
+        public string CollectionName { get; }
+        public IndexCommand(IIndex index, string tablePrefix, string collectionName)
         {
             Index = index;
             _tablePrefix = tablePrefix;
+            CollectionName = collectionName;
         }
 
         public IIndex Index { get; }
@@ -54,7 +55,7 @@ namespace YesSql.Commands
 
         protected string Inserts(Type type, ISqlDialect dialect)
         {
-            var tablePrefix = _tablePrefix + CollectionHelper.Current.GetPrefixedName("");
+            var tablePrefix = _tablePrefix + CollectionHelper.GetPrefixedName(CollectionName, "");
             var key = new CompoundKey(dialect.Name, type.FullName, tablePrefix);
 
             if (!InsertsList.TryGetValue(key, out string result))
@@ -100,7 +101,7 @@ namespace YesSql.Commands
 
         protected string Updates(Type type, ISqlDialect dialect)
         {
-            var tablePrefix = _tablePrefix + CollectionHelper.Current.GetPrefixedName("");
+            var tablePrefix = _tablePrefix + CollectionHelper.GetPrefixedName(CollectionName, "");
             var key = new CompoundKey(dialect.Name, type.FullName, tablePrefix);
 
             if (!UpdatesList.TryGetValue(key, out string result))

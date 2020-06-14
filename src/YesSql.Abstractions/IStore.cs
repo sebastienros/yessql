@@ -24,7 +24,7 @@ namespace YesSql
         IConfiguration Configuration { get; }
         Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
-        IEnumerable<IndexDescriptor> Describe(Type target);
+        IEnumerable<IndexDescriptor> Describe(Type target, string collectionName);
         ISqlDialect Dialect { get; }
         ITypeService TypeNames { get; }
     }

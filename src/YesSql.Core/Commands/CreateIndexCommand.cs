@@ -12,13 +12,13 @@ namespace YesSql.Commands
     public sealed class CreateIndexCommand : IndexCommand
     {
         private readonly IEnumerable<int> _addedDocumentIds;
-
+        
         public override int ExecutionOrder { get; } = 2;
-
         public CreateIndexCommand(
             IIndex index,
             IEnumerable<int> addedDocumentIds,
-            string tablePrefix) : base(index, tablePrefix)
+            string tablePrefix,
+            string collectionName) : base(index, tablePrefix, collectionName)
         {
             _addedDocumentIds = addedDocumentIds;
         }
@@ -26,12 +26,10 @@ namespace YesSql.Commands
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var type = Index.GetType();
-            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-
             var sql = Inserts(type, dialect);
             logger.LogTrace(sql);
             Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
-            var indexTableName = _tablePrefix + CollectionHelper.Current.GetPrefixedName(type.Name);
+            var indexTableName = _tablePrefix + CollectionHelper.GetPrefixedName(CollectionName, type.Name);
 
             if (Index is MapIndex)
             {
@@ -43,7 +41,7 @@ namespace YesSql.Commands
             {
                 var reduceIndex = Index as ReduceIndex;
 
-                var bridgeTableName = indexTableName + "_" + documentTable;
+                var bridgeTableName = indexTableName + "_" + Store.DocumentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") +", " + dialect.QuoteForColumnName("DocumentId");
                 var bridgeSql = "insert into " + dialect.QuoteForTableName(bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
                 logger.LogTrace(bridgeSql);

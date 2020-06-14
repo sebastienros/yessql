@@ -20,7 +20,8 @@ namespace YesSql.Commands
             IIndex index,
             IEnumerable<int> addedDocumentIds,
             IEnumerable<int> deletedDocumentIds,
-            string tablePrefix) : base(index, tablePrefix)
+            string tablePrefix,
+            string collectionName) : base(index, tablePrefix, collectionName)
         {
             _addedDocumentIds = addedDocumentIds;
             _deletedDocumentIds = deletedDocumentIds;
@@ -30,7 +31,7 @@ namespace YesSql.Commands
         {
             var type = Index.GetType();
             var indexTypeName = Index.GetType().Name;
-            var indexTableName = CollectionHelper.Current.GetPrefixedName(indexTypeName);
+            var indexTableName = CollectionHelper.GetPrefixedName(CollectionName, indexTypeName);
 
             var sql = Updates(type, dialect);
             logger.LogTrace(sql);
@@ -39,8 +40,7 @@ namespace YesSql.Commands
             // Update the documents list
             if (Index is ReduceIndex reduceIndex)
             {
-                var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-                var bridgeTableName = _tablePrefix + indexTableName + "_" + documentTable;
+                var bridgeTableName = _tablePrefix + indexTableName + "_" + Store.DocumentTable;
                 var columnList = dialect.QuoteForTableName(indexTypeName + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName( bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
                 var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName( bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";

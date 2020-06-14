@@ -8,5 +8,6 @@ namespace YesSql.Commands
     {
         Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
         int ExecutionOrder { get; }
+        string CollectionName { get; }
     }
 }

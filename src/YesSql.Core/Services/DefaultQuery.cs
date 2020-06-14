@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -966,7 +967,7 @@ namespace YesSql.Services
                             return default(T);
                         }
 
-                        return _query._session.Get<T>(documents).FirstOrDefault();
+                        return _query._session.Get<T>(documents, _query._queryState._collection).FirstOrDefault();
                     }
                 }
                 catch
