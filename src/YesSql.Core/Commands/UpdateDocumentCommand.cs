@@ -2,7 +2,6 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Threading.Tasks;
-using YesSql.Collections;
 
 namespace YesSql.Commands
 {
@@ -13,7 +12,7 @@ namespace YesSql.Commands
 
         public override int ExecutionOrder { get; } = 2;
 
-        public UpdateDocumentCommand(Document document, string tablePrefix, long checkVersion) : base(document)
+        public UpdateDocumentCommand(Document document, string tablePrefix, long checkVersion, string collection) : base(document, collection)
         {
             _tablePrefix = tablePrefix;
             _checkVersion = checkVersion;
@@ -21,7 +20,7 @@ namespace YesSql.Commands
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
-            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            var documentTable = Store.GetDocumentTable(Collection);
 
             var updateCmd = "update " + dialect.QuoteForTableName(_tablePrefix + documentTable)
                 + " set " + dialect.QuoteForColumnName("Content") + " = @Content, " + dialect.QuoteForColumnName("Version")  + " = @Version where "

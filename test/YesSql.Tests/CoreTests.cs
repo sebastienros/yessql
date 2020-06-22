@@ -4,12 +4,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using YesSql.Collections;
-using YesSql.Commands;
 using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.Commands;
@@ -59,10 +56,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable(nameof(PersonIdentity));
                     builder.DropMapIndexTable(nameof(EmailByAttachment));
 
-                    using (new NamedCollection("Collection1"))
-                    {
-                        builder.DropMapIndexTable(nameof(PersonByNameCol));
-                    }
+                    builder.DropMapIndexTable(nameof(PersonByNameCol), "Collection1");
 
                     builder.DropMapIndexTable(nameof(PersonByAge));
                     builder.DropMapIndexTable(nameof(PersonByNullableAge));
@@ -70,7 +64,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable(nameof(PublishedArticle));
                     builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
                     builder.DropTable(Store.DocumentTable);
-                    builder.DropTable("Collection1_Document");
+                    builder.DropTable(Store.GetDocumentTable("Collection1"));
                     builder.DropTable(DbBlockIdGenerator.TableName);
 
                     OnCleanDatabase(builder, transaction);
@@ -3009,24 +3003,21 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query().Any().CountAsync());
             }
 
-            using (new NamedCollection("Collection1"))
+            using (var session = _store.CreateSession())
             {
-                using (var session = _store.CreateSession())
+
+                var steve = new
                 {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
 
-                    var steve = new
-                    {
-                        Firstname = "Steve",
-                        Lastname = "Balmer"
-                    };
+                session.Save(steve, "Collection1");
+            }
 
-                    session.Save(steve);
-                }
-
-                using (var session = _store.CreateSession())
-                {
-                    Assert.Equal(1, await session.Query().Any().CountAsync());
-                }
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query("Collection1").Any().CountAsync());
             }
         }
 
@@ -3035,49 +3026,46 @@ namespace YesSql.Tests
         {
             await _store.InitializeCollectionAsync("Collection1");
 
-            using (new NamedCollection("Collection1"))
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
-                using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    await connection.OpenAsync();
+                    new SchemaBuilder(_store.Configuration, transaction)
+                        .CreateMapIndexTable(nameof(PersonByNameCol), column => column
+                            .Column<string>(nameof(PersonByNameCol.Name))
+                        );
 
-                    using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                    {
-                        new SchemaBuilder(_store.Configuration, transaction)
-                            .CreateMapIndexTable(nameof(PersonByNameCol), column => column
-                                .Column<string>(nameof(PersonByNameCol.Name))
-                            );
-
-                        transaction.Commit();
-                    }
+                    transaction.Commit();
                 }
+            }
 
-                _store.RegisterIndexes<PersonIndexProviderCol>();
+            _store.RegisterIndexes<PersonIndexProviderCol>();
 
-                using (var session = _store.CreateSession())
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
                 {
-                    var bill = new Person
-                    {
-                        Firstname = "Bill",
-                        Lastname = "Gates",
-                    };
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
 
-                    var steve = new Person
-                    {
-                        Firstname = "Steve",
-                        Lastname = "Balmer"
-                    };
-
-                    session.Save(bill);
-                    session.Save(steve);
-                }
-
-                using (var session = _store.CreateSession())
+                var steve = new Person
                 {
-                    Assert.Equal(2, await session.Query<Person, PersonByNameCol>().CountAsync());
-                    Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Steve").CountAsync());
-                    Assert.Equal(1, await session.Query<Person, PersonByNameCol>().Where(x => x.Name == "Steve").CountAsync());
-                }
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(bill, "Collection1");
+                session.Save(steve, "Collection1");
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByNameCol>("Collection1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Steve", "Collection1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>("Collection1").Where(x => x.Name == "Steve").CountAsync());
             }
 
             // Store a Person in the default collection
@@ -3105,35 +3093,32 @@ namespace YesSql.Tests
         {
             await _store.InitializeCollectionAsync("Collection1");
 
-            using (new NamedCollection("Collection1"))
+            using (var session = _store.CreateSession())
             {
-                using (var session = _store.CreateSession())
+                var bill = new Person
                 {
-                    var bill = new Person
-                    {
-                        Firstname = "Bill",
-                        Lastname = "Gates",
-                    };
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
 
-                    session.Save(bill);
-                }
+                session.Save(bill, "Collection1");
+            }
 
-                using (var session = _store.CreateSession())
-                {
-                    var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.NotNull(person);
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>("Collection1").FirstOrDefaultAsync();
+                Assert.NotNull(person);
 
-                    person = await session.GetAsync<Person>(person.Id);
-                    Assert.NotNull(person);
+                person = await session.GetAsync<Person>(person.Id, "Collection1");
+                Assert.NotNull(person);
 
-                    session.Delete(person);
-                }
+                session.Delete(person);
+            }
 
-                using (var session = _store.CreateSession())
-                {
-                    var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.Null(person);
-                }
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>("Collection1").FirstOrDefaultAsync();
+                Assert.Null(person);
             }
         }
 

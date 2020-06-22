@@ -19,12 +19,12 @@ namespace YesSql
         /// </summary>
         /// <param name="indexProviders">The index providers to register.</param>
         /// <returns>The <see cref="IStore"/> instance.</returns>
-        IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders);
+        IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null);
 
         IConfiguration Configuration { get; }
         Task InitializeCollectionAsync(string collection);
         IIdAccessor<int> GetIdAccessor(Type tContainer, string name);
-        IEnumerable<IndexDescriptor> Describe(Type target);
+        IEnumerable<IndexDescriptor> Describe(Type target, string collection = null);
         ISqlDialect Dialect { get; }
         ITypeService TypeNames { get; }
     }

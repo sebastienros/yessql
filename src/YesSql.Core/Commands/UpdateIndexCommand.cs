@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Indexes;
 
 namespace YesSql.Commands
@@ -20,7 +19,8 @@ namespace YesSql.Commands
             IIndex index,
             IEnumerable<int> addedDocumentIds,
             IEnumerable<int> deletedDocumentIds,
-            string tablePrefix) : base(index, tablePrefix)
+            string tablePrefix,
+            string collection) : base(index, tablePrefix, collection)
         {
             _addedDocumentIds = addedDocumentIds;
             _deletedDocumentIds = deletedDocumentIds;
@@ -37,7 +37,7 @@ namespace YesSql.Commands
             // Update the documents list
             if (Index is ReduceIndex reduceIndex)
             {
-                var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+                var documentTable = Store.GetDocumentTable(Collection);
                 var bridgeTableName = type.Name + "_" + documentTable;
                 var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Indexes;
 
 namespace YesSql.Commands
@@ -18,7 +17,8 @@ namespace YesSql.Commands
         public CreateIndexCommand(
             IIndex index,
             IEnumerable<int> addedDocumentIds,
-            string tablePrefix) : base(index, tablePrefix)
+            string tablePrefix,
+            string collection) : base(index, tablePrefix, collection)
         {
             _addedDocumentIds = addedDocumentIds;
         }
@@ -26,7 +26,7 @@ namespace YesSql.Commands
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var type = Index.GetType();
-            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            var documentTable = Store.GetDocumentTable(Collection);
 
             var sql = Inserts(type, dialect);
             logger.LogTrace(sql);

@@ -10,7 +10,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Data;
 using YesSql.Indexes;
 
@@ -18,9 +17,10 @@ namespace YesSql.Services
 {
     public class QueryState
     {
-        public QueryState(ISqlBuilder sqlBuilder)
+        public QueryState(ISqlBuilder sqlBuilder, string collection)
         {
-            _documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            _collection = collection;
+            _documentTable = Store.GetDocumentTable(collection);
             _sqlBuilder = sqlBuilder;
         }
 
@@ -30,10 +30,11 @@ namespace YesSql.Services
         public ISqlBuilder _sqlBuilder;
         public List<Action<object, ISqlBuilder>> _parameterBindings;
         public StringBuilder _builder = new StringBuilder();
+        public string _collection;
 
         public QueryState Clone()
         {
-            var clone = new QueryState(_sqlBuilder.Clone());
+            var clone = new QueryState(_sqlBuilder.Clone(), _collection);
 
             clone._bound = new List<Type>(_bound);
             clone._lastParameterName = _lastParameterName;
@@ -55,6 +56,7 @@ namespace YesSql.Services
         private readonly Session _session;
         private readonly ISqlDialect _dialect;
         private object _compiledQuery = null;
+        private string _collection;
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
             new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>>();
@@ -252,11 +254,12 @@ namespace YesSql.Services
                 };
         }
 
-        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix)
+        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, string collection)
         {
+            _collection = collection;
             _session = session;
             _dialect = session.Store.Dialect;
-            _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix));
+            _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix), collection);
         }
 
         public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
@@ -947,7 +950,7 @@ namespace YesSql.Services
                             return default(T);
                         }
 
-                        return _query._session.Get<T>(documents).FirstOrDefault();
+                        return _query._session.Get<T>(documents, _query._collection).FirstOrDefault();
                     }
                 }
                 catch
@@ -1042,7 +1045,7 @@ namespace YesSql.Services
                         transaction
                         );
 
-                        return _query._session.Get<T>(documents.ToArray());
+                        return _query._session.Get<T>(documents.ToArray(), _query._collection);
                     }
                 }
                 catch

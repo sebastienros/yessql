@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using YesSql.Collections;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
@@ -44,13 +43,12 @@ namespace YesSql.Sql
             return TablePrefix + table;
         }
 
-        public ISchemaBuilder CreateMapIndexTable(string name, Action<ICreateTableCommand> table)
+        public ISchemaBuilder CreateMapIndexTable(string name, Action<ICreateTableCommand> table, string collection = null)
         {
             try
             {
                 var createTable = new CreateTableCommand(Prefix(name));
-                var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
+                var documentTable = Store.GetDocumentTable(collection);
 
                 createTable
                     .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
@@ -72,13 +70,12 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder CreateReduceIndexTable(string name, Action<ICreateTableCommand> table)
+        public ISchemaBuilder CreateReduceIndexTable(string name, Action<ICreateTableCommand> table, string collection = null)
         {
             try
             {
                 var createTable = new CreateTableCommand(Prefix(name));
-                var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
+                var documentTable = Store.GetDocumentTable(collection);
 
                 createTable
                     .Column<int>("Id", column => column.Identity().NotNull())
@@ -108,12 +105,11 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder DropReduceIndexTable(string name)
+        public ISchemaBuilder DropReduceIndexTable(string name, string collection = null)
         {
             try
             {
-                var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
+                var documentTable = Store.GetDocumentTable(collection);
 
                 var bridgeTableName = name + "_" + documentTable;
 
@@ -137,7 +133,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder DropMapIndexTable(string name)
+        public ISchemaBuilder DropMapIndexTable(string name, string collection = null)
         {
             try
             {

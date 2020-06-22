@@ -1,17 +1,14 @@
-using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Commands;
 
 namespace YesSql.Tests.Commands
 {
     public sealed class FailingCommand : DocumentCommand
     {
-        public FailingCommand(Document document) : base(document)
+        public FailingCommand(Document document) : base(document, null)
         {
 
         }

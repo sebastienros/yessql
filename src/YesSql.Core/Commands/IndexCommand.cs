@@ -22,14 +22,16 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, string tablePrefix)
+        public IndexCommand(IIndex index, string tablePrefix, string collection)
         {
             Index = index;
             _tablePrefix = tablePrefix;
+            Collection = collection;
         }
 
         public IIndex Index { get; }
         public Document Document { get; }
+        public string Collection { get; }
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
 

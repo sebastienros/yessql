@@ -2,14 +2,13 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Indexes;
 
 namespace YesSql.Commands
 {
     public sealed class DeleteReduceIndexCommand : IndexCommand
     {
-        public DeleteReduceIndexCommand(IIndex index, string tablePrefix) : base(index, tablePrefix)
+        public DeleteReduceIndexCommand(IIndex index, string tablePrefix, string collection) : base(index, tablePrefix, collection)
         {
         }
 
@@ -19,7 +18,7 @@ namespace YesSql.Commands
         {
             var name = Index.GetType().Name;
 
-            var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
+            var documentTable = Store.GetDocumentTable(Collection);
             var bridgeTableName = name + "_" + documentTable;
             var bridgeSql = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = @Id";
             logger.LogTrace(bridgeSql);
