@@ -140,6 +140,16 @@ namespace YesSql
         }
 
         /// <summary>
+        /// Registers index providers that are used only during the lifetime of this session.
+        /// </summary>
+        /// <param name="indexProvider">The index provider to register.</param>
+        /// <returns>The <see cref="ISession"/> instance.</returns>
+        public static ISession RegisterIndexes(this ISession session, IIndexProvider indexProvider, string collection = null)
+        {
+            return session.RegisterIndexes(new[] { indexProvider }, collection);
+        }
+
+        /// <summary>
         /// Saves a new or existing object to the store, and updates
         /// the corresponding indexes.
         /// </summary>

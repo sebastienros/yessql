@@ -55,7 +55,7 @@ namespace YesSql
             {
                 if (indexProvider.CollectionName == null)
                 {
-                    indexProvider.CollectionName = collection;
+                    indexProvider.CollectionName = collection ?? "";
                 }
             }
 

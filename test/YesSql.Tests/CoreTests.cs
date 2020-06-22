@@ -3042,7 +3042,7 @@ namespace YesSql.Tests
                 }
             }
 
-            _store.RegisterIndexes<PersonIndexProviderCol>();
+            _store.RegisterIndexes<PersonIndexProviderCol>("Collection1");
 
             using (var session = _store.CreateSession())
             {
