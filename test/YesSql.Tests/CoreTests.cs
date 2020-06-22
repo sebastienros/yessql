@@ -4127,5 +4127,40 @@ namespace YesSql.Tests
                 Assert.Equal(8000, binary.Content5.Length);
             }
         }
+
+        [Fact]
+        public async Task ShouldCommitInMultipleCollections()
+        {
+            await _store.InitializeCollectionAsync("Collection1");
+
+            using (var session = _store.CreateSession())
+            {
+                var steve = new
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(steve);
+
+                var bill = new
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+
+                session.Save(bill, "Collection1");
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var count = await session.Query("Collection1").Any().CountAsync();
+                Assert.Equal(1, count);
+                
+                count = await session.Query().Any().CountAsync();
+                Assert.Equal(1, count);
+            }
+        }
     }
 }
