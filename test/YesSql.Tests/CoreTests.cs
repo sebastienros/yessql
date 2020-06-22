@@ -3034,7 +3034,8 @@ namespace YesSql.Tests
                 {
                     new SchemaBuilder(_store.Configuration, transaction)
                         .CreateMapIndexTable(nameof(PersonByNameCol), column => column
-                            .Column<string>(nameof(PersonByNameCol.Name))
+                            .Column<string>(nameof(PersonByNameCol.Name)),
+                        "Collection1"
                         );
 
                     transaction.Commit();
@@ -3112,7 +3113,7 @@ namespace YesSql.Tests
                 person = await session.GetAsync<Person>(person.Id, "Collection1");
                 Assert.NotNull(person);
 
-                session.Delete(person);
+                session.Delete(person, "Collection1");
             }
 
             using (var session = _store.CreateSession())
@@ -3626,7 +3627,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldLogSql()
+        public async Task ShouldLogSql()
         {
             var logger = new TestLogger();
 
@@ -3642,6 +3643,8 @@ namespace YesSql.Tests
                 };
 
                 session.Save(bill);
+
+                await session.CommitAsync();
             }
 
             Assert.NotEmpty(logger.ToString());

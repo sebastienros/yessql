@@ -19,8 +19,8 @@ namespace YesSql
         private DbTransaction _transaction;
 
         internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
-        private readonly Dictionary<string, SessionState> CollectionStates = new Dictionary<string, SessionState>();
-        private readonly SessionState _defaultState = new SessionState();
+        private readonly Dictionary<string, SessionState> CollectionStates;
+        private readonly SessionState _defaultState;
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
@@ -41,6 +41,12 @@ namespace YesSql
             _tablePrefix = _store.Configuration.TablePrefix;
             _dialect = store.Dialect;
             _logger = store.Configuration.Logger;
+
+            _defaultState = new SessionState();
+            CollectionStates = new Dictionary<string, SessionState>()
+            {
+                [""] = _defaultState
+            };
         }
 
         public ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null)
@@ -290,7 +296,7 @@ namespace YesSql
 
             if (!state.IdentityMap.TryGetDocument(id, out var oldDoc))
             {
-                oldDoc = await GetDocumentByIdAsync(id);
+                oldDoc = await GetDocumentByIdAsync(id, collection);
 
                 if (oldDoc == null)
                 {
@@ -329,11 +335,11 @@ namespace YesSql
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version, collection));
         }
 
-        private async Task<Document> GetDocumentByIdAsync(int id)
+        private async Task<Document> GetDocumentByIdAsync(int id, string collection)
         {
             await DemandAsync();
 
-            var documentTable = $"{YesSql.Store.DocumentTable}_collection";
+            var documentTable = YesSql.Store.GetDocumentTable(collection);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
@@ -401,7 +407,7 @@ namespace YesSql
                     id = accessor.Get(obj);
                 }
 
-                var doc = await GetDocumentByIdAsync(id);
+                var doc = await GetDocumentByIdAsync(id, collection);
 
                 if (doc != null)
                 {
@@ -431,7 +437,7 @@ namespace YesSql
 
             await DemandAsync();
 
-            var documentTable = $"{YesSql.Store.DocumentTable}_{collection}";
+            var documentTable = YesSql.Store.GetDocumentTable(collection);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 

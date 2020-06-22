@@ -102,9 +102,9 @@ namespace YesSql
             await InitializeCollectionAsync("");
         }
 
-        public async Task InitializeCollectionAsync(string collectionName)
+        public async Task InitializeCollectionAsync(string collection)
         {
-            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
+            var documentTable = Store.GetDocumentTable(collection);
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
@@ -189,7 +189,7 @@ namespace YesSql
                 }
                 finally
                 {
-                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collectionName);
+                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection);
                 }
             }
         }

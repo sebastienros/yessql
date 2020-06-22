@@ -57,7 +57,7 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
-                    builder.DropTable("Document");
+                    builder.DropTable(Store.GetDocumentTable(""));
                     builder.DropTable("Identifiers");
 
                     transaction.Commit();
@@ -103,7 +103,7 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
-                    builder.DropTable("Document");
+                    builder.DropTable(Store.GetDocumentTable(""));
                     builder.DropTable("Identifiers");
 
                     transaction.Commit();
