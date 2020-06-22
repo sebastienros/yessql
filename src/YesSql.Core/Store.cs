@@ -398,5 +398,15 @@ namespace YesSql
 
             return collection + "_" + DocumentTable;
         }
+
+        public static string GetIndexTable(Type type, string collection)
+        {
+            if (String.IsNullOrEmpty(collection))
+            {
+                return type.Name;
+            }
+
+            return collection + "_" + type.Name;
+        }
     }
 }

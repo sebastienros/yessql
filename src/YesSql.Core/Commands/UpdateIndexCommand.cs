@@ -38,7 +38,7 @@ namespace YesSql.Commands
             if (Index is ReduceIndex reduceIndex)
             {
                 var documentTable = Store.GetDocumentTable(Collection);
-                var bridgeTableName = type.Name + "_" + documentTable;
+                var bridgeTableName = Store.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
                 var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";

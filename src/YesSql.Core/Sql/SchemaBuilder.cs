@@ -43,11 +43,13 @@ namespace YesSql.Sql
             return TablePrefix + table;
         }
 
-        public ISchemaBuilder CreateMapIndexTable(string name, Action<ICreateTableCommand> table, string collection = null)
+        public ISchemaBuilder CreateMapIndexTable(Type indexType, Action<ICreateTableCommand> table, string collection)
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
+                var indexName = indexType.Name;
+                var indexTable = Store.GetIndexTable(indexType, collection); 
+                var createTable = new CreateTableCommand(Prefix(indexTable));
                 var documentTable = Store.GetDocumentTable(collection);
 
                 createTable
@@ -57,7 +59,7 @@ namespace YesSql.Sql
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
 
-                CreateForeignKey("FK_" + name, name, new[] { "DocumentId" }, documentTable, new[] { "Id" });
+                CreateForeignKey("FK_" + indexType.Name, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
             }
             catch
             {
@@ -70,11 +72,13 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder CreateReduceIndexTable(string name, Action<ICreateTableCommand> table, string collection = null)
+        public ISchemaBuilder CreateReduceIndexTable(Type indexType, Action<ICreateTableCommand> table, string collection = null)
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
+                var indexName = indexType.Name;
+                var indexTable = Store.GetIndexTable(indexType, collection);
+                var createTable = new CreateTableCommand(Prefix(indexTable));
                 var documentTable = Store.GetDocumentTable(collection);
 
                 createTable
@@ -84,14 +88,14 @@ namespace YesSql.Sql
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
 
-                var bridgeTableName = name + "_" + documentTable;
+                var bridgeTableName = indexTable + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
-                    .Column<int>(name + "Id", column => column.NotNull())
+                    .Column<int>(indexName + "Id", column => column.NotNull())
                     .Column<int>("DocumentId", column => column.NotNull())
                 );
 
-                CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { name + "Id" }, name, new[] { "Id" });
+                CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { indexName + "Id" }, indexTable, new[] { "Id" });
                 CreateForeignKey("FK_" + bridgeTableName + "_DocumentId", bridgeTableName, new[] { "DocumentId" }, documentTable, new[] { "Id" });
             }
             catch
@@ -105,13 +109,14 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder DropReduceIndexTable(string name, string collection = null)
+        public ISchemaBuilder DropReduceIndexTable(Type indexType, string collection = null)
         {
             try
             {
+                var indexTable = Store.GetIndexTable(indexType, collection);
                 var documentTable = Store.GetDocumentTable(collection);
 
-                var bridgeTableName = name + "_" + documentTable;
+                var bridgeTableName = indexTable + "_" + documentTable;
 
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
@@ -120,7 +125,7 @@ namespace YesSql.Sql
                 }
 
                 DropTable(bridgeTableName);
-                DropTable(name);
+                DropTable(indexTable);
             }
             catch
             {
@@ -133,16 +138,19 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder DropMapIndexTable(string name, string collection = null)
+        public ISchemaBuilder DropMapIndexTable(Type indexType, string collection = null)
         {
             try
             {
+                var indexName = indexType.Name;
+                var indexTable = Store.GetIndexTable(indexType, collection);
+
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
-                    DropForeignKey(name, "FK_" + name);
+                    DropForeignKey(indexTable, "FK_" + indexName);
                 }
 
-                DropTable(name);
+                DropTable(indexTable);
             }
             catch
             {

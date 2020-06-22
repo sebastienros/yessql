@@ -16,14 +16,15 @@ namespace YesSql.Commands
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
-            var name = Index.GetType().Name;
+            var type = Index.GetType();
+            var name = type.Name;
 
             var documentTable = Store.GetDocumentTable(Collection);
-            var bridgeTableName = name + "_" + documentTable;
+            var bridgeTableName = Store.GetIndexTable(type, Collection) + "_" + documentTable;
             var bridgeSql = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = @Id";
             logger.LogTrace(bridgeSql);
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
-            var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + name) + " where " + dialect.QuoteForColumnName("Id") + " = @Id";
+            var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + Store.GetIndexTable(type, Collection)) + " where " + dialect.QuoteForColumnName("Id") + " = @Id";
             logger.LogTrace(command);
             await connection.ExecuteAsync(command, new { Id = Index.Id }, transaction);
         }

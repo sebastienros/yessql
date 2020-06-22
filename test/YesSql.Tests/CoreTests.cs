@@ -49,20 +49,20 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction) { ThrowOnError = throwOnError };
 
-                    builder.DropReduceIndexTable(nameof(ArticlesByDay));
-                    builder.DropReduceIndexTable(nameof(AttachmentByDay));
-                    builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
-                    builder.DropMapIndexTable(nameof(PersonByName));
-                    builder.DropMapIndexTable(nameof(PersonIdentity));
-                    builder.DropMapIndexTable(nameof(EmailByAttachment));
+                    builder.DropReduceIndexTable<ArticlesByDay>();
+                    builder.DropReduceIndexTable<AttachmentByDay>();
+                    builder.DropMapIndexTable<ArticleByPublishedDate>();
+                    builder.DropMapIndexTable<PersonByName>();
+                    builder.DropMapIndexTable<PersonIdentity>();
+                    builder.DropMapIndexTable<EmailByAttachment>();
 
-                    builder.DropMapIndexTable(nameof(PersonByNameCol), "Collection1");
+                    builder.DropMapIndexTable<PersonByNameCol>("Collection1");
 
-                    builder.DropMapIndexTable(nameof(PersonByAge));
-                    builder.DropMapIndexTable(nameof(PersonByNullableAge));
-                    builder.DropMapIndexTable(nameof(Binary));
-                    builder.DropMapIndexTable(nameof(PublishedArticle));
-                    builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
+                    builder.DropMapIndexTable<PersonByAge>();
+                    builder.DropMapIndexTable<PersonByNullableAge>();
+                    builder.DropMapIndexTable<Binary>();
+                    builder.DropMapIndexTable<PublishedArticle>();
+                    builder.DropReduceIndexTable<UserByRoleNameIndex>();
                     builder.DropTable(Store.DocumentTable);
                     builder.DropTable(Store.GetDocumentTable("Collection1"));
                     builder.DropTable(DbBlockIdGenerator.TableName);
@@ -92,51 +92,56 @@ namespace YesSql.Tests
 
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
+                    builder.CreateReduceIndexTable<ArticlesByDay>(column => column
                             .Column<int>(nameof(ArticlesByDay.Count))
                             .Column<int>(nameof(ArticlesByDay.DayOfYear))
                         );
-                    builder.CreateReduceIndexTable(nameof(AttachmentByDay), column => column
+                    builder.CreateReduceIndexTable<AttachmentByDay>(column => column
                             .Column<int>(nameof(AttachmentByDay.Count))
                             .Column<int>(nameof(AttachmentByDay.Date))
                         );
 
-                    builder.CreateReduceIndexTable(nameof(UserByRoleNameIndex), column => column
+                    builder.CreateReduceIndexTable<UserByRoleNameIndex>(column => column
                             .Column<int>(nameof(UserByRoleNameIndex.Count))
                             .Column<string>(nameof(UserByRoleNameIndex.RoleName))
                         );
 
-                    builder.CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
+                    builder.CreateMapIndexTable<ArticleByPublishedDate>(column => column
                             .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
                             .Column<string>(nameof(ArticleByPublishedDate.Title))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonByName), column => column
+                    builder.CreateMapIndexTable<PersonByName>(column => column
                             .Column<string>(nameof(PersonByName.SomeName))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
+                    builder.CreateMapIndexTable<PersonByName>(column => column
+                            .Column<string>(nameof(PersonByName.SomeName)),
+                            "Collection1"
+                            );
+
+                    builder.CreateMapIndexTable<PersonIdentity>(column => column
                             .Column<string>(nameof(PersonIdentity.Identity))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonByAge), column => column
+                    builder.CreateMapIndexTable<PersonByAge>(column => column
                             .Column<int>(nameof(PersonByAge.Age))
                             .Column<bool>(nameof(PersonByAge.Adult))
                             .Column<string>(nameof(PersonByAge.Name))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonByNullableAge), column => column
+                    builder.CreateMapIndexTable<PersonByNullableAge>(column => column
                             .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
                         );
 
-                    builder.CreateMapIndexTable(nameof(PublishedArticle), column => { });
+                    builder.CreateMapIndexTable<PublishedArticle>(column => { });
 
-                    builder.CreateMapIndexTable(nameof(EmailByAttachment), column => column
+                    builder.CreateMapIndexTable<EmailByAttachment>(column => column
                             .Column<DateTime>(nameof(EmailByAttachment.Date))
                             .Column<string>(nameof(EmailByAttachment.AttachmentName))
                         );
 
-                    builder.CreateMapIndexTable(nameof(Binary), column => column
+                    builder.CreateMapIndexTable<Binary>(column => column
                             .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
                             .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(65535))
                             .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(16777215))
@@ -3033,7 +3038,7 @@ namespace YesSql.Tests
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     new SchemaBuilder(_store.Configuration, transaction)
-                        .CreateMapIndexTable(nameof(PersonByNameCol), column => column
+                        .CreateMapIndexTable<PersonByNameCol>(column => column
                             .Column<string>(nameof(PersonByNameCol.Name)),
                         "Collection1"
                         );
@@ -4160,6 +4165,38 @@ namespace YesSql.Tests
                 
                 count = await session.Query().Any().CountAsync();
                 Assert.Equal(1, count);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldStoreCollectionIndexesInDistinctTables()
+        {
+            await _store.InitializeCollectionAsync("Collection1");
+            _store.RegisterIndexes<PersonIndexProvider>("Collection1");
+
+            using (var session = _store.CreateSession())
+            {
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(steve);
+
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill, "Collection1");
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.QueryIndex<PersonByName>().CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>("Collection1").CountAsync());
             }
         }
     }

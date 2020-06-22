@@ -288,17 +288,17 @@ namespace YesSql.Services
             if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
             {
                 // inner join [PersonByName] on [PersonByName].[Id] = [Document].[Id]
-                _queryState._sqlBuilder.InnerJoin(name, name, "DocumentId", _queryState._documentTable, "Id");
+                _queryState._sqlBuilder.InnerJoin(Store.GetIndexTable(typeof(TIndex), _collection), Store.GetIndexTable(typeof(TIndex), _collection), "DocumentId", _queryState._documentTable, "Id");
             }
             else
             {
-                var bridgeName = name + "_" + _queryState._documentTable;
+                var bridgeName = Store.GetIndexTable(typeof(TIndex), _collection) + "_" + _queryState._documentTable;
 
                 // inner join [ArticlesByDay_Document] on [Document].[Id] = [ArticlesByDay_Document].[DocumentId]
                 _queryState._sqlBuilder.InnerJoin(bridgeName, _queryState._documentTable, "Id", bridgeName, "DocumentId");
 
                 // inner join [ArticlesByDay] on [ArticlesByDay_Document].[ArticlesByDayId] = [ArticlesByDay].[Id]
-                _queryState._sqlBuilder.InnerJoin(name, bridgeName, name + "Id", name, "Id");
+                _queryState._sqlBuilder.InnerJoin(Store.GetIndexTable(typeof(TIndex), _collection), bridgeName, name + "Id", name, "Id");
             }
         }
 
@@ -324,7 +324,7 @@ namespace YesSql.Services
                 _queryState._bound.Add(typeof(TIndex));
 
                 _queryState._sqlBuilder.Select();
-                _queryState._sqlBuilder.Table(typeof(TIndex).Name);
+                _queryState._sqlBuilder.Table(Store.GetIndexTable(typeof(TIndex), _collection));
                 _queryState._sqlBuilder.Selector(typeof(TIndex).Name, "DocumentId");
             }
 
@@ -858,7 +858,7 @@ namespace YesSql.Services
             _queryState._bound.Clear();
             _queryState._bound.Add(typeof(TIndex));
             _queryState._sqlBuilder.Select();
-            _queryState._sqlBuilder.Table(typeof(TIndex).Name);
+            _queryState._sqlBuilder.Table(Store.GetIndexTable(typeof(TIndex), _collection));
 
             return new QueryIndex<TIndex>(this);
         }

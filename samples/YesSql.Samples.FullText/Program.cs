@@ -30,7 +30,7 @@ namespace YesSql.Samples.FullText
                 using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                 {
                     new SchemaBuilder(store.Configuration, transaction)
-                        .CreateReduceIndexTable(nameof(ArticleByWord), table => table
+                        .CreateReduceIndexTable<ArticleByWord>(table => table
                             .Column<int>("Count")
                             .Column<string>("Word")
                         );

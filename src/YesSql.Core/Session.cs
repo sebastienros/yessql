@@ -833,14 +833,13 @@ namespace YesSql
                 }
             }
 
-            // TODO: DeleteMapIndexCommand  should probably depend on the collection
             if (deleteMapIndexCommandsDictionary != null)
             {
                 foreach (var entry in deleteMapIndexCommandsDictionary)
                 {
-                    foreach (var page in entry.Value.PagesOf(_store.Configuration.CommandsPageSize))
+                    foreach (var page in entry.Value.PagesOfByCollection(_store.Configuration.CommandsPageSize))
                     {
-                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.SelectMany(x => x.DocumentIds), _tablePrefix, _dialect));
+                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.Value.SelectMany(x => x.DocumentIds), _tablePrefix, page.Key));
                     }
                 }
             }
@@ -1170,7 +1169,7 @@ namespace YesSql
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, _tablePrefix, _dialect));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, _tablePrefix, collection));
                 }
                 else
                 {
