@@ -242,7 +242,13 @@ namespace YesSql.Services
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
-                    sqlBuilder.Table(query._queryState._bound.Last().Name);
+                    var bound = query._queryState._bound.Last();
+
+                    var boundTable = bound == typeof(Document)
+                        ? Store.GetDocumentTable(query._queryState._collection)
+                        : Store.GetIndexTable(bound, query._queryState._collection);
+
+                    sqlBuilder.Table(boundTable);
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     sqlBuilder.WhereAlso(_builder.ToString());
 
@@ -283,22 +289,23 @@ namespace YesSql.Services
             }
 
             var name = typeof(TIndex).Name;
+            var indexTable = Store.GetIndexTable(typeof(TIndex), _collection);
             _queryState._bound.Add(typeof(TIndex));
 
             if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
             {
                 // inner join [PersonByName] on [PersonByName].[Id] = [Document].[Id]
-                _queryState._sqlBuilder.InnerJoin(Store.GetIndexTable(typeof(TIndex), _collection), Store.GetIndexTable(typeof(TIndex), _collection), "DocumentId", _queryState._documentTable, "Id");
+                _queryState._sqlBuilder.InnerJoin(indexTable, indexTable, "DocumentId", _queryState._documentTable, "Id");
             }
             else
             {
-                var bridgeName = Store.GetIndexTable(typeof(TIndex), _collection) + "_" + _queryState._documentTable;
+                var bridgeName = indexTable + "_" + _queryState._documentTable;
 
                 // inner join [ArticlesByDay_Document] on [Document].[Id] = [ArticlesByDay_Document].[DocumentId]
                 _queryState._sqlBuilder.InnerJoin(bridgeName, _queryState._documentTable, "Id", bridgeName, "DocumentId");
 
                 // inner join [ArticlesByDay] on [ArticlesByDay_Document].[ArticlesByDayId] = [ArticlesByDay].[Id]
-                _queryState._sqlBuilder.InnerJoin(Store.GetIndexTable(typeof(TIndex), _collection), bridgeName, name + "Id", name, "Id");
+                _queryState._sqlBuilder.InnerJoin(indexTable, bridgeName, name + "Id", indexTable, "Id");
             }
         }
 
@@ -320,11 +327,13 @@ namespace YesSql.Services
             // For<T> hasn't been called already
             if (String.IsNullOrEmpty(_queryState._sqlBuilder.Clause))
             {
+                var indexTable = Store.GetIndexTable(typeof(TIndex), _collection);
+
                 _queryState._bound.Clear();
                 _queryState._bound.Add(typeof(TIndex));
 
                 _queryState._sqlBuilder.Select();
-                _queryState._sqlBuilder.Table(Store.GetIndexTable(typeof(TIndex), _collection));
+                _queryState._sqlBuilder.Table(indexTable);
                 _queryState._sqlBuilder.Selector(typeof(TIndex).Name, "DocumentId");
             }
 
@@ -551,7 +560,13 @@ namespace YesSql.Services
                     break;
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)expression;
-                    builder.Append(_queryState._sqlBuilder.FormatColumn(_queryState._bound.Last().Name, memberExpression.Member.Name));
+                    var bound = _queryState._bound.Last();
+
+                    var boundTable = bound == typeof(Document)
+                        ? Store.GetDocumentTable(_queryState._collection)
+                        : Store.GetIndexTable(bound, _queryState._collection);
+
+                    builder.Append(_queryState._sqlBuilder.FormatColumn(boundTable, memberExpression.Member.Name));
                     break;
                 case ExpressionType.Constant:
                     _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();

@@ -53,18 +53,22 @@ namespace YesSql.Tests
                     builder.DropReduceIndexTable<AttachmentByDay>();
                     builder.DropMapIndexTable<ArticleByPublishedDate>();
                     builder.DropMapIndexTable<PersonByName>();
+                    builder.DropMapIndexTable<PersonByNameCol>();
                     builder.DropMapIndexTable<PersonIdentity>();
                     builder.DropMapIndexTable<EmailByAttachment>();
-
-                    builder.DropMapIndexTable<PersonByNameCol>("Collection1");
 
                     builder.DropMapIndexTable<PersonByAge>();
                     builder.DropMapIndexTable<PersonByNullableAge>();
                     builder.DropMapIndexTable<Binary>();
                     builder.DropMapIndexTable<PublishedArticle>();
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
-                    builder.DropTable(Store.DocumentTable);
+
+                    builder.DropMapIndexTable<PersonByName>("Collection1");
+                    builder.DropMapIndexTable<PersonByNameCol>("Collection1");
+
                     builder.DropTable(Store.GetDocumentTable("Collection1"));
+                    builder.DropTable(Store.DocumentTable);
+
                     builder.DropTable(DbBlockIdGenerator.TableName);
 
                     OnCleanDatabase(builder, transaction);
@@ -82,6 +86,8 @@ namespace YesSql.Tests
         public void CreateTables(IConfiguration configuration)
         {
             _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+            
+            _store.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -89,7 +95,6 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder.CreateReduceIndexTable<ArticlesByDay>(column => column
@@ -115,9 +120,8 @@ namespace YesSql.Tests
                             .Column<string>(nameof(PersonByName.SomeName))
                         );
 
-                    builder.CreateMapIndexTable<PersonByName>(column => column
-                            .Column<string>(nameof(PersonByName.SomeName)),
-                            "Collection1"
+                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
+                            .Column<string>(nameof(PersonByNameCol.Name))
                             );
 
                     builder.CreateMapIndexTable<PersonIdentity>(column => column
@@ -148,6 +152,16 @@ namespace YesSql.Tests
                             .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(16777216))
                             .Column<byte[]>(nameof(Binary.Content5))
                         );
+
+                    builder.CreateMapIndexTable<PersonByName>(column => column
+                            .Column<string>(nameof(PersonByName.SomeName)),
+                            "Collection1"
+                            );
+
+                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
+                            .Column<string>(nameof(PersonByNameCol.Name)),
+                            "Collection1"
+                            );
 
                     transaction.Commit();
                 }
@@ -2990,8 +3004,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSaveInCollections()
         {
-            await _store.InitializeCollectionAsync("Collection1");
-
             using (var session = _store.CreateSession())
             {
                 var bill = new
@@ -3029,24 +3041,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldFilterMapIndexPerCollection()
         {
-            await _store.InitializeCollectionAsync("Collection1");
-
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    new SchemaBuilder(_store.Configuration, transaction)
-                        .CreateMapIndexTable<PersonByNameCol>(column => column
-                            .Column<string>(nameof(PersonByNameCol.Name)),
-                        "Collection1"
-                        );
-
-                    transaction.Commit();
-                }
-            }
-
             _store.RegisterIndexes<PersonIndexProviderCol>("Collection1");
 
             using (var session = _store.CreateSession())
@@ -3090,15 +3084,13 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.Query<Person>().CountAsync());
-                Assert.Equal(2, await session.QueryIndex<PersonByNameCol>().CountAsync());
+                Assert.Equal(0, await session.QueryIndex<PersonByNameCol>().CountAsync());
             }
         }
 
         [Fact]
         public async Task ShouldGetAndDeletePerCollection()
         {
-            await _store.InitializeCollectionAsync("Collection1");
-
             using (var session = _store.CreateSession())
             {
                 var bill = new Person
@@ -3684,8 +3676,6 @@ namespace YesSql.Tests
         [InlineData("Collection1")]
         public async Task ShouldGenerateIdsConcurrently(string collection)
         {
-            await _store.InitializeCollectionAsync(collection);
-
             var cts = new CancellationTokenSource(10000);
             var concurrency = 5;
             var man = new ManualResetEventSlim();
@@ -4136,8 +4126,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldCommitInMultipleCollections()
         {
-            await _store.InitializeCollectionAsync("Collection1");
-
             using (var session = _store.CreateSession())
             {
                 var steve = new
@@ -4171,7 +4159,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldStoreCollectionIndexesInDistinctTables()
         {
-            await _store.InitializeCollectionAsync("Collection1");
             _store.RegisterIndexes<PersonIndexProvider>("Collection1");
 
             using (var session = _store.CreateSession())

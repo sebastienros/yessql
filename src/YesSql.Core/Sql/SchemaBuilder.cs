@@ -59,7 +59,7 @@ namespace YesSql.Sql
                 table(createTable);
                 Execute(_builder.CreateSql(createTable));
 
-                CreateForeignKey("FK_" + indexType.Name, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
+                CreateForeignKey("FK_" + (collection ?? "") + indexName, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
             }
             catch
             {
@@ -147,7 +147,7 @@ namespace YesSql.Sql
 
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
-                    DropForeignKey(indexTable, "FK_" + indexName);
+                    DropForeignKey(indexTable, "FK_" + (collection ?? "") + indexName);
                 }
 
                 DropTable(indexTable);
