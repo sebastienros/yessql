@@ -2114,6 +2114,36 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldPageIndesQueries()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                    };
+
+                    session.Save(person);
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.Query<Person, PersonByName>();
+                query = query.With<PersonByName>(x => x.SomeName == "Bill1");
+
+                
+                Assert.Equal(1, await query.CountAsync());
+                Assert.Single(await query.Skip(0).Take(10).ListAsync());
+            }
+        }
+
+        [Fact]
         public async Task PagingShouldNotReturnMoreItemsThanResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
