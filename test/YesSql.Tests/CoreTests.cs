@@ -2136,10 +2136,11 @@ namespace YesSql.Tests
             {
                 var query = session.Query<Person, PersonByName>();
                 query = query.With<PersonByName>(x => x.SomeName == "Bill1");
+                query = query.With<PersonByName>(x => x.SomeName == "Bill2");
+                query = query.With<PersonByName>(x => x.SomeName == "Bill3");
 
-                
-                Assert.Equal(1, await query.CountAsync());
-                Assert.Single(await query.Skip(0).Take(10).ListAsync());
+                Assert.Equal(0, await query.CountAsync());
+                Assert.Empty(await query.Skip(0).Take(10).ListAsync());
             }
         }
 
