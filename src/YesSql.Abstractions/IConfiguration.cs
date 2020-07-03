@@ -19,6 +19,7 @@ namespace YesSql
         int CommandsPageSize { get; set; }
         bool QueryGatingEnabled { get; set; }
         HashSet<Type> ConcurrentTypes { get; }
+        ITableNameConvention TableNameConvention { get; set; }
     }
 
     public static class ConfigurationExtensions
@@ -86,6 +87,12 @@ namespace YesSql
         public static IConfiguration CheckConcurrentUpdates<T>(this IConfiguration configuration)
         {
             return CheckConcurrentUpdates(configuration, typeof(T));
+        }
+
+        public static IConfiguration SetTableNameConvention(this IConfiguration configuration, ITableNameConvention convention)
+        {
+            configuration.TableNameConvention = convention;
+            return configuration;
         }
     }
 

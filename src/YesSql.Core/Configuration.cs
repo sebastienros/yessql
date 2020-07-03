@@ -23,6 +23,7 @@ namespace YesSql
             QueryGatingEnabled = true;
             Logger = NullLogger.Instance;
             ConcurrentTypes = new HashSet<Type>();
+            TableNameConvention = new DefaultTableNameConvention();
         }
 
         public IIdentifierFactory IdentifierFactory { get; set; }
@@ -36,5 +37,6 @@ namespace YesSql
         public IIdGenerator IdGenerator { get; set; }
         public ILogger Logger { get; set; }
         public HashSet<Type> ConcurrentTypes { get; }
+        public ITableNameConvention TableNameConvention { get; set; }
     }
 }

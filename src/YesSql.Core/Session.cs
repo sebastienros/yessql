@@ -7,7 +7,6 @@ using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
@@ -19,24 +18,9 @@ namespace YesSql
     {
         private DbTransaction _transaction;
 
-        private readonly IdentityMap _identityMap = new IdentityMap();
         internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
-        private readonly Dictionary<IndexDescriptor, List<MapState>> _maps = new Dictionary<IndexDescriptor, List<MapState>>();
-        
-        // entities that need to be created in the next flush
-        private readonly HashSet<object> _saved = new HashSet<object>();
-
-        // entities that already exist and need to be updated in the next flush
-        private readonly HashSet<object> _updated = new HashSet<object>();
-
-        // entities that are already saved or updated in a previous flush
-        private readonly HashSet<object> _tracked = new HashSet<object>();
-
-        // ids of entities that are checked for concurrency
-        private readonly HashSet<int> _concurrent = new HashSet<int>();
-
-        // entities that need to be deleted in the next flush
-        private readonly HashSet<object> _deleted = new HashSet<object>();
+        private readonly Dictionary<string, SessionState> CollectionStates;
+        private readonly SessionState _defaultState;
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
@@ -57,15 +41,21 @@ namespace YesSql
             _tablePrefix = _store.Configuration.TablePrefix;
             _dialect = store.Dialect;
             _logger = store.Configuration.Logger;
+
+            _defaultState = new SessionState();
+            CollectionStates = new Dictionary<string, SessionState>()
+            {
+                [""] = _defaultState
+            };
         }
 
-        public ISession RegisterIndexes(params IIndexProvider[] indexProviders)
+        public ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null)
         {
             foreach (var indexProvider in indexProviders)
             {
                 if (indexProvider.CollectionName == null)
                 {
-                    indexProvider.CollectionName = CollectionHelper.Current.GetSafeName();
+                    indexProvider.CollectionName = collection ?? "";
                 }
             }
 
@@ -79,28 +69,46 @@ namespace YesSql
             return this;
         }
 
-        public void Save(object entity, bool checkConcurrency = false)
+        private SessionState GetState(string collection)
         {
+            if (String.IsNullOrEmpty(collection))
+            {
+                return _defaultState;
+            }
+
+            if (!CollectionStates.TryGetValue(collection, out var state))
+            {
+                state = new SessionState();
+                CollectionStates[collection] = state;
+            }
+
+            return state;
+        }
+
+        public void Save(object entity, bool checkConcurrency = false, string collection = null)
+        {
+            var state = GetState(collection);
+
             CheckDisposed();
 
             // already being saved or updated or tracked?
-            if (_saved.Contains(entity) || _updated.Contains(entity))
+            if (state.Saved.Contains(entity) || state.Updated.Contains(entity))
             {
                 return;
             }
 
             // remove from tracked entities if explicitly saved
-            _tracked.Remove(entity);
+            state.Tracked.Remove(entity);
 
             // is it a new object?
-            if (_identityMap.TryGetDocumentId(entity, out var id))
+            if (state.IdentityMap.TryGetDocumentId(entity, out var id))
             {
-                _updated.Add(entity);
+                state.Updated.Add(entity);
 
                 // If this entity needs to be checked for concurrency, track its version
                 if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
                 {
-                    _concurrent.Add(id);
+                    state.Concurrent.Add(id);
                 }
 
                 return;
@@ -114,23 +122,22 @@ namespace YesSql
 
                 if (id > 0)
                 {
-                    _identityMap.AddEntity(id, entity);
-                    _updated.Add(entity);
+                    state.IdentityMap.AddEntity(id, entity);
+                    state.Updated.Add(entity);
                     
                     // If this entity needs to be checked for concurrency, track its version
                     if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
                     {
-                        _concurrent.Add(id);
+                        state.Concurrent.Add(id);
                     }
 
                     return;
                 }
             }
 
-            // it's a new entity
-            var collection = CollectionHelper.Current.GetSafeName();
+            // It's a new entity
             id = _store.GetNextId(collection);
-            _identityMap.AddEntity(id, entity);
+            state.IdentityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
             if (accessor != null)
@@ -138,15 +145,17 @@ namespace YesSql
                 accessor.Set(entity, id);
             }
 
-            _saved.Add(entity);
+            state.Saved.Add(entity);
         }
 
-        public bool Import(object entity, int id = 0)
+        public bool Import(object entity, int id = 0, string collection = null)
         {
             CheckDisposed();
 
+            var state = GetState(collection);
+
             // already known?
-            if (_identityMap.HasEntity(entity))
+            if (state.IdentityMap.HasEntity(entity))
             {
                 return false;
             }
@@ -160,11 +169,11 @@ namespace YesSql
 
             if (id != 0)
             {
-                _identityMap.AddEntity(id, entity);
-                _updated.Add(entity);
+                state.IdentityMap.AddEntity(id, entity);
+                state.Updated.Add(entity);
 
                 doc.Id = id;
-                _identityMap.AddDocument(doc);
+                state.IdentityMap.AddDocument(doc);
 
                 return true;
             }
@@ -178,11 +187,11 @@ namespace YesSql
 
                     if (id > 0)
                     {
-                        _identityMap.AddEntity(id, entity);
-                        _updated.Add(entity);
+                        state.IdentityMap.AddEntity(id, entity);
+                        state.Updated.Add(entity);
 
                         doc.Id = id;
-                        _identityMap.AddDocument(doc);
+                        state.IdentityMap.AddDocument(doc);
 
                         return true;
                     }
@@ -198,22 +207,24 @@ namespace YesSql
             }
         }
 
-        public void Detach(object entity)
+        public void Detach(object entity, string collection)
         {
             CheckDisposed();
+            
+            var state = GetState(collection);
 
-            _saved.Remove(entity);
-            _updated.Remove(entity);
-            _tracked.Remove(entity);
-            _deleted.Remove(entity);
+            state.Saved.Remove(entity);
+            state.Updated.Remove(entity);
+            state.Tracked.Remove(entity);
+            state.Deleted.Remove(entity);
 
-            if (_identityMap.TryGetDocumentId(entity, out var id))
+            if (state.IdentityMap.TryGetDocumentId(entity, out var id))
             {
-                _identityMap.Remove(id, entity);
+                state.IdentityMap.Remove(id, entity);
             }
         }
 
-        private async Task SaveEntityAsync(object entity)
+        private async Task SaveEntityAsync(object entity, string collection)
         {
             if (entity == null)
             {
@@ -230,12 +241,14 @@ namespace YesSql
                 throw new ArgumentException("An index should not be saved explicitely");
             }
 
+            var state = GetState(collection);
+
             var doc = new Document
             {
                 Type = Store.TypeNames[entity.GetType()]
             };
 
-            if (!_identityMap.TryGetDocumentId(entity, out var id))
+            if (!state.IdentityMap.TryGetDocumentId(entity, out var id))
             {
                 throw new InvalidOperationException("The object to save was not found in identity map.");
             }
@@ -247,14 +260,14 @@ namespace YesSql
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             doc.Version = 1;
 
-            _commands.Add(new CreateDocumentCommand(doc, _tablePrefix));
+            _commands.Add(new CreateDocumentCommand(doc, Store.Configuration.TableNameConvention, _tablePrefix, collection));
 
-            _identityMap.AddDocument(doc);
+            state.IdentityMap.AddDocument(doc);
 
-            await MapNew(doc, entity);
+            await MapNew(doc, entity, collection);
         }
 
-        private async Task UpdateEntityAsync(object entity, bool tracked)
+        private async Task UpdateEntityAsync(object entity, bool tracked, string collection)
         {
             if (entity == null)
             {
@@ -273,15 +286,17 @@ namespace YesSql
                 throw new ArgumentException("An index should not be saved explicitely");
             }
 
+            var state = GetState(collection);
+
             // Reload to get the old map
-            if (!_identityMap.TryGetDocumentId(entity, out var id))
+            if (!state.IdentityMap.TryGetDocumentId(entity, out var id))
             {
                 throw new InvalidOperationException("The object to update was not found in identity map.");
             }
 
-            if (!_identityMap.TryGetDocument(id, out var oldDoc))
+            if (!state.IdentityMap.TryGetDocument(id, out var oldDoc))
             {
-                oldDoc = await GetDocumentByIdAsync(id);
+                oldDoc = await GetDocumentByIdAsync(id, collection);
 
                 if (oldDoc == null)
                 {
@@ -300,7 +315,7 @@ namespace YesSql
 
             long version = -1;
 
-            if (_concurrent.Contains(id))
+            if (state.Concurrent.Contains(id))
             {
                 version = oldDoc.Version;
             }
@@ -308,23 +323,23 @@ namespace YesSql
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
 
             // Update map index
-            await MapDeleted(oldDoc, oldObj);
+            await MapDeleted(oldDoc, oldObj, collection);
 
-            await MapNew(oldDoc, entity);
+            await MapNew(oldDoc, entity, collection);
 
             await DemandAsync();
 
             oldDoc.Content = newContent;
             oldDoc.Version += 1;
 
-            _commands.Add(new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version));
+            _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
 
-        private async Task<Document> GetDocumentByIdAsync(int id)
+        private async Task<Document> GetDocumentByIdAsync(int id, string collection)
         {
             await DemandAsync();
 
-            var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
+            var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
@@ -358,14 +373,16 @@ namespace YesSql
             }            
         }
 
-        public void Delete(object obj)
+        public void Delete(object obj, string collection = null)
         {
             CheckDisposed();
+            
+            var state = GetState(collection);
 
-            _deleted.Add(obj);
+            state.Deleted.Add(obj);
         }
 
-        private async Task DeleteEntityAsync(object obj)
+        private async Task DeleteEntityAsync(object obj, string collection)
         {
             if (obj == null)
             {
@@ -377,7 +394,9 @@ namespace YesSql
             }
             else
             {
-                if (!_identityMap.TryGetDocumentId(obj, out var id))
+                var state = GetState(collection);
+
+                if (!state.IdentityMap.TryGetDocumentId(obj, out var id))
                 {
                     var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
                     if (accessor == null)
@@ -388,23 +407,23 @@ namespace YesSql
                     id = accessor.Get(obj);
                 }
 
-                var doc = await GetDocumentByIdAsync(id);
+                var doc = await GetDocumentByIdAsync(id, collection);
 
                 if (doc != null)
                 {
                     // Untrack the deleted object
-                    _identityMap.Remove(id, obj);
+                    state.IdentityMap.Remove(id, obj);
 
                     // Update impacted indexes
-                    await MapDeleted(doc, obj);
+                    await MapDeleted(doc, obj, collection);
 
                     // The command needs to come after any index deletion because of the database constraints
-                    _commands.Add(new DeleteDocumentCommand(doc, _tablePrefix));
+                    _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
                 }
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(int[] ids) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(int[] ids, string collection = null) where T : class
         {
             if (ids == null || !ids.Any())
             {
@@ -418,7 +437,8 @@ namespace YesSql
 
             await DemandAsync();
 
-            var documentTable = CollectionHelper.Current.GetPrefixedName(YesSql.Store.DocumentTable);
+            var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
+
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
@@ -438,7 +458,7 @@ namespace YesSql
                 command,
                 new { Ids = ids });
 
-                return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray());
+                return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray(), collection);
             }
             catch
             {
@@ -448,7 +468,7 @@ namespace YesSql
             }
         }
 
-        public IEnumerable<T> Get<T>(IList<Document> documents) where T : class
+        public IEnumerable<T> Get<T>(IList<Document> documents, string collection) where T : class
         {
             if (documents == null || !documents.Any())
             {
@@ -460,6 +480,8 @@ namespace YesSql
             var accessor = _store.GetIdAccessor(typeof(T), "Id");
             var typeName = Store.TypeNames[typeof(T)];
 
+            var state = GetState(collection);
+
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
@@ -468,7 +490,7 @@ namespace YesSql
                     continue;
                 }
 
-                if (_identityMap.TryGetEntityById(d.Id, out var entity))
+                if (state.IdentityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
                 }
@@ -495,8 +517,8 @@ namespace YesSql
                     }
 
                     // track the loaded object
-                    _identityMap.AddEntity(d.Id, item);
-                    _identityMap.AddDocument(d);
+                    state.IdentityMap.AddEntity(d.Id, item);
+                    state.IdentityMap.AddDocument(d);
 
                     result.Add(item);
                 }
@@ -505,12 +527,12 @@ namespace YesSql
             return result;
         }
 
-        public IQuery Query()
+        public IQuery Query(string collection = null)
         {
-            return new DefaultQuery(_connection, _transaction, this, _tablePrefix);
+            return new DefaultQuery(_connection, _transaction, this, _tablePrefix, collection);
         }
 
-        public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery) where T : class
+        public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class
         {
             if (compiledQuery == null)
             {
@@ -521,7 +543,7 @@ namespace YesSql
 
             if (!_store.CompiledQueries.TryGetValue(compiledQueryType, out var queryState))
             {
-                var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix)).For<T>(false);
+                var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix, collection)).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
                 queryState = defaultQuery._query._queryState;
 
@@ -587,7 +609,11 @@ namespace YesSql
         /// </summary>
         private void ReleaseSession()
         {
-            _identityMap.Clear();
+            foreach (var state in CollectionStates.Values)
+            {
+                state.IdentityMap.Clear();
+            }
+
             _descriptors.Clear();
             _indexes?.Clear();
 
@@ -599,13 +625,17 @@ namespace YesSql
         /// </summary>
         private void ReleaseTransaction()
         {
-            _concurrent.Clear();
-            _saved.Clear();
-            _updated.Clear();
-            _tracked.Clear();
-            _deleted.Clear();
+            foreach (var state in CollectionStates.Values)
+            {
+                state.Concurrent.Clear();
+                state.Saved.Clear();
+                state.Updated.Clear();
+                state.Tracked.Clear();
+                state.Deleted.Clear();
+                state.Maps.Clear();
+            }
+
             _commands.Clear();
-            _maps.Clear();
 
             if (_transaction != null)
             {
@@ -663,33 +693,39 @@ namespace YesSql
             try
             {
                 // saving all tracked entities
-                foreach (var obj in _tracked)
+                foreach (var collectionState in CollectionStates)
                 {
-                    if (!_deleted.Contains(obj))
+                    var state = collectionState.Value;
+                    var collection = collectionState.Key;
+
+                    foreach (var obj in state.Tracked)
                     {
-                        await UpdateEntityAsync(obj, true);
+                        if (!state.Deleted.Contains(obj))
+                        {
+                            await UpdateEntityAsync(obj, true, collection);
+                        }
                     }
-                }
 
-                // saving all updated entities
-                foreach (var obj in _updated)
-                {
-                    if (!_deleted.Contains(obj))
+                    // saving all updated entities
+                    foreach (var obj in state.Updated)
                     {
-                        await UpdateEntityAsync(obj, false);
+                        if (!state.Deleted.Contains(obj))
+                        {
+                            await UpdateEntityAsync(obj, false, collection);
+                        }
                     }
-                }
 
-                // saving all pending entities
-                foreach (var obj in _saved)
-                {
-                    await SaveEntityAsync(obj);
-                }
+                    // saving all pending entities
+                    foreach (var obj in state.Saved)
+                    {
+                        await SaveEntityAsync(obj, collection);
+                    }
 
-                // deleting all pending entities
-                foreach (var obj in _deleted)
-                {
-                    await DeleteEntityAsync(obj);
+                    // deleting all pending entities
+                    foreach (var obj in state.Deleted)
+                    {
+                        await DeleteEntityAsync(obj, collection);
+                    }
                 }
 
                 // compute all reduce indexes
@@ -712,24 +748,27 @@ namespace YesSql
             }
             finally
             {
-                // Track all saved and updated entities in case they are modified before
-                // CommitAsync is called
-                foreach(var saved in _saved)
+                foreach (var state in CollectionStates.Values)
                 {
-                    _tracked.Add(saved);
-                }
+                    // Track all saved and updated entities in case they are modified before
+                    // CommitAsync is called
+                    foreach (var saved in state.Saved)
+                    {
+                        state.Tracked.Add(saved);
+                    }
 
-                foreach (var updated in _updated)
-                {
-                    _tracked.Add(updated);
-                }
+                    foreach (var updated in state.Updated)
+                    {
+                        state.Tracked.Add(updated);
+                    }
 
-                _saved.Clear();
-                _updated.Clear();
-                _deleted.Clear();
+                    state.Saved.Clear();
+                    state.Updated.Clear();
+                    state.Deleted.Clear();
+                    state.Maps.Clear();
+                }
 
                 _commands.Clear();
-                _maps.Clear();
                 _flushing = false;
             }
         }
@@ -780,17 +819,17 @@ namespace YesSql
 
             if (createDocumentCommands != null)
             {
-                foreach (var page in createDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize))
+                foreach (var page in createDocumentCommands.PagesOfByCollection(_store.Configuration.CommandsPageSize))
                 {
-                    _commands.Add(new CreateDocumentCommand(page.SelectMany(x => x.Documents), _tablePrefix));
+                    _commands.Add(new CreateDocumentCommand(page.Value.SelectMany(x => x.Documents), Store.Configuration.TableNameConvention, _tablePrefix, page.Key));
                 }
             }
 
             if (deleteDocumentCommands != null)
             {
-                foreach (var page in deleteDocumentCommands.PagesOf(_store.Configuration.CommandsPageSize))
+                foreach (var page in deleteDocumentCommands.PagesOfByCollection(_store.Configuration.CommandsPageSize))
                 {
-                    _commands.Add(new DeleteDocumentCommand(page.SelectMany(x => x.Documents), _tablePrefix));
+                    _commands.Add(new DeleteDocumentCommand(page.Value.SelectMany(x => x.Documents), Store, page.Key));
                 }
             }
 
@@ -798,9 +837,9 @@ namespace YesSql
             {
                 foreach (var entry in deleteMapIndexCommandsDictionary)
                 {
-                    foreach (var page in entry.Value.PagesOf(_store.Configuration.CommandsPageSize))
+                    foreach (var page in entry.Value.PagesOfByCollection(_store.Configuration.CommandsPageSize))
                     {
-                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.SelectMany(x => x.DocumentIds), _tablePrefix, _dialect));
+                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.Value.SelectMany(x => x.DocumentIds), Store, page.Key));
                     }
                 }
             }
@@ -851,145 +890,156 @@ namespace YesSql
         /// </summary>
         internal bool HasWork()
         {
-            return
-                _saved.Count +
-                _updated.Count +
-                _tracked.Count +
-                _deleted.Count > 0
-                ;
+            foreach (var state in CollectionStates.Values)
+            {
+                if (
+                    state.Saved.Count +
+                    state.Updated.Count +
+                    state.Tracked.Count +
+                    state.Deleted.Count > 0
+                    ) return true;
+            }
+
+            return false;
         }
 
         private async Task ReduceAsync()
         {
-            // loop over each Indexer used by new objects
-            foreach (var descriptor in _maps.Keys)
+            foreach (var collectionState in CollectionStates)
             {
-                // if the descriptor has no reduce behavior, ignore it
-                if (descriptor.Reduce == null)
+                var state = collectionState.Value;
+                var collection = collectionState.Key;
+
+                // loop over each Indexer used by new objects
+                foreach (var descriptor in state.Maps.Keys)
                 {
-                    continue;
-                }
-
-                if (descriptor.GroupKey == null)
-                {
-                    throw new InvalidOperationException(
-                        "A map/reduce index must declare at least one property with a GroupKey attribute: " +
-                        descriptor.Type.FullName);
-                }
-
-                // a groupping method for the current descriptor
-                var descriptorGroup = GetGroupingMetod(descriptor);
-
-                // list all available grouping keys in the current set
-                var allKeysForDescriptor =
-                    _maps[descriptor].Select(x => x.Map).Select(descriptorGroup).Distinct().ToArray();
-
-                // reduce each group, will result in one Reduced index per group
-                foreach (var currentKey in allKeysForDescriptor)
-                {
-                    // group all mapped indexes
-                    var newMapsGroup =
-                        _maps[descriptor].Where(x => x.State == MapStates.New).Select(x => x.Map).Where(
-                            x => descriptorGroup(x).Equals(currentKey)).ToArray();
-
-                    var deletedMapsGroup =
-                        _maps[descriptor].Where(x => x.State == MapStates.Delete).Select(x => x.Map).Where(
-                            x => descriptorGroup(x).Equals(currentKey)).ToArray();
-
-                    var updatedMapsGroup =
-                        _maps[descriptor].Where(x => x.State == MapStates.Update).Select(x => x.Map).Where(
-                            x => descriptorGroup(x).Equals(currentKey)).ToArray();
-
-                    // todo: if an updated object got his Key changed, then apply a New to the new value group
-                    // and a Delete to the old value group. Otherwise apply Update to the current value group
-
-                    IIndex index = null;
-
-                    if (newMapsGroup.Any())
+                    // if the descriptor has no reduce behavior, ignore it
+                    if (descriptor.Reduce == null)
                     {
-                        // reducing an already groupped set (technically the reduction should contain the grouping step, but by design ...)
-                        index = descriptor.Reduce(newMapsGroup.GroupBy(descriptorGroup).First());
-
-                        if (index == null)
-                        {
-                            throw new InvalidOperationException(
-                                "The reduction on a grouped set should have resulted in a unique result"
-                                );
-                        }
+                        continue;
                     }
 
-                    var dbIndex = await ReduceForAsync(descriptor, currentKey);
-
-                    // if index present in db and new objects, reduce them
-                    if (dbIndex != null && index != null)
+                    if (descriptor.GroupKey == null)
                     {
-                        // reduce over the two objects
-                        var reductions = new[] { dbIndex, index };
-
-                        var grouppedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault();
-
-                        if (grouppedReductions == null)
-                        {
-                            throw new InvalidOperationException(
-                                "The grouping on the db and in memory set should have resulted in a unique result");
-                        }
-
-                        index = descriptor.Reduce(grouppedReductions);
-
-                        if (index == null)
-                        {
-                            throw new InvalidOperationException(
-                                "The reduction on a grouped set should have resulted in a unique result");
-                        }
-                    }
-                    else if (dbIndex != null)
-                    {
-                        index = dbIndex;
+                        throw new InvalidOperationException(
+                            "A map/reduce index must declare at least one property with a GroupKey attribute: " +
+                            descriptor.Type.FullName);
                     }
 
-                    if (index != null)
+                    // a groupping method for the current descriptor
+                    var descriptorGroup = GetGroupingMetod(descriptor);
+
+                    // list all available grouping keys in the current set
+                    var allKeysForDescriptor =
+                        state.Maps[descriptor].Select(x => x.Map).Select(descriptorGroup).Distinct().ToArray();
+
+                    // reduce each group, will result in one Reduced index per group
+                    foreach (var currentKey in allKeysForDescriptor)
                     {
-                        // are there any deleted object for this descriptor/group ?
-                        if (deletedMapsGroup.Any())
+                        // group all mapped indexes
+                        var newMapsGroup =
+                            state.Maps[descriptor].Where(x => x.State == MapStates.New).Select(x => x.Map).Where(
+                                x => descriptorGroup(x).Equals(currentKey)).ToArray();
+
+                        var deletedMapsGroup =
+                            state.Maps[descriptor].Where(x => x.State == MapStates.Delete).Select(x => x.Map).Where(
+                                x => descriptorGroup(x).Equals(currentKey)).ToArray();
+
+                        var updatedMapsGroup =
+                            state.Maps[descriptor].Where(x => x.State == MapStates.Update).Select(x => x.Map).Where(
+                                x => descriptorGroup(x).Equals(currentKey)).ToArray();
+
+                        // todo: if an updated object got his Key changed, then apply a New to the new value group
+                        // and a Delete to the old value group. Otherwise apply Update to the current value group
+
+                        IIndex index = null;
+
+                        if (newMapsGroup.Any())
                         {
-                            index = descriptor.Delete(index, deletedMapsGroup.GroupBy(descriptorGroup).First());
-                            // At this point, index can be null if the reduction returned a null index from Delete handler
+                            // reducing an already groupped set (technically the reduction should contain the grouping step, but by design ...)
+                            index = descriptor.Reduce(newMapsGroup.GroupBy(descriptorGroup).First());
+
+                            if (index == null)
+                            {
+                                throw new InvalidOperationException(
+                                    "The reduction on a grouped set should have resulted in a unique result"
+                                    );
+                            }
                         }
 
-                        // are there any updated object for this descriptor/group ?
-                        if (updatedMapsGroup.Any())
+                        var dbIndex = await ReduceForAsync(descriptor, currentKey);
+
+                        // if index present in db and new objects, reduce them
+                        if (dbIndex != null && index != null)
                         {
-                            index = descriptor.Update(index, updatedMapsGroup.GroupBy(descriptorGroup).First());
+                            // reduce over the two objects
+                            var reductions = new[] { dbIndex, index };
+
+                            var grouppedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault();
+
+                            if (grouppedReductions == null)
+                            {
+                                throw new InvalidOperationException(
+                                    "The grouping on the db and in memory set should have resulted in a unique result");
+                            }
+
+                            index = descriptor.Reduce(grouppedReductions);
+
+                            if (index == null)
+                            {
+                                throw new InvalidOperationException(
+                                    "The reduction on a grouped set should have resulted in a unique result");
+                            }
                         }
-                    }
-
-                    var deletedDocumentIds = deletedMapsGroup.SelectMany(x => x.GetRemovedDocuments().Select(d => d.Id)).ToArray();
-                    var addedDocumentIds = newMapsGroup.SelectMany(x => x.GetAddedDocuments().Select(d => d.Id)).ToArray();
-
-                    if (dbIndex != null)
-                    {
-                        if (index == null)
+                        else if (dbIndex != null)
                         {
-                            _commands.Add(new DeleteReduceIndexCommand(dbIndex, _tablePrefix));
+                            index = dbIndex;
+                        }
+
+                        if (index != null)
+                        {
+                            // are there any deleted object for this descriptor/group ?
+                            if (deletedMapsGroup.Any())
+                            {
+                                index = descriptor.Delete(index, deletedMapsGroup.GroupBy(descriptorGroup).First());
+                                // At this point, index can be null if the reduction returned a null index from Delete handler
+                            }
+
+                            // are there any updated object for this descriptor/group ?
+                            if (updatedMapsGroup.Any())
+                            {
+                                index = descriptor.Update(index, updatedMapsGroup.GroupBy(descriptorGroup).First());
+                            }
+                        }
+
+                        var deletedDocumentIds = deletedMapsGroup.SelectMany(x => x.GetRemovedDocuments().Select(d => d.Id)).ToArray();
+                        var addedDocumentIds = newMapsGroup.SelectMany(x => x.GetAddedDocuments().Select(d => d.Id)).ToArray();
+
+                        if (dbIndex != null)
+                        {
+                            if (index == null)
+                            {
+                                _commands.Add(new DeleteReduceIndexCommand(dbIndex, Store, collection));
+                            }
+                            else
+                            {
+                                index.Id = dbIndex.Id;
+
+                                var common = addedDocumentIds.Intersect(deletedDocumentIds).ToArray();
+                                addedDocumentIds = addedDocumentIds.Where(x => !common.Contains(x)).ToArray();
+                                deletedDocumentIds = deletedDocumentIds.Where(x => !common.Contains(x)).ToArray();
+
+                                // Update updated, new and deleted linked documents
+                                _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, Store, collection));
+                            }
                         }
                         else
                         {
-                            index.Id = dbIndex.Id;
-
-                            var common = addedDocumentIds.Intersect(deletedDocumentIds).ToArray();
-                            addedDocumentIds = addedDocumentIds.Where(x => !common.Contains(x)).ToArray();
-                            deletedDocumentIds = deletedDocumentIds.Where(x => !common.Contains(x)).ToArray();
-
-                            // Update updated, new and deleted linked documents
-                            _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _tablePrefix));
-                        }
-                    }
-                    else
-                    {
-                        if (index != null)
-                        {
-                            // The index is new
-                            _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _tablePrefix));
+                            if (index != null)
+                            {
+                                // The index is new
+                                _commands.Add(new CreateIndexCommand(index, addedDocumentIds, Store, collection));
+                            }
                         }
                     }
                 }
@@ -1037,17 +1087,16 @@ namespace YesSql
         /// <summary>
         /// Resolves all the descriptors registered on the Store and the Session
         /// </summary>
-        private IEnumerable<IndexDescriptor> GetDescriptors(Type t)
+        private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collection)
         {
-            var cacheKey = t.FullName + ":" + CollectionHelper.Current.GetSafeName();
+            var cacheKey = t.FullName + ":" + collection;
 
             if (!_descriptors.TryGetValue(cacheKey, out var typedDescriptors))
             {
-                typedDescriptors = _store.Describe(t);
+                typedDescriptors = _store.Describe(t, collection);
 
                 if (_indexes != null)
                 {
-                    var collection = CollectionHelper.Current.GetSafeName();
                     typedDescriptors = typedDescriptors.Union(_store.CreateDescriptors(t, collection, _indexes)).ToArray();
                 }
 
@@ -1057,9 +1106,11 @@ namespace YesSql
             return typedDescriptors;
         }
 
-        private async Task MapNew(Document document, object obj)
+        private async Task MapNew(Document document, object obj, string collection)
         {
-            var descriptors = GetDescriptors(obj.GetType());
+            var descriptors = GetDescriptors(obj.GetType(), collection);
+
+            var state = GetState(collection);
 
             foreach (var descriptor in descriptors)
             {
@@ -1082,19 +1133,19 @@ namespace YesSql
                         {
                             if (index.Id == 0)
                             {
-                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix));
+                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), Store, collection));
                             }
                             else
                             {
-                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix));
+                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), Store, collection));
                             }
                         }
                         else
                         {
                             // save for later reducing
-                            if (!_maps.TryGetValue(descriptor, out var listmap))
+                            if (!state.Maps.TryGetValue(descriptor, out var listmap))
                             {
-                                _maps.Add(descriptor, listmap = new List<MapState>());
+                                state.Maps.Add(descriptor, listmap = new List<MapState>());
                             }
 
                             listmap.Add(new MapState(index, MapStates.New));
@@ -1107,16 +1158,18 @@ namespace YesSql
         /// <summary>
         /// Update map and reduce indexes when an entity is deleted.
         /// </summary>
-        private async Task MapDeleted(Document document, object obj)
+        private async Task MapDeleted(Document document, object obj, string collection)
         {
-            var descriptors = GetDescriptors(obj.GetType());
+            var descriptors = GetDescriptors(obj.GetType(), collection);
+
+            var state = GetState(collection);
 
             foreach (var descriptor in descriptors)
             {
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, _tablePrefix, _dialect));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, Store, collection));
                 }
                 else
                 {
@@ -1127,9 +1180,9 @@ namespace YesSql
                         foreach (var index in mapped)
                         {
                             // save for later reducing
-                            if (!_maps.TryGetValue(descriptor, out var listmap))
+                            if (!state.Maps.TryGetValue(descriptor, out var listmap))
                             {
-                                _maps.Add(descriptor, listmap = new List<MapState>());
+                                state.Maps.Add(descriptor, listmap = new List<MapState>());
                             }
 
                             listmap.Add(new MapState(index, MapStates.Delete));

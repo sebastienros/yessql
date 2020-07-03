@@ -15,7 +15,6 @@ namespace YesSql.Services
 
         private Dictionary<string, long> _seeds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
-        private string _tablePrefix;
         private ISqlDialect _dialect;
 
         public long GetNextId(string collection)
@@ -36,7 +35,6 @@ namespace YesSql.Services
         public Task InitializeAsync(IStore store, ISchemaBuilder builder)
         {
             _dialect = SqlDialectFactory.For(store.Configuration.ConnectionFactory.DbConnectionType);
-            _tablePrefix = store.Configuration.TablePrefix;
 
 #if NET451
             return Task.FromResult(0);
@@ -55,9 +53,9 @@ namespace YesSql.Services
 
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
-                    var tableName = String.IsNullOrEmpty(collection) ? "Document" : collection + "_" + "Document";
+                    var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
-                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(_tablePrefix + tableName);
+                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(configuration.TablePrefix + tableName);
 
                     var selectCommand = transaction.Connection.CreateCommand();
                     selectCommand.CommandText = sql;

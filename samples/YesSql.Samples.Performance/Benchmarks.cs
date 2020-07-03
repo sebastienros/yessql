@@ -37,7 +37,7 @@ namespace YesSql.Samples.Performance
                         new SchemaBuilder(configuration, transaction)
                         .DropTable("UserByName")
                         .DropTable("Identifiers")
-                        .DropTable("Document");
+                        .DropTable(configuration.TableNameConvention.GetDocumentTable(""));
 
                         transaction.Commit();
                     }
@@ -53,7 +53,7 @@ namespace YesSql.Samples.Performance
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    new SchemaBuilder(configuration, transaction).CreateMapIndexTable("UserByName", table => table
+                    new SchemaBuilder(configuration, transaction).CreateMapIndexTable<UserByName>(table => table
                         .Column<string>("Name")
                     )
                     .AlterTable("UserByName", table => table

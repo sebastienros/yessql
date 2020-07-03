@@ -4,12 +4,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using YesSql.Collections;
-using YesSql.Commands;
 using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.Commands;
@@ -52,25 +49,26 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction) { ThrowOnError = throwOnError };
 
-                    builder.DropReduceIndexTable(nameof(ArticlesByDay));
-                    builder.DropReduceIndexTable(nameof(AttachmentByDay));
-                    builder.DropMapIndexTable(nameof(ArticleByPublishedDate));
-                    builder.DropMapIndexTable(nameof(PersonByName));
-                    builder.DropMapIndexTable(nameof(PersonIdentity));
-                    builder.DropMapIndexTable(nameof(EmailByAttachment));
+                    builder.DropReduceIndexTable<ArticlesByDay>();
+                    builder.DropReduceIndexTable<AttachmentByDay>();
+                    builder.DropMapIndexTable<ArticleByPublishedDate>();
+                    builder.DropMapIndexTable<PersonByName>();
+                    builder.DropMapIndexTable<PersonByNameCol>();
+                    builder.DropMapIndexTable<PersonIdentity>();
+                    builder.DropMapIndexTable<EmailByAttachment>();
 
-                    using (new NamedCollection("Collection1"))
-                    {
-                        builder.DropMapIndexTable(nameof(PersonByNameCol));
-                    }
+                    builder.DropMapIndexTable<PersonByAge>();
+                    builder.DropMapIndexTable<PersonByNullableAge>();
+                    builder.DropMapIndexTable<Binary>();
+                    builder.DropMapIndexTable<PublishedArticle>();
+                    builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
-                    builder.DropMapIndexTable(nameof(PersonByAge));
-                    builder.DropMapIndexTable(nameof(PersonByNullableAge));
-                    builder.DropMapIndexTable(nameof(Binary));
-                    builder.DropMapIndexTable(nameof(PublishedArticle));
-                    builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
-                    builder.DropTable(Store.DocumentTable);
-                    builder.DropTable("Collection1_Document");
+                    builder.DropMapIndexTable<PersonByName>("Collection1");
+                    builder.DropMapIndexTable<PersonByNameCol>("Collection1");
+
+                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Collection1"));
+                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
+
                     builder.DropTable(DbBlockIdGenerator.TableName);
 
                     OnCleanDatabase(builder, transaction);
@@ -88,6 +86,8 @@ namespace YesSql.Tests
         public void CreateTables(IConfiguration configuration)
         {
             _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+            
+            _store.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -95,60 +95,73 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder.CreateReduceIndexTable(nameof(ArticlesByDay), column => column
+                    builder.CreateReduceIndexTable<ArticlesByDay>(column => column
                             .Column<int>(nameof(ArticlesByDay.Count))
                             .Column<int>(nameof(ArticlesByDay.DayOfYear))
                         );
-                    builder.CreateReduceIndexTable(nameof(AttachmentByDay), column => column
+                    builder.CreateReduceIndexTable<AttachmentByDay>(column => column
                             .Column<int>(nameof(AttachmentByDay.Count))
                             .Column<int>(nameof(AttachmentByDay.Date))
                         );
 
-                    builder.CreateReduceIndexTable(nameof(UserByRoleNameIndex), column => column
+                    builder.CreateReduceIndexTable<UserByRoleNameIndex>(column => column
                             .Column<int>(nameof(UserByRoleNameIndex.Count))
                             .Column<string>(nameof(UserByRoleNameIndex.RoleName))
                         );
 
-                    builder.CreateMapIndexTable(nameof(ArticleByPublishedDate), column => column
+                    builder.CreateMapIndexTable<ArticleByPublishedDate>(column => column
                             .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
                             .Column<string>(nameof(ArticleByPublishedDate.Title))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonByName), column => column
+                    builder.CreateMapIndexTable<PersonByName>(column => column
                             .Column<string>(nameof(PersonByName.SomeName))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonIdentity), column => column
+                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
+                            .Column<string>(nameof(PersonByNameCol.Name))
+                            );
+
+                    builder.CreateMapIndexTable<PersonIdentity>(column => column
                             .Column<string>(nameof(PersonIdentity.Identity))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonByAge), column => column
+                    builder.CreateMapIndexTable<PersonByAge>(column => column
                             .Column<int>(nameof(PersonByAge.Age))
                             .Column<bool>(nameof(PersonByAge.Adult))
                             .Column<string>(nameof(PersonByAge.Name))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PersonByNullableAge), column => column
+                    builder.CreateMapIndexTable<PersonByNullableAge>(column => column
                             .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
                         );
 
-                    builder.CreateMapIndexTable(nameof(PublishedArticle), column => { });
+                    builder.CreateMapIndexTable<PublishedArticle>(column => { });
 
-                    builder.CreateMapIndexTable(nameof(EmailByAttachment), column => column
+                    builder.CreateMapIndexTable<EmailByAttachment>(column => column
                             .Column<DateTime>(nameof(EmailByAttachment.Date))
                             .Column<string>(nameof(EmailByAttachment.AttachmentName))
                         );
 
-                    builder.CreateMapIndexTable(nameof(Binary), column => column
+                    builder.CreateMapIndexTable<Binary>(column => column
                             .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
                             .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(65535))
                             .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(16777215))
                             .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(16777216))
                             .Column<byte[]>(nameof(Binary.Content5))
                         );
+
+                    builder.CreateMapIndexTable<PersonByName>(column => column
+                            .Column<string>(nameof(PersonByName.SomeName)),
+                            "Collection1"
+                            );
+
+                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
+                            .Column<string>(nameof(PersonByNameCol.Name)),
+                            "Collection1"
+                            );
 
                     transaction.Commit();
                 }
@@ -2991,8 +3004,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSaveInCollections()
         {
-            await _store.InitializeCollectionAsync("Collection1");
-
             using (var session = _store.CreateSession())
             {
                 var bill = new
@@ -3009,75 +3020,52 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query().Any().CountAsync());
             }
 
-            using (new NamedCollection("Collection1"))
+            using (var session = _store.CreateSession())
             {
-                using (var session = _store.CreateSession())
+
+                var steve = new
                 {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
 
-                    var steve = new
-                    {
-                        Firstname = "Steve",
-                        Lastname = "Balmer"
-                    };
+                session.Save(steve, "Collection1");
+            }
 
-                    session.Save(steve);
-                }
-
-                using (var session = _store.CreateSession())
-                {
-                    Assert.Equal(1, await session.Query().Any().CountAsync());
-                }
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query("Collection1").Any().CountAsync());
             }
         }
 
         [Fact]
         public async Task ShouldFilterMapIndexPerCollection()
         {
-            await _store.InitializeCollectionAsync("Collection1");
+            _store.RegisterIndexes<PersonIndexProviderCol>("Collection1");
 
-            using (new NamedCollection("Collection1"))
+            using (var session = _store.CreateSession())
             {
-                using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+                var bill = new Person
                 {
-                    await connection.OpenAsync();
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
 
-                    using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                    {
-                        new SchemaBuilder(_store.Configuration, transaction)
-                            .CreateMapIndexTable(nameof(PersonByNameCol), column => column
-                                .Column<string>(nameof(PersonByNameCol.Name))
-                            );
-
-                        transaction.Commit();
-                    }
-                }
-
-                _store.RegisterIndexes<PersonIndexProviderCol>();
-
-                using (var session = _store.CreateSession())
+                var steve = new Person
                 {
-                    var bill = new Person
-                    {
-                        Firstname = "Bill",
-                        Lastname = "Gates",
-                    };
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
 
-                    var steve = new Person
-                    {
-                        Firstname = "Steve",
-                        Lastname = "Balmer"
-                    };
+                session.Save(bill, "Collection1");
+                session.Save(steve, "Collection1");
+            }
 
-                    session.Save(bill);
-                    session.Save(steve);
-                }
-
-                using (var session = _store.CreateSession())
-                {
-                    Assert.Equal(2, await session.Query<Person, PersonByNameCol>().CountAsync());
-                    Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Steve").CountAsync());
-                    Assert.Equal(1, await session.Query<Person, PersonByNameCol>().Where(x => x.Name == "Steve").CountAsync());
-                }
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByNameCol>("Collection1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Steve", "Collection1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>("Collection1").Where(x => x.Name == "Steve").CountAsync());
             }
 
             // Store a Person in the default collection
@@ -3096,44 +3084,39 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(1, await session.Query<Person>().CountAsync());
-                Assert.Equal(2, await session.QueryIndex<PersonByNameCol>().CountAsync());
+                Assert.Equal(0, await session.QueryIndex<PersonByNameCol>().CountAsync());
             }
         }
 
         [Fact]
         public async Task ShouldGetAndDeletePerCollection()
         {
-            await _store.InitializeCollectionAsync("Collection1");
-
-            using (new NamedCollection("Collection1"))
+            using (var session = _store.CreateSession())
             {
-                using (var session = _store.CreateSession())
+                var bill = new Person
                 {
-                    var bill = new Person
-                    {
-                        Firstname = "Bill",
-                        Lastname = "Gates",
-                    };
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
 
-                    session.Save(bill);
-                }
+                session.Save(bill, "Collection1");
+            }
 
-                using (var session = _store.CreateSession())
-                {
-                    var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.NotNull(person);
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>("Collection1").FirstOrDefaultAsync();
+                Assert.NotNull(person);
 
-                    person = await session.GetAsync<Person>(person.Id);
-                    Assert.NotNull(person);
+                person = await session.GetAsync<Person>(person.Id, "Collection1");
+                Assert.NotNull(person);
 
-                    session.Delete(person);
-                }
+                session.Delete(person, "Collection1");
+            }
 
-                using (var session = _store.CreateSession())
-                {
-                    var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.Null(person);
-                }
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>("Collection1").FirstOrDefaultAsync();
+                Assert.Null(person);
             }
         }
 
@@ -3641,7 +3624,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public void ShouldLogSql()
+        public async Task ShouldLogSql()
         {
             var logger = new TestLogger();
 
@@ -3657,6 +3640,8 @@ namespace YesSql.Tests
                 };
 
                 session.Save(bill);
+
+                await session.CommitAsync();
             }
 
             Assert.NotEmpty(logger.ToString());
@@ -3691,8 +3676,6 @@ namespace YesSql.Tests
         [InlineData("Collection1")]
         public async Task ShouldGenerateIdsConcurrently(string collection)
         {
-            await _store.InitializeCollectionAsync(collection);
-
             var cts = new CancellationTokenSource(10000);
             var concurrency = 5;
             var man = new ManualResetEventSlim();
@@ -4137,6 +4120,70 @@ namespace YesSql.Tests
                 //Assert.Equal(16777215, binary.Content3.Length);
                 //Assert.Equal(16777216, binary.Content4.Length);
                 Assert.Equal(8000, binary.Content5.Length);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCommitInMultipleCollections()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var steve = new
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(steve);
+
+                var bill = new
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+
+                session.Save(bill, "Collection1");
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var count = await session.Query("Collection1").Any().CountAsync();
+                Assert.Equal(1, count);
+                
+                count = await session.Query().Any().CountAsync();
+                Assert.Equal(1, count);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldStoreCollectionIndexesInDistinctTables()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>("Collection1");
+
+            using (var session = _store.CreateSession())
+            {
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(steve);
+
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                session.Save(bill, "Collection1");
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.QueryIndex<PersonByName>().CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>("Collection1").CountAsync());
             }
         }
     }

@@ -29,10 +29,10 @@ namespace YesSql.Samples.Hi
                 using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                 {
                     new SchemaBuilder(store.Configuration, transaction)
-                        .CreateMapIndexTable(nameof(BlogPostByAuthor), table => table
+                        .CreateMapIndexTable<BlogPostByAuthor>(table => table
                             .Column<string>("Author")
                         )
-                        .CreateReduceIndexTable(nameof(BlogPostByDay), table => table
+                        .CreateReduceIndexTable<BlogPostByDay>(table => table
                             .Column<int>("Count")
                             .Column<int>("Day")
                     );

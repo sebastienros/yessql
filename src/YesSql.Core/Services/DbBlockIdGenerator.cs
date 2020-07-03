@@ -77,6 +77,8 @@ namespace YesSql.Services
 
         public long GetNextId(string collection)
         {
+            collection = collection ?? "";
+
             lock (_synLock)
             {
                 if (!_ranges.TryGetValue(collection, out var range))

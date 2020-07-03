@@ -9,7 +9,6 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
@@ -46,8 +45,6 @@ namespace YesSql
 
         internal ImmutableDictionary<Type, QueryState> CompiledQueries =
             ImmutableDictionary<Type, QueryState>.Empty;
-
-        public const string DocumentTable = "Document";
 
         static Store()
         {
@@ -99,13 +96,13 @@ namespace YesSql
                 }
             }
 
-            // Pee-initialize the default collection
+            // Pre-initialize the default collection
             await InitializeCollectionAsync("");
         }
 
-        public async Task InitializeCollectionAsync(string collectionName)
+        public async Task InitializeCollectionAsync(string collection)
         {
-            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
+            var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
@@ -190,7 +187,7 @@ namespace YesSql
                 }
                 finally
                 {
-                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collectionName);
+                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection);
                 }
             }
         }
@@ -250,15 +247,14 @@ namespace YesSql
         /// <summary>
         /// Returns the available indexers for a specified type
         /// </summary>
-        public IEnumerable<IndexDescriptor> Describe(Type target)
+        public IEnumerable<IndexDescriptor> Describe(Type target, string collection)
         {
             if (target == null)
             {
                 throw new ArgumentNullException();
             }
 
-            var collection = CollectionHelper.Current.GetSafeName();
-            var cacheKey = target.FullName + ":" + collection;
+            var cacheKey = target.FullName + ":" + collection ?? "";
 
             if (!Descriptors.TryGetValue(cacheKey, out var result))
             {
@@ -308,13 +304,13 @@ namespace YesSql
             return (int)Configuration.IdGenerator.GetNextId(collection);
         }
 
-        public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)
+        public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)
         {
             foreach (var indexProvider in indexProviders)
             {
                 if (indexProvider.CollectionName == null)
                 {
-                    indexProvider.CollectionName = CollectionHelper.Current.GetSafeName();
+                    indexProvider.CollectionName = collection ?? "";
                 }
             }
 
@@ -390,5 +386,6 @@ namespace YesSql
 
             return (T)content;
         }
+
     }
 }

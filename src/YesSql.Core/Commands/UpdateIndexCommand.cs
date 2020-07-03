@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Indexes;
 
 namespace YesSql.Commands
@@ -20,7 +19,8 @@ namespace YesSql.Commands
             IIndex index,
             IEnumerable<int> addedDocumentIds,
             IEnumerable<int> deletedDocumentIds,
-            string tablePrefix) : base(index, tablePrefix)
+            IStore _store,
+            string collection) : base(index, _store, collection)
         {
             _addedDocumentIds = addedDocumentIds;
             _deletedDocumentIds = deletedDocumentIds;
@@ -37,11 +37,11 @@ namespace YesSql.Commands
             // Update the documents list
             if (Index is ReduceIndex reduceIndex)
             {
-                var documentTable = CollectionHelper.Current.GetPrefixedName(Store.DocumentTable);
-                var bridgeTableName = type.Name + "_" + documentTable;
+                var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
+                var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
-                var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
-                var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_tablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
+                var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
+                var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
 
                 logger.LogTrace(bridgeSqlAdd);
                 await connection.ExecuteAsync(bridgeSqlAdd, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
