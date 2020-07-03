@@ -46,8 +46,6 @@ namespace YesSql
         internal ImmutableDictionary<Type, QueryState> CompiledQueries =
             ImmutableDictionary<Type, QueryState>.Empty;
 
-        public const string DocumentTable = "Document";
-
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
@@ -98,13 +96,13 @@ namespace YesSql
                 }
             }
 
-            // Pee-initialize the default collection
+            // Pre-initialize the default collection
             await InitializeCollectionAsync("");
         }
 
         public async Task InitializeCollectionAsync(string collection)
         {
-            var documentTable = Store.GetDocumentTable(collection);
+            var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
@@ -389,24 +387,5 @@ namespace YesSql
             return (T)content;
         }
 
-        public static string GetDocumentTable(string collection)
-        {
-            if (String.IsNullOrEmpty(collection))
-            {
-                return DocumentTable;
-            }
-
-            return collection + "_" + DocumentTable;
-        }
-
-        public static string GetIndexTable(Type type, string collection)
-        {
-            if (String.IsNullOrEmpty(collection))
-            {
-                return type.Name;
-            }
-
-            return collection + "_" + type.Name;
-        }
     }
 }

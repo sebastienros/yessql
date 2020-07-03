@@ -14,6 +14,7 @@ namespace YesSql.Sql
 
         public string TablePrefix { get; private set; }
         public ISqlDialect Dialect { get; private set; }
+        public ITableNameConvention TableNameConvention { get; private set; }
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
         public bool ThrowOnError { get; set; } = true;
@@ -27,6 +28,7 @@ namespace YesSql.Sql
             Dialect = SqlDialectFactory.For(configuration.ConnectionFactory.DbConnectionType);
             TablePrefix = configuration.TablePrefix;
             ThrowOnError = throwOnError;
+            TableNameConvention = configuration.TableNameConvention;
         }
 
         private void Execute(IEnumerable<string> statements)
@@ -48,9 +50,9 @@ namespace YesSql.Sql
             try
             {
                 var indexName = indexType.Name;
-                var indexTable = Store.GetIndexTable(indexType, collection); 
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection); 
                 var createTable = new CreateTableCommand(Prefix(indexTable));
-                var documentTable = Store.GetDocumentTable(collection);
+                var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 createTable
                     .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
@@ -77,9 +79,9 @@ namespace YesSql.Sql
             try
             {
                 var indexName = indexType.Name;
-                var indexTable = Store.GetIndexTable(indexType, collection);
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
                 var createTable = new CreateTableCommand(Prefix(indexTable));
-                var documentTable = Store.GetDocumentTable(collection);
+                var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 createTable
                     .Column<int>("Id", column => column.Identity().NotNull())
@@ -113,8 +115,8 @@ namespace YesSql.Sql
         {
             try
             {
-                var indexTable = Store.GetIndexTable(indexType, collection);
-                var documentTable = Store.GetDocumentTable(collection);
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+                var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 var bridgeTableName = indexTable + "_" + documentTable;
 
@@ -143,7 +145,7 @@ namespace YesSql.Sql
             try
             {
                 var indexName = indexType.Name;
-                var indexTable = Store.GetIndexTable(indexType, collection);
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
 
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {

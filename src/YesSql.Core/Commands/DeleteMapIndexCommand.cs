@@ -10,24 +10,23 @@ namespace YesSql.Commands
 {
     public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName
     {
+        private readonly IStore _store;
         public IEnumerable<int> DocumentIds { get; }
         public Type IndexType { get; }
-        private readonly string _tablePrefix;
-
         public string Collection { get; }
         public int ExecutionOrder { get; } = 1;
 
-        public DeleteMapIndexCommand(Type indexType, IEnumerable<int> documentIds, string tablePrefix, string collection)
+        public DeleteMapIndexCommand(Type indexType, IEnumerable<int> documentIds, IStore store, string collection)
         {
             IndexType = indexType;
             DocumentIds = documentIds;
-            _tablePrefix = tablePrefix;
             Collection = collection;
+            _store = store;
         }
 
         public Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger )
         {
-            var command = "delete from " + dialect.QuoteForTableName(_tablePrefix + Store.GetIndexTable(IndexType, Collection)) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @Id";
+            var command = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection)) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @Id";
             logger.LogTrace(command);
             return connection.ExecuteAsync(command, DocumentIds.Select(x => new { Id = x }), transaction);
         }

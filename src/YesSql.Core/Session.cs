@@ -260,7 +260,7 @@ namespace YesSql
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
             doc.Version = 1;
 
-            _commands.Add(new CreateDocumentCommand(doc, _tablePrefix, collection));
+            _commands.Add(new CreateDocumentCommand(doc, Store.Configuration.TableNameConvention, _tablePrefix, collection));
 
             state.IdentityMap.AddDocument(doc);
 
@@ -332,14 +332,14 @@ namespace YesSql
             oldDoc.Content = newContent;
             oldDoc.Version += 1;
 
-            _commands.Add(new UpdateDocumentCommand(oldDoc, Store.Configuration.TablePrefix, version, collection));
+            _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
 
         private async Task<Document> GetDocumentByIdAsync(int id, string collection)
         {
             await DemandAsync();
 
-            var documentTable = YesSql.Store.GetDocumentTable(collection);
+            var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
@@ -418,7 +418,7 @@ namespace YesSql
                     await MapDeleted(doc, obj, collection);
 
                     // The command needs to come after any index deletion because of the database constraints
-                    _commands.Add(new DeleteDocumentCommand(doc, _tablePrefix, collection));
+                    _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
                 }
             }
         }
@@ -437,7 +437,7 @@ namespace YesSql
 
             await DemandAsync();
 
-            var documentTable = YesSql.Store.GetDocumentTable(collection);
+            var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
@@ -821,7 +821,7 @@ namespace YesSql
             {
                 foreach (var page in createDocumentCommands.PagesOfByCollection(_store.Configuration.CommandsPageSize))
                 {
-                    _commands.Add(new CreateDocumentCommand(page.Value.SelectMany(x => x.Documents), _tablePrefix, page.Key));
+                    _commands.Add(new CreateDocumentCommand(page.Value.SelectMany(x => x.Documents), Store.Configuration.TableNameConvention, _tablePrefix, page.Key));
                 }
             }
 
@@ -829,7 +829,7 @@ namespace YesSql
             {
                 foreach (var page in deleteDocumentCommands.PagesOfByCollection(_store.Configuration.CommandsPageSize))
                 {
-                    _commands.Add(new DeleteDocumentCommand(page.Value.SelectMany(x => x.Documents), _tablePrefix, page.Key));
+                    _commands.Add(new DeleteDocumentCommand(page.Value.SelectMany(x => x.Documents), Store, page.Key));
                 }
             }
 
@@ -839,7 +839,7 @@ namespace YesSql
                 {
                     foreach (var page in entry.Value.PagesOfByCollection(_store.Configuration.CommandsPageSize))
                     {
-                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.Value.SelectMany(x => x.DocumentIds), _tablePrefix, page.Key));
+                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.Value.SelectMany(x => x.DocumentIds), Store, page.Key));
                     }
                 }
             }
@@ -1019,7 +1019,7 @@ namespace YesSql
                         {
                             if (index == null)
                             {
-                                _commands.Add(new DeleteReduceIndexCommand(dbIndex, _tablePrefix, collection));
+                                _commands.Add(new DeleteReduceIndexCommand(dbIndex, Store, collection));
                             }
                             else
                             {
@@ -1030,7 +1030,7 @@ namespace YesSql
                                 deletedDocumentIds = deletedDocumentIds.Where(x => !common.Contains(x)).ToArray();
 
                                 // Update updated, new and deleted linked documents
-                                _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, _tablePrefix, collection));
+                                _commands.Add(new UpdateIndexCommand(index, addedDocumentIds, deletedDocumentIds, Store, collection));
                             }
                         }
                         else
@@ -1038,7 +1038,7 @@ namespace YesSql
                             if (index != null)
                             {
                                 // The index is new
-                                _commands.Add(new CreateIndexCommand(index, addedDocumentIds, _tablePrefix, collection));
+                                _commands.Add(new CreateIndexCommand(index, addedDocumentIds, Store, collection));
                             }
                         }
                     }
@@ -1133,11 +1133,11 @@ namespace YesSql
                         {
                             if (index.Id == 0)
                             {
-                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), _tablePrefix, collection));
+                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), Store, collection));
                             }
                             else
                             {
-                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), _tablePrefix, collection));
+                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), Store, collection));
                             }
                         }
                         else
@@ -1169,7 +1169,7 @@ namespace YesSql
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, _tablePrefix, collection));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, Store, collection));
                 }
                 else
                 {

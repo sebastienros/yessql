@@ -37,7 +37,7 @@ namespace YesSql.Samples.Performance
                         new SchemaBuilder(configuration, transaction)
                         .DropTable("UserByName")
                         .DropTable("Identifiers")
-                        .DropTable(Store.GetDocumentTable(""));
+                        .DropTable(configuration.TableNameConvention.GetDocumentTable(""));
 
                         transaction.Commit();
                     }

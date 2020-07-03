@@ -66,8 +66,8 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonByName>("Collection1");
                     builder.DropMapIndexTable<PersonByNameCol>("Collection1");
 
-                    builder.DropTable(Store.GetDocumentTable("Collection1"));
-                    builder.DropTable(Store.DocumentTable);
+                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Collection1"));
+                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
 
                     builder.DropTable(DbBlockIdGenerator.TableName);
 

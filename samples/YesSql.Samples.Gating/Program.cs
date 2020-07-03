@@ -49,7 +49,7 @@ namespace YesSql.Samples.Gating
                         new SchemaBuilder(configuration, transaction)
                         .DropMapIndexTable<PersonByName>()
                         .DropTable("Identifiers")
-                        .DropTable(Store.GetDocumentTable(""));
+                        .DropTable(configuration.TableNameConvention.GetDocumentTable(""));
 
                         transaction.Commit();
                     }
