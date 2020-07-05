@@ -37,7 +37,7 @@ namespace YesSql
         /// <returns>
         /// <c>true</c> if the object was imported, <c>false</c> otherwise.
         /// </returns>
-        bool Import(object item, int id, string collection = null);
+        bool Import(object item, int id, int version, string collection = null);
 
         /// <summary>
         /// Removes an item from the identity map.
@@ -126,7 +126,7 @@ namespace YesSql
         /// </returns>
         public static bool Import(this ISession session, object item, string collection = null)
         {
-            return session.Import(item, 0, collection);
+            return session.Import(item, 0, 0, collection);
         }
 
         /// <summary>

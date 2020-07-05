@@ -13,7 +13,8 @@ namespace YesSql
     {
         public Configuration()
         {
-            IdentifierFactory = new DefaultIdentifierFactory();
+            IdentifierAccessorFactory = new PropertyAccessorFactory("Id");
+            VersionAccessorFactory = new PropertyAccessorFactory("Version");
             ContentSerializer = new JsonContentSerializer();
             IdGenerator = new DefaultIdGenerator();
             IsolationLevel = IsolationLevel.ReadCommitted;
@@ -26,7 +27,8 @@ namespace YesSql
             TableNameConvention = new DefaultTableNameConvention();
         }
 
-        public IIdentifierFactory IdentifierFactory { get; set; }
+        public IAccessorFactory IdentifierAccessorFactory { get; set; }
+        public IAccessorFactory VersionAccessorFactory { get; set; }
         public IsolationLevel IsolationLevel { get; set; }
         public IConnectionFactory ConnectionFactory { get; set; }
         public IContentSerializer ContentSerializer { get; set; }

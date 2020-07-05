@@ -1,4 +1,3 @@
-using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Sql;
 
