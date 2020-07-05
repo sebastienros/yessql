@@ -7,5 +7,6 @@ namespace YesSql.Tests.Models
         public string Lastname { get; set; }
         public int Age { get; set; }
         public bool Anonymous { get; set; }
+        public int Version { get; set; }
     }
 }

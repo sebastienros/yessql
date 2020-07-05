@@ -4186,5 +4186,196 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.QueryIndex<PersonByName>("Collection1").CountAsync());
             }
         }
+
+        [Fact]
+        public virtual async Task ShouldSetVersionProperty()
+        {
+            _store.Configuration.CheckConcurrentUpdates<Person>();
+
+            using (var session = _store.CreateSession())
+            {
+                var doc1 = new Person { Firstname = "Bill", Version = 11 };
+
+                session.Save(doc1);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var doc1 = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(doc1);
+
+                Assert.Equal(11, doc1.Version);
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldIncrementVersionProperty()
+        {
+            _store.Configuration.CheckConcurrentUpdates<Person>();
+
+            using (var session = _store.CreateSession())
+            {
+                var doc1 = new Person { Firstname = "Bill" };
+
+                session.Save(doc1);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var doc1 = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(doc1);
+
+                Assert.Equal(1, doc1.Version);
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldCheckVersionHaschanged()
+        {
+            // Simulates a long running workflow where a web page
+            // wants to update a document, and check that the state it
+            // stored was not updated in the meantime.
+            // The difference with other concurrency checks is that 
+            // the Controller would reload a Document and apply changes,
+            // but the Version would not detect the concurrent conflict
+            // as the controller has reloaded the document with the new version.
+
+            // In this test the version is checked against the view model 
+            // to ensure we are modifying the correct version
+
+            _store.Configuration.CheckConcurrentUpdates<Person>();
+
+            // Create initial document
+            using (var session = _store.CreateSession())
+            {
+                var email = new Person { Firstname = "Bill" };
+
+                session.Save(email);
+            }
+
+            var viewModel = new Person
+            {
+                Firstname = "",
+                Version = 0
+            };
+
+            // User A loads the document, stores in a view model
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                // The object is new, its version should be 1
+                Assert.Equal(1, person.Version);
+
+                viewModel.Firstname = person.Firstname;
+                viewModel.Version = person.Version;
+            }
+
+            // User B loads the document, updates it
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                person.Firstname = "William";
+
+                session.Save(person);
+
+                // The object is new, its version should be 1
+                Assert.Equal(1, person.Version);
+            }
+
+            // User A submits the changes, and should detect the version has changed
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                Assert.NotEqual(person.Version, viewModel.Version);
+            }
+        }
+
+        [Fact]
+        public virtual async Task ShouldDetectVersionHaschanged()
+        {
+            // Simulates a long running workflow where a web page
+            // wants to update a document, and check that the state it
+            // stored was not updated in the meantime.
+            // The difference with other concurrency checks is that 
+            // the Controller would reload a Document and apply changes,
+            // but the Version would not detect the concurrent conflict
+            // as the controller has reloaded the document with the new version.
+
+            // In this test the stored version is assigned to the loaded object
+            // and a ConcurrencyException is thrown
+
+            _store.Configuration.CheckConcurrentUpdates<Person>();
+
+            // Create initial document
+            using (var session = _store.CreateSession())
+            {
+                var email = new Person { Firstname = "Bill" };
+
+                session.Save(email);
+            }
+
+            var viewModel = new Person
+            {
+                Firstname = "",
+                Version = 0
+            };
+
+            // User A loads the document, stores in a view model
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                // The object is new, its version should be 1
+                Assert.Equal(1, person.Version);
+
+                viewModel.Firstname = person.Firstname;
+                viewModel.Version = person.Version;
+            }
+
+            // User B loads the document, updates it
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                person.Firstname = "William";
+
+                session.Save(person);
+
+                // The object is new, its version should be 1
+                Assert.Equal(1, person.Version);
+            }
+
+            // User A submits the changes
+            await Assert.ThrowsAsync<ConcurrencyException>(async () =>
+            {
+                using (var session = _store.CreateSession())
+                {
+                    var person = await session.Query<Person>().FirstOrDefaultAsync();
+                    Assert.NotNull(person);
+
+                    person.Version = viewModel.Version;
+                    person.Firstname = viewModel.Firstname;
+
+                    session.Save(person);
+                }
+            });
+
+            // Changes should not have been persisted
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
+
+                Assert.Equal("William", person.Firstname);
+            }
+        }
     }
 }

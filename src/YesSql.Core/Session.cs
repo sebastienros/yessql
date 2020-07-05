@@ -115,7 +115,7 @@ namespace YesSql
             }
 
             // Does it have a valid identifier?
-            var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+            var accessor = _store.GetIdAccessor(entity.GetType());
             if (accessor != null)
             {
                 id = accessor.Get(entity);
@@ -148,7 +148,7 @@ namespace YesSql
             state.Saved.Add(entity);
         }
 
-        public bool Import(object entity, int id = 0, string collection = null)
+        public bool Import(object entity, int id = 0, int version = 0, string collection = null)
         {
             CheckDisposed();
 
@@ -163,9 +163,22 @@ namespace YesSql
             var doc = new Document
             {
                 Type = Store.TypeNames[entity.GetType()],
-                Content = Store.Configuration.ContentSerializer.Serialize(entity),
-                Version = 0
+                Content = Store.Configuration.ContentSerializer.Serialize(entity)
             };
+
+            // Import version
+            if (version != 0)
+            {
+                doc.Version = version;
+            }
+            else
+            {
+                var versionAccessor = _store.GetVersionAccessor(entity.GetType());
+                if (versionAccessor != null)
+                {
+                    doc.Version = versionAccessor.Get(entity);
+                }
+            }
 
             if (id != 0)
             {
@@ -180,7 +193,7 @@ namespace YesSql
             else
             {
                 // Does it have a valid identifier?
-                var accessor = _store.GetIdAccessor(entity.GetType(), "Id");
+                var accessor = _store.GetIdAccessor(entity.GetType());
                 if (accessor != null)
                 {
                     id = accessor.Get(entity);
@@ -257,8 +270,23 @@ namespace YesSql
 
             await DemandAsync();
 
+            var versionAccessor = _store.GetVersionAccessor(entity.GetType());
+            if (versionAccessor != null)
+            {
+                doc.Version = versionAccessor.Get(entity);
+            }
+
+            if (doc.Version == 0)
+            {
+                doc.Version = 1;
+            }
+
+            if (versionAccessor != null)
+            {
+                versionAccessor.Set(entity, (int) doc.Version);
+            }
+
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
-            doc.Version = 1;
 
             _commands.Add(new CreateDocumentCommand(doc, Store.Configuration.TableNameConvention, _tablePrefix, collection));
 
@@ -304,6 +332,33 @@ namespace YesSql
                 }
             }
 
+            long version = -1;
+
+            if (state.Concurrent.Contains(id))
+            {
+                version = oldDoc.Version;
+
+                var versionAccessor = _store.GetVersionAccessor(entity.GetType());
+                if (versionAccessor != null)
+                {
+                    var localVersion = versionAccessor.Get(entity);
+
+                    // if the version has been set, use it
+                    if (localVersion != 0)
+                    {
+                        version = localVersion;
+                    }
+                }
+
+                oldDoc.Version += 1;
+
+                // apply the new version to the object
+                if (versionAccessor != null)
+                {
+                    versionAccessor.Set(entity, (int)oldDoc.Version);
+                }
+            }
+
             var newContent = Store.Configuration.ContentSerializer.Serialize(entity);
 
             // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
@@ -311,13 +366,6 @@ namespace YesSql
             if (tracked && String.Equals(newContent, oldDoc.Content))
             {
                 return;
-            }
-
-            long version = -1;
-
-            if (state.Concurrent.Contains(id))
-            {
-                version = oldDoc.Version;
             }
 
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
@@ -330,7 +378,6 @@ namespace YesSql
             await DemandAsync();
 
             oldDoc.Content = newContent;
-            oldDoc.Version += 1;
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
@@ -398,7 +445,7 @@ namespace YesSql
 
                 if (!state.IdentityMap.TryGetDocumentId(obj, out var id))
                 {
-                    var accessor = _store.GetIdAccessor(obj.GetType(), "Id");
+                    var accessor = _store.GetIdAccessor(obj.GetType());
                     if (accessor == null)
                     {
                         throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
@@ -477,7 +524,7 @@ namespace YesSql
 
             var result = new List<T>();
 
-            var accessor = _store.GetIdAccessor(typeof(T), "Id");
+            var accessor = _store.GetIdAccessor(typeof(T));
             var typeName = Store.TypeNames[typeof(T)];
 
             var state = GetState(collection);
@@ -502,7 +549,7 @@ namespace YesSql
                     if (typeof(T) == typeof(object))
                     {
                         var itemType = Store.TypeNames[d.Type];
-                        accessor = _store.GetIdAccessor(itemType, "Id");
+                        accessor = _store.GetIdAccessor(itemType);
 
                         item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, itemType);
                     }

@@ -34,8 +34,11 @@ namespace YesSql
         internal ImmutableDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
             ImmutableDictionary<string, IEnumerable<IndexDescriptor>>.Empty;
 
-        internal ImmutableDictionary<Type, IIdAccessor<int>> IdAccessors =
-            ImmutableDictionary<Type, IIdAccessor<int>>.Empty;
+        internal ImmutableDictionary<Type, IAccessor<int>> IdAccessors =
+            ImmutableDictionary<Type, IAccessor<int>>.Empty;
+
+        internal ImmutableDictionary<Type, IAccessor<int>> VersionAccessors =
+            ImmutableDictionary<Type, IAccessor<int>>.Empty;
 
         internal ImmutableDictionary<Type, Func<IDescriptor>> DescriptorActivators =
             ImmutableDictionary<Type, Func<IDescriptor>>.Empty;
@@ -230,15 +233,25 @@ namespace YesSql
         {
         }
 
-        public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)
+        public IAccessor<int> GetIdAccessor(Type tContainer)
         {
             if (!IdAccessors.TryGetValue(tContainer, out var result))
             {
-                result = Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name);
+                result = Configuration.IdentifierAccessorFactory.CreateAccessor<int>(tContainer);
 
-                // Don't use Add as two thread could concurrently reach this point.
-                // We don't mind losing some values as the next call will restore it if it's not cached.
                 IdAccessors = IdAccessors.SetItem(tContainer, result);
+            }
+
+            return result;
+        }
+
+        public IAccessor<int> GetVersionAccessor(Type tContainer)
+        {
+            if (!VersionAccessors.TryGetValue(tContainer, out var result))
+            {
+                result = Configuration.VersionAccessorFactory.CreateAccessor<int>(tContainer);
+
+                VersionAccessors = VersionAccessors.SetItem(tContainer, result);
             }
 
             return result;
@@ -254,7 +267,10 @@ namespace YesSql
                 throw new ArgumentNullException();
             }
 
-            var cacheKey = target.FullName + ":" + collection ?? "";
+            var cacheKey = String.IsNullOrEmpty(collection)
+                ? target.FullName
+                : target.FullName + ":" + collection
+                ;
 
             if (!Descriptors.TryGetValue(cacheKey, out var result))
             {
@@ -274,8 +290,6 @@ namespace YesSql
             {
                 activator = MakeDescriptorActivator(target);
 
-                // Don't use Add as two thread could concurrently reach this point.
-                // We don't mind losing some values as the next call will restore it if it's not cached.
                 DescriptorActivators = DescriptorActivators.SetItem(target, activator);
             }
 

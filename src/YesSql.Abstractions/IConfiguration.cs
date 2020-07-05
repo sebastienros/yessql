@@ -8,7 +8,8 @@ namespace YesSql
 {
     public interface IConfiguration
     {
-        IIdentifierFactory IdentifierFactory { get; set; }
+        IAccessorFactory IdentifierAccessorFactory { get; set; }
+        IAccessorFactory VersionAccessorFactory { get; set; }
         IsolationLevel IsolationLevel { get; set; }
         IConnectionFactory ConnectionFactory { get; set; }
         IContentSerializer ContentSerializer { get; set; }
@@ -24,9 +25,15 @@ namespace YesSql
 
     public static class ConfigurationExtensions
     {
-        public static IConfiguration SetIdentifierFactory(this IConfiguration configuration, IIdentifierFactory identifierFactory)
+        public static IConfiguration SetIdentifierAccessorFactory(this IConfiguration configuration, IAccessorFactory identifierAccessorFactory)
         {
-            configuration.IdentifierFactory = identifierFactory;
+            configuration.IdentifierAccessorFactory = identifierAccessorFactory;
+            return configuration;
+        }
+
+        public static IConfiguration SetVersionAccessorFactory(this IConfiguration configuration, IAccessorFactory versionAccessorFactory)
+        {
+            configuration.VersionAccessorFactory = versionAccessorFactory;
             return configuration;
         }
 
