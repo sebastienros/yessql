@@ -145,5 +145,124 @@ namespace YesSql.Tests
             Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
         }
 
+        [Fact]
+        public async Task LastOneInWins()
+        {
+            // Shows that there's an existing document created at some point in the past.            
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 18
+                };
+
+                session.Save(bill);
+            }
+
+            // ** The document is at version 1 **
+
+            var user_b_saved = new ManualResetEventSlim(false);
+
+            var user_a = Task.Run(async () =>
+            {
+                PersonViewModel vm;
+
+                {
+                    // 1. User-A creates a Session-A, loads the document, populates the web form, and then the Session - A is disposed. The request is complete.
+                    using var session = _store.CreateSession();
+                    var document = await session.Query<Person>().FirstOrDefaultAsync();
+
+                    vm = new PersonViewModel(document); // ** There's no public API that provides a way to capture the document's Version right here.
+                }
+
+                // person is now being editing by User-A in a web form.
+                vm.Firstname = "William";
+                vm.Anonymous = false;
+
+                user_b_saved.Wait();
+
+                {
+                    // 4. User-A submits form with Values-B two minutes later, creates Session-D, updates the documents, saves, and then Session-D is disposed. The request is complete.
+                    using var session = _store.CreateSession();
+
+                    var document = await session.Query<Person>().FirstOrDefaultAsync();
+
+                    document.Firstname = vm.Firstname;
+                    document.Lastname = vm.Lastname;
+                    document.Age = vm.Age;
+                    document.Anonymous = vm.Anonymous;
+
+                    session.Save(document); // ** There's no public API that provides a way to specify a document's Version right here to use in a concurrency check.
+                    await session.CommitAsync();
+                }
+            });
+
+            var user_b = Task.Run(async () =>
+            {
+                PersonViewModel vm;
+
+                {
+                    // 2. User-B creates a Session-B, loads the document, populates the web form, and then the Session-C is disposed. The request is complete.
+                    using var session = _store.CreateSession();
+                    var document = await session.Query<Person>().FirstOrDefaultAsync();
+
+                    vm = new PersonViewModel(document); // ** There's no public API that provides a way to capture the document's Version right here.
+                }
+
+                // person is now being editing by User-B in a web form.
+                vm.Age = 13;
+                vm.Anonymous = true;
+
+                {
+                    // 4. User-B submits form with Values-A, creates Session-C, updates the documents, saves, and then Session-C is disposed. The request is complete.
+                    using var session = _store.CreateSession();
+
+                    var document = await session.Query<Person>().FirstOrDefaultAsync();
+
+                    document.Firstname = vm.Firstname;
+                    document.Lastname = vm.Lastname;
+                    document.Age = vm.Age;
+                    document.Anonymous = vm.Anonymous;
+                    
+                    session.Save(document); // ** There's no public API that provides a way to specify a document's Version right here to use in a concurrency check.
+                    await session.CommitAsync();
+                }
+
+                user_b_saved.Set();
+            });
+
+            await Task.WhenAll(user_a, user_b);
+
+            // 6. Document contains Value-B (from User-A), but that's only because User-A was the "last one in", but not because this *should* be the state of the Document.
+
+            // Since User-A and User-B made changes to the person, but what *should* be the values for this entity based on business rules?
+            
+            // Should it look like User-A's changes:
+            //     Person { FirstName = "William", LastName = "Gates", Age = 18, Anonymous = false }
+            // or should it look like User-B's changes:
+            //     Person { FirstName = "Bill", LastName = "Gates", Age = 13, Anonymous = true }
+
+            throw new Exception("Inconclusive");
+        }
+
+        public class PersonViewModel
+        {
+            public PersonViewModel(Person person)
+            {
+                Id = person.Id;
+                Firstname = person.Firstname;
+                Lastname = person.Lastname;
+                Age = person.Age;
+                Anonymous = person.Anonymous;
+            }
+
+            public int Id { get; set; }
+            public string Firstname { get; set; }
+            public string Lastname { get; set; }
+            public int Age { get; set; }
+            public bool Anonymous { get; set; }
+        }
     }
 }
