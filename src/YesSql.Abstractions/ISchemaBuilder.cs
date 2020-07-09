@@ -12,7 +12,6 @@ namespace YesSql.Sql
         DbTransaction Transaction { get; }
 
         ISchemaBuilder AlterTable(string name, Action<IAlterTableCommand> table);
-        ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns);
         ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destTable, string[] destColumns);
         ISchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns);
         ISchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destTable, string[] destColumns);
