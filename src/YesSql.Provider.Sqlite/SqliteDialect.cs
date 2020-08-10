@@ -52,7 +52,7 @@ namespace YesSql.Provider.Sqlite
 
         public override string IdentitySelectString => "; select last_insert_rowid()";
 
-        public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
+        public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (ColumnTypes.TryGetValue(dbType, out string value))
             {

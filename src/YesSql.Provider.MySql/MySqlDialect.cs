@@ -8,6 +8,9 @@ namespace YesSql.Provider.MySql
 {
     public class MySqlDialect : BaseDialect
     {
+        private static byte DefaultDecimalPrecision = 65;
+        private static byte DefaultDecimalScale = 30;
+
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
@@ -19,7 +22,7 @@ namespace YesSql.Provider.MySql
             {DbType.DateTimeOffset, "datetime" },
             {DbType.Boolean, "bit"},
             {DbType.Byte, "tinyint unsigned"},
-            {DbType.Decimal, "decimal(65, 30)"},
+            {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Double, "double"},
             {DbType.Int16, "smallint"},
             {DbType.UInt16, "smallint unsigned"},
@@ -38,7 +41,7 @@ namespace YesSql.Provider.MySql
         public override string IdentityColumnString => "int AUTO_INCREMENT primary key";
         public override bool SupportsIfExistsBeforeTableName => true;
 
-        public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
+        public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
             {
@@ -94,6 +97,11 @@ namespace YesSql.Provider.MySql
 
             if (ColumnTypes.TryGetValue(dbType, out string value))
             {
+                if(dbType == DbType.Decimal)
+                {
+                    value = string.Format(value, precision ?? DefaultDecimalPrecision, scale ?? DefaultDecimalScale);
+                }
+
                 return value;
             }
 

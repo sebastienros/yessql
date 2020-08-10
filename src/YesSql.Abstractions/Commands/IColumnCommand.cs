@@ -6,9 +6,9 @@ namespace YesSql.Sql.Schema
     {
         string ColumnName { get; }
 
-        byte Scale { get; }
+        byte? Scale { get; }
 
-        byte Precision { get; }
+        byte? Precision { get; }
 
         DbType DbType { get; }
 

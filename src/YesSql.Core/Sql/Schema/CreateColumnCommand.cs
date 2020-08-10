@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 
 namespace YesSql.Sql.Schema
 {
@@ -32,13 +32,13 @@ namespace YesSql.Sql.Schema
             return this;
         }
 
-        public ICreateColumnCommand WithPrecision(byte precision)
+        public ICreateColumnCommand WithPrecision(byte? precision)
         {
             Precision = precision;
             return this;
         }
 
-        public ICreateColumnCommand WithScale(byte scale)
+        public ICreateColumnCommand WithScale(byte? scale)
         {
             Scale = scale;
             return this;

@@ -126,7 +126,7 @@ namespace YesSql.Provider
             return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
         }
 
-        public abstract string GetTypeName(DbType dbType, int? length, byte precision, byte scale);
+        public abstract string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale);
 
         public virtual string GetSqlValue(object value)
         {
