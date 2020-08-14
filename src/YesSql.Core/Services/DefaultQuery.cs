@@ -25,7 +25,8 @@ namespace YesSql.Services
             _store = store;
         }
 
-        public List<Type> _bound = new List<Type>();
+        public List<string> _bound = new List<string>();
+        public List<Type> _boundType = new List<Type>();
         public readonly string _documentTable;
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;

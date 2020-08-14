@@ -1067,6 +1067,42 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryMultipleIndexes()
+        {
+            // We should be able to query documents on multiple rows in an index
+            // This mean the same Index table needs to be JOINed
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman"
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                session.Save(hanselman);
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person>()
+                    .With<PersonIdentity>(x => x.Identity == "Scott")
+                    .With<PersonIdentity>(x => x.Identity == "Guthrie")
+                    .CountAsync()
+                    );
+            }
+        }
+
+        [Fact]
         public async Task ShouldDeletePreviousIndexes()
         {
             // When an index returns multiple map indexes, changing these results should remove the previous ones.

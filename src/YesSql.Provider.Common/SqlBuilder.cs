@@ -67,14 +67,19 @@ namespace YesSql.Sql
             _count = take;
         }
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn)
+        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null)
         {
             JoinSegments.AddRange(new[] {
                 " INNER JOIN ", _dialect.QuoteForTableName(_tablePrefix + table),
                 " ON ", _dialect.QuoteForTableName(_tablePrefix + onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.QuoteForTableName(_tablePrefix + toTable), ".", _dialect.QuoteForColumnName(toColumn), " "
+                " = ", _dialect.QuoteForTableName(_tablePrefix + toTable), ".", _dialect.QuoteForColumnName(toColumn)
                 }
             );
+
+            if (!String.IsNullOrEmpty(alias))
+            {
+                JoinSegments.AddRange(new[] { "AS ", alias });
+            }
         }
 
         public void Select()
