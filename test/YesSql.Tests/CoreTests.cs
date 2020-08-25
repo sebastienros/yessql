@@ -3547,6 +3547,52 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryOrderByRandom()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    session.Save(new Person { Firstname = i < 50 ? "D" : "E" });
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().OrderByRandom().ListAsync();
+
+                var idArray = Enumerable.Range(1, 100).ToArray();
+                Assert.NotEqual(idArray, results.Select(x => x.Id));
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryThenByRandom()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    session.Save(new Person { Firstname = i < 50 ? "D" : "E" });
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ThenByRandom().ListAsync();
+
+                var first50Persons = results.Take(50);
+                Assert.All(first50Persons, person => Assert.Equal("D", person.Firstname));
+                var idArray = Enumerable.Range(1, 50).ToArray();
+                Assert.NotEqual(idArray, first50Persons.Select(x => x.Id));
+            }
+        }
+
+        [Fact]
         public async Task ShouldImportDetachedObject()
         {
             var bill = new Person

@@ -14,6 +14,7 @@ namespace YesSql
         void ClearOrder();
         void OrderBy(string orderBy);
         void OrderByDescending(string orderBy);
+        void OrderByRandom();
         void Select();
         void Selector(string selector);
         void Selector(string table, string column);
@@ -27,6 +28,7 @@ namespace YesSql
         void From(string from);
         void ThenOrderBy(string orderBy);
         void ThenOrderByDescending(string orderBy);
+        void ThenOrderByRandom();
         void Having(string having);
         void GroupBy(string groupBy);
         void Trail(string trail);

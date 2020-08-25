@@ -51,6 +51,8 @@ namespace YesSql.Provider
 
         public virtual string PrimaryKeyString => "primary key";
 
+        public abstract string RandomOrderByClause { get; }
+
         public virtual bool SupportsIdentityColumns => true;
 
         public virtual bool SupportsUnique => true;
@@ -196,7 +198,7 @@ namespace YesSql.Provider
 
         public virtual List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
         {
-            // Most databases requires all ordered fields to be part of the select when DISTINCT is used
+            // Most databases (PostgreSql and SqlServer) requires all ordered fields to be part of the select when DISTINCT is used
 
             foreach (var o in orderBy)
             {

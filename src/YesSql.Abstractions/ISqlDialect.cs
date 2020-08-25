@@ -11,6 +11,7 @@ namespace YesSql
         string CascadeConstraintsString { get; }
         string CreateTableString { get; }
         string PrimaryKeyString { get; }
+        string RandomOrderByClause { get; }
         string NullColumnString { get; }
         bool SupportsUnique { get; }
 
