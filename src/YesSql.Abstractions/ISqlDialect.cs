@@ -11,6 +11,7 @@ namespace YesSql
         string CascadeConstraintsString { get; }
         string CreateTableString { get; }
         string PrimaryKeyString { get; }
+        string RandomOrderByClause { get; }
         string NullColumnString { get; }
         bool SupportsUnique { get; }
 
@@ -35,7 +36,6 @@ namespace YesSql
         string GetDropForeignKeyConstraintString(string name);
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
         List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy);
-        string GetRandomOrderByColumnName();
         void Concat(StringBuilder builder, params Action<StringBuilder>[] generators);
         string DefaultValuesInsert { get; }
         void Page(ISqlBuilder sqlBuilder, string offset, string limit);

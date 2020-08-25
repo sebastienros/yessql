@@ -51,6 +51,8 @@ namespace YesSql.Provider
 
         public virtual string PrimaryKeyString => "primary key";
 
+        public abstract string RandomOrderByClause { get; }
+
         public virtual bool SupportsIdentityColumns => true;
 
         public virtual bool SupportsUnique => true;
@@ -203,7 +205,7 @@ namespace YesSql.Provider
                 var trimmed = o.Trim();
 
                 // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
-                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && !select.Contains(o))
+                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && trimmed != RandomOrderByClause && !select.Contains(o))
                 {
                     select.Add(",");
                     select.Add(o);
@@ -212,7 +214,5 @@ namespace YesSql.Provider
 
             return select;
         }
-
-        public abstract string GetRandomOrderByColumnName();
     }
 }

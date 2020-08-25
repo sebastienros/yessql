@@ -162,8 +162,7 @@ namespace YesSql.Sql
 
         public virtual void OrderByRandom()
         {
-            var randomOrderByColumnName = _dialect.GetRandomOrderByColumnName();
-            OrderSegments.Add(randomOrderByColumnName);
+            OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
         public virtual void ThenOrderBy(string orderBy)
@@ -181,9 +180,8 @@ namespace YesSql.Sql
 
         public virtual void ThenOrderByRandom()
         {
-            var randomOrderByColumnName = _dialect.GetRandomOrderByColumnName();
             OrderSegments.Add(", ");
-            OrderSegments.Add(randomOrderByColumnName);
+            OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
         public virtual void GroupBy(string orderBy)

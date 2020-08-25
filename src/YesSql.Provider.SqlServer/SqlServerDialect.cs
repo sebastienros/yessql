@@ -49,6 +49,7 @@ namespace YesSql.Provider.SqlServer
 
         public override string Name => "SqlServer";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
+        public override string RandomOrderByClause => "newid()";
 
         public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
         {
@@ -135,11 +136,6 @@ namespace YesSql.Provider.SqlServer
         public override string QuoteForTableName(string tableName)
         {
             return "[" + tableName + "]";
-        }
-
-        public override string GetRandomOrderByColumnName()
-        {
-            return "newid()";
         }
 
         public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)

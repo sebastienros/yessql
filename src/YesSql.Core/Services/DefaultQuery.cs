@@ -789,11 +789,21 @@ namespace YesSql.Services
             _queryState._sqlBuilder.OrderByDescending(_queryState._builder.ToString());
         }
 
+        private void OrderByRandom()
+        {
+            _queryState._sqlBuilder.OrderByRandom();
+        }
+
         private void ThenByDescending<T>(Expression<Func<T, object>> keySelector)
         {
             _queryState._builder.Clear();
             ConvertFragment(_queryState._builder, RemoveUnboxing(keySelector.Body));
             _queryState._sqlBuilder.ThenOrderByDescending(_queryState._builder.ToString());
+        }
+
+        private void ThenByRandom()
+        {
+            _queryState._sqlBuilder.ThenOrderByRandom();
         }
 
         public async Task<int> CountAsync()
@@ -1302,6 +1312,12 @@ namespace YesSql.Services
                 return this;
             }
 
+            public IQuery<T, TIndex> OrderByRandom()
+            {
+                _query.OrderByRandom();
+                return this;
+            }
+
             IQuery<T, TIndex> IQuery<T, TIndex>.ThenByDescending(Expression<Func<TIndex, object>> keySelector)
             {
                 _query.ThenByDescending(keySelector);
@@ -1311,6 +1327,12 @@ namespace YesSql.Services
             IQuery<T, TIndex> IQuery<T, TIndex>.ThenByDescending(string sql)
             {
                 _query._queryState._sqlBuilder.ThenOrderByDescending(sql);
+                return this;
+            }
+
+            public IQuery<T, TIndex> ThenByRandom()
+            {
+                _query.ThenByRandom();
                 return this;
             }
         }

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
 using YesSql.Sql;
 
 namespace YesSql.Provider.PostgreSql
@@ -51,6 +49,7 @@ namespace YesSql.Provider.PostgreSql
         public override string NotInOperator(string values) => " <> all(array[" + values + "])";
         public override string IdentitySelectString => "RETURNING";
         public override string IdentityColumnString => "SERIAL PRIMARY KEY";
+        public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
 
@@ -95,11 +94,6 @@ namespace YesSql.Provider.PostgreSql
         public override string GetDropForeignKeyConstraintString(string name)
         {
             return " drop foreign key " + name;
-        }
-
-        public override string GetRandomOrderByColumnName()
-        {
-            return "random()";
         }
 
         public override string DefaultValuesInsert => "DEFAULT VALUES";
