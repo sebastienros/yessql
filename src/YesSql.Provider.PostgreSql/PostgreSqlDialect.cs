@@ -97,6 +97,11 @@ namespace YesSql.Provider.PostgreSql
             return " drop foreign key " + name;
         }
 
+        public override string GetRandomOrderByColumnName()
+        {
+            return "random()";
+        }
+
         public override string DefaultValuesInsert => "DEFAULT VALUES";
 
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)

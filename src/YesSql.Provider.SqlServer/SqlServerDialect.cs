@@ -137,6 +137,11 @@ namespace YesSql.Provider.SqlServer
             return "[" + tableName + "]";
         }
 
+        public override string GetRandomOrderByColumnName()
+        {
+            return "newid()";
+        }
+
         public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)
         {
             builder.Append("(");

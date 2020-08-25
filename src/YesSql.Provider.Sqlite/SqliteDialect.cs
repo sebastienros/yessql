@@ -62,6 +62,11 @@ namespace YesSql.Provider.Sqlite
             throw new Exception("DbType not found for: " + dbType);
         }
 
+        public override string GetRandomOrderByColumnName()
+        {
+            return "random()";
+        }
+
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
             sqlBuilder.ClearTrail();

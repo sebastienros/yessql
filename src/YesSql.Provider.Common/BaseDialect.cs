@@ -212,5 +212,7 @@ namespace YesSql.Provider
 
             return select;
         }
+
+        public abstract string GetRandomOrderByColumnName();
     }
 }

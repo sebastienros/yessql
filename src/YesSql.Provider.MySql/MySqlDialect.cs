@@ -157,6 +157,11 @@ namespace YesSql.Provider.MySql
             return "`" + tableName + "`";
         }
 
+        public override string GetRandomOrderByColumnName()
+        {
+            return "rand()";
+        }
+
         public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)
         {
             builder.Append("concat(");
