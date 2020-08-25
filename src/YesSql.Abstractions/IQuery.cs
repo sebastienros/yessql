@@ -84,9 +84,11 @@ namespace YesSql
         IQuery<T, TIndex> OrderBy(string sql);
         IQuery<T, TIndex> OrderByDescending(Expression<Func<TIndex, object>> keySelector);
         IQuery<T, TIndex> OrderByDescending(string sql);
+        IQuery<T, TIndex> OrderByRandom();
         IQuery<T, TIndex> ThenBy(Expression<Func<TIndex, object>> keySelector);
         IQuery<T, TIndex> ThenBy(string sql);
         IQuery<T, TIndex> ThenByDescending(Expression<Func<TIndex, object>> keySelector);
         IQuery<T, TIndex> ThenByDescending(string sql);
+        IQuery<T, TIndex> ThenByRandom();
     }
 }

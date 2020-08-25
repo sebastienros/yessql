@@ -160,6 +160,11 @@ namespace YesSql.Sql
             OrderSegments.Add(" DESC");
         }
 
+        public virtual void OrderByRandom()
+        {
+            OrderSegments.Add(_dialect.RandomOrderByClause);
+        }
+
         public virtual void ThenOrderBy(string orderBy)
         {
             OrderSegments.Add(", ");
@@ -171,6 +176,12 @@ namespace YesSql.Sql
             OrderSegments.Add(", ");
             OrderSegments.Add(orderBy);
             OrderSegments.Add(" DESC");
+        }
+
+        public virtual void ThenOrderByRandom()
+        {
+            OrderSegments.Add(", ");
+            OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
         public virtual void GroupBy(string orderBy)
