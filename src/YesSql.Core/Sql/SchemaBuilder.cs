@@ -239,60 +239,6 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
-        {
-            try
-            {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_builder.CreateSql(command));
-            }
-            catch
-            {
-                if (ThrowOnError)
-                {
-                    throw;
-                }
-            }
-            return this;
-        }
-
-        public ISchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
-        {
-            try
-            {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_builder.CreateSql(command));
-
-            }
-            catch
-            {
-                if (ThrowOnError)
-                {
-                    throw;
-                }
-            }
-
-            return this;
-        }
-
-        public ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
-        {
-            try
-            {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_builder.CreateSql(command));
-            }
-            catch
-            {
-                if (ThrowOnError)
-                {
-                    throw;
-                }
-            }
-
-            return this;
-        }
-
         public ISchemaBuilder DropForeignKey(string srcTable, string name)
         {
             try
