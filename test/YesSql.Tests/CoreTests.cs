@@ -4428,20 +4428,13 @@ namespace YesSql.Tests
 
         [Theory]
         [ClassData(typeof(DecimalPrecisionAndScaleDataGenerator))]
-        public async Task SqlDecimalPrecisionAndScale(byte? precision, byte? scale)
+        public void SqlDecimalPrecisionAndScale(byte? precision, byte? scale)
         {
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
+            string expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? _store.Dialect.DefaultDecimalPrecision, scale ?? _store.Dialect.DefaultDecimalScale);
 
-                var dialect = SqlDialectFactory.For(connection);
+            string result = _store.Dialect.GetTypeName(DbType.Decimal, null, precision, scale);
 
-                string expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? dialect.DefaultDecimalPrecision, scale ?? dialect.DefaultDecimalScale);
-
-                string result = dialect.GetTypeName(DbType.Decimal, null, precision, scale);
-
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(expected, result);
         }
     }
 }
