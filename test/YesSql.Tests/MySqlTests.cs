@@ -16,6 +16,9 @@ namespace YesSql.Tests
     public class MySqlTests : CoreTests
     {
         public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=user1;pwd=Password12!;database=yessql;";
+
+        protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
+
         public MySqlTests()
         {
         }
@@ -82,5 +85,7 @@ namespace YesSql.Tests
         {
             base.ShouldRenameColumn();
         }
+
+        
     }
 }

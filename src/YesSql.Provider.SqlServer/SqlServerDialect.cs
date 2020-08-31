@@ -8,9 +8,6 @@ namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
-        private static byte DefaultDecimalPrecision = 19;
-        private static byte DefaultDecimalScale = 5;
-
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "UNIQUEIDENTIFIER"},
@@ -53,6 +50,10 @@ namespace YesSql.Provider.SqlServer
         public override string Name => "SqlServer";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
         public override string RandomOrderByClause => "newid()";
+
+        public override byte DefaultDecimalPrecision => 19;
+
+        public override byte DefaultDecimalScale => 5;
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {

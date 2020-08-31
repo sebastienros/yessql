@@ -123,6 +123,10 @@ namespace YesSql.Provider
 
         public virtual bool PrefixIndex => false;
 
+        public abstract byte DefaultDecimalPrecision { get; }
+
+        public abstract byte DefaultDecimalScale { get; }
+
         protected virtual string Quote(string value)
         {
             return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;

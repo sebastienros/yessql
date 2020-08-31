@@ -23,6 +23,8 @@ namespace YesSql
         bool SupportsIdentityColumns { get; }
         string IdentityColumnString { get; }
         string IdentitySelectString { get; }
+        byte DefaultDecimalPrecision { get; }
+        byte DefaultDecimalScale { get; }
         string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale);
         string GetSqlValue(object value);
         string QuoteForTableName(string v);

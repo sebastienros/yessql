@@ -7,9 +7,6 @@ namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {
-        private static byte DefaultDecimalPrecision = 19;
-        private static byte DefaultDecimalScale = 5;
-
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
@@ -143,6 +140,10 @@ namespace YesSql.Provider.PostgreSql
         }
 
         public override string CascadeConstraintsString => " cascade ";
+
+        public override byte DefaultDecimalPrecision => 19;
+
+        public override byte DefaultDecimalScale => 5;
 
         public override string GetSqlValue(object value)
         {

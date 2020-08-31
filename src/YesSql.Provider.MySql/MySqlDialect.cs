@@ -8,9 +8,6 @@ namespace YesSql.Provider.MySql
 {
     public class MySqlDialect : BaseDialect
     {
-        private static byte DefaultDecimalPrecision = 65;
-        private static byte DefaultDecimalScale = 30;
-
         private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
@@ -127,6 +124,10 @@ namespace YesSql.Provider.MySql
         }
 
         public override string DefaultValuesInsert => "VALUES()";
+
+        public override byte DefaultDecimalPrecision => 65;
+
+        public override byte DefaultDecimalScale => 30;
 
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
