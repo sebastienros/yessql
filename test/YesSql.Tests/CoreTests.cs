@@ -102,7 +102,6 @@ namespace YesSql.Tests
                     builder.CreateReduceIndexTable<ArticlesByDay>(column => column
                             .Column<int>(nameof(ArticlesByDay.Count))
                             .Column<int>(nameof(ArticlesByDay.DayOfYear))
-                            .Column<decimal>("DecimalCol")
                         );
                     builder.CreateReduceIndexTable<AttachmentByDay>(column => column
                             .Column<int>(nameof(AttachmentByDay.Count))
