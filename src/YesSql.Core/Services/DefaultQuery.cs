@@ -23,10 +23,11 @@ namespace YesSql.Services
             _documentTable = store.Configuration.TableNameConvention.GetDocumentTable(collection);
             _sqlBuilder = sqlBuilder;
             _store = store;
+            _bindings[_bindingName] = new List<Type>();
         }
 
-        public List<string> _bound = new List<string>();
-        public List<Type> _boundType = new List<Type>();
+        public string _bindingName = "a1";
+        public Dictionary<string, List<Type>> _bindings = new Dictionary<string, List<Type>>();
         public readonly string _documentTable;
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;
@@ -35,11 +36,42 @@ namespace YesSql.Services
         public string _collection;
         public IStore _store;
 
+        public void AddBinding(Type t)
+        {
+            if (!_bindings.TryGetValue(_bindingName, out var bindings))
+            {
+                _bindings.Add(_bindingName, bindings = new List<Type>());
+            }
+
+            bindings.Add(t);
+        }
+
+        public void RemoveBinding()
+        {
+            if (!_bindings.TryGetValue(_bindingName, out var bindings))
+            {
+                return;
+            }
+
+            bindings.RemoveAt(bindings.Count - 1);
+        }
+
+        public List<Type> GetBindings()
+        {
+            return _bindings[_bindingName];
+        }
+
         public QueryState Clone()
         {
             var clone = new QueryState(_sqlBuilder.Clone(), _store, _collection);
 
-            clone._bound = new List<Type>(_bound);
+            clone._bindingName = _bindingName;
+            clone._bindings = new Dictionary<string, List<Type>>();
+            foreach (var binding in _bindings)
+            {
+                clone._bindings.Add(binding.Key, new List<Type>(binding.Value));
+            }
+
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
             clone._builder = new StringBuilder(_builder.ToString());
@@ -201,7 +233,7 @@ namespace YesSql.Services
                     var predicate = expression.Arguments[2];
 
                     var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
-                    query._queryState._bound.Add(tIndex);
+                    query._queryState.AddBinding(tIndex);
 
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
 
@@ -218,7 +250,7 @@ namespace YesSql.Services
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     sqlBuilder.WhereAlso(_builder.ToString());
 
-                    query._queryState._bound.RemoveAt(query._queryState._bound.Count - 1);
+                    query._queryState.RemoveBinding();
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
@@ -232,7 +264,7 @@ namespace YesSql.Services
                     var predicate = expression.Arguments[2];
 
                     var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
-                    query._queryState._bound.Add(tIndex);
+                    query._queryState.AddBinding(tIndex);
 
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
 
@@ -245,7 +277,7 @@ namespace YesSql.Services
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
-                    var bound = query._queryState._bound.Last();
+                    var bound = query._queryState.GetBindings().Last();
 
                     var boundTable = bound == typeof(Document)
                         ? query._session._store.Configuration.TableNameConvention.GetDocumentTable(query._queryState._collection)
@@ -255,7 +287,7 @@ namespace YesSql.Services
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     sqlBuilder.WhereAlso(_builder.ToString());
 
-                    query._queryState._bound.RemoveAt(query._queryState._bound.Count - 1);
+                    query._queryState.RemoveBinding();
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
@@ -286,14 +318,14 @@ namespace YesSql.Services
 
         private void Bind<TIndex>() where TIndex : IIndex
         {
-            if (_queryState._bound.Contains(typeof(TIndex)))
+            if (_queryState.GetBindings().Contains(typeof(TIndex)))
             {
                 return;
             }
 
             var name = typeof(TIndex).Name;
             var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection);
-            _queryState._bound.Add(typeof(TIndex));
+            _queryState.AddBinding(typeof(TIndex));
 
             if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
             {
@@ -332,8 +364,8 @@ namespace YesSql.Services
             {
                 var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection);
 
-                _queryState._bound.Clear();
-                _queryState._bound.Add(typeof(TIndex));
+                _queryState.GetBindings().Clear();
+                _queryState.AddBinding(typeof(TIndex));
 
                 _queryState._sqlBuilder.Select();
                 _queryState._sqlBuilder.Table(indexTable);
@@ -563,7 +595,7 @@ namespace YesSql.Services
                     break;
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)expression;
-                    var bound = _queryState._bound.Last();
+                    var bound = _queryState.GetBindings().Last();
 
                     var boundTable = bound == typeof(Document)
                         ? _queryState._store.Configuration.TableNameConvention.GetDocumentTable(_queryState._collection)
@@ -866,8 +898,8 @@ namespace YesSql.Services
 
         IQuery<T> IQuery.For<T>(bool filterType)
         {
-            _queryState._bound.Clear();
-            _queryState._bound.Add(typeof(Document));
+            _queryState.GetBindings().Clear();
+            _queryState.AddBinding(typeof(Document));
 
             _queryState._sqlBuilder.Select();
             _queryState._sqlBuilder.Table(_queryState._documentTable);
@@ -883,8 +915,8 @@ namespace YesSql.Services
 
         IQueryIndex<TIndex> IQuery.ForIndex<TIndex>()
         {
-            _queryState._bound.Clear();
-            _queryState._bound.Add(typeof(TIndex));
+            _queryState.GetBindings().Clear();
+            _queryState.AddBinding(typeof(TIndex));
             _queryState._sqlBuilder.Select();
             _queryState._sqlBuilder.Table(_queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection));
 
@@ -893,8 +925,8 @@ namespace YesSql.Services
 
         IQuery<object> IQuery.Any()
         {
-            _queryState._bound.Clear();
-            _queryState._bound.Add(typeof(Document));
+            _queryState.GetBindings().Clear();
+            _queryState.AddBinding(typeof(Document));
 
             _queryState._sqlBuilder.Select();
             _queryState._sqlBuilder.Table(_queryState._documentTable);
@@ -1109,6 +1141,15 @@ namespace YesSql.Services
             Task<int> IQuery<T>.CountAsync()
             {
                 return _query.CountAsync();
+            }
+
+            IQuery<T> IQuery<T>.Or()
+            {
+                var name = "a" + _query._queryState._bindings.Count + 1;
+                _query._queryState._bindingName = name;
+                _query._queryState._bindings.Add(name, new List<Type>());
+                
+                return new Query<T>(_query);
             }
 
             IQuery<T, TIndex> IQuery<T>.With<TIndex>()

@@ -1094,8 +1094,9 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query<Person>()
+                Assert.Equal(2, await session.Query<Person>()
                     .With<PersonIdentity>(x => x.Identity == "Scott")
+                    .Or()
                     .With<PersonIdentity>(x => x.Identity == "Guthrie")
                     .CountAsync()
                     );

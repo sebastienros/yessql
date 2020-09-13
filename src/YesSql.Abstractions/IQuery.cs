@@ -33,6 +33,7 @@ namespace YesSql
     /// <typeparam name="T">The type to return. It can be and index or an entity</typeparam>
     public interface IQuery<T> where T : class
     {
+        IQuery<T> Or();
         IQuery<T, TIndex> With<TIndex>() where TIndex : class, IIndex;
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
         IQuery<T> Skip(int count);
