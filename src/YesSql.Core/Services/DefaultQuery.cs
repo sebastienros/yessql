@@ -24,6 +24,8 @@ namespace YesSql.Services
             _sqlBuilder = sqlBuilder;
             _store = store;
             _bindings[_bindingName] = new List<Type>();
+            _filters = new List<List<string>>();
+            _filters.Add(_currentFilter = new List<string>());
         }
 
         public string _bindingName = "a1";
@@ -35,6 +37,27 @@ namespace YesSql.Services
         public StringBuilder _builder = new StringBuilder();
         public string _collection;
         public IStore _store;
+        public List<List<string>> _filters; // groups of filters, seperated by calls to Or()
+        public List<string> _currentFilter; // current list of filters
+        public bool _processed = false;
+
+        public void FlushFilters()
+        {
+            if (_currentFilter.Count != 0 || _filters.Count > 1)
+            {
+                var ands = _filters.Select(x => String.Join(" AND ", x));
+                var ors = "(" + String.Join(") OR (", ands) + ")";
+                _sqlBuilder.WhereAnd(ors);
+            }
+
+            _filters = new List<List<string>>();
+            _filters.Add(_currentFilter = new List<string>());
+        }
+
+        public string GetAlias(Type t)
+        {
+            return t.Name + "_" + _bindingName;
+        }
 
         public void AddBinding(Type t)
         {
@@ -71,6 +94,13 @@ namespace YesSql.Services
             {
                 clone._bindings.Add(binding.Key, new List<Type>(binding.Value));
             }
+
+            clone._filters.Clear();
+            foreach (var filter in _filters)
+            {
+                clone._filters.Add(filter);
+            }
+            clone._currentFilter = _currentFilter;
 
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
@@ -233,7 +263,10 @@ namespace YesSql.Services
                     var predicate = expression.Arguments[2];
 
                     var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
-                    query._queryState.AddBinding(tIndex);
+
+                    // TODO: create new query here, the inner join should be in the sub query
+
+                    _queryState.AddBinding(tIndex);
 
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
 
@@ -248,7 +281,8 @@ namespace YesSql.Services
 
                     sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
-                    sqlBuilder.WhereAlso(_builder.ToString());
+                    query._queryState._currentFilter.Add(_builder.ToString());
+                    //sqlBuilder.WhereAnd(_builder.ToString());
 
                     query._queryState.RemoveBinding();
 
@@ -277,21 +311,16 @@ namespace YesSql.Services
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
-                    var bound = query._queryState.GetBindings().Last();
-
-                    var boundTable = bound == typeof(Document)
-                        ? query._session._store.Configuration.TableNameConvention.GetDocumentTable(query._queryState._collection)
-                        : query._session._store.Configuration.TableNameConvention.GetIndexTable(bound, query._queryState._collection);
-
-                    sqlBuilder.Table(boundTable);
+                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
-                    sqlBuilder.WhereAlso(_builder.ToString());
+                    query._queryState._currentFilter.Add(_builder.ToString());
+                    //sqlBuilder.WhereAnd(_builder.ToString());
 
                     query._queryState.RemoveBinding();
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(dialect.NotInSelectOperator(sqlBuilder.ToSqlString()));
+                    builder.Append(dialect.NotInOperator(sqlBuilder.ToSqlString()));
                 };
         }
 
@@ -318,19 +347,26 @@ namespace YesSql.Services
 
         private void Bind<TIndex>() where TIndex : IIndex
         {
-            if (_queryState.GetBindings().Contains(typeof(TIndex)))
+            Bind(typeof(TIndex));
+        }
+
+        private void Bind(Type tIndex)
+        {
+            if (_queryState.GetBindings().Contains(tIndex))
             {
                 return;
             }
 
-            var name = typeof(TIndex).Name;
-            var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection);
-            _queryState.AddBinding(typeof(TIndex));
+            var name = tIndex.Name;
+            var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(tIndex, _collection);
+            var indexTableAlias = _queryState.GetAlias(tIndex);
 
-            if (typeof(MapIndex).IsAssignableFrom(typeof(TIndex)))
+            _queryState.AddBinding(tIndex);
+
+            if (typeof(MapIndex).IsAssignableFrom(tIndex))
             {
-                // inner join [PersonByName] on [PersonByName].[Id] = [Document].[Id]
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTable, "DocumentId", _queryState._documentTable, "Id");
+                // inner join [PersonByName] as [PersonByName_a1] on [PersonByName_a1].[Id] = [Document].[Id] 
+                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", indexTableAlias);
             }
             else
             {
@@ -339,8 +375,8 @@ namespace YesSql.Services
                 // inner join [ArticlesByDay_Document] on [Document].[Id] = [ArticlesByDay_Document].[DocumentId]
                 _queryState._sqlBuilder.InnerJoin(bridgeName, _queryState._documentTable, "Id", bridgeName, "DocumentId");
 
-                // inner join [ArticlesByDay] on [ArticlesByDay_Document].[ArticlesByDayId] = [ArticlesByDay].[Id]
-                _queryState._sqlBuilder.InnerJoin(indexTable, bridgeName, name + "Id", indexTable, "Id");
+                // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document].[ArticlesByDayId]
+                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeName, name + "Id", indexTableAlias);
             }
         }
 
@@ -375,7 +411,8 @@ namespace YesSql.Services
             _queryState._builder.Clear();
             // if Filter is called, the Document type is implicit so there is no need to filter on TIndex
             ConvertPredicate(_queryState._builder, predicate.Body);
-            _queryState._sqlBuilder.WhereAlso(_queryState._builder.ToString());
+
+            _queryState._currentFilter.Add(_queryState._builder.ToString());
         }
 
         /// <summary>
@@ -597,11 +634,17 @@ namespace YesSql.Services
                     var memberExpression = (MemberExpression)expression;
                     var bound = _queryState.GetBindings().Last();
 
-                    var boundTable = bound == typeof(Document)
-                        ? _queryState._store.Configuration.TableNameConvention.GetDocumentTable(_queryState._collection)
-                        : _queryState._store.Configuration.TableNameConvention.GetIndexTable(bound, _queryState._collection);
-
-                    builder.Append(_queryState._sqlBuilder.FormatColumn(boundTable, memberExpression.Member.Name));
+                    if (bound == typeof(Document))
+                    {
+                        var boundTable = _queryState._store.Configuration.TableNameConvention.GetDocumentTable(_queryState._collection);
+                        builder.Append(_queryState._sqlBuilder.FormatColumn(boundTable, memberExpression.Member.Name));
+                    }
+                    else
+                    {
+                        var boundTable = _queryState.GetAlias(bound);
+                        builder.Append(_queryState._sqlBuilder.FormatColumn(boundTable, memberExpression.Member.Name, true));
+                    }
+                    
                     break;
                 case ExpressionType.Constant:
                     _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
@@ -846,6 +889,8 @@ namespace YesSql.Services
 
             var transaction = await _session.DemandAsync();
 
+            _queryState.FlushFilters();
+
             var localBuilder = _queryState._sqlBuilder.Clone();
 
             if (localBuilder.HasJoin)
@@ -906,7 +951,7 @@ namespace YesSql.Services
 
             if (filterType)
             {
-                _queryState._sqlBuilder.WhereAlso(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
+                _queryState._sqlBuilder.WhereAnd(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
                 _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
             }
 
@@ -918,7 +963,7 @@ namespace YesSql.Services
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(TIndex));
             _queryState._sqlBuilder.Select();
-            _queryState._sqlBuilder.Table(_queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection));
+            _queryState._sqlBuilder.Table(_queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection), _queryState.GetAlias(typeof(TIndex)));
 
             return new QueryIndex<TIndex>(this);
         }
@@ -954,6 +999,8 @@ namespace YesSql.Services
                 await _query._session.FlushAsync();
 
                 var transaction = await _query._session.DemandAsync();
+
+                _query._queryState.FlushFilters();
 
                 if (_query._compiledQuery != null && _query._queryState._parameterBindings != null)
                 {
@@ -1043,6 +1090,8 @@ namespace YesSql.Services
 
                 var transaction = await _query._session.DemandAsync();
 
+                _query._queryState.FlushFilters();
+
                 if (_query._compiledQuery != null && _query._queryState._parameterBindings != null)
                 {
                     foreach (var binding in _query._queryState._parameterBindings)
@@ -1060,7 +1109,7 @@ namespace YesSql.Services
                         // If a page is requested without order add a default one
                         if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
                         {
-                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(typeof(T).Name, "Id"));
+                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState.GetAlias(typeof(T)), "Id", true));
                         }
 
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
@@ -1145,7 +1194,9 @@ namespace YesSql.Services
 
             IQuery<T> IQuery<T>.Or()
             {
-                var name = "a" + _query._queryState._bindings.Count + 1;
+                _query._queryState._filters.Add(_query._queryState._currentFilter = new List<string>());
+
+                var name = "a" + (_query._queryState._bindings.Count + 1);
                 _query._queryState._bindingName = name;
                 _query._queryState._bindings.Add(name, new List<Type>());
                 
@@ -1238,13 +1289,15 @@ namespace YesSql.Services
 
             IQueryIndex<T> IQueryIndex<T>.Where(string sql)
             {
-                _query._queryState._sqlBuilder.WhereAlso(sql);
+                _query._queryState._currentFilter.Add(sql);
+                //_query._queryState._sqlBuilder.WhereAnd(sql);
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.Where(Func<ISqlDialect, string> sql)
             {
-                _query._queryState._sqlBuilder.WhereAlso(sql?.Invoke(_query._dialect));
+                _query._queryState._currentFilter.Add(sql?.Invoke(_query._dialect));
+                //_query._queryState._sqlBuilder.WhereAnd(sql?.Invoke(_query._dialect));
                 return this;
             }
 
@@ -1296,13 +1349,15 @@ namespace YesSql.Services
 
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(string sql)
             {
-                _query._queryState._sqlBuilder.WhereAlso(sql);
+                _query._queryState._currentFilter.Add(sql);
+                //_query._queryState._sqlBuilder.WhereAnd(sql);
                 return this;
             }
 
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(Func<ISqlDialect, string> sql)
             {
-                _query._queryState._sqlBuilder.WhereAlso(sql?.Invoke(_query._dialect));
+                _query._queryState._currentFilter.Add(sql?.Invoke(_query._dialect));
+                //_query._queryState._sqlBuilder.WhereAnd(sql?.Invoke(_query._dialect));
                 return this;
             }
 

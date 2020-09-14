@@ -6,7 +6,7 @@ namespace YesSql
     {
         string Clause { get; }
         Dictionary<string, object> Parameters { get; }
-        string FormatColumn(string table, string column);
+        string FormatColumn(string table, string column, bool isAlias = false);
         string GetSelector();
         void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null);
         bool HasJoin { get; }
@@ -24,7 +24,7 @@ namespace YesSql
         bool HasPaging { get; }
         void Skip(string skip);
         void Take(string take);
-        void Table(string table);
+        void Table(string table, string alias = null);
         void From(string from);
         void ThenOrderBy(string orderBy);
         void ThenOrderByDescending(string orderBy);
@@ -34,7 +34,8 @@ namespace YesSql
         void Trail(string trail);
         void ClearTrail();
         string ToSqlString();
-        void WhereAlso(string where);
+        void WhereAnd(string clause);
+        void WhereOr(string clause);
         ISqlBuilder Clone();
     }
 }

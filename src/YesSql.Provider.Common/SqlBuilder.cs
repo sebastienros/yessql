@@ -15,6 +15,7 @@ namespace YesSql.Sql
         protected List<string> _select;
         protected List<string> _from;
         protected List<string> _join;
+        protected List<List<string>> _or;
         protected List<string> _where;
         protected List<string> _group;
         protected List<string> _having;
@@ -28,6 +29,7 @@ namespace YesSql.Sql
         protected List<string> SelectSegments => _select = _select ?? new List<string>();
         protected List<string> FromSegments => _from = _from ?? new List<string>();
         protected List<string> JoinSegments => _join = _join ?? new List<string>();
+        protected List<List<string>> OrSegments => _or = _or ?? new List<List<string>>();
         protected List<string> WhereSegments => _where = _where ?? new List<string>();
         protected List<string> GroupSegments => _group = _group ?? new List<string>();
         protected List<string> HavingSegments => _having = _having ?? new List<string>();
@@ -44,10 +46,16 @@ namespace YesSql.Sql
 
         public string Clause { get { return _clause; } }
 
-        public void Table(string table)
+        public void Table(string table, string alias = null)
         {
             FromSegments.Clear();
             FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+
+            if (!String.IsNullOrEmpty(alias))
+            {
+                FromSegments.Add(" AS ");
+                FromSegments.Add(_dialect.QuoteForTableName(alias));
+            }
         }
 
         public void From(string from)
@@ -69,17 +77,28 @@ namespace YesSql.Sql
 
         public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null)
         {
-            JoinSegments.AddRange(new[] {
-                " INNER JOIN ", _dialect.QuoteForTableName(_tablePrefix + table),
-                " ON ", _dialect.QuoteForTableName(_tablePrefix + onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.QuoteForTableName(_tablePrefix + toTable), ".", _dialect.QuoteForColumnName(toColumn)
-                }
-            );
+            // Don't prefix if alias is used
+            if (alias != onTable)
+            {
+                onTable = _tablePrefix + onTable;
+            }
 
+            if (alias != toTable)
+            {
+                toTable = _tablePrefix + toTable;
+            }
+            
+            JoinSegments.Add(" INNER JOIN ");
+            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
             if (!String.IsNullOrEmpty(alias))
             {
-                JoinSegments.AddRange(new[] { "AS ", alias });
+                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
             }
+            JoinSegments.AddRange(new[] {
+                " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
+                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
+                }
+            );            
         }
 
         public void Select()
@@ -125,17 +144,42 @@ namespace YesSql.Sql
             _distinct = true;
         }
 
-        public virtual string FormatColumn(string table, string column)
+        public virtual string FormatColumn(string table, string column, bool isAlias = false)
         {
             if (column != "*")
             {
                 column = _dialect.QuoteForColumnName(column);
             }
 
-            return _dialect.QuoteForTableName(_tablePrefix + table) + "." + column;
+            if (!isAlias)
+            {
+                table = _tablePrefix + table;
+            }
+
+            return _dialect.QuoteForTableName(table) + "." + column;
         }
 
-        public virtual void WhereAlso(string where)
+        public virtual void AndAlso(string where)
+        {
+            if (WhereSegments.Count > 0)
+            {
+                WhereSegments.Add(" AND ");
+            }
+
+            WhereSegments.Add(where);
+        }
+
+        public virtual void WhereOr(string where)
+        {
+            if (WhereSegments.Count > 0)
+            {
+                WhereSegments.Add(" OR ");
+            }
+
+            WhereSegments.Add(where);
+        }
+
+        public virtual void WhereAnd(string where)
         {
             if (WhereSegments.Count > 0)
             {
