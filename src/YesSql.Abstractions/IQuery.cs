@@ -33,14 +33,55 @@ namespace YesSql
     /// <typeparam name="T">The type to return. It can be and index or an entity</typeparam>
     public interface IQuery<T> where T : class
     {
+        /// <summary>
+        /// Starts a filter on a distinct table. For instance when the same index 
+        /// needs to be queried for multiple sets.
+        /// </summary>
         IQuery<T> Or();
+
+        /// <summary>
+        /// Filters the documents with a record in the specified index.
+        /// </summary>
+        /// <typeparam name="TIndex">The index to filter on.</typeparam>
         IQuery<T, TIndex> With<TIndex>() where TIndex : class, IIndex;
+        
+        /// <summary>
+        /// Filters the documents with a constraint on the specified index.
+        /// </summary>
+        /// <typeparam name="TIndex">The index to filter on.</typeparam>
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
+        
+        /// <summary>
+        /// Skips the specified number of document.
+        /// </summary>
+        /// <param name="count">The number of documents to skip.</param>
         IQuery<T> Skip(int count);
+
+        /// <summary>
+        /// Limits the results to the specified number of document.
+        /// </summary>
+        /// <param name="count">The number of documents to return.</param>
         IQuery<T> Take(int count);
+
+
+        /// <summary>
+        /// Executes the query and returns the first result matching the constraints.
+        /// </summary>
         Task<T> FirstOrDefaultAsync();
+
+        /// <summary>
+        /// Executes the query and returns all documents matching the constraints.
+        /// </summary>
         Task<IEnumerable<T>> ListAsync();
+
+        /// <summary>
+        /// Executes the query and returns all documents matching the constraints.
+        /// </summary>
         IAsyncEnumerable<T> ToAsyncEnumerable();
+
+        /// <summary>
+        /// Executes a that returns the number of documents matching the constraints.
+        /// </summary>
         Task<int> CountAsync();
     }
 
