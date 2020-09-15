@@ -259,16 +259,20 @@ namespace YesSql.Services
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
+                    // field to select
                     var selector = expression.Arguments[1];
+
+                    // filters on the index
                     var predicate = expression.Arguments[2];
 
+                    // type of the index
                     var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
 
                     // TODO: create new query here, the inner join should be in the sub query
 
-                    _queryState.AddBinding(tIndex);
-
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
+
+                    query._queryState.AddBinding(tIndex);
 
                     // Build inner query
                     var _builder = new StringBuilder();
@@ -279,12 +283,14 @@ namespace YesSql.Services
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
-                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
+                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetAlias(tIndex));
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     query._queryState._currentFilter.Add(_builder.ToString());
-                    //sqlBuilder.WhereAnd(_builder.ToString());
+                    
+                    sqlBuilder.WhereAnd(_builder.ToString());
 
                     query._queryState.RemoveBinding();
+                    query._queryState._currentFilter.Clear();
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
@@ -294,13 +300,20 @@ namespace YesSql.Services
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotIn")] =
                 (query, builder, dialect, expression) =>
                 {
+                    // field to select
                     var selector = expression.Arguments[1];
+
+                    // filters on the index
                     var predicate = expression.Arguments[2];
 
+                    // type of the index
                     var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
-                    query._queryState.AddBinding(tIndex);
+
+                    // TODO: create new query here, the inner join should be in the sub query
 
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
+
+                    query._queryState.AddBinding(tIndex);
 
                     // Build inner query
                     var _builder = new StringBuilder();
@@ -311,16 +324,18 @@ namespace YesSql.Services
                     sqlBuilder.Selector(_builder.ToString());
                     _builder.Clear();
 
-                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name);
+                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetAlias(tIndex));
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
                     query._queryState._currentFilter.Add(_builder.ToString());
-                    //sqlBuilder.WhereAnd(_builder.ToString());
+
+                    sqlBuilder.WhereAnd(_builder.ToString());
 
                     query._queryState.RemoveBinding();
+                    query._queryState._currentFilter.Clear();
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(dialect.NotInOperator(sqlBuilder.ToSqlString()));
+                    builder.Append(dialect.NotInSelectOperator(sqlBuilder.ToSqlString()));
                 };
         }
 
