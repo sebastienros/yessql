@@ -118,6 +118,8 @@ namespace YesSql
         where T : class
         where TIndex : IIndex
     {
+        new IQuery<T, TIndex> Or();
+
         IQuery<T, TIndex> Where(string sql);
         IQuery<T, TIndex> Where(Func<ISqlDialect, string> sql);
         IQuery<T, TIndex> WithParameter(string name, object value);

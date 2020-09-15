@@ -1,27 +1,31 @@
 using System;
 using System.Threading.Tasks;
 using YesSql.Provider.SqlServer;
+using YesSql.Provider.Sqlite;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
 using YesSql.Services;
 using YesSql.Sql;
+using System.IO;
 
 namespace YesSql.Samples.FullText
 {
-    internal class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            MainAsync(args).GetAwaiter().GetResult();
-        }
+            var filename = "yessql.db";
 
-        static async Task MainAsync(string[] args)
-        {
-            var store = await StoreFactory.CreateAsync(
-                new Configuration()
-                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
-                    .SetTablePrefix("FullText")
-                );
+            if (File.Exists(filename))
+            {
+                File.Delete(filename);
+            }
+
+            var configuration = new Configuration()
+                .UseSqLite($"Data Source={filename};Cache=Shared")
+                ;
+
+            var store = await StoreFactory.CreateAsync(configuration);
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -61,8 +65,12 @@ namespace YesSql.Samples.FullText
                     Console.WriteLine(article.Content);
                 }
 
-                Console.WriteLine("Boolean query: 'white or fox or pink'");
-                var boolQuery = await session.Query<Article, ArticleByWord>().Where(a => a.Word.IsIn(new[] { "white", "fox", "pink" })).ListAsync();
+                Console.WriteLine("Boolean query: 'white or brown'");
+                var boolQuery = await session.Query<Article, ArticleByWord>()
+                    .Where(a => a.Word.IsIn(new[] { "white" }))
+                    .Or()
+                    .Where(a => a.Word.IsIn(new[] { "brown" }))
+                    .ListAsync();
 
                 foreach (var article in boolQuery)
                 {

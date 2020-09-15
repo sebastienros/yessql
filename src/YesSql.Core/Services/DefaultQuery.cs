@@ -1362,10 +1362,20 @@ namespace YesSql.Services
             {
             }
 
+            IQuery<T, TIndex> IQuery<T, TIndex>.Or()
+            {
+                _query._queryState._filters.Add(_query._queryState._currentFilter = new List<string>());
+
+                var name = "a" + (_query._queryState._bindings.Count + 1);
+                _query._queryState._bindingName = name;
+                _query._queryState._bindings.Add(name, new List<Type>());
+
+                return this;
+            }
+
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(string sql)
             {
                 _query._queryState._currentFilter.Add(sql);
-                //_query._queryState._sqlBuilder.WhereAnd(sql);
                 return this;
             }
 
