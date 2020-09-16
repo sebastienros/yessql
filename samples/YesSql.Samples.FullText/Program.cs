@@ -1,12 +1,11 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
-using YesSql.Provider.SqlServer;
 using YesSql.Provider.Sqlite;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
 using YesSql.Services;
 using YesSql.Sql;
-using System.IO;
 
 namespace YesSql.Samples.FullText
 {
@@ -61,6 +60,7 @@ namespace YesSql.Samples.FullText
                 var simple = await session.Query<Article, ArticleByWord>().Where(a => a.Word == "white").ListAsync();
 
                 foreach (var article in simple)
+
                 {
                     Console.WriteLine(article.Content);
                 }

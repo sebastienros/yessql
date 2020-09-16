@@ -2301,6 +2301,43 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryMultipleByReducedIndex()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var dates = new[]
+                {
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 1),
+                };
+
+                var articles = dates.Select(x => new Article
+                {
+                    PublishedUtc = x
+                });
+
+                foreach (var article in articles)
+                {
+                    session.Save(article);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.Query<Article, ArticlesByDay>()
+                    .Where(x => x.DayOfYear == 305)
+                    .Or()
+                    .Where(x => x.DayOfYear == 306);
+
+                Assert.Equal(2, await query.CountAsync());
+            }
+        }
+
+        [Fact]
         public void ShouldSaveBigDocuments()
         {
             using (var session = _store.CreateSession())
