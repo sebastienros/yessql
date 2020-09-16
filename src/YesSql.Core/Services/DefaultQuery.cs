@@ -59,6 +59,11 @@ namespace YesSql.Services
             return tableName + "_" + _bindingName;
         }
 
+        public string GetBridgeAlias(Type t)
+        {
+            return GetTableAlias(t.Name + "_Document");
+        }
+
         public string GetTypeAlias(Type t)
         {
             return GetTableAlias(t.Name);
@@ -391,13 +396,13 @@ namespace YesSql.Services
             else
             {
                 var bridgeName = indexTable + "_" + _queryState._documentTable;
-                var bridgeAlias = _queryState.GetTypeAlias(tIndex);
+                var bridgeAlias = _queryState.GetBridgeAlias(tIndex);
 
                 // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document].[DocumentId] = [Document].[Id]
                 _queryState._sqlBuilder.InnerJoin(bridgeName, bridgeAlias, "DocumentId", _queryState._documentTable, "Id", bridgeAlias);
 
                 // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document].[ArticlesByDayId]
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeAlias, name + "Id", indexTableAlias);
+                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeName, name + "Id", indexTableAlias, bridgeAlias);
             }
         }
 

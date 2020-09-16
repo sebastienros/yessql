@@ -8,7 +8,7 @@ namespace YesSql
         Dictionary<string, object> Parameters { get; }
         string FormatColumn(string table, string column, bool isAlias = false);
         string GetSelector();
-        void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null);
+        void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null, string toAlias = null);
         bool HasJoin { get; }
         bool HasOrder { get; }
         void ClearOrder();

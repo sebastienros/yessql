@@ -48,16 +48,16 @@ namespace YesSql.Samples.FullText
             // creating articles
             using (var session = store.CreateSession())
             {
-                session.Save(new Article { Content = "This is a white fox" });
-                session.Save(new Article { Content = "This is a brown cat" });
+                session.Save(new Article { Content = "This is a green fox" });
+                session.Save(new Article { Content = "This is a yellow cat" });
                 session.Save(new Article { Content = "This is a pink elephant" });
-                session.Save(new Article { Content = "This is a white tiger" });
+                session.Save(new Article { Content = "This is a green tiger" });
             }
 
             using (var session = store.CreateSession())
             {
-                Console.WriteLine("Simple term: 'white'");
-                var simple = await session.Query<Article, ArticleByWord>().Where(a => a.Word == "white").ListAsync();
+                Console.WriteLine("Simple term: 'green'");
+                var simple = await session.Query<Article, ArticleByWord>().Where(a => a.Word == "green").ListAsync();
 
                 foreach (var article in simple)
 
@@ -65,11 +65,11 @@ namespace YesSql.Samples.FullText
                     Console.WriteLine(article.Content);
                 }
 
-                Console.WriteLine("Boolean query: 'white or brown'");
+                Console.WriteLine("Boolean query: 'green or yellow'");
                 var boolQuery = await session.Query<Article, ArticleByWord>()
-                    .Where(a => a.Word.IsIn(new[] { "white" }))
+                    .Where(a => a.Word.IsIn(new[] { "green" }))
                     .Or()
-                    .Where(a => a.Word.IsIn(new[] { "brown" }))
+                    .Where(a => a.Word.IsIn(new[] { "yellow" }))
                     .ListAsync();
 
                 foreach (var article in boolQuery)

@@ -2333,7 +2333,7 @@ namespace YesSql.Tests
                     .Or()
                     .Where(x => x.DayOfYear == 306);
 
-                Assert.Equal(2, await query.CountAsync());
+                Assert.Equal(3, await query.CountAsync());
             }
         }
 

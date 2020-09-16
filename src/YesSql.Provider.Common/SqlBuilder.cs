@@ -75,7 +75,7 @@ namespace YesSql.Sql
             _count = take;
         }
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null)
+        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null, string toAlias = null)
         {
             // Don't prefix if alias is used
             if (alias != onTable)
@@ -83,9 +83,14 @@ namespace YesSql.Sql
                 onTable = _tablePrefix + onTable;
             }
 
-            if (alias != toTable)
+            if (toTable != toAlias)
             {
                 toTable = _tablePrefix + toTable;
+            }
+
+            if (!String.IsNullOrEmpty(toAlias))
+            {
+                toTable = toAlias;
             }
             
             JoinSegments.Add(" INNER JOIN ");
