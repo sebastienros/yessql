@@ -166,6 +166,11 @@ namespace YesSql.Sql
 
         public virtual void AndAlso(string where)
         {
+            if (String.IsNullOrWhiteSpace(where))
+            {
+                return;
+            }
+
             if (WhereSegments.Count > 0)
             {
                 WhereSegments.Add(" AND ");
@@ -176,6 +181,11 @@ namespace YesSql.Sql
 
         public virtual void WhereOr(string where)
         {
+            if (String.IsNullOrWhiteSpace(where))
+            {
+                return;
+            }
+
             if (WhereSegments.Count > 0)
             {
                 WhereSegments.Add(" OR ");
@@ -186,6 +196,11 @@ namespace YesSql.Sql
 
         public virtual void WhereAnd(string where)
         {
+            if (String.IsNullOrWhiteSpace(where))
+            {
+                return;
+            }
+
             if (WhereSegments.Count > 0)
             {
                 WhereSegments.Add(" AND ");

@@ -34,10 +34,14 @@ namespace YesSql
     public interface IQuery<T> where T : class
     {
         /// <summary>
-        /// Starts a filter on a distinct table. For instance when the same index 
-        /// needs to be queried for multiple sets.
+        /// Filters any predicates on newly joined indexes.
         /// </summary>
-        IQuery<T> Or();
+        IQuery<T> Any(params Func<IQuery<T>, IQuery<T>>[] predicates);
+
+        /// <summary>
+        /// Filters all predicates on newly joined indexes.
+        /// </summary>
+        IQuery<T> All(params Func<IQuery<T>, IQuery<T>>[] predicates);
 
         /// <summary>
         /// Filters the documents with a record in the specified index.
@@ -118,7 +122,8 @@ namespace YesSql
         where T : class
         where TIndex : IIndex
     {
-        new IQuery<T, TIndex> Or();
+        //IQuery<T, TIndex> Any(params Func<IQuery<T, TIndex>, IQuery<T, TIndex>>[] predicates);
+        //IQuery<T, TIndex> All(params Func<IQuery<T, TIndex>, IQuery<T, TIndex>>[] predicates);
 
         IQuery<T, TIndex> Where(string sql);
         IQuery<T, TIndex> Where(Func<ISqlDialect, string> sql);

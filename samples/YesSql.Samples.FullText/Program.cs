@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using YesSql.Provider.Sqlite;
 using YesSql.Samples.FullText.Indexes;
 using YesSql.Samples.FullText.Models;
-using YesSql.Services;
 using YesSql.Sql;
 
 namespace YesSql.Samples.FullText
@@ -57,20 +56,24 @@ namespace YesSql.Samples.FullText
             using (var session = store.CreateSession())
             {
                 Console.WriteLine("Simple term: 'green'");
-                var simple = await session.Query<Article, ArticleByWord>().Where(a => a.Word == "green").ListAsync();
+                var simple = await session
+                    .Query<Article, ArticleByWord>(x => x.Word == "green")
+                    .ListAsync();
 
                 foreach (var article in simple)
-
                 {
                     Console.WriteLine(article.Content);
                 }
 
-                Console.WriteLine("Boolean query: 'green or yellow'");
-                var boolQuery = await session.Query<Article, ArticleByWord>()
-                    .Where(a => a.Word.IsIn(new[] { "green" }))
-                    .Or()
-                    .Where(a => a.Word.IsIn(new[] { "yellow" }))
-                    .ListAsync();
+                Console.WriteLine("Boolean query: 'pink or (green and fox)'");
+                var boolQuery = await session.Query<Article>()
+                    .Any(
+                        x => x.With<ArticleByWord>(a => a.Word == "pink"),
+                        x => x.All(
+                            x => x.With<ArticleByWord>(a => a.Word == "green"),
+                            x => x.With<ArticleByWord>(a => a.Word == "fox")
+                        )
+                    ).ListAsync();
 
                 foreach (var article in boolQuery)
                 {

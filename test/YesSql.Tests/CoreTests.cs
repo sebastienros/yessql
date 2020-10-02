@@ -1095,9 +1095,9 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(2, await session.Query<Person>()
-                    .With<PersonIdentity>(x => x.Identity == "Hanselman")
-                    .Or()
-                    .With<PersonIdentity>(x => x.Identity == "Guthrie")
+                    .Any(
+                        x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                        x => x.With<PersonIdentity>(x => x.Identity == "Guthrie"))
                     .CountAsync()
                     );
             }
@@ -2328,10 +2328,11 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var query = session.Query<Article, ArticlesByDay>()
-                    .Where(x => x.DayOfYear == 305)
-                    .Or()
-                    .Where(x => x.DayOfYear == 306);
+                var query = session.Query<Article>()
+                    .Any(
+                        x => x.With<ArticlesByDay>(x => x.DayOfYear == 305),
+                        x => x.With<ArticlesByDay>(x => x.DayOfYear == 306)
+                    );
 
                 Assert.Equal(3, await query.CountAsync());
             }

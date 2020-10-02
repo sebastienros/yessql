@@ -24,8 +24,9 @@ namespace YesSql.Services
             _sqlBuilder = sqlBuilder;
             _store = store;
             _bindings[_bindingName] = new List<Type>();
-            _filters = new List<List<string>>();
-            _filters.Add(_currentFilter = new List<string>());
+
+            _currentPredicate = new AndNode();
+            _predicate = _currentPredicate;
         }
 
         public string _bindingName = "a1";
@@ -37,21 +38,26 @@ namespace YesSql.Services
         public StringBuilder _builder = new StringBuilder();
         public string _collection;
         public IStore _store;
-        public List<List<string>> _filters; // groups of filters, seperated by calls to Or()
-        public List<string> _currentFilter; // current list of filters
+        public CompositeNode _predicate; // the defaut root predicate is an AND expression
+        public CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
 
         public void FlushFilters()
         {
-            if (_currentFilter.Count != 0 || _filters.Count > 1)
+            if (_predicate != null)
             {
-                var ands = _filters.Select(x => String.Join(" AND ", x));
-                var ors = "(" + String.Join(") OR (", ands) + ")";
-                _sqlBuilder.WhereAnd(ors);
-            }
+                _builder.Clear();
+                _predicate.Build(_builder);
 
-            _filters = new List<List<string>>();
-            _filters.Add(_currentFilter = new List<string>());
+                var filter = _builder.ToString();
+
+                if (!String.IsNullOrWhiteSpace(filter))
+                {
+                    _sqlBuilder.WhereAnd(filter);
+                }
+
+                _predicate = null;
+            }
         }
 
         public string GetTableAlias(string tableName)
@@ -105,13 +111,9 @@ namespace YesSql.Services
                 clone._bindings.Add(binding.Key, new List<Type>(binding.Value));
             }
 
-            clone._filters.Clear();
-            foreach (var filter in _filters)
-            {
-                clone._filters.Add(filter);
-            }
-            clone._currentFilter = _currentFilter;
-
+            clone._currentPredicate = (CompositeNode) _predicate.Clone();
+            clone._predicate = clone._currentPredicate;
+            
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
             clone._builder = new StringBuilder(_builder.ToString());
@@ -278,10 +280,10 @@ namespace YesSql.Services
                     // type of the index
                     var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
 
-                    // TODO: create new query here, the inner join should be in the sub query
+                    // create new query as the inner join should be in the sub query
 
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
-
+                    
                     query._queryState.AddBinding(tIndex);
 
                     // Build inner query
@@ -295,12 +297,10 @@ namespace YesSql.Services
 
                     sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetTypeAlias(tIndex));
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
-                    query._queryState._currentFilter.Add(_builder.ToString());
-                    
+
                     sqlBuilder.WhereAnd(_builder.ToString());
 
                     query._queryState.RemoveBinding();
-                    query._queryState._currentFilter.Clear();
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
@@ -319,7 +319,7 @@ namespace YesSql.Services
                     // type of the index
                     var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
 
-                    // TODO: create new query here, the inner join should be in the sub query
+                    // create new query here as the inner join should be in the sub query
 
                     var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
 
@@ -336,12 +336,10 @@ namespace YesSql.Services
 
                     sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetTypeAlias(tIndex));
                     query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
-                    query._queryState._currentFilter.Add(_builder.ToString());
 
                     sqlBuilder.WhereAnd(_builder.ToString());
 
                     query._queryState.RemoveBinding();
-                    query._queryState._currentFilter.Clear();
 
                     // Insert query
                     query.ConvertFragment(builder, expression.Arguments[0]);
@@ -438,7 +436,7 @@ namespace YesSql.Services
             // if Filter is called, the Document type is implicit so there is no need to filter on TIndex
             ConvertPredicate(_queryState._builder, predicate.Body);
 
-            _queryState._currentFilter.Add(_queryState._builder.ToString());
+            _queryState._currentPredicate.Children.Add(new FilterNode(_queryState._builder.ToString()));
         }
 
         /// <summary>
@@ -1218,14 +1216,31 @@ namespace YesSql.Services
                 return _query.CountAsync();
             }
 
-            IQuery<T> IQuery<T>.Or()
+            IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)
             {
-                _query._queryState._filters.Add(_query._queryState._currentFilter = new List<string>());
+                return ComposeQuery(predicates, new OrNode());
+            }
 
-                var name = "a" + (_query._queryState._bindings.Count + 1);
-                _query._queryState._bindingName = name;
-                _query._queryState._bindings.Add(name, new List<Type>());
-                
+            IQuery<T> IQuery<T>.All(params Func<IQuery<T>, IQuery<T>>[] predicates)
+            {
+                return ComposeQuery(predicates, new AndNode());
+            }
+
+            private IQuery<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
+            {
+                (_query._queryState._currentPredicate as CompositeNode).Children.Add(predicate);
+
+                _query._queryState._currentPredicate = predicate;
+
+                foreach (var p in predicates)
+                {
+                    var name = "a" + (_query._queryState._bindings.Count + 1);
+                    _query._queryState._bindingName = name;
+                    _query._queryState._bindings.Add(name, new List<Type>());
+
+                    p(this);
+                }
+
                 return new Query<T>(_query);
             }
 
@@ -1315,15 +1330,15 @@ namespace YesSql.Services
 
             IQueryIndex<T> IQueryIndex<T>.Where(string sql)
             {
-                _query._queryState._currentFilter.Add(sql);
-                //_query._queryState._sqlBuilder.WhereAnd(sql);
+                _query._queryState._currentPredicate.Children.Add(new FilterNode(sql));
+
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.Where(Func<ISqlDialect, string> sql)
             {
-                _query._queryState._currentFilter.Add(sql?.Invoke(_query._dialect));
-                //_query._queryState._sqlBuilder.WhereAnd(sql?.Invoke(_query._dialect));
+                _query._queryState._currentPredicate.Children.Add(new FilterNode(sql?.Invoke(_query._dialect)));
+
                 return this;
             }
 
@@ -1373,30 +1388,20 @@ namespace YesSql.Services
             {
             }
 
-            IQuery<T, TIndex> IQuery<T, TIndex>.Or()
-            {
-                _query.Bind<TIndex>();
-
-                _query._queryState._filters.Add(_query._queryState._currentFilter = new List<string>());
-
-                var name = "a" + (_query._queryState._bindings.Count + 1);
-                _query._queryState._bindingName = name;
-                _query._queryState._bindings.Add(name, new List<Type>());
-
-                return this;
-            }
-
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(string sql)
             {
                 _query.Bind<TIndex>();
-                _query._queryState._currentFilter.Add(sql);
+                //_query._queryState._currentFilter.Add(sql);
+
+                _query._queryState._currentPredicate.Children.Add(new FilterNode(sql));
+
                 return this;
             }
 
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(Func<ISqlDialect, string> sql)
             {
                 _query.Bind<TIndex>();
-                _query._queryState._currentFilter.Add(sql?.Invoke(_query._dialect));
+                _query._queryState._currentPredicate.Children.Add(new FilterNode(sql?.Invoke(_query._dialect)));
                 return this;
             }
 
