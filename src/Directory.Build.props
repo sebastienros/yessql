@@ -9,7 +9,7 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <DebugType>portable</DebugType>
         <PackageProjectUrl>https://github.com/sebastienros/yessql</PackageProjectUrl>
-        <PackageLicenseUrl>https://github.com/sebastienros/yessql/blob/master/LICENSE.txt</PackageLicenseUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
         <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -20,6 +20,7 @@
         <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../YesSqlKey.snk</AssemblyOriginatorKeyFile>
+        <IsPackable>true</IsPackable>
         
         <!-- Sourcelink -->
         <PublishRepositoryUrl>true</PublishRepositoryUrl>

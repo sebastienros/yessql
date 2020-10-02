@@ -15,9 +15,11 @@
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <IsPackable>false</IsPackable>
+    <LangVersion>8</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
-    <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
   </ItemGroup>
 </Project>

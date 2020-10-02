@@ -1067,6 +1067,43 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryMultipleIndexes()
+        {
+            // We should be able to query documents on multiple rows in an index
+            // This mean the same Index table needs to be JOINed
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman"
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                session.Save(hanselman);
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person>()
+                    .Any(
+                        x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                        x => x.With<PersonIdentity>(x => x.Identity == "Guthrie"))
+                    .CountAsync()
+                    );
+            }
+        }
+
+        [Fact]
         public async Task ShouldDeletePreviousIndexes()
         {
             // When an index returns multiple map indexes, changing these results should remove the previous ones.
@@ -2260,6 +2297,44 @@ namespace YesSql.Tests
                 Assert.Equal(7, await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305 || x.DayOfYear == 306).CountAsync());
                 Assert.Equal(7, (await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305 || x.DayOfYear == 306).ListAsync()).Count());
 
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryMultipleByReducedIndex()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var dates = new[]
+                {
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 1),
+                };
+
+                var articles = dates.Select(x => new Article
+                {
+                    PublishedUtc = x
+                });
+
+                foreach (var article in articles)
+                {
+                    session.Save(article);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.Query<Article>()
+                    .Any(
+                        x => x.With<ArticlesByDay>(x => x.DayOfYear == 305),
+                        x => x.With<ArticlesByDay>(x => x.DayOfYear == 306)
+                    );
+
+                Assert.Equal(3, await query.CountAsync());
             }
         }
 

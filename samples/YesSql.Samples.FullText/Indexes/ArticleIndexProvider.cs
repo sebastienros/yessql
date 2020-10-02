@@ -12,7 +12,6 @@ namespace YesSql.Samples.FullText.Indexes
             var tokenizer = new WhiteSpaceTokenizer();
             var filter = new StopWordFilter();
 
-            // for each BlogPost, create a BlogPostByAuthor index
             context.For<ArticleByWord, string>()
                 .Map(article => filter
                     .Filter(tokenizer.Tokenize(article.Content))
