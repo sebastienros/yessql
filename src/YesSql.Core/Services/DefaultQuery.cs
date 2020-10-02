@@ -271,80 +271,69 @@ namespace YesSql.Services
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
-                    // field to select
-                    var selector = expression.Arguments[1];
-
-                    // filters on the index
-                    var predicate = expression.Arguments[2];
-
-                    // type of the index
-                    var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
-
-                    // create new query as the inner join should be in the sub query
-
-                    var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
-                    
-                    query._queryState.AddBinding(tIndex);
-
-                    // Build inner query
-                    var _builder = new StringBuilder();
-
-                    sqlBuilder.Select();
-
-                    query.ConvertFragment(_builder, ((LambdaExpression)((UnaryExpression)selector).Operand).Body);
-                    sqlBuilder.Selector(_builder.ToString());
-                    _builder.Clear();
-
-                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetTypeAlias(tIndex));
-                    query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
-
-                    sqlBuilder.WhereAnd(_builder.ToString());
-
-                    query._queryState.RemoveBinding();
-
-                    // Insert query
-                    query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString()));
+                    InFilter(query, builder, dialect, expression, false, expression.Arguments[1], expression.Arguments[2]);
                 };
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotIn")] =
                 (query, builder, dialect, expression) =>
                 {
-                    // field to select
-                    var selector = expression.Arguments[1];
-
-                    // filters on the index
-                    var predicate = expression.Arguments[2];
-
-                    // type of the index
-                    var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
-
-                    // create new query here as the inner join should be in the sub query
-
-                    var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
-
-                    query._queryState.AddBinding(tIndex);
-
-                    // Build inner query
-                    var _builder = new StringBuilder();
-
-                    sqlBuilder.Select();
-
-                    query.ConvertFragment(_builder, ((LambdaExpression)((UnaryExpression)selector).Operand).Body);
-                    sqlBuilder.Selector(_builder.ToString());
-                    _builder.Clear();
-
-                    sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetTypeAlias(tIndex));
-                    query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)predicate).Operand).Body);
-
-                    sqlBuilder.WhereAnd(_builder.ToString());
-
-                    query._queryState.RemoveBinding();
-
-                    // Insert query
-                    query.ConvertFragment(builder, expression.Arguments[0]);
-                    builder.Append(dialect.NotInSelectOperator(sqlBuilder.ToSqlString()));
+                    InFilter(query, builder, dialect, expression, true, expression.Arguments[1], expression.Arguments[2]);
                 };
+
+            MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsInAny")] =
+                (query, builder, dialect, expression) =>
+                {
+                    InFilter(query, builder, dialect, expression, false, expression.Arguments[1], null);
+                };
+
+            MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotInAny")] =
+                (query, builder, dialect, expression) =>
+                {
+                    InFilter(query, builder, dialect, expression, true, expression.Arguments[1], null);
+                };
+        }
+
+        private static void InFilter(DefaultQuery query, StringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate, Expression selector, Expression indexFilter)
+        {
+            // type of the index
+            var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
+
+            // create new query here as the inner join should be in the sub query
+
+            var sqlBuilder = query._dialect.CreateBuilder(query._session._store.Configuration.TablePrefix);
+
+            query._queryState.AddBinding(tIndex);
+
+            // Build inner query
+            var _builder = new StringBuilder();
+
+            sqlBuilder.Select();
+
+            query.ConvertFragment(_builder, ((LambdaExpression)((UnaryExpression)selector).Operand).Body);
+            sqlBuilder.Selector(_builder.ToString());
+            _builder.Clear();
+
+            sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetTypeAlias(tIndex));
+
+            if (indexFilter != null)
+            {
+                query.ConvertPredicate(_builder, ((LambdaExpression)((UnaryExpression)indexFilter).Operand).Body);
+                sqlBuilder.WhereAnd(_builder.ToString());
+            }
+
+            query._queryState.RemoveBinding();
+
+            // Insert query
+            query.ConvertFragment(builder, expression.Arguments[0]);
+
+            if (negate)
+            {
+                builder.Append(dialect.NotInSelectOperator(sqlBuilder.ToSqlString()));
+            }
+            else
+            {
+                builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString()));
+            }
         }
 
         public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, string collection)
@@ -597,9 +586,9 @@ namespace YesSql.Services
                         var binaryExpression = (BinaryExpression)expression;
                         if (binaryExpression.Left is ConstantExpression left && binaryExpression.Right is ConstantExpression right)
                         {
-                            _queryState._builder.Append(_dialect.GetSqlValue(left.Value));
-                            _queryState._builder.Append(GetBinaryOperator(expression));
-                            _queryState._builder.Append(_dialect.GetSqlValue(right.Value));
+                            builder.Append(_dialect.GetSqlValue(left.Value));
+                            builder.Append(GetBinaryOperator(expression));
+                            builder.Append(_dialect.GetSqlValue(right.Value));
                             return;
                         }
 
@@ -1506,12 +1495,34 @@ namespace YesSql.Services
 
     public static class DefaultQueryExtensionsIndex
     {
+        /// <summary>
+        /// Matches all values that are in the specified <see cref="TIndex"/> index, and the specified predicate.
+        /// </summary>
         public static bool IsIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where)
         {
             return false;
         }
 
+        /// <summary>
+        /// Matches all values that are in the specified <see cref="TIndex"/> index.
+        /// </summary>
+        public static bool IsInAny<TIndex>(this object source, Expression<Func<TIndex, object>> select)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Matches all values that are not in the specified <see cref="TIndex"/> index, and the specified predicate.
+        /// </summary>
         public static bool IsNotIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Matches all values that are not in the specified <see cref="TIndex"/> index.
+        /// </summary>
+        public static bool IsNotInAny<TIndex>(this object source, Expression<Func<TIndex, object>> select)
         {
             return false;
         }
