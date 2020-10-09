@@ -37,7 +37,7 @@ namespace Bench
                 }
             }
 
-            var store = await StoreFactory.CreateAsync(configuration);
+            var store = await StoreFactory.CreateAndInitializeAsync(configuration);
             store.RegisterIndexes<UserIndexProvider>();
 
             using (var session = store.CreateSession())
