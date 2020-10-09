@@ -72,7 +72,7 @@ namespace YesSql.Samples.Gating
                 }
             }
 
-            var store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+            var store = StoreFactory.CreateAndInitializeAsync(configuration).GetAwaiter().GetResult();
 
             store.RegisterIndexes<PersonIndexProvider>();
 

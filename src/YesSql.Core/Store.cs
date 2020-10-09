@@ -75,7 +75,7 @@ namespace YesSql
             Configuration = configuration;
         }
 
-        internal async Task InitializeAsync()
+        public async Task InitializeAsync()
         {
             IndexCommand.ResetQueryCache();
             Indexes = new List<IIndexProvider>();
@@ -400,6 +400,5 @@ namespace YesSql
 
             return (T)content;
         }
-
     }
 }
