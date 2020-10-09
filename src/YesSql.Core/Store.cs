@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
@@ -49,6 +50,9 @@ namespace YesSql
         internal ImmutableDictionary<Type, QueryState> CompiledQueries =
             ImmutableDictionary<Type, QueryState>.Empty;
 
+        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private static bool _initialized = false;
+
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
@@ -75,32 +79,49 @@ namespace YesSql
             Configuration = configuration;
         }
 
-        internal async Task InitializeAsync()
+        public async Task InitializeAsync()
         {
-            IndexCommand.ResetQueryCache();
-            Indexes = new List<IIndexProvider>();
-            ScopedIndexes = new List<Type>();
-            ValidateConfiguration();
+            await _semaphore.WaitAsync();
 
-            _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
-            Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
-            TypeNames = new TypeService();
-
-            using (var connection = Configuration.ConnectionFactory.CreateConnection())
+            // Already initialized?
+            if (_initialized)
             {
-                await connection.OpenAsync();
-
-                using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(Configuration, transaction);
-                    await Configuration.IdGenerator.InitializeAsync(this, builder);
-
-                    transaction.Commit();
-                }
+                return;
             }
 
-            // Pre-initialize the default collection
-            await InitializeCollectionAsync("");
+            try
+            {
+                IndexCommand.ResetQueryCache();
+                Indexes = new List<IIndexProvider>();
+                ScopedIndexes = new List<Type>();
+                ValidateConfiguration();
+
+                _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
+                Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
+                TypeNames = new TypeService();
+
+                using (var connection = Configuration.ConnectionFactory.CreateConnection())
+                {
+                    await connection.OpenAsync();
+
+                    using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
+                    {
+                        var builder = new SchemaBuilder(Configuration, transaction);
+                        await Configuration.IdGenerator.InitializeAsync(this, builder);
+
+                        transaction.Commit();
+                    }
+                }
+
+                // Pre-initialize the default collection
+                await InitializeCollectionAsync("");
+
+                _initialized = true;
+            }
+            catch
+            {
+                _semaphore.Release();
+            }
         }
 
         public async Task InitializeCollectionAsync(string collection)

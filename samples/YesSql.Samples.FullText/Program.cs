@@ -23,7 +23,7 @@ namespace YesSql.Samples.FullText
                 .UseSqLite($"Data Source={filename};Cache=Shared")
                 ;
 
-            var store = await StoreFactory.CreateAsync(configuration);
+            var store = await StoreFactory.CreateAndInitializeAsync(configuration);
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {

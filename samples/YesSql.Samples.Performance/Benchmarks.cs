@@ -45,7 +45,7 @@ namespace YesSql.Samples.Performance
             }
             catch { }
 
-            _store = await StoreFactory.CreateAsync(configuration);
+            _store = await StoreFactory.CreateAndInitializeAsync(configuration);
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {

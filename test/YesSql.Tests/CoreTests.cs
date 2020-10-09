@@ -85,7 +85,7 @@ namespace YesSql.Tests
 
         public void CreateTables(IConfiguration configuration)
         {
-            _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+            _store = StoreFactory.CreateAndInitializeAsync(configuration).GetAwaiter().GetResult();
             
             _store.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
 
