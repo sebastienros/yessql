@@ -12,17 +12,18 @@ namespace YesSql.Samples.Web
             services.AddDbProvider(config =>
                 config.UseSqlServer("Server=.;Database=YesSqlDb;Integrated Security=True"));
 
-            services.AddMvc();
+            services.AddControllers();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            app.UseRouting();
 
-            app.UseMvc();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
         }
     }
 }
+
