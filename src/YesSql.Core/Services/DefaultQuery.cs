@@ -190,6 +190,28 @@ namespace YesSql.Services
                 dialect.Concat(builder, generators.ToArray());
             };
 
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsLike")] = (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(" like ");
+                query.ConvertFragment(builder, expression.Arguments[1]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = parameter.ToString();
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsNotLike")] = (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(" not like ");
+                query.ConvertFragment(builder, expression.Arguments[1]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = parameter.ToString();
+                builder.Append(")");
+            };
+
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
@@ -1488,6 +1510,22 @@ namespace YesSql.Services
         }
 
         public static bool IsNotIn(this object source, IEnumerable values)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Whether the value matches the specified SQL filter with `%`.
+        /// </summary>
+        public static bool IsLike(this string source, string filter)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Whether the value doesn't match the specified SQL filter with `%`.
+        /// </summary>
+        public static bool IsNotLike(this string source, string filter)
         {
             return false;
         }

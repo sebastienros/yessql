@@ -1051,7 +1051,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldQueryFilterNotContains()
+        public async Task ShouldQueryWithLike()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();
 
@@ -1077,8 +1077,8 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => !x.Name.Contains("l")).CountAsync());
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => !x.Name.Contains("B")).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsLike("%l%")).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotLike("%B%")).CountAsync());
             }
         }
 
