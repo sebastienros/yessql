@@ -212,6 +212,17 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("NotContains")] = (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(" not like ");
+                query.ConvertFragment(builder, expression.Arguments[1]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = "%" + parameter.ToString() + "%";
+                builder.Append(")");
+            };
+
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn")] =
                 (query, builder, dialect, expression) =>
                 {
@@ -1526,6 +1537,14 @@ namespace YesSql.Services
         /// Whether the value doesn't match the specified SQL filter with `%`.
         /// </summary>
         public static bool IsNotLike(this string source, string filter)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Whether the value doesn't contain the specified text.
+        /// </summary>
+        public static bool NotContains(this string source, string text)
         {
             return false;
         }
