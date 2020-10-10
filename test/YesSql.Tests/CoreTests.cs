@@ -1051,6 +1051,38 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryFilterNotContains()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => !x.Name.Contains("l")).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => !x.Name.Contains("B")).CountAsync());
+            }
+        }
+
+        [Fact]
         public virtual async Task ShouldAppendIndexOnUpdate()
         {
             // When an object is updated, its map indexes
