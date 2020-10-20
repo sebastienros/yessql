@@ -18,6 +18,7 @@ namespace YesSql
         /// </summary>
         /// <param name="obj">The entity to save.</param>
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
+        /// <param name="collection">The name of the collection to store the object in.</param>
         void Save(object obj, bool checkConcurrency = false, string collection = null);
 
         /// <summary>
@@ -46,6 +47,7 @@ namespace YesSql
         /// This method can be used to remove an item that should not be served again from the cache.
         /// For instance when its state as changed and any subsequent query should not return the 
         /// modified instance but a fresh one.
+        /// </remarks>
         void Detach(object item, string collection = null);
 
         /// <summary>
@@ -95,6 +97,7 @@ namespace YesSql
         /// Registers index providers that are used only during the lifetime of this session.
         /// </summary>
         /// <param name="indexProviders">The index providers to register.</param>
+        /// <param name="collection">The name of the collection to store the object in.</param>
         /// <returns>The <see cref="ISession"/> instance.</returns>
         ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null);
 
@@ -132,6 +135,7 @@ namespace YesSql
         /// <summary>
         /// Registers index providers that are used only during the lifetime of this session.
         /// </summary>
+        /// <param name="session">The session.</param>
         /// <param name="indexProviders">The index providers to register.</param>
         /// <returns>The <see cref="ISession"/> instance.</returns>
         public static ISession RegisterIndexes(this ISession session, params IIndexProvider[] indexProviders)
@@ -142,7 +146,9 @@ namespace YesSql
         /// <summary>
         /// Registers index providers that are used only during the lifetime of this session.
         /// </summary>
+        /// <param name="session">The session.</param>
         /// <param name="indexProvider">The index provider to register.</param>
+        /// <param name="collection">The name of the collection.</param>
         /// <returns>The <see cref="ISession"/> instance.</returns>
         public static ISession RegisterIndexes(this ISession session, IIndexProvider indexProvider, string collection = null)
         {
@@ -153,7 +159,9 @@ namespace YesSql
         /// Saves a new or existing object to the store, and updates
         /// the corresponding indexes.
         /// </summary>
+        /// <param name="session">The session.</param>
         /// <param name="obj">The entity to save.</param>
+        /// <param name="collection">The name of the collection.</param>
         public static void Save(this ISession session, object obj, string collection = null)
         {
             session.Save(obj, false, collection);

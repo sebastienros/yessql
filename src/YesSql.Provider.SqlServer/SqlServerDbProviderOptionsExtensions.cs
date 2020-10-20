@@ -8,8 +8,8 @@ namespace YesSql.Provider.SqlServer
     {
         public static IConfiguration RegisterSqlServer(this IConfiguration configuration)
         {
-            SqlDialectFactory.SqlDialects["sqlconnection"] = new SqlServerDialect();
-            CommandInterpreterFactory.CommandInterpreters["sqlconnection"] = d => new SqlServerCommandInterpreter(d);
+            SqlDialectFactory.Register(typeof(SqlConnection), new SqlServerDialect());
+            CommandInterpreterFactory.Register(typeof(SqlConnection), d => new SqlServerCommandInterpreter(d));
 
             return configuration;
         }

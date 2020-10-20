@@ -8,8 +8,8 @@ namespace YesSql.Provider.MySql
     {
         public static IConfiguration RegisterMySql(this IConfiguration configuration)
         {
-            SqlDialectFactory.SqlDialects["mysqlconnection"] = new MySqlDialect();
-            CommandInterpreterFactory.CommandInterpreters["mysqlconnection"] = d => new MySqlCommandInterpreter(d);
+            SqlDialectFactory.Register(typeof(MySqlConnection), new MySqlDialect());
+            CommandInterpreterFactory.Register(typeof(MySqlConnection), d => new MySqlCommandInterpreter(d));
 
             return configuration;
         }
