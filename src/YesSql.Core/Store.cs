@@ -56,11 +56,17 @@ namespace YesSql
             // Add Type Handlers here
         }
 
+        private Store()
+        {
+            Indexes = new List<IIndexProvider>();
+            ScopedIndexes = new List<Type>();
+        }
+
         /// <summary>
         /// Initializes a <see cref="Store"/> instance and its new <see cref="Configuration"/>.
         /// </summary>
         /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
-        internal Store(Action<IConfiguration> config)
+        internal Store(Action<IConfiguration> config) : this()
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
@@ -70,7 +76,7 @@ namespace YesSql
         /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
         /// </summary>
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
-        internal Store(IConfiguration configuration)
+        internal Store(IConfiguration configuration) : this()
         {
             Configuration = configuration;
         }
@@ -78,8 +84,6 @@ namespace YesSql
         public async Task InitializeAsync()
         {
             IndexCommand.ResetQueryCache();
-            Indexes = new List<IIndexProvider>();
-            ScopedIndexes = new List<Type>();
             ValidateConfiguration();
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
