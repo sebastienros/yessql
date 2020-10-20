@@ -16,7 +16,7 @@ namespace YesSql
             // Make the assignment atomic so we can't skip a value
             lock (_commandInterpreters) 
             {
-                _commandInterpreters = _commandInterpreters.Add(connectionType, factory);
+                _commandInterpreters = _commandInterpreters[connectionType] = factory;
             }
         }
 

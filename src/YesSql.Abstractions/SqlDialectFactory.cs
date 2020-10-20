@@ -16,7 +16,7 @@ namespace YesSql
             // Make the assignment atomic so we can't skip a value
             lock (_sqlDialects) 
             {
-                _sqlDialects = _sqlDialects.Add(connectionType, sqlDialect);
+                _sqlDialects = _sqlDialects[connectionType] = sqlDialect;
             }
         }
 
