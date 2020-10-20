@@ -17,7 +17,7 @@ namespace YesSql.Sql
         public ITableNameConvention TableNameConvention { get; private set; }
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
-        public bool ThrowOnError { get; set; } = true;
+        public bool ThrowOnError { get; private set; }
 
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
         {
@@ -200,6 +200,14 @@ namespace YesSql.Sql
                 }
             }
 
+            return this;
+        }
+
+        public ISchemaBuilder AlterIndexTable(Type indexType, Action<IAlterTableCommand> table, string collection)
+        {
+            var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+            AlterTable(indexTable, table);
+            
             return this;
         }
 

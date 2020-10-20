@@ -47,7 +47,7 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
-                    var builder = new SchemaBuilder(configuration, transaction) { ThrowOnError = throwOnError };
+                    var builder = new SchemaBuilder(configuration, transaction, throwOnError);
 
                     builder.DropReduceIndexTable<ArticlesByDay>();
                     builder.DropReduceIndexTable<AttachmentByDay>();
