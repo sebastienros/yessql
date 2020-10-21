@@ -57,6 +57,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonIdentity>();
                     builder.DropMapIndexTable<EmailByAttachment>();
 
+                    builder.DropMapIndexTable<ShapeIndex>();
                     builder.DropMapIndexTable<PersonByAge>();
                     builder.DropMapIndexTable<PersonByNullableAge>();
                     builder.DropMapIndexTable<Binary>();
@@ -132,6 +133,10 @@ namespace YesSql.Tests
                             .Column<int>(nameof(PersonByAge.Age))
                             .Column<bool>(nameof(PersonByAge.Adult))
                             .Column<string>(nameof(PersonByAge.Name))
+                        );
+
+                    builder.CreateMapIndexTable<ShapeIndex>(column => column
+                            .Column<string>(nameof(ShapeIndex.Name))
                         );
 
                     builder.CreateMapIndexTable<PersonByNullableAge>(column => column
@@ -2504,6 +2509,38 @@ namespace YesSql.Tests
                 Assert.Equal(typeof(Square), drawing.Shapes[0].GetType());
                 Assert.Equal(typeof(Square), drawing.Shapes[1].GetType());
                 Assert.Equal(typeof(Circle), drawing.Shapes[2].GetType());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQuerySubClasses()
+        {
+            // When a base type is queried, we need to ensure the 
+            // results from the query keep their original type
+
+            _store.RegisterIndexes<ShapeIndexProvider<Circle>>();
+            _store.RegisterIndexes<ShapeIndexProvider<Square>>();
+            
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Square { Size = 10 });
+                session.Save(new Square { Size = 20 });
+                session.Save(new Circle { Radius = 5 });
+            };
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.QueryIndex<ShapeIndex>().CountAsync());
+                Assert.Equal(1, await session.Query<Circle, ShapeIndex>(filterType: true).CountAsync());
+                Assert.Equal(2, await session.Query<Square, ShapeIndex>(filterType: true).CountAsync());
+                Assert.Equal(3, await session.Query<Shape, ShapeIndex>(filterType: false).CountAsync());
+
+                // In this test, even querying on <object, ShapeIndex> would work
+                var shapes = await session.Query<Shape, ShapeIndex>(filterType: false).ListAsync();
+
+                Assert.Equal(3, shapes.Count());
+                Assert.Equal(1, shapes.Where(x => x is Circle).Count());
+                Assert.Equal(2, shapes.Where(x => x is Square).Count());
             }
         }
 

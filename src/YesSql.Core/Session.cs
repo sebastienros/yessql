@@ -523,8 +523,8 @@ namespace YesSql
             }
 
             var result = new List<T>();
-
-            var accessor = _store.GetIdAccessor(typeof(T));
+            var defaultAccessor = _store.GetIdAccessor(typeof(T));
+            var accessor = defaultAccessor;
             var typeName = Store.TypeNames[typeof(T)];
 
             var state = GetState(collection);
@@ -532,11 +532,6 @@ namespace YesSql
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
-                if (typeof(T) != typeof(object) && !String.Equals(typeName, d.Type, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
                 if (state.IdentityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
@@ -545,10 +540,17 @@ namespace YesSql
                 {
                     T item;
 
-                    // If no type is specified, use the one from the document
-                    if (typeof(T) == typeof(object))
+                    // If the document type doesn't match the requested one, check it's a base type
+                    if (!String.Equals(typeName, d.Type, StringComparison.Ordinal))
                     {
                         var itemType = Store.TypeNames[d.Type];
+
+                        // Ignore the document if it can't be casted to the requested type
+                        if (!typeof(T).IsAssignableFrom(itemType))
+                        {
+                            continue;
+                        }
+
                         accessor = _store.GetIdAccessor(itemType);
 
                         item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, itemType);
@@ -556,6 +558,8 @@ namespace YesSql
                     else
                     {
                         item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, typeof(T));
+
+                        accessor = defaultAccessor;
                     }
 
                     if (accessor != null)
