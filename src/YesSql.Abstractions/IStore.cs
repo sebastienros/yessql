@@ -18,6 +18,7 @@ namespace YesSql
         /// Registers index providers.
         /// </summary>
         /// <param name="indexProviders">The index providers to register.</param>
+        /// <param name="collection">The name of the collection.</param>
         /// <returns>The <see cref="IStore"/> instance.</returns>
         IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null);
 
@@ -37,7 +38,7 @@ namespace YesSql
         Task InitializeCollectionAsync(string collection);
 
         /// <summary>
-        /// Create an instance of <see cref="IEnumerable<IndexDescriptor>" /> containing descriptors for all indexes associated to a type and a collection.
+        /// Create an instance of <see cref="IEnumerable&lt;IndexDescriptor&gt;" /> containing descriptors for all indexes associated to a type and a collection.
         /// </summary>        
         IEnumerable<IndexDescriptor> Describe(Type target, string collection = null);
 

@@ -379,7 +379,7 @@ namespace YesSql
                     }
                     catch
                     {
-                        // An exception occured in the main worker, we broadcast the null value
+                        // An exception occurred in the main worker, we broadcast the null value
                         content = null;
                         throw;
                     }
