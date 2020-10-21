@@ -1,5 +1,8 @@
 namespace YesSql
 {
+    /// <summary>
+    /// The class stored in the Document table of a collection.
+    /// </summary>
     public class Document
     {
         /// <summary>

@@ -59,9 +59,16 @@ namespace YesSql
         /// <summary>
         /// Creates a new <see cref="IQuery"/> object.
         /// </summary>
-        /// <returns></returns>
         IQuery Query(string collection = null);
 
+        /// <summary>
+        /// Executes a compiled query.
+        /// </summary>
+        /// <remarks>
+        /// A compiled query is an instance of a class implementing <see cref="ICompiledQuery{T}" />.
+        /// Compiled queries allow YesSql to cache the SQL statement that would be otherwise generated
+        /// on each invocation of the LINQ query. 
+        /// </remarks>
         IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class;
 
         /// <summary>
@@ -79,7 +86,7 @@ namespace YesSql
         Task FlushAsync();
 
         /// <summary>
-        /// Fluses any changes and commits the transaction, and disposes it.
+        /// Flushes any changes, commits the transaction, and disposes it.
         /// </summary>
         /// <remarks>
         /// Sessions are automatically committed when disposed, however calling <see cref="CommitAsync"/>
@@ -101,6 +108,9 @@ namespace YesSql
         /// <returns>The <see cref="ISession"/> instance.</returns>
         ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null);
 
+        /// <summary>
+        /// Gets the <see cref="Store" /> instance that created this session. 
+        /// </summary>
         IStore Store { get; }
     }
 

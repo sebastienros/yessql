@@ -2,6 +2,9 @@ using System.Collections.Generic;
 
 namespace YesSql
 {
+    /// <summary>
+    /// A class implementing this interface is able to create custom SQL queries.
+    /// </summary>
     public interface ISqlBuilder
     {
         string Clause { get; }
