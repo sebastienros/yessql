@@ -370,7 +370,7 @@ namespace YesSql
                 {
                     oldDoc.Version--;
 
-                    // restore the old version to the object
+                    // revert the version update
                     if (versionAccessor != null)
                     {
                         versionAccessor.Set(entity, (int)oldDoc.Version);
