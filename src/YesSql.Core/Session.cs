@@ -124,7 +124,7 @@ namespace YesSql
                 {
                     state.IdentityMap.AddEntity(id, entity);
                     state.Updated.Add(entity);
-                    
+
                     // If this entity needs to be checked for concurrency, track its version
                     if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
                     {
@@ -223,7 +223,7 @@ namespace YesSql
         public void Detach(object entity, string collection)
         {
             CheckDisposed();
-            
+
             var state = GetState(collection);
 
             state.Saved.Remove(entity);
@@ -283,7 +283,7 @@ namespace YesSql
 
             if (versionAccessor != null)
             {
-                versionAccessor.Set(entity, (int) doc.Version);
+                versionAccessor.Set(entity, (int)doc.Version);
             }
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
@@ -334,11 +334,12 @@ namespace YesSql
 
             long version = -1;
 
+            IAccessor<int> versionAccessor = null;
             if (state.Concurrent.Contains(id))
             {
                 version = oldDoc.Version;
 
-                var versionAccessor = _store.GetVersionAccessor(entity.GetType());
+                versionAccessor = _store.GetVersionAccessor(entity.GetType());
                 if (versionAccessor != null)
                 {
                     var localVersion = versionAccessor.Get(entity);
@@ -365,6 +366,17 @@ namespace YesSql
             // been changed before doing another query
             if (tracked && String.Equals(newContent, oldDoc.Content))
             {
+                if (state.Concurrent.Contains(id))
+                {
+                    oldDoc.Version--;
+
+                    // restore the old version to the object
+                    if (versionAccessor != null)
+                    {
+                        versionAccessor.Set(entity, (int)oldDoc.Version);
+                    }
+                }
+
                 return;
             }
 
@@ -417,13 +429,13 @@ namespace YesSql
                 Cancel();
 
                 throw;
-            }            
+            }
         }
 
         public void Delete(object obj, string collection = null)
         {
             CheckDisposed();
-            
+
             var state = GetState(collection);
 
             state.Deleted.Add(obj);
@@ -633,7 +645,7 @@ namespace YesSql
             // Do nothing if Dispose() was already called
             if (_disposed)
             {
-                return; 
+                return;
             }
 
             try
