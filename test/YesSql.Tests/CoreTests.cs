@@ -2539,7 +2539,7 @@ namespace YesSql.Tests
                 var shapes = await session.Query<Shape, ShapeIndex>(filterType: false).ListAsync();
 
                 Assert.Equal(3, shapes.Count());
-                Assert.Equal(1, shapes.Where(x => x is Circle).Count());
+                Assert.Single(shapes.Where(x => x is Circle));
                 Assert.Equal(2, shapes.Where(x => x is Square).Count());
             }
         }

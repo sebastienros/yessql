@@ -1034,6 +1034,11 @@ namespace YesSql.Services
                 _query = query;
             }
 
+            public string GetTypeAlias(Type type)
+            {
+                return _query._queryState.GetTypeAlias(type);
+            }
+
             public Task<T> FirstOrDefaultAsync()
             {
                 return FirstOrDefaultImpl();
