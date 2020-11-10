@@ -4636,5 +4636,35 @@ namespace YesSql.Tests
                 Assert.Equal("William", person.Firstname);
             }
         }
+
+        [Fact]
+        public async Task ShouldUpdateVersions()
+        {
+            // c.f. https://github.com/sebastienros/yessql/pull/287
+
+            _store.Configuration.CheckConcurrentUpdates<Car>();
+
+            using (var session = _store.CreateSession())
+            {
+                var c = new Car { Name = "Clio" };
+
+                session.Save(c);
+            }
+
+            // Create initial document
+            using (var session = _store.CreateSession())
+            {
+                // Load the existing car
+                var c = await session.Query<Car>().FirstOrDefaultAsync();
+
+                session.Save(c);
+
+                await session.Query<Person>().FirstOrDefaultAsync();
+
+                await session.Query<Person>().FirstOrDefaultAsync();
+
+                c.Name = "Clio 2";
+            }
+        }
     }
 }
