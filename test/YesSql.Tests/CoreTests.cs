@@ -2539,7 +2539,7 @@ namespace YesSql.Tests
                 var shapes = await session.Query<Shape, ShapeIndex>(filterType: false).ListAsync();
 
                 Assert.Equal(3, shapes.Count());
-                Assert.Equal(1, shapes.Where(x => x is Circle).Count());
+                Assert.Single(shapes.Where(x => x is Circle));
                 Assert.Equal(2, shapes.Where(x => x is Square).Count());
             }
         }
@@ -4634,6 +4634,36 @@ namespace YesSql.Tests
                 Assert.NotNull(person);
 
                 Assert.Equal("William", person.Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldUpdateVersions()
+        {
+            // c.f. https://github.com/sebastienros/yessql/pull/287
+
+            _store.Configuration.CheckConcurrentUpdates<Car>();
+
+            using (var session = _store.CreateSession())
+            {
+                var c = new Car { Name = "Clio" };
+
+                session.Save(c);
+            }
+
+            // Create initial document
+            using (var session = _store.CreateSession())
+            {
+                // Load the existing car
+                var c = await session.Query<Car>().FirstOrDefaultAsync();
+
+                session.Save(c);
+
+                await session.Query<Person>().FirstOrDefaultAsync();
+
+                await session.Query<Person>().FirstOrDefaultAsync();
+
+                c.Name = "Clio 2";
             }
         }
     }

@@ -332,6 +332,15 @@ namespace YesSql
                 }
             }
 
+            string newContent = Store.Configuration.ContentSerializer.Serialize(entity);
+
+            // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
+            // been changed before doing another query
+            if (tracked && String.Equals(newContent, oldDoc.Content))
+            {
+                return;
+            }
+
             long version = -1;
 
             if (state.Concurrent.Contains(id))
@@ -356,16 +365,9 @@ namespace YesSql
                 if (versionAccessor != null)
                 {
                     versionAccessor.Set(entity, (int)oldDoc.Version);
+
+                    newContent = Store.Configuration.ContentSerializer.Serialize(entity);
                 }
-            }
-
-            var newContent = Store.Configuration.ContentSerializer.Serialize(entity);
-
-            // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
-            // been changed before doing another query
-            if (tracked && String.Equals(newContent, oldDoc.Content))
-            {
-                return;
             }
 
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());

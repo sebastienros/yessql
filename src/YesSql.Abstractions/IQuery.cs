@@ -86,6 +86,11 @@ namespace YesSql
         /// Executes a that returns the number of documents matching the constraints.
         /// </summary>
         Task<int> CountAsync();
+
+        /// <summary>
+        /// Returns the SQL alias currently used for the specified index type.
+        /// </summary>
+        string GetTypeAlias(Type t);
     }
 
     /// <summary>
