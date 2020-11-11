@@ -1261,7 +1261,7 @@ namespace YesSql
 
                     if (_connection == null)
                     {
-                        throw new InvalidOperationException("The connection couldn't be covnerted to DbConnection");
+                        throw new InvalidOperationException("The connection couldn't be converted to DbConnection");
                     }
                 }
 
