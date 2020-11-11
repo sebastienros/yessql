@@ -46,6 +46,11 @@ namespace YesSql
         /// <summary>
         /// Filters the documents with a record in the specified index.
         /// </summary>
+        IQuery<T> With(Type indexType);
+
+        /// <summary>
+        /// Filters the documents with a record in the specified index.
+        /// </summary>
         /// <typeparam name="TIndex">The index to filter on.</typeparam>
         IQuery<T, TIndex> With<TIndex>() where TIndex : class, IIndex;
         

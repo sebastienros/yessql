@@ -1277,6 +1277,22 @@ namespace YesSql.Services
                 return new Query<T, TIndex>(_query);
             }
 
+            IQuery<T> IQuery<T>.With(Type indexType)
+            {
+                if (!typeof(IIndex).IsAssignableFrom(indexType))
+                {
+                    throw new ArgumentException("The type must implement IIndex.", nameof(indexType));
+                }
+
+                if (!indexType.IsClass)
+                {
+                    throw new ArgumentException("The type must be a class.", nameof(indexType));
+                }
+
+                _query.Bind(indexType);
+                return new Query<T>(_query);
+            }
+
             IQuery<T, TIndex> IQuery<T>.With<TIndex>(Expression<Func<TIndex, bool>> predicate)
             {
                 _query.Bind<TIndex>();
