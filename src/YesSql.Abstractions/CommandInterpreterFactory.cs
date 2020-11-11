@@ -22,18 +22,24 @@ namespace YesSql
         }
 
         /// <summary>
-        /// Creates an <see cref="ICommandInterpreter" /> instance for a specific connection type.
+        /// Returns an <see cref="ICommandInterpreter" /> instance for a specific connection.
         /// </summary>
         public static ICommandInterpreter For(DbConnection connection)
         {
-            var connectionType = connection.GetType();
+            return For(connection.GetType());
+        }
 
+        /// <summary>
+        /// Returns the <see cref="ISqlDialect" /> instance for a specific connection type.
+        /// </summary>
+        public static ICommandInterpreter For(Type connectionType)
+        {
             if (!_commandInterpreters.TryGetValue(connectionType, out var factory))
             {
                 throw new ArgumentException($"Unknown connection name: {connectionType}");
             }
 
-            var dialect = SqlDialectFactory.For(connection);
+            var dialect = SqlDialectFactory.For(connectionType);
 
             return factory(dialect);
         }
