@@ -6,14 +6,6 @@ namespace YesSql.Provider.Sqlite
 {
     public static class SqliteDbProviderOptionsExtensions
     {
-        public static IConfiguration RegisterSqLite(this IConfiguration configuration)
-        {
-            SqlDialectFactory.Register(typeof(SqliteConnection), new SqliteDialect());
-            CommandInterpreterFactory.Register(typeof(SqliteConnection), d => new SqliteCommandInterpreter(d));
-
-            return configuration;
-        }
-
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
             string connectionString)
@@ -39,7 +31,8 @@ namespace YesSql.Provider.Sqlite
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            RegisterSqLite(configuration);
+            configuration.SqlDialect = new SqliteDialect();
+            configuration.CommandInterpreter = new SqliteCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 

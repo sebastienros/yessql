@@ -6,14 +6,6 @@ namespace YesSql.Provider.MySql
 {
     public static class MySqlDbProviderOptionsExtensions
     {
-        public static IConfiguration RegisterMySql(this IConfiguration configuration)
-        {
-            SqlDialectFactory.Register(typeof(MySqlConnection), new MySqlDialect());
-            CommandInterpreterFactory.Register(typeof(MySqlConnection), d => new MySqlCommandInterpreter(d));
-
-            return configuration;
-        }
-
         public static IConfiguration UseMySql(
             this IConfiguration configuration,
             string connectionString)
@@ -36,8 +28,8 @@ namespace YesSql.Provider.MySql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            RegisterMySql(configuration);
-
+            configuration.SqlDialect = new MySqlDialect();
+            configuration.CommandInterpreter = new MySqlCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 

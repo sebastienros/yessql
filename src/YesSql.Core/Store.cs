@@ -70,6 +70,7 @@ namespace YesSql
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
+            Dialect = Configuration.SqlDialect;
         }
 
         /// <summary>
@@ -79,6 +80,7 @@ namespace YesSql
         internal Store(IConfiguration configuration) : this()
         {
             Configuration = configuration;
+            Dialect = Configuration.SqlDialect;
         }
 
         public async Task InitializeAsync()
@@ -87,7 +89,6 @@ namespace YesSql
             ValidateConfiguration();
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
-            Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
             TypeNames = new TypeService();
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())

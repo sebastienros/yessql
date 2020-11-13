@@ -6,14 +6,6 @@ namespace YesSql.Provider.PostgreSql
 {
     public static class PostgreSqlDbProviderOptionsExtensions
     {
-        public static IConfiguration RegisterPostgreSql(this IConfiguration configuration)
-        {
-            SqlDialectFactory.Register(typeof(NpgsqlConnection), new PostgreSqlDialect());
-            CommandInterpreterFactory.Register(typeof(NpgsqlConnection), d => new PostgreSqlCommandInterpreter(d));
-
-            return configuration;
-        }
-
         public static IConfiguration UsePostgreSql(
             this IConfiguration configuration,
             string connectionString)
@@ -36,7 +28,8 @@ namespace YesSql.Provider.PostgreSql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            RegisterPostgreSql(configuration);
+            configuration.SqlDialect = new PostgreSqlDialect();
+            configuration.CommandInterpreter = new PostgreSqlCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 
