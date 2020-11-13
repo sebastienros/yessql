@@ -75,6 +75,16 @@ namespace YesSql
         /// Gets or sets the <see cref="ITableNameConvention" /> instance.
         /// </summary>
         ITableNameConvention TableNameConvention { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ICommandInterpreter" /> instance.
+        /// </summary>
+        ICommandInterpreter CommandInterpreter { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ISqlDialect" /> instance.
+        /// </summary>
+        ISqlDialect SqlDialect { get; set; }
     }
 
     public static class ConfigurationExtensions

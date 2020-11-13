@@ -466,7 +466,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var connection = (await session.DemandAsync()).Connection;
-                var dialect = SqlDialectFactory.For(connection);
+                var dialect = _store.Configuration.SqlDialect;
                 var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
 
                 var person = await session.Query<Person, PersonByName>().Where(sql).FirstOrDefaultAsync();
@@ -3475,7 +3475,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                var dialect = SqlDialectFactory.For(connection);
+                var dialect = _store.Configuration.SqlDialect;
                 var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
