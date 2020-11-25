@@ -151,14 +151,14 @@ namespace YesSql.Tests
                             .Column<string>(nameof(EmailByAttachment.AttachmentName))
                         );
 
-                    builder.CreateMapIndexTable(nameof(PropertyIndex), column => column
+                    builder.CreateMapIndexTable<PropertyIndex>(column => column
                         .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
                         .Column<bool>(nameof(PropertyIndex.ForRent))
                         .Column<bool>(nameof(PropertyIndex.IsOccupied))
                         .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                     );
 
-                    builder.CreateMapIndexTable(nameof(Binary), column => column
+                    builder.CreateMapIndexTable<Binary>(column => column
                             .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
                             .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(65535))
                             .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(16777215))
@@ -4405,7 +4405,7 @@ namespace YesSql.Tests
                         .DropMapIndexTable(nameof(PropertyIndex));
 
                     builder
-                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
+                        .CreateMapIndexTable<PropertyIndex>(column => column
                         .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
                         .Column<bool>(nameof(PropertyIndex.ForRent))
                         .Column<bool>(nameof(PropertyIndex.IsOccupied))
