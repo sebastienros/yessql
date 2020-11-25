@@ -18,7 +18,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.DateTimeOffset, "timestamp" },
             {DbType.Boolean, "boolean"},
             {DbType.Byte, "int2"},
-            {DbType.Decimal, "decimal(19, 5)"},
+            {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Single, "float4"},
             {DbType.Double, "float8"},
             {DbType.Int16, "int2"},
@@ -53,7 +53,7 @@ namespace YesSql.Provider.PostgreSql
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
 
-        public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
+        public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
             {
@@ -85,6 +85,11 @@ namespace YesSql.Provider.PostgreSql
 
             if (ColumnTypes.TryGetValue(dbType, out string value))
             {
+                if (dbType == DbType.Decimal)
+                {
+                    value = string.Format(value, precision ?? DefaultDecimalPrecision, scale ?? DefaultDecimalScale);
+                }
+
                 return value;
             }
 
@@ -135,6 +140,10 @@ namespace YesSql.Provider.PostgreSql
         }
 
         public override string CascadeConstraintsString => " cascade ";
+
+        public override byte DefaultDecimalPrecision => 19;
+
+        public override byte DefaultDecimalScale => 5;
 
         public override string GetSqlValue(object value)
         {

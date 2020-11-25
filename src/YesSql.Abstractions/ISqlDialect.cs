@@ -69,9 +69,19 @@ namespace YesSql
         string IdentitySelectString { get; }
 
         /// <summary>
+        /// Gets the default precision of decimals.
+        /// </summary>
+        byte DefaultDecimalPrecision { get; }
+
+        /// <summary>
+        /// Gets the default precision of decimals.
+        /// </summary>
+        byte DefaultDecimalScale { get; }
+
+        /// <summary>
         /// Gets the type name SQL statement.
         /// </summary>
-        string GetTypeName(DbType dbType, int? length, byte precision, byte scale);
+        string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale);
 
         /// <summary>
         /// Gets sql value.

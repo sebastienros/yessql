@@ -11,6 +11,8 @@ namespace YesSql.Tests
     {
         public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
 
+        protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
+
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()

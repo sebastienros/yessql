@@ -144,6 +144,5 @@ namespace YesSql.Tests
 
             Assert.True(lastId >= MaxTransactions, $"lastId: {lastId}");
         }
-
     }
 }
