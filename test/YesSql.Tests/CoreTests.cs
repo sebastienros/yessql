@@ -62,6 +62,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonByNullableAge>();
                     builder.DropMapIndexTable<Binary>();
                     builder.DropMapIndexTable<PublishedArticle>();
+                    builder.DropMapIndexTable<PropertyIndex>();
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
                     builder.DropMapIndexTable<PersonByName>("Collection1");
@@ -70,14 +71,6 @@ namespace YesSql.Tests
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Collection1"));
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
 
-                    builder.DropMapIndexTable(nameof(PersonByAge));
-                    builder.DropMapIndexTable(nameof(PersonByNullableAge));
-                    builder.DropMapIndexTable(nameof(Binary));
-                    builder.DropMapIndexTable(nameof(PublishedArticle));
-                    builder.DropMapIndexTable(nameof(PropertyIndex));
-                    builder.DropReduceIndexTable(nameof(UserByRoleNameIndex));
-                    builder.DropTable(Store.DocumentTable);
-                    builder.DropTable("Collection1_Document");
                     builder.DropTable(DbBlockIdGenerator.TableName);
 
                     OnCleanDatabase(builder, transaction);
