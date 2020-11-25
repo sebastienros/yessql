@@ -59,7 +59,8 @@ namespace YesSql.Tests
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     new SchemaBuilder(_store.Configuration, transaction)
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
+
                     transaction.Commit();
                 }
 
