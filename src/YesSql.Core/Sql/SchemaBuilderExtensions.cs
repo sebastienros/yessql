@@ -32,7 +32,7 @@ namespace YesSql.Sql
             return builder.DropMapIndexTable(typeof(T), collection);
         }
 
-        public static ISchemaBuilder AlterIndexTable<T>(this ISchemaBuilder builder, Type indexType, Action<IAlterTableCommand> table, string collection = null)
+        public static ISchemaBuilder AlterIndexTable<T>(this ISchemaBuilder builder, Action<IAlterTableCommand> table, string collection = null)
         {
             return builder.AlterIndexTable(typeof(T), table, collection);
         }
