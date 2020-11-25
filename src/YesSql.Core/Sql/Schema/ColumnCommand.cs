@@ -13,10 +13,12 @@ namespace YesSql.Sql.Schema
             DbType = DbType.Object;
             Default = null;
             Length = null;
+            Scale = null;
+            Precision = null;
         }
-        public byte Scale { get; protected set; }
+        public byte? Scale { get; protected set; }
 
-        public byte Precision { get; protected set; }
+        public byte? Precision { get; protected set; }
 
         public DbType DbType { get; private set; }
 

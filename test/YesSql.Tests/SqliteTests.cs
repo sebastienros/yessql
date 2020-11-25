@@ -16,6 +16,8 @@ namespace YesSql.Tests
     {
         private TemporaryFolder _tempFolder;
 
+        protected override string DecimalColumnDefinitionFormatString => "NUMERIC";
+
         public SqliteTests()
         {
         }

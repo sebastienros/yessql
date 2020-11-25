@@ -54,7 +54,11 @@ namespace YesSql.Provider.Sqlite
 
         public override string RandomOrderByClause => "random()";
 
-        public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
+        public override byte DefaultDecimalPrecision => 19;
+
+        public override byte DefaultDecimalScale => 5;
+
+        public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (ColumnTypes.TryGetValue(dbType, out string value))
             {

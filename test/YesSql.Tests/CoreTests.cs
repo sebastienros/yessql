@@ -20,6 +20,8 @@ namespace YesSql.Tests
     {
         protected virtual string TablePrefix => "tp";
 
+        protected virtual string DecimalColumnDefinitionFormatString => "DECIMAL({0},{1})";
+
         protected IStore _store;
 
         public CoreTests()
@@ -88,7 +90,7 @@ namespace YesSql.Tests
         public void CreateTables(IConfiguration configuration)
         {
             _store = StoreFactory.CreateAndInitializeAsync(configuration).GetAwaiter().GetResult();
-            
+
             _store.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
@@ -912,7 +914,7 @@ namespace YesSql.Tests
             {
                 var results = new List<Person>();
 
-                await foreach(var person in session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ToAsyncEnumerable())
+                await foreach (var person in session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ToAsyncEnumerable())
                 {
                     results.Add(person);
                 }
@@ -1526,7 +1528,7 @@ namespace YesSql.Tests
             //Create one Email with 3 attachments
             using (var session = _store.CreateSession())
             {
-                var email = new Email() { Date = new DateTime(2018, 06, 11), Attachments = new System.Collections.Generic.List<Attachment>(){ new Attachment("A1"), new Attachment("A2"), new Attachment("A3") }};
+                var email = new Email() { Date = new DateTime(2018, 06, 11), Attachments = new System.Collections.Generic.List<Attachment>() { new Attachment("A1"), new Attachment("A2"), new Attachment("A3") } };
                 session.Save(email);
             }
 
@@ -4215,7 +4217,7 @@ namespace YesSql.Tests
                     }
 
                     person.Lastname = "Gates";
-                    
+
                     session.Save(person, true);
                     Assert.NotNull(person);
                 }
@@ -4462,7 +4464,7 @@ namespace YesSql.Tests
             {
                 var count = await session.Query("Collection1").Any().CountAsync();
                 Assert.Equal(1, count);
-                
+
                 count = await session.Query().Any().CountAsync();
                 Assert.Equal(1, count);
             }
@@ -4688,6 +4690,17 @@ namespace YesSql.Tests
 
                 Assert.Equal("William", person.Firstname);
             }
+        }
+
+        [Theory]
+        [ClassData(typeof(DecimalPrecisionAndScaleDataGenerator))]
+        public void SqlDecimalPrecisionAndScale(byte? precision, byte? scale)
+        {
+            string expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? _store.Dialect.DefaultDecimalPrecision, scale ?? _store.Dialect.DefaultDecimalScale);
+
+            string result = _store.Dialect.GetTypeName(DbType.Decimal, null, precision, scale);
+
+            Assert.Equal(expected, result);
         }
 
         [Fact]
