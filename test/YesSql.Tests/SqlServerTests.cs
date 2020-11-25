@@ -159,10 +159,10 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
 
                     builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                        .CreateMapIndexTable(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
@@ -211,7 +211,7 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
@@ -264,7 +264,7 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
@@ -317,7 +317,7 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
@@ -362,7 +362,7 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
@@ -407,7 +407,7 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
