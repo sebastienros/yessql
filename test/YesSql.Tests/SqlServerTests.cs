@@ -162,7 +162,7 @@ namespace YesSql.Tests
                         .DropMapIndexTable<PropertyIndex>();
 
                     builder
-                        .CreateMapIndexTable(column => column
+                        .CreateMapIndexTable<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
