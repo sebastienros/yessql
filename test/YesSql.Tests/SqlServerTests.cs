@@ -163,10 +163,10 @@ namespace YesSql.Tests
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
                     builder
@@ -214,11 +214,11 @@ namespace YesSql.Tests
                         .DropMapIndexTable(nameof(PropertyIndex));
 
                     builder
-                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
                     builder.AlterTable(nameof(PropertyIndex), table => table
@@ -267,11 +267,11 @@ namespace YesSql.Tests
                         .DropMapIndexTable(nameof(PropertyIndex));
 
                     builder
-                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
                     builder
@@ -320,11 +320,11 @@ namespace YesSql.Tests
                         .DropMapIndexTable(nameof(PropertyIndex));
 
                     builder
-                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
                     builder
@@ -365,11 +365,11 @@ namespace YesSql.Tests
                         .DropMapIndexTable(nameof(PropertyIndex));
 
                     builder
-                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
                     builder
@@ -410,11 +410,11 @@ namespace YesSql.Tests
                         .DropMapIndexTable(nameof(PropertyIndex));
 
                     builder
-                        .CreateMapIndexTable(nameof(PropertyIndex), column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
                     builder
