@@ -1,7 +1,7 @@
-using MySql.Data.MySqlClient;
 using System;
 using System.Data.Common;
 using System.Threading.Tasks;
+using MySqlConnector;
 using Xunit;
 using YesSql.Provider.MySql;
 using YesSql.Sql;
