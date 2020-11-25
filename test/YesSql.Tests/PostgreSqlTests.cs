@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Xunit;
 using YesSql.Provider.PostgreSql;
 using YesSql.Sql;
+using YesSql.Tests.Indexes;
+using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
@@ -48,6 +50,55 @@ namespace YesSql.Tests
         public override Task ShouldReadUncommittedRecords()
         {
             return base.ShouldReadUncommittedRecords();
+        }
+        [Fact]
+        public async Task ShouldIndexPropertyKeys()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    new SchemaBuilder(_store.Configuration, transaction)
+                        .DropMapIndexTable<PropertyIndex>();
+
+                    transaction.Commit();
+                }
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+                    builder
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var property = new Property
+                {
+                    Name = new string('*', 4000),
+                    IsOccupied = true,
+                    ForRent = true,
+                    Location = new string('*', 4000)
+                };
+
+                session.Save(property);
+            }
         }
     }
 }

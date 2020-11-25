@@ -64,6 +64,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonByNullableAge>();
                     builder.DropMapIndexTable<Binary>();
                     builder.DropMapIndexTable<PublishedArticle>();
+                    builder.DropMapIndexTable<PropertyIndex>();
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
                     builder.DropMapIndexTable<PersonByName>("Collection1");
@@ -151,6 +152,13 @@ namespace YesSql.Tests
                             .Column<DateTime>(nameof(EmailByAttachment.Date))
                             .Column<string>(nameof(EmailByAttachment.AttachmentName))
                         );
+
+                    builder.CreateMapIndexTable<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                    );
 
                     builder.CreateMapIndexTable<Binary>(column => column
                             .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
@@ -4384,6 +4392,51 @@ namespace YesSql.Tests
             }
         }
 
+        [Fact]
+        public async Task ShouldCreateAndIndexPropertyWithMaximumKeyLengths()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable<PropertyIndex>();
+
+                    builder
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var property = new Property
+                {
+                    Name = new string('*', 767),
+                    IsOccupied = true,
+                    ForRent = true
+                };
+
+                session.Save(property);
+            }
+        }
+        
         [Fact]
         public async Task ShouldCommitInMultipleCollections()
         {
