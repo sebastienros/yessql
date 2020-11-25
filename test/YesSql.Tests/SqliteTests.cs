@@ -110,7 +110,7 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     builder
-                        .DropMapIndexTable(nameof(PropertyIndex));
+                        .DropMapIndexTable<PropertyIndex>();
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
