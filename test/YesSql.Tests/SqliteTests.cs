@@ -10,7 +10,7 @@ using YesSql.Tests.Models;
 namespace YesSql.Tests
 {
     /// <summary>
-    /// Run all tests with a SqlServer document storage
+    /// Run all tests with a Sqlite document storage
     /// </summary>
     public class SqliteTests : CoreTests
     {
@@ -68,7 +68,7 @@ namespace YesSql.Tests
             {
                 var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-                var store1 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+                var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
                 using (var session1 = store1.CreateSession())
                 {
@@ -79,7 +79,7 @@ namespace YesSql.Tests
                     Assert.Equal(1, p1.Id);
                 }
 
-                var store2 = await StoreFactory.CreateAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+                var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
                 using (var session2 = store2.CreateSession())
                 {

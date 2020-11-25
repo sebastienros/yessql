@@ -6,14 +6,6 @@ namespace YesSql.Provider.SqlServer
 {
     public static class SqlServerDbProviderOptionsExtensions
     {
-        public static IConfiguration RegisterSqlServer(this IConfiguration configuration)
-        {
-            SqlDialectFactory.SqlDialects["sqlconnection"] = new SqlServerDialect();
-            CommandInterpreterFactory.CommandInterpreters["sqlconnection"] = d => new SqlServerCommandInterpreter(d);
-
-            return configuration;
-        }
-
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
             string connectionString)
@@ -36,7 +28,8 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            RegisterSqlServer(configuration);
+            configuration.SqlDialect = new SqlServerDialect();
+            configuration.CommandInterpreter = new SqlServerCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 

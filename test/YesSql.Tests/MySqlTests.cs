@@ -51,7 +51,7 @@ namespace YesSql.Tests
         public async Task ForeignKeyOfIndexesMustBe_DeleteCascated()
         {
             var configuration = CreateConfiguration();
-            _store = await StoreFactory.CreateAsync(configuration);
+            _store = await StoreFactory.CreateAndInitializeAsync(configuration);
 
             // First store register the index
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -68,7 +68,7 @@ namespace YesSql.Tests
             }
 
             // second store, don't register the index
-            _store = await StoreFactory.CreateAsync(configuration);
+            _store = await StoreFactory.CreateAndInitializeAsync(configuration);
             using (var session = _store.CreateSession())
             {
                 var person = await session.Query().For<Person>().FirstOrDefaultAsync();

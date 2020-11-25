@@ -59,14 +59,14 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
-                    builder.DropTable("Document");
+                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
                     builder.DropTable("Identifiers");
 
                     transaction.Commit();
                 }
             }
 
-            var store1 = await StoreFactory.CreateAsync(configuration);
+            var store1 = await StoreFactory.CreateAndInitializeAsync(configuration);
 
             using (var session1 = store1.CreateSession())
             {
@@ -77,7 +77,7 @@ namespace YesSql.Tests
                 Assert.Equal(1, p1.Id);
             }
 
-            var store2 = await StoreFactory.CreateAsync(new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator());
+            var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator());
 
             using (var session2 = store2.CreateSession())
             {
@@ -105,7 +105,7 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
-                    builder.DropTable("Document");
+                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
                     builder.DropTable("Identifiers");
 
                     transaction.Commit();
@@ -121,7 +121,7 @@ namespace YesSql.Tests
 
             var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
-                var store1 = await StoreFactory.CreateAsync(configuration);
+                var store1 = await StoreFactory.CreateAndInitializeAsync(configuration);
                 await store1.InitializeCollectionAsync(collection);
                 long taskId;
                 man.Wait();

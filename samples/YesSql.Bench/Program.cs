@@ -27,7 +27,7 @@ namespace Bench
                 {
                     var builder = new SchemaBuilder(configuration, transaction);
 
-                    builder.CreateMapIndexTable(nameof(UserByName), c => c
+                    builder.CreateMapIndexTable<UserByName>(c => c
                         .Column<string>("Name")
                         .Column<bool>("Adult")
                         .Column<int>("Age")
@@ -37,7 +37,7 @@ namespace Bench
                 }
             }
 
-            var store = await StoreFactory.CreateAsync(configuration);
+            var store = await StoreFactory.CreateAndInitializeAsync(configuration);
             store.RegisterIndexes<UserIndexProvider>();
 
             using (var session = store.CreateSession())

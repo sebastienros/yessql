@@ -12,7 +12,7 @@ namespace YesSql.Services
     /// </summary>
     public class DbBlockIdGenerator : IIdGenerator
     {
-        private object _synLock = new object();
+        private readonly object _synLock = new object();
 
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
@@ -20,8 +20,8 @@ namespace YesSql.Services
         private ISqlDialect _dialect;
         private IStore _store;
 
-        private int _blockSize;
-        private Dictionary<string, Range> _ranges = new Dictionary<string, Range>();
+        private readonly int _blockSize;
+        private readonly Dictionary<string, Range> _ranges = new Dictionary<string, Range>();
         private string _tablePrefix;
 
         private string SelectCommand;
@@ -39,7 +39,7 @@ namespace YesSql.Services
 
         public async Task InitializeAsync(IStore store, ISchemaBuilder builder)
         {
-            _dialect = SqlDialectFactory.For(store.Configuration.ConnectionFactory.DbConnectionType);
+            _dialect = store.Dialect;
             _tablePrefix = store.Configuration.TablePrefix;
             _store = store;
 
@@ -77,6 +77,8 @@ namespace YesSql.Services
 
         public long GetNextId(string collection)
         {
+            collection ??= "";
+
             lock (_synLock)
             {
                 if (!_ranges.TryGetValue(collection, out var range))
@@ -102,73 +104,71 @@ namespace YesSql.Services
             long nextval = 0;
             var retries = 0;
 
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            connection.Open();
+
+            do
             {
-                connection.Open();
-
-                do
+                // Ensure we overwrite the value that has been read by this
+                // instance in case another client is trying to lease a range
+                // at the same time
+                using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                 {
-                    // Ensure we overwrite the value that has been read by this
-                    // instance in case another client is trying to lease a range
-                    // at the same time
-                    using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                    try
                     {
-                        try
-                        {
-                            var selectCommand = connection.CreateCommand();
-                            selectCommand.CommandText = SelectCommand;
+                        var selectCommand = connection.CreateCommand();
+                        selectCommand.CommandText = SelectCommand;
 
-                            var selectDimension = selectCommand.CreateParameter();
-                            selectDimension.Value = range.Collection;
-                            selectDimension.ParameterName = "@dimension";
-                            selectCommand.Parameters.Add(selectDimension);
+                        var selectDimension = selectCommand.CreateParameter();
+                        selectDimension.Value = range.Collection;
+                        selectDimension.ParameterName = "@dimension";
+                        selectCommand.Parameters.Add(selectDimension);
 
-                            selectCommand.Transaction = transaction;
+                        selectCommand.Transaction = transaction;
 
-                            _store.Configuration.Logger.LogTrace(SelectCommand);
-                            nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
+                        _store.Configuration.Logger.LogTrace(SelectCommand);
+                        nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
-                            var updateCommand = connection.CreateCommand();
-                            updateCommand.CommandText = UpdateCommand;
+                        var updateCommand = connection.CreateCommand();
+                        updateCommand.CommandText = UpdateCommand;
 
-                            var updateDimension = updateCommand.CreateParameter();
-                            updateDimension.Value = range.Collection;
-                            updateDimension.ParameterName = "@dimension";
-                            updateCommand.Parameters.Add(updateDimension);
+                        var updateDimension = updateCommand.CreateParameter();
+                        updateDimension.Value = range.Collection;
+                        updateDimension.ParameterName = "@dimension";
+                        updateCommand.Parameters.Add(updateDimension);
 
-                            var newValue = updateCommand.CreateParameter();
-                            newValue.Value = nextval + _blockSize;
-                            newValue.ParameterName = "@new";
-                            updateCommand.Parameters.Add(newValue);
+                        var newValue = updateCommand.CreateParameter();
+                        newValue.Value = nextval + _blockSize;
+                        newValue.ParameterName = "@new";
+                        updateCommand.Parameters.Add(newValue);
 
-                            var previousValue = updateCommand.CreateParameter();
-                            previousValue.Value = nextval;
-                            previousValue.ParameterName = "@previous";
-                            updateCommand.Parameters.Add(previousValue);
+                        var previousValue = updateCommand.CreateParameter();
+                        previousValue.Value = nextval;
+                        previousValue.ParameterName = "@previous";
+                        updateCommand.Parameters.Add(previousValue);
 
-                            updateCommand.Transaction = transaction;
+                        updateCommand.Transaction = transaction;
 
-                            _store.Configuration.Logger.LogTrace(UpdateCommand);
-                            affectedRows = updateCommand.ExecuteNonQuery();
+                        _store.Configuration.Logger.LogTrace(UpdateCommand);
+                        affectedRows = updateCommand.ExecuteNonQuery();
 
-                            transaction.Commit();
-                        }
-                        catch
-                        {
-                            affectedRows = 0;
-                            transaction.Rollback();
-                        }
+                        transaction.Commit();
                     }
-
-                    if (retries++ > MaxRetries)
+                    catch
                     {
-                        throw new Exception("Too many retries while trying to lease a range for: " + range.Collection);
+                        affectedRows = 0;
+                        transaction.Rollback();
                     }
+                }
 
-                } while (affectedRows == 0);
+                if (retries++ > MaxRetries)
+                {
+                    throw new Exception("Too many retries while trying to lease a range for: " + range.Collection);
+                }
 
-                range.SetBlock(nextval, _blockSize);
-            }
+            } while (affectedRows == 0);
+
+            range.SetBlock(nextval, _blockSize);
         }
 
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)

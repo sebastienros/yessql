@@ -3,31 +3,32 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using YesSql.Collections;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
 {
     public class SchemaBuilder : ISchemaBuilder
     {
-        private ICommandInterpreter _builder;
+        private ICommandInterpreter _commandInterpreter;
         private readonly ILogger _logger;
 
         public string TablePrefix { get; private set; }
         public ISqlDialect Dialect { get; private set; }
+        public ITableNameConvention TableNameConvention { get; private set; }
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
-        public bool ThrowOnError { get; set; } = true;
+        public bool ThrowOnError { get; private set; }
 
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
         {
             Transaction = transaction;
             _logger = configuration.Logger;
             Connection = Transaction.Connection;
-            _builder = CommandInterpreterFactory.For(Connection);
-            Dialect = SqlDialectFactory.For(configuration.ConnectionFactory.DbConnectionType);
+            _commandInterpreter = configuration.CommandInterpreter;
+            Dialect = configuration.SqlDialect;
             TablePrefix = configuration.TablePrefix;
             ThrowOnError = throwOnError;
+            TableNameConvention = configuration.TableNameConvention;
         }
 
         private void Execute(IEnumerable<string> statements)
@@ -44,22 +45,23 @@ namespace YesSql.Sql
             return TablePrefix + table;
         }
 
-        public ISchemaBuilder CreateMapIndexTable(string name, Action<ICreateTableCommand> table)
+        public ISchemaBuilder CreateMapIndexTable(Type indexType, Action<ICreateTableCommand> table, string collection)
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
-                var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
+                var indexName = indexType.Name;
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection); 
+                var createTable = new CreateTableCommand(Prefix(indexTable));
+                var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 createTable
                     .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
                     .Column<int>("DocumentId");
 
                 table(createTable);
-                Execute(_builder.CreateSql(createTable));
+                Execute(_commandInterpreter.CreateSql(createTable));
 
-                CreateForeignKey("FK_" + name, name, new[] { "DocumentId" }, documentTable, new[] { "Id" });
+                CreateForeignKey("FK_" + (collection ?? "") + indexName, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
             }
             catch
             {
@@ -72,29 +74,30 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder CreateReduceIndexTable(string name, Action<ICreateTableCommand> table)
+        public ISchemaBuilder CreateReduceIndexTable(Type indexType, Action<ICreateTableCommand> table, string collection = null)
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
-                var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
+                var indexName = indexType.Name;
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+                var createTable = new CreateTableCommand(Prefix(indexTable));
+                var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 createTable
                     .Column<int>("Id", column => column.Identity().NotNull())
                     ;
 
                 table(createTable);
-                Execute(_builder.CreateSql(createTable));
+                Execute(_commandInterpreter.CreateSql(createTable));
 
-                var bridgeTableName = name + "_" + documentTable;
+                var bridgeTableName = indexTable + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
-                    .Column<int>(name + "Id", column => column.NotNull())
+                    .Column<int>(indexName + "Id", column => column.NotNull())
                     .Column<int>("DocumentId", column => column.NotNull())
                 );
 
-                CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { name + "Id" }, name, new[] { "Id" });
+                CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { indexName + "Id" }, indexTable, new[] { "Id" });
                 CreateForeignKey("FK_" + bridgeTableName + "_DocumentId", bridgeTableName, new[] { "DocumentId" }, documentTable, new[] { "Id" });
             }
             catch
@@ -108,14 +111,14 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder DropReduceIndexTable(string name)
+        public ISchemaBuilder DropReduceIndexTable(Type indexType, string collection = null)
         {
             try
             {
-                var collection = CollectionHelper.Current;
-                var documentTable = collection.GetPrefixedName(Store.DocumentTable);
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+                var documentTable = TableNameConvention.GetDocumentTable(collection);
 
-                var bridgeTableName = name + "_" + documentTable;
+                var bridgeTableName = indexTable + "_" + documentTable;
 
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
@@ -124,7 +127,7 @@ namespace YesSql.Sql
                 }
 
                 DropTable(bridgeTableName);
-                DropTable(name);
+                DropTable(indexTable);
             }
             catch
             {
@@ -137,16 +140,19 @@ namespace YesSql.Sql
             return this;
         }
 
-        public ISchemaBuilder DropMapIndexTable(string name)
+        public ISchemaBuilder DropMapIndexTable(Type indexType, string collection = null)
         {
             try
             {
+                var indexName = indexType.Name;
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+
                 if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
-                    DropForeignKey(name, "FK_" + name);
+                    DropForeignKey(indexTable, "FK_" + (collection ?? "") + indexName);
                 }
 
-                DropTable(name);
+                DropTable(indexTable);
             }
             catch
             {
@@ -165,7 +171,7 @@ namespace YesSql.Sql
             {
                 var createTable = new CreateTableCommand(Prefix(name));
                 table(createTable);
-                Execute(_builder.CreateSql(createTable));
+                Execute(_commandInterpreter.CreateSql(createTable));
             }
             catch
             {
@@ -184,7 +190,7 @@ namespace YesSql.Sql
             {
                 var alterTable = new AlterTableCommand(Prefix(name), Dialect, TablePrefix);
                 table(alterTable);
-                Execute(_builder.CreateSql(alterTable));
+                Execute(_commandInterpreter.CreateSql(alterTable));
             }
             catch
             {
@@ -197,12 +203,20 @@ namespace YesSql.Sql
             return this;
         }
 
+        public ISchemaBuilder AlterIndexTable(Type indexType, Action<IAlterTableCommand> table, string collection)
+        {
+            var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+            AlterTable(indexTable, table);
+            
+            return this;
+        }
+
         public ISchemaBuilder DropTable(string name)
         {
             try
             {
                 var deleteTable = new DropTableCommand(Prefix(name));
-                Execute(_builder.CreateSql(deleteTable));
+                Execute(_commandInterpreter.CreateSql(deleteTable));
             }
             catch
             {
@@ -220,61 +234,7 @@ namespace YesSql.Sql
             try
             {
                 var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_builder.CreateSql(command));
-            }
-            catch
-            {
-                if (ThrowOnError)
-                {
-                    throw;
-                }
-            }
-
-            return this;
-        }
-
-        public ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
-        {
-            try
-            {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_builder.CreateSql(command));
-            }
-            catch
-            {
-                if (ThrowOnError)
-                {
-                    throw;
-                }
-            }
-            return this;
-        }
-
-        public ISchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
-        {
-            try
-            {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_builder.CreateSql(command));
-
-            }
-            catch
-            {
-                if (ThrowOnError)
-                {
-                    throw;
-                }
-            }
-
-            return this;
-        }
-
-        public ISchemaBuilder CreateForeignKey(string name, string srcModule, string srcTable, string[] srcColumns, string destModule, string destTable, string[] destColumns)
-        {
-            try
-            {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_builder.CreateSql(command));
+                Execute(_commandInterpreter.CreateSql(command));
             }
             catch
             {
@@ -292,7 +252,7 @@ namespace YesSql.Sql
             try
             {
                 var command = new DropForeignKeyCommand(Prefix(srcTable), Prefix(name));
-                Execute(_builder.CreateSql(command));
+                Execute(_commandInterpreter.CreateSql(command));
             }
             catch
             {

@@ -12,7 +12,7 @@ namespace YesSql.Commands
 {
     public abstract class IndexCommand : IIndexCommand
     {
-        protected readonly string _tablePrefix;
+        protected readonly IStore _store;
 
         private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<string, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new ConcurrentDictionary<CompoundKey, string>();
@@ -22,14 +22,16 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, string tablePrefix)
+        public IndexCommand(IIndex index, IStore store, string collection)
         {
             Index = index;
-            _tablePrefix = tablePrefix;
+            _store = store;
+            Collection = collection;
         }
 
         public IIndex Index { get; }
         public Document Document { get; }
+        public string Collection { get; }
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
 
@@ -53,7 +55,7 @@ namespace YesSql.Commands
 
         protected string Inserts(Type type, ISqlDialect dialect)
         {
-            var key = new CompoundKey(dialect.Name, type.FullName, _tablePrefix);
+            var key = new CompoundKey(dialect.Name, type.FullName, _store.Configuration.TablePrefix, Collection);
 
             if (!InsertsList.TryGetValue(key, out string result))
             {
@@ -89,7 +91,7 @@ namespace YesSql.Commands
                     values = $"({sbColumnList}) VALUES ({sbParameterList})";
                 }
 
-                InsertsList[key] = result = $"INSERT INTO {dialect.QuoteForTableName(_tablePrefix + type.Name)} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")}";
+                InsertsList[key] = result = $"INSERT INTO {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")}";
             }
 
             return result;            
@@ -97,7 +99,7 @@ namespace YesSql.Commands
 
         protected string Updates(Type type, ISqlDialect dialect)
         {
-            var key = new CompoundKey(dialect.Name, type.FullName, _tablePrefix);
+            var key = new CompoundKey(dialect.Name, type.FullName, _store.Configuration.TablePrefix, Collection);
 
             if (!UpdatesList.TryGetValue(key, out string result))
             {
@@ -114,7 +116,7 @@ namespace YesSql.Commands
                     }
                 }
 
-                UpdatesList[key] = result = $"UPDATE {dialect.QuoteForTableName(_tablePrefix + type.Name)} SET {values} WHERE {dialect.QuoteForColumnName("Id")} = @Id;";
+                UpdatesList[key] = result = $"UPDATE {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} SET {values} WHERE {dialect.QuoteForColumnName("Id")} = @Id;";
             }
 
             return result;
@@ -135,12 +137,14 @@ namespace YesSql.Commands
             private string _key1;
             private string _key2;
             private string _key3;
+            private string _key4;
 
-            public CompoundKey(string key1, string key2, string key3)
+            public CompoundKey(string key1, string key2, string key3, string key4)
             {
                 _key1 = key1;
                 _key2 = key2;
                 _key3 = key3;
+                _key4 = key4;
             }
 
             /// <inheritdoc />
@@ -160,6 +164,7 @@ namespace YesSql.Commands
                 return String.Equals(_key1, other._key1)
                     && String.Equals(_key2, other._key2)
                     && String.Equals(_key3, other._key3)
+                    && String.Equals(_key4, other._key4)
                     ;
             }
 
@@ -172,7 +177,8 @@ namespace YesSql.Commands
                     hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key1) ? _key1.GetHashCode() : 0);
                     hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key2) ? _key2.GetHashCode() : 0);
                     hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key3) ? _key3.GetHashCode() : 0);
-                    
+                    hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key4) ? _key4.GetHashCode() : 0);
+
                     return hashCode;
                 }
             }

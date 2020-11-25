@@ -9,7 +9,6 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using YesSql.Collections;
 using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
@@ -35,8 +34,11 @@ namespace YesSql
         internal ImmutableDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
             ImmutableDictionary<string, IEnumerable<IndexDescriptor>>.Empty;
 
-        internal ImmutableDictionary<Type, IIdAccessor<int>> IdAccessors =
-            ImmutableDictionary<Type, IIdAccessor<int>>.Empty;
+        internal ImmutableDictionary<Type, IAccessor<int>> IdAccessors =
+            ImmutableDictionary<Type, IAccessor<int>>.Empty;
+
+        internal ImmutableDictionary<Type, IAccessor<int>> VersionAccessors =
+            ImmutableDictionary<Type, IAccessor<int>>.Empty;
 
         internal ImmutableDictionary<Type, Func<IDescriptor>> DescriptorActivators =
             ImmutableDictionary<Type, Func<IDescriptor>>.Empty;
@@ -47,8 +49,6 @@ namespace YesSql
         internal ImmutableDictionary<Type, QueryState> CompiledQueries =
             ImmutableDictionary<Type, QueryState>.Empty;
 
-        public const string DocumentTable = "Document";
-
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
@@ -56,34 +56,39 @@ namespace YesSql
             // Add Type Handlers here
         }
 
+        private Store()
+        {
+            Indexes = new List<IIndexProvider>();
+            ScopedIndexes = new List<Type>();
+        }
+
         /// <summary>
         /// Initializes a <see cref="Store"/> instance and its new <see cref="Configuration"/>.
         /// </summary>
         /// <param name="config">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
-        internal Store(Action<IConfiguration> config)
+        internal Store(Action<IConfiguration> config) : this()
         {
             Configuration = new Configuration();
             config?.Invoke(Configuration);
+            Dialect = Configuration.SqlDialect;
         }
 
         /// <summary>
         /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
         /// </summary>
         /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
-        internal Store(IConfiguration configuration)
+        internal Store(IConfiguration configuration) : this()
         {
             Configuration = configuration;
+            Dialect = Configuration.SqlDialect;
         }
 
-        internal async Task InitializeAsync()
+        public async Task InitializeAsync()
         {
             IndexCommand.ResetQueryCache();
-            Indexes = new List<IIndexProvider>();
-            ScopedIndexes = new List<Type>();
             ValidateConfiguration();
 
             _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
-            Dialect = SqlDialectFactory.For(Configuration.ConnectionFactory.DbConnectionType);
             TypeNames = new TypeService();
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
@@ -99,13 +104,13 @@ namespace YesSql
                 }
             }
 
-            // Pee-initialize the default collection
+            // Pre-initialize the default collection
             await InitializeCollectionAsync("");
         }
 
-        public async Task InitializeCollectionAsync(string collectionName)
+        public async Task InitializeCollectionAsync(string collection)
         {
-            var documentTable = String.IsNullOrEmpty(collectionName) ? "Document" : collectionName + "_" + "Document";
+            var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
@@ -190,7 +195,7 @@ namespace YesSql
                 }
                 finally
                 {
-                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collectionName);
+                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection);
                 }
             }
         }
@@ -233,15 +238,25 @@ namespace YesSql
         {
         }
 
-        public IIdAccessor<int> GetIdAccessor(Type tContainer, string name)
+        public IAccessor<int> GetIdAccessor(Type tContainer)
         {
             if (!IdAccessors.TryGetValue(tContainer, out var result))
             {
-                result = Configuration.IdentifierFactory.CreateAccessor<int>(tContainer, name);
+                result = Configuration.IdentifierAccessorFactory.CreateAccessor<int>(tContainer);
 
-                // Don't use Add as two thread could concurrently reach this point.
-                // We don't mind losing some values as the next call will restore it if it's not cached.
                 IdAccessors = IdAccessors.SetItem(tContainer, result);
+            }
+
+            return result;
+        }
+
+        public IAccessor<int> GetVersionAccessor(Type tContainer)
+        {
+            if (!VersionAccessors.TryGetValue(tContainer, out var result))
+            {
+                result = Configuration.VersionAccessorFactory.CreateAccessor<int>(tContainer);
+
+                VersionAccessors = VersionAccessors.SetItem(tContainer, result);
             }
 
             return result;
@@ -250,15 +265,17 @@ namespace YesSql
         /// <summary>
         /// Returns the available indexers for a specified type
         /// </summary>
-        public IEnumerable<IndexDescriptor> Describe(Type target)
+        public IEnumerable<IndexDescriptor> Describe(Type target, string collection)
         {
             if (target == null)
             {
                 throw new ArgumentNullException();
             }
 
-            var collection = CollectionHelper.Current.GetSafeName();
-            var cacheKey = target.FullName + ":" + collection;
+            var cacheKey = String.IsNullOrEmpty(collection)
+                ? target.FullName
+                : target.FullName + ":" + collection
+                ;
 
             if (!Descriptors.TryGetValue(cacheKey, out var result))
             {
@@ -278,8 +295,6 @@ namespace YesSql
             {
                 activator = MakeDescriptorActivator(target);
 
-                // Don't use Add as two thread could concurrently reach this point.
-                // We don't mind losing some values as the next call will restore it if it's not cached.
                 DescriptorActivators = DescriptorActivators.SetItem(target, activator);
             }
 
@@ -308,13 +323,13 @@ namespace YesSql
             return (int)Configuration.IdGenerator.GetNextId(collection);
         }
 
-        public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders)
+        public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)
         {
             foreach (var indexProvider in indexProviders)
             {
                 if (indexProvider.CollectionName == null)
                 {
-                    indexProvider.CollectionName = CollectionHelper.Current.GetSafeName();
+                    indexProvider.CollectionName = collection ?? "";
                 }
             }
 
@@ -365,7 +380,7 @@ namespace YesSql
                     }
                     catch
                     {
-                        // An exception occured in the main worker, we broadcast the null value
+                        // An exception occurred in the main worker, we broadcast the null value
                         content = null;
                         throw;
                     }
