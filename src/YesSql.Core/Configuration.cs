@@ -40,5 +40,7 @@ namespace YesSql
         public ILogger Logger { get; set; }
         public HashSet<Type> ConcurrentTypes { get; }
         public ITableNameConvention TableNameConvention { get; set; }
+        public ICommandInterpreter CommandInterpreter { get; set; }
+        public ISqlDialect SqlDialect { get; set; }
     }
 }

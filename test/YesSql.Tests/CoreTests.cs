@@ -49,7 +49,7 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
-                    var builder = new SchemaBuilder(configuration, transaction) { ThrowOnError = throwOnError };
+                    var builder = new SchemaBuilder(configuration, transaction, throwOnError);
 
                     builder.DropReduceIndexTable<ArticlesByDay>();
                     builder.DropReduceIndexTable<AttachmentByDay>();
@@ -59,6 +59,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonIdentity>();
                     builder.DropMapIndexTable<EmailByAttachment>();
 
+                    builder.DropMapIndexTable<ShapeIndex>();
                     builder.DropMapIndexTable<PersonByAge>();
                     builder.DropMapIndexTable<PersonByNullableAge>();
                     builder.DropMapIndexTable<Binary>();
@@ -87,7 +88,7 @@ namespace YesSql.Tests
 
         public void CreateTables(IConfiguration configuration)
         {
-            _store = StoreFactory.CreateAsync(configuration).GetAwaiter().GetResult();
+            _store = StoreFactory.CreateAndInitializeAsync(configuration).GetAwaiter().GetResult();
 
             _store.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
 
@@ -134,6 +135,10 @@ namespace YesSql.Tests
                             .Column<int>(nameof(PersonByAge.Age))
                             .Column<bool>(nameof(PersonByAge.Adult))
                             .Column<string>(nameof(PersonByAge.Name))
+                        );
+
+                    builder.CreateMapIndexTable<ShapeIndex>(column => column
+                            .Column<string>(nameof(ShapeIndex.Name))
                         );
 
                     builder.CreateMapIndexTable<PersonByNullableAge>(column => column
@@ -463,7 +468,7 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var connection = (await session.DemandAsync()).Connection;
-                var dialect = SqlDialectFactory.For(connection);
+                var dialect = _store.Configuration.SqlDialect;
                 var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
 
                 var person = await session.Query<Person, PersonByName>().Where(sql).FirstOrDefaultAsync();
@@ -947,6 +952,72 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryInnerSelectWithNoPredicates()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsInAny<PersonByName>(y => y.SomeName)).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotInAny<PersonByName>(y => y.SomeName)).CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryInnerSelectWithUnaryPredicate()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => true)).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => true)).CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldConcatenateMembers()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();
@@ -983,6 +1054,41 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name) == "BillBill").CountAsync());
                 Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name, x.Name) == "BillBillBill").CountAsync());
                 Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name, x.Name, x.Name) == "BillBillBillBill").CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryWithLike()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsLike("%l%")).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotLike("%B%")).CountAsync());
+
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.Contains("l")).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.NotContains("B")).CountAsync());
             }
         }
 
@@ -1065,6 +1171,43 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Hanselman").CountAsync());
                 Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Guthrie").CountAsync());
                 Assert.Equal(2, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Scott").CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryMultipleIndexes()
+        {
+            // We should be able to query documents on multiple rows in an index
+            // This mean the same Index table needs to be JOINed
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman"
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                session.Save(hanselman);
+                session.Save(guthrie);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person>()
+                    .Any(
+                        x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                        x => x.With<PersonIdentity>(x => x.Identity == "Guthrie"))
+                    .CountAsync()
+                    );
             }
         }
 
@@ -2266,6 +2409,44 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryMultipleByReducedIndex()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var dates = new[]
+                {
+                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 1),
+                };
+
+                var articles = dates.Select(x => new Article
+                {
+                    PublishedUtc = x
+                });
+
+                foreach (var article in articles)
+                {
+                    session.Save(article);
+                }
+
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.Query<Article>()
+                    .Any(
+                        x => x.With<ArticlesByDay>(x => x.DayOfYear == 305),
+                        x => x.With<ArticlesByDay>(x => x.DayOfYear == 306)
+                    );
+
+                Assert.Equal(3, await query.CountAsync());
+            }
+        }
+
+        [Fact]
         public void ShouldSaveBigDocuments()
         {
             using (var session = _store.CreateSession())
@@ -2330,6 +2511,38 @@ namespace YesSql.Tests
                 Assert.Equal(typeof(Square), drawing.Shapes[0].GetType());
                 Assert.Equal(typeof(Square), drawing.Shapes[1].GetType());
                 Assert.Equal(typeof(Circle), drawing.Shapes[2].GetType());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQuerySubClasses()
+        {
+            // When a base type is queried, we need to ensure the 
+            // results from the query keep their original type
+
+            _store.RegisterIndexes<ShapeIndexProvider<Circle>>();
+            _store.RegisterIndexes<ShapeIndexProvider<Square>>();
+            
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Square { Size = 10 });
+                session.Save(new Square { Size = 20 });
+                session.Save(new Circle { Radius = 5 });
+            };
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.QueryIndex<ShapeIndex>().CountAsync());
+                Assert.Equal(1, await session.Query<Circle, ShapeIndex>(filterType: true).CountAsync());
+                Assert.Equal(2, await session.Query<Square, ShapeIndex>(filterType: true).CountAsync());
+                Assert.Equal(3, await session.Query<Shape, ShapeIndex>(filterType: false).CountAsync());
+
+                // In this test, even querying on <object, ShapeIndex> would work
+                var shapes = await session.Query<Shape, ShapeIndex>(filterType: false).ListAsync();
+
+                Assert.Equal(3, shapes.Count());
+                Assert.Single(shapes.Where(x => x is Circle));
+                Assert.Equal(2, shapes.Where(x => x is Square).Count());
             }
         }
 
@@ -3264,7 +3477,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                var dialect = SqlDialectFactory.For(connection);
+                var dialect = _store.Configuration.SqlDialect;
                 var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
@@ -4435,6 +4648,36 @@ namespace YesSql.Tests
             string result = _store.Dialect.GetTypeName(DbType.Decimal, null, precision, scale);
 
             Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public async Task ShouldUpdateVersions()
+        {
+            // c.f. https://github.com/sebastienros/yessql/pull/287
+
+            _store.Configuration.CheckConcurrentUpdates<Car>();
+
+            using (var session = _store.CreateSession())
+            {
+                var c = new Car { Name = "Clio" };
+
+                session.Save(c);
+            }
+
+            // Create initial document
+            using (var session = _store.CreateSession())
+            {
+                // Load the existing car
+                var c = await session.Query<Car>().FirstOrDefaultAsync();
+
+                session.Save(c);
+
+                await session.Query<Person>().FirstOrDefaultAsync();
+
+                await session.Query<Person>().FirstOrDefaultAsync();
+
+                c.Name = "Clio 2";
+            }
         }
     }
 }

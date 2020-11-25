@@ -332,6 +332,15 @@ namespace YesSql
                 }
             }
 
+            string newContent = Store.Configuration.ContentSerializer.Serialize(entity);
+
+            // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
+            // been changed before doing another query
+            if (tracked && String.Equals(newContent, oldDoc.Content))
+            {
+                return;
+            }
+
             long version = -1;
 
             if (state.Concurrent.Contains(id))
@@ -356,16 +365,9 @@ namespace YesSql
                 if (versionAccessor != null)
                 {
                     versionAccessor.Set(entity, (int)oldDoc.Version);
+
+                    newContent = Store.Configuration.ContentSerializer.Serialize(entity);
                 }
-            }
-
-            var newContent = Store.Configuration.ContentSerializer.Serialize(entity);
-
-            // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
-            // been changed before doing another query
-            if (tracked && String.Equals(newContent, oldDoc.Content))
-            {
-                return;
             }
 
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
@@ -523,8 +525,8 @@ namespace YesSql
             }
 
             var result = new List<T>();
-
-            var accessor = _store.GetIdAccessor(typeof(T));
+            var defaultAccessor = _store.GetIdAccessor(typeof(T));
+            var accessor = defaultAccessor;
             var typeName = Store.TypeNames[typeof(T)];
 
             var state = GetState(collection);
@@ -532,11 +534,6 @@ namespace YesSql
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
-                if (typeof(T) != typeof(object) && !String.Equals(typeName, d.Type, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
                 if (state.IdentityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
@@ -545,10 +542,17 @@ namespace YesSql
                 {
                     T item;
 
-                    // If no type is specified, use the one from the document
-                    if (typeof(T) == typeof(object))
+                    // If the document type doesn't match the requested one, check it's a base type
+                    if (!String.Equals(typeName, d.Type, StringComparison.Ordinal))
                     {
                         var itemType = Store.TypeNames[d.Type];
+
+                        // Ignore the document if it can't be casted to the requested type
+                        if (!typeof(T).IsAssignableFrom(itemType))
+                        {
+                            continue;
+                        }
+
                         accessor = _store.GetIdAccessor(itemType);
 
                         item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, itemType);
@@ -556,6 +560,8 @@ namespace YesSql
                     else
                     {
                         item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, typeof(T));
+
+                        accessor = defaultAccessor;
                     }
 
                     if (accessor != null)
@@ -1255,7 +1261,7 @@ namespace YesSql
 
                     if (_connection == null)
                     {
-                        throw new InvalidOperationException("The connection couldn't be covnerted to DbConnection");
+                        throw new InvalidOperationException("The connection couldn't be converted to DbConnection");
                     }
                 }
 

@@ -4,6 +4,9 @@ using YesSql.Sql.Schema;
 
 namespace YesSql
 {
+    /// <summary>
+    /// A class implementing this interface can execute database commands.
+    /// </summary>
     public interface ICommandInterpreter
     {
         IEnumerable<string> CreateSql(IEnumerable<ISchemaCommand> commands);

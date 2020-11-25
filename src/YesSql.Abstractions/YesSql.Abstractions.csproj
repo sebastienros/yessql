@@ -4,11 +4,14 @@
         <TargetFrameworks>net461;netstandard2.0;netstandard2.1</TargetFrameworks>
         <RootNamespace>YesSql</RootNamespace>
         <VersionPrefix>2.0.0</VersionPrefix>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
     </PropertyGroup>
     <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.1' ">
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.1" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+        <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
     </ItemGroup>
 </Project>

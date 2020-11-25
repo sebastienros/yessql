@@ -1,8 +1,8 @@
-using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using MySqlConnector;
 
 namespace YesSql.Provider.MySql
 {

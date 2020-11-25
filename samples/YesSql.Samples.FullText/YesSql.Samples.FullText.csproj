@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <DebugType>portable</DebugType>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>YesSql.Samples.FullText</AssemblyName>
@@ -15,9 +15,11 @@
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <IsPackable>false</IsPackable>
+    <LangVersion>8</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
-    <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
+      <ProjectReference Include="..\..\src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
   </ItemGroup>
 </Project>

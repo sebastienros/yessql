@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions.Internal;
 using System;
 using System.Text;
 
@@ -16,7 +15,7 @@ namespace YesSql.Tests
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            return NullScope.Instance;
+            return new FakeScope();
         }
 
         public bool IsEnabled(LogLevel logLevel)
@@ -42,6 +41,14 @@ namespace YesSql.Tests
         public override string ToString()
         {
             return _builder.ToString();
+        }
+    }
+
+    public class FakeScope : IDisposable
+    {
+        public void Dispose()
+        {
+
         }
     }
 }

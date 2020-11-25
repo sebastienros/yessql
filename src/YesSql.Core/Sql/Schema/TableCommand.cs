@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace YesSql.Sql.Schema
 {
-    public abstract class TableCommand : ISchemaCommand, ITableCommand
+    public abstract class TableCommand : ITableCommand
     {
         public string Name { get; private set; }
 
