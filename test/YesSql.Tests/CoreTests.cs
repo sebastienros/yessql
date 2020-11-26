@@ -20,6 +20,8 @@ namespace YesSql.Tests
     {
         protected virtual string TablePrefix => "tp";
 
+        protected virtual string DecimalColumnDefinitionFormatString => "DECIMAL({0},{1})";
+
         protected IStore _store;
 
         public CoreTests()
@@ -62,6 +64,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonByNullableAge>();
                     builder.DropMapIndexTable<Binary>();
                     builder.DropMapIndexTable<PublishedArticle>();
+                    builder.DropMapIndexTable<PropertyIndex>();
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
                     builder.DropMapIndexTable<PersonByName>("Collection1");
@@ -87,7 +90,7 @@ namespace YesSql.Tests
         public void CreateTables(IConfiguration configuration)
         {
             _store = StoreFactory.CreateAndInitializeAsync(configuration).GetAwaiter().GetResult();
-            
+
             _store.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
@@ -149,6 +152,13 @@ namespace YesSql.Tests
                             .Column<DateTime>(nameof(EmailByAttachment.Date))
                             .Column<string>(nameof(EmailByAttachment.AttachmentName))
                         );
+
+                    builder.CreateMapIndexTable<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                    );
 
                     builder.CreateMapIndexTable<Binary>(column => column
                             .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
@@ -904,7 +914,7 @@ namespace YesSql.Tests
             {
                 var results = new List<Person>();
 
-                await foreach(var person in session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ToAsyncEnumerable())
+                await foreach (var person in session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ToAsyncEnumerable())
                 {
                     results.Add(person);
                 }
@@ -1518,7 +1528,7 @@ namespace YesSql.Tests
             //Create one Email with 3 attachments
             using (var session = _store.CreateSession())
             {
-                var email = new Email() { Date = new DateTime(2018, 06, 11), Attachments = new System.Collections.Generic.List<Attachment>(){ new Attachment("A1"), new Attachment("A2"), new Attachment("A3") }};
+                var email = new Email() { Date = new DateTime(2018, 06, 11), Attachments = new System.Collections.Generic.List<Attachment>() { new Attachment("A1"), new Attachment("A2"), new Attachment("A3") } };
                 session.Save(email);
             }
 
@@ -4207,7 +4217,7 @@ namespace YesSql.Tests
                     }
 
                     person.Lastname = "Gates";
-                    
+
                     session.Save(person, true);
                     Assert.NotNull(person);
                 }
@@ -4383,6 +4393,51 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldCreateAndIndexPropertyWithMaximumKeyLengths()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable<PropertyIndex>();
+
+                    builder
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location))
+                        );
+
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                    transaction.Commit();
+                }
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var property = new Property
+                {
+                    Name = new string('*', 767),
+                    IsOccupied = true,
+                    ForRent = true
+                };
+
+                session.Save(property);
+            }
+        }
+        
+        [Fact]
         public async Task ShouldCommitInMultipleCollections()
         {
             using (var session = _store.CreateSession())
@@ -4409,7 +4464,7 @@ namespace YesSql.Tests
             {
                 var count = await session.Query("Collection1").Any().CountAsync();
                 Assert.Equal(1, count);
-                
+
                 count = await session.Query().Any().CountAsync();
                 Assert.Equal(1, count);
             }
@@ -4635,6 +4690,17 @@ namespace YesSql.Tests
 
                 Assert.Equal("William", person.Firstname);
             }
+        }
+
+        [Theory]
+        [ClassData(typeof(DecimalPrecisionAndScaleDataGenerator))]
+        public void SqlDecimalPrecisionAndScale(byte? precision, byte? scale)
+        {
+            string expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? _store.Dialect.DefaultDecimalPrecision, scale ?? _store.Dialect.DefaultDecimalScale);
+
+            string result = _store.Dialect.GetTypeName(DbType.Decimal, null, precision, scale);
+
+            Assert.Equal(expected, result);
         }
 
         [Fact]

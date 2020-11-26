@@ -20,7 +20,7 @@ namespace YesSql.Provider.SqlServer
             {DbType.Boolean, "BIT"},
             {DbType.Byte, "TINYINT"},
             {DbType.Currency, "MONEY"},
-            {DbType.Decimal, "DECIMAL(19,5)"},
+            {DbType.Decimal, "DECIMAL({0},{1})"},
             {DbType.Double, "FLOAT(53)"},
             {DbType.Int16, "SMALLINT"},
             {DbType.UInt16, "SMALLINT"},
@@ -51,7 +51,11 @@ namespace YesSql.Provider.SqlServer
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
         public override string RandomOrderByClause => "newid()";
 
-        public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
+        public override byte DefaultDecimalPrecision => 19;
+
+        public override byte DefaultDecimalScale => 5;
+
+        public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
             {
@@ -93,6 +97,11 @@ namespace YesSql.Provider.SqlServer
 
             if (ColumnTypes.TryGetValue(dbType, out string value))
             {
+                if (dbType == DbType.Decimal)
+                {
+                    value = string.Format(value, precision ?? DefaultDecimalPrecision, scale ?? DefaultDecimalScale);
+                }
+
                 return value;
             }
 

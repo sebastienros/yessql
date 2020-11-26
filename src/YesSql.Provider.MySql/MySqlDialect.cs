@@ -1,8 +1,8 @@
-using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
+using MySqlConnector;
 
 namespace YesSql.Provider.MySql
 {
@@ -19,7 +19,7 @@ namespace YesSql.Provider.MySql
             {DbType.DateTimeOffset, "datetime" },
             {DbType.Boolean, "bit"},
             {DbType.Byte, "tinyint unsigned"},
-            {DbType.Decimal, "decimal(65, 30)"},
+            {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Double, "double"},
             {DbType.Int16, "smallint"},
             {DbType.UInt16, "smallint unsigned"},
@@ -39,7 +39,7 @@ namespace YesSql.Provider.MySql
         public override string RandomOrderByClause => "rand()";
         public override bool SupportsIfExistsBeforeTableName => true;
 
-        public override string GetTypeName(DbType dbType, int? length, byte precision, byte scale)
+        public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
             {
@@ -95,6 +95,11 @@ namespace YesSql.Provider.MySql
 
             if (ColumnTypes.TryGetValue(dbType, out string value))
             {
+                if(dbType == DbType.Decimal)
+                {
+                    value = string.Format(value, precision ?? DefaultDecimalPrecision, scale ?? DefaultDecimalScale);
+                }
+
                 return value;
             }
 
@@ -119,6 +124,10 @@ namespace YesSql.Provider.MySql
         }
 
         public override string DefaultValuesInsert => "VALUES()";
+
+        public override byte DefaultDecimalPrecision => 65;
+
+        public override byte DefaultDecimalScale => 30;
 
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
