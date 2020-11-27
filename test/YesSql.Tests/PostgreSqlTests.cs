@@ -2,6 +2,7 @@ using System;
 using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 using YesSql.Provider.PostgreSql;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -14,6 +15,10 @@ namespace YesSql.Tests
         public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
 
         protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
+
+        public PostgreSqlTests(ITestOutputHelper output) : base(output)
+        {
+        }
 
         protected override IConfiguration CreateConfiguration()
         {

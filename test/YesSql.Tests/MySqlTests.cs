@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using MySqlConnector;
 using Xunit;
+using Xunit.Abstractions;
 using YesSql.Provider.MySql;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -20,7 +21,7 @@ namespace YesSql.Tests
 
         protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
 
-        public MySqlTests()
+        public MySqlTests(ITestOutputHelper output) : base(output)
         {
         }
 
