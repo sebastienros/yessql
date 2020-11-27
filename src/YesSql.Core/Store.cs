@@ -46,8 +46,8 @@ namespace YesSql
         internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
             new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
 
-        internal ImmutableDictionary<Type, QueryState> CompiledQueries =
-            ImmutableDictionary<Type, QueryState>.Empty;
+        internal ImmutableDictionary<long, QueryState> CompiledQueries =
+            ImmutableDictionary<long, QueryState>.Empty;
 
         static Store()
         {
