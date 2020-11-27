@@ -763,20 +763,16 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).CountAsync());
-                Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).CountAsync());
-                Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).CountAsync());
-
                 Assert.Equal(3, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, "Bill")).CountAsync());
                 Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Elon")).CountAsync());
                 Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "Eilon")).CountAsync());
                 Assert.Equal(0, await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, "Mark")).CountAsync());
 
-                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
-                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).ListAsync());
-                Assert.Empty(await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, null)).ListAsync());
+                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "")).ListAsync());
+                Assert.Single(await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "")).ListAsync());
+                Assert.Empty(await session.ExecuteQuery(new PersonByNameOrAgeQuery(10, "")).ListAsync());
 
-                Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, null)).FirstOrDefaultAsync()).Firstname);
+                Assert.Equal("Bill", (await session.ExecuteQuery(new PersonByNameOrAgeQuery(50, "")).FirstOrDefaultAsync()).Firstname);
             }
         }
 
@@ -906,8 +902,8 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(12, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).FirstOrDefaultAsync()).Age);
-                Assert.Equal(2, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ListAsync()).Count());
+                Assert.Equal(12, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, "")).FirstOrDefaultAsync()).Age);
+                Assert.Equal(2, (await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, "")).ListAsync()).Count());
             }
         }
 
@@ -948,7 +944,7 @@ namespace YesSql.Tests
             {
                 var results = new List<Person>();
 
-                await foreach (var person in session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).ToAsyncEnumerable())
+                await foreach (var person in session.ExecuteQuery(new PersonByNameOrAgeQuery(12, "")).ToAsyncEnumerable())
                 {
                     results.Add(person);
                 }

@@ -9,6 +9,13 @@ namespace YesSql.Tests.CompiledQueries
     {
         public PersonByNameOrAgeQuery(int age, string name)
         {
+            // Compiled queries can't handle null/non-null variations since the query is cached
+            // and `foo = null` is wrong (foo IS NULL)
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             Age = age;
             Name = name;
         }
