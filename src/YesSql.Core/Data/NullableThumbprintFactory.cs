@@ -32,9 +32,14 @@ namespace YesSql.Data
             return nullDiscriminatorBuilder;
         }
 
-        public static long GetNullableThumbprint<T>(T item)
+        public static long GetNullableThumbprint(object item)
         {
-            var builder = GetNullableThumbprintBuilder(typeof(T));
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            var builder = GetNullableThumbprintBuilder(item.GetType());
             return builder.GetNullableThumbprint(item);
         }
     }

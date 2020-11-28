@@ -32,8 +32,11 @@ namespace YesSql.Tests.NullableThumbprint
         [Fact]
         public void ShouldReturnDifferentValues()
         {
-            var a1 = NullableThumbprintFactory.GetNullableThumbprint(new DiscriminatorWithNoNullable());
-            var a2 = NullableThumbprintFactory.GetNullableThumbprint(new DiscriminatorWithNoNullable2());
+            DiscriminatorWithNoNullable i1 = new DiscriminatorWithNoNullable();
+            DiscriminatorWithNoNullable i2 = new DiscriminatorWithNoNullable2();
+
+            var a1 = NullableThumbprintFactory.GetNullableThumbprint(i1);
+            var a2 = NullableThumbprintFactory.GetNullableThumbprint(i2);
             
             Assert.NotEqual(a1, a2);
         }
