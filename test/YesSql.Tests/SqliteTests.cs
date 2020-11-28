@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -18,7 +19,7 @@ namespace YesSql.Tests
 
         protected override string DecimalColumnDefinitionFormatString => "NUMERIC";
 
-        public SqliteTests()
+        public SqliteTests(ITestOutputHelper output) : base(output)
         {
         }
 

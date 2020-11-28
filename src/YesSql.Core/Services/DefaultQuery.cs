@@ -518,7 +518,7 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                        _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((PropertyInfo)memberExpression.Member).GetValue(o));
+                        _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((FieldInfo)memberExpression.Member).GetValue(o));
 
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
                         return Expression.Constant(value);
@@ -824,8 +824,8 @@ namespace YesSql.Services
             if (operation == " = " || operation == " <> ")
             {
                 // Checking for NULL comparison
-                var leftIsNull = expression.Left.NodeType == ExpressionType.Constant && (expression.Left as ConstantExpression).Value == null;
-                var rightIsNull = expression.Right.NodeType == ExpressionType.Constant && (expression.Right as ConstantExpression).Value == null;
+                var leftIsNull = IsNull(expression.Left);
+                var rightIsNull = IsNull(expression.Right);
 
                 if (leftIsNull && rightIsNull)
                 {
@@ -860,6 +860,19 @@ namespace YesSql.Services
             builder.Append(operation);
             ConvertFragment(builder, expression.Right);
             builder.Append(")");
+
+            bool IsNull(Expression e)
+            {
+                switch (e.NodeType)
+                {
+                    case ExpressionType.Constant:
+                        return (e as ConstantExpression).Value == null;
+                    case ExpressionType.MemberAccess:
+                        return !IsParameterBased(e) && Evaluate(e).Value == null;
+                }
+
+                return false;
+            }
         }
 
         private void ConvertConcatenateBinaryExpression(StringBuilder builder, BinaryExpression expression)

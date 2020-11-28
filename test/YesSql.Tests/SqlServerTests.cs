@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 using YesSql.Provider.SqlServer;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -16,7 +17,7 @@ namespace YesSql.Tests
     {
         public static string ConnectionString => Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING") ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
 
-        public SqlServerTests()
+        public SqlServerTests(ITestOutputHelper output) : base(output)
         {
         }
 

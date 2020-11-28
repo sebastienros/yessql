@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.Commands;
@@ -24,8 +25,12 @@ namespace YesSql.Tests
 
         protected IStore _store;
 
-        public CoreTests()
+        protected ITestOutputHelper _output;
+
+        public CoreTests(ITestOutputHelper output)
         {
+            _output = output;
+            
             var configuration = CreateConfiguration();
 
             CleanDatabase(configuration, false);
@@ -415,6 +420,35 @@ namespace YesSql.Tests
                 Assert.Equal(2, await session.QueryIndex<PersonByName>(x => null != x.SomeName).CountAsync());
                 Assert.Equal(3, await session.QueryIndex<PersonByName>(x => null == null).CountAsync());
                 Assert.Equal(0, await session.QueryIndex<PersonByName>(x => null != null).CountAsync());
+
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryNullVariables()
+        {
+            var logger = new ConsoleLogger(_output);
+
+            _store.Configuration.Logger = logger;
+
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = null });
+                session.Save(new Person { Firstname = "a" });
+                session.Save(new Person { Firstname = "b" });
+            }
+
+            string nullVariable = null;
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.SomeName == nullVariable).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => x.SomeName != nullVariable).CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => nullVariable == x.SomeName).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByName>(x => nullVariable != x.SomeName).CountAsync());
             }
         }
 
@@ -697,6 +731,10 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryWithCompiledQueries()
         {
+            var logger = new ConsoleLogger(_output);
+
+            _store.Configuration.Logger = logger;
+
             _store.RegisterIndexes<PersonAgeIndexProvider>();
 
             using (var session = _store.CreateSession())

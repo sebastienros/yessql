@@ -594,7 +594,9 @@ namespace YesSql
 
             var compiledQueryType = compiledQuery.GetType();
 
-            if (!_store.CompiledQueries.TryGetValue(compiledQueryType, out var queryState))
+            var discriminator = NullableThumbprintFactory.GetNullableThumbprint(compiledQuery);
+
+            if (!_store.CompiledQueries.TryGetValue(discriminator, out var queryState))
             {
                 var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix, collection)).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
@@ -602,7 +604,7 @@ namespace YesSql
 
                 // Don't use Add as two thread could concurrently reach this point.
                 // We don't mind losing some values as the next call will restore it if it's not cached.
-                _store.CompiledQueries = _store.CompiledQueries.SetItem(compiledQueryType, queryState);
+                _store.CompiledQueries = _store.CompiledQueries.SetItem(discriminator, queryState);
             }
 
             queryState = queryState.Clone();
