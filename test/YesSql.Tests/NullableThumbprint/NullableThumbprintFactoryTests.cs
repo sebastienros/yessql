@@ -42,6 +42,23 @@ namespace YesSql.Tests.NullableThumbprint
         }
 
         [Fact]
+        public void ShouldHandleMaxProperties()
+        {
+            var a1 = NullableThumbprintFactory.GetNullableThumbprint(new DiscriminatorWithMaxNullable());
+
+            for (var i = 0; i <= 47; i++)
+            {
+                Assert.Equal(1, (a1 >> i) & 1);
+            }
+        }
+
+        [Fact]
+        public void ShouldHandleOverflowProperties()
+        {
+            Assert.Throws<InvalidOperationException>(() => NullableThumbprintFactory.GetNullableThumbprint(new DiscriminatorWithMaxNullable2()));
+        }
+
+        [Fact]
         public void ShouldReturnSameMaskForDifferentInstances()
         {
             var d = NullableThumbprintFactory.GetNullableThumbprintBuilder(typeof(DiscriminatorWithNoNullable));

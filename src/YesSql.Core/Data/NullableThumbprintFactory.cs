@@ -50,7 +50,7 @@ namespace YesSql.Data
         private static int _globalTypeIndex;
         private long _typeIndex;
         private const int MaxTypeIndex = 1 << 16; // 65536 types max, 16 bits for the type
-        private const int MaxProperties = 1 << 48;
+        private const int MaxProperties = 48;
 
         private List<INullablePropertyAccessor> _nullableAccessors;
 
@@ -118,7 +118,7 @@ namespace YesSql.Data
         /// </summary>
         public long GetNullableThumbprint(object o)
         {
-            var mask = _typeIndex << 48;
+            var mask = _typeIndex << MaxProperties;
 
             if (_nullableAccessors == null)
             {
