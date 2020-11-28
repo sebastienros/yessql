@@ -594,8 +594,7 @@ namespace YesSql
 
             var compiledQueryType = compiledQuery.GetType();
 
-            var discriminatorBuilder = NullDiscriminatorBuilderFactory.GetNullDiscriminatorBuilder(compiledQueryType);
-            var discriminator = discriminatorBuilder.GetDiscrimitator(compiledQuery);
+            var discriminator = NullableThumbprintFactory.GetNullableThumbprint(compiledQuery);
 
             if (!_store.CompiledQueries.TryGetValue(discriminator, out var queryState))
             {

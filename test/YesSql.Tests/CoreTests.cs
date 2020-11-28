@@ -731,6 +731,10 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryWithCompiledQueries()
         {
+            var logger = new ConsoleLogger(_output);
+
+            _store.Configuration.Logger = logger;
+
             _store.RegisterIndexes<PersonAgeIndexProvider>();
 
             using (var session = _store.CreateSession())

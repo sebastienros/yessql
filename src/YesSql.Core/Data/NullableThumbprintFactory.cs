@@ -8,13 +8,13 @@ namespace YesSql.Data
     /// <summary>
     /// Compiled queries have their SQL cached, and only the parameters are changed.
     /// If nullable arguments (including strings) are used, the SQL should vary.
-    /// This class allows to generate a discriminator for each set of nullable compiled query properties.
+    /// This class allows to generate a Thumbprint for each set of nullable compiled query properties.
     /// </summary>
-    internal class NullDiscriminatorBuilderFactory
+    internal class NullableThumbprintFactory
     {
-        private static ImmutableDictionary<Type, NullDiscriminatorBuilder> _discriminatorFactories = ImmutableDictionary<Type, NullDiscriminatorBuilder>.Empty;
+        private static ImmutableDictionary<Type, NullableThumbprintBuilder> _discriminatorFactories = ImmutableDictionary<Type, NullableThumbprintBuilder>.Empty;
 
-        public static NullDiscriminatorBuilder GetNullDiscriminatorBuilder(Type type)
+        internal static NullableThumbprintBuilder GetNullableThumbprintBuilder(Type type)
         {
             if (!_discriminatorFactories.TryGetValue(type, out var nullDiscriminatorBuilder))
             {
@@ -23,7 +23,7 @@ namespace YesSql.Data
                 {
                     if (!_discriminatorFactories.TryGetValue(type, out nullDiscriminatorBuilder))
                     {
-                        nullDiscriminatorBuilder = new NullDiscriminatorBuilder(type);
+                        nullDiscriminatorBuilder = new NullableThumbprintBuilder(type);
                         _discriminatorFactories = _discriminatorFactories.SetItem(type, nullDiscriminatorBuilder);
                     }
                 }
@@ -31,9 +31,15 @@ namespace YesSql.Data
 
             return nullDiscriminatorBuilder;
         }
+
+        public static long GetNullableThumbprint<T>(T item)
+        {
+            var builder = GetNullableThumbprintBuilder(typeof(T));
+            return builder.GetNullableThumbprint(item);
+        }
     }
 
-    internal class NullDiscriminatorBuilder
+    internal class NullableThumbprintBuilder
     {
         private Type _type;
         private static int _globalTypeIndex;
@@ -44,7 +50,7 @@ namespace YesSql.Data
         private List<INullablePropertyAccessor> _nullableAccessors;
 
 
-        public NullDiscriminatorBuilder(Type type)
+        public NullableThumbprintBuilder(Type type)
         { 
             _type = type;
 
@@ -87,7 +93,7 @@ namespace YesSql.Data
             bool IsPropertyNull(object obj);
         }
 
-        private class NullableAccessor<T, TU> : INullablePropertyAccessor
+        private class NullableAccessor<T, TU> : INullablePropertyAccessor where T : class
         {
             private readonly Func<T, TU> _getter;
 
@@ -105,20 +111,22 @@ namespace YesSql.Data
         /// <summary>
         /// Returns an 64 bits integer representing the unique set of nullable fields as a bit mask. The 16 MSB represent the type, and the 48 LSB represent individual fields
         /// </summary>
-        public long GetDiscrimitator(object o)
+        public long GetNullableThumbprint(object o)
         {
+            var mask = _typeIndex << 48;
+
             if (_nullableAccessors == null)
             {
-                return _typeIndex;
+                return mask;
             }
-
-            var mask = _typeIndex << 48;
+            
+            const long long1 = 1;
 
             for (var i= 0; i < _nullableAccessors.Count; i++)
             {
                 if (_nullableAccessors[i].IsPropertyNull(o))
                 {
-                    mask = mask | (long)(1 << i);
+                    mask = mask | (long1 << i);
                 }
             }
 
