@@ -7,6 +7,7 @@ branches:
 init:
   - git config --global core.autocrlf true
 services:
+  - mssql2016
   - mysql
   - postgresql96
 install:
@@ -32,9 +33,7 @@ before_test:
   - createdb yessql
 test_script:
   - |
-    net start MSSQL$SQL2016
     dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2016Tests" --configuration Release
-    net stop MSSQL$SQL2016
   - |
     net start MSSQL$SQL2017
     dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2017Tests" --configuration Release
