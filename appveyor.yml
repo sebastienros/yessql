@@ -6,15 +6,7 @@ branches:
     - dev
 init:
   - git config --global core.autocrlf true
-
-  - |
-    Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\'
-    Where-Object {
-        $_.Name -imatch 'MSSQL[_\d]+\.SQL.*'
-    }
-    ForEach-Object {
-        Write-Host "Setting $((Get-ItemProperty $_.PSPath).'(default)') to dynamic ports"
-    }
+  - ps: Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\' | Where-Object { $_.Name -imatch 'MSSQL[_\d]+\.SQL.*' } | ForEach-Object { Write-Host "Setting $((Get-ItemProperty $_.PSPath).'(default)') to dynamic ports" }
 
 services:
   - mysql
