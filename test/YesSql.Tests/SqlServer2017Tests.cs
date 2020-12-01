@@ -4,16 +4,16 @@ using YesSql.Provider.SqlServer;
 
 namespace YesSql.Tests
 {
-    public class SqlServer2019Tests : SqlServerTests
+    public class SqlServer2017Tests : SqlServerTests
     {
-        public SqlServer2019Tests(ITestOutputHelper output) : base(output)
+        public SqlServer2017Tests(ITestOutputHelper output) : base(output)
         {
         }
 
         protected override IConfiguration CreateConfiguration()
         {
             var connectionString = 
-                Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING") 
+                Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING") 
                 ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
                 ;
 
