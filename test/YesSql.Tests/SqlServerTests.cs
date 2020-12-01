@@ -13,7 +13,7 @@ using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
-    public class SqlServerTests : CoreTests
+    public abstract class SqlServerTests : CoreTests
     {
         public static string ConnectionString => Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING") ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
 

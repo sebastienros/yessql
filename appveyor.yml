@@ -6,8 +6,10 @@ branches:
     - dev
 init:
   - git config --global core.autocrlf true
+  # Listing all available SQL SERVER services to ensure which ones are installed on the build machines
+  - ps: Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\' | Where-Object { $_.Name -imatch 'MSSQL[_\d]+\.SQL.*' } | ForEach-Object { Write-Host "Found $((Get-ItemProperty $_.PSPath).'(default)')" }
+
 services:
-  - mssql2017
   - mysql
   - postgresql96
 install:
@@ -19,7 +21,9 @@ install:
 build_script:
   - dotnet --version
 before_test:
-  - SET SQLSERVER_CONNECTION_STRING=Data Source=.;Initial Catalog=tempdb;Integrated Security=True
+  - SET SQLSERVER_2016_CONNECTION_STRING=Data Source=(local)\SQL2016;Initial Catalog=tempdb;Integrated Security=True
+  - SET SQLSERVER_2017_CONNECTION_STRING=Data Source=(local)\SQL2017;Initial Catalog=tempdb;Integrated Security=True
+  - SET SQLSERVER_2019_CONNECTION_STRING=Data Source=(local)\SQL2019;Initial Catalog=tempdb;Integrated Security=True
   - SET MYSQL_CONNECTION_STRING=server=localhost;uid=root;pwd=Password12!;database=yessql;
   - SET POSTGRESQL_CONNECTION_STRING=Server=localhost;Port=5432;Database=yessql;User Id=postgres;Password=Password12!;
   - SET MYSQL_PWD=Password12!
@@ -30,7 +34,14 @@ before_test:
   - PATH=C:\Program Files\PostgreSQL\9.6\bin\;%PATH%
   - createdb yessql
 test_script:
-  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServerTests" --configuration Release
+  - |
+    net start MSSQL$SQL2017
+    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2017Tests" --configuration Release
+    net stop MSSQL$SQL2017
+  - |
+    net start MSSQL$SQL2019
+    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2019Tests" --configuration Release
+    net stop MSSQL$SQL2019
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release

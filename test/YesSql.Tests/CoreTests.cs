@@ -3646,7 +3646,7 @@ namespace YesSql.Tests
             }
 
             var concurrency = 32;
-            var MaxTransactions = 100000;
+            var MaxTransactions = 10000;
 
             var counter = 0;
             var stopping = false;
