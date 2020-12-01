@@ -18,6 +18,7 @@ install:
 build_script:
   - dotnet --version
 before_test:
+  - SET SQLSERVER_2016_CONNECTION_STRING=Data Source=(local)\SQL2016;Initial Catalog=tempdb;Integrated Security=True
   - SET SQLSERVER_2017_CONNECTION_STRING=Data Source=(local)\SQL2017;Initial Catalog=tempdb;Integrated Security=True
   - SET SQLSERVER_2019_CONNECTION_STRING=Data Source=(local)\SQL2019;Initial Catalog=tempdb;Integrated Security=True
   - SET MYSQL_CONNECTION_STRING=server=localhost;uid=root;pwd=Password12!;database=yessql;
@@ -30,6 +31,10 @@ before_test:
   - PATH=C:\Program Files\PostgreSQL\9.6\bin\;%PATH%
   - createdb yessql
 test_script:
+  - |
+    net start MSSQL$SQL2016
+    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2016Tests" --configuration Release
+    net stop MSSQL$SQL2016
   - |
     net start MSSQL$SQL2017
     dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2017Tests" --configuration Release
