@@ -6,7 +6,8 @@ branches:
     - dev
 init:
   - git config --global core.autocrlf true
-  - ps: Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\' | Where-Object { $_.Name -imatch 'MSSQL[_\d]+\.SQL.*' } | ForEach-Object { Write-Host "Setting $((Get-ItemProperty $_.PSPath).'(default)') to dynamic ports" }
+  # Listing all available SQL SERVER services to ensure which ones are installed on the build machines
+  - ps: Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\' | Where-Object { $_.Name -imatch 'MSSQL[_\d]+\.SQL.*' } | ForEach-Object { Write-Host "Found $((Get-ItemProperty $_.PSPath).'(default)')" }
 
 services:
   - mysql
@@ -33,14 +34,14 @@ before_test:
   - PATH=C:\Program Files\PostgreSQL\9.6\bin\;%PATH%
   - createdb yessql
 test_script:
-  # - |
-  #   net start MSSQL$SQL2017
-  #   dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2017Tests" --configuration Release
-  #   net stop MSSQL$SQL2017
-  # - |
-  #   net start MSSQL$SQL2019
-  #   dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2019Tests" --configuration Release
-  #   net stop MSSQL$SQL2019
+  - |
+    net start MSSQL$SQL2017
+    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2017Tests" --configuration Release
+    net stop MSSQL$SQL2017
+  - |
+    net start MSSQL$SQL2019
+    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2019Tests" --configuration Release
+    net stop MSSQL$SQL2019
   # - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release
   # - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release
   # - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release
