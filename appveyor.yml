@@ -7,7 +7,7 @@ branches:
 init:
   - git config --global core.autocrlf true
 services:
-  - mssql2014
+  - mssql2008r2sp2
   - mysql
   - postgresql96
 install:
