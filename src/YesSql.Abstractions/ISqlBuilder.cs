@@ -18,11 +18,16 @@ namespace YesSql
         void OrderBy(string orderBy);
         void OrderByDescending(string orderBy);
         void OrderByRandom();
+        string GetOrder();
         void Select();
         void Selector(string selector);
         void Selector(string table, string column);
         void AddSelector(string select);
         void InsertSelector(string select);
+        void ParentSelector(string selector);
+        void ParentSelector(string table, string column);
+        void AddParentSelector(string select);
+        void InsertParentSelector(string select);
         void Distinct();
         bool HasPaging { get; }
         void Skip(string skip);
@@ -39,6 +44,8 @@ namespace YesSql
         string ToSqlString();
         void WhereAnd(string clause);
         void WhereOr(string clause);
+        void ParentWhereAnd(string where);        
+        void ParentWhereOr(string where);
         ISqlBuilder Clone();
     }
 }

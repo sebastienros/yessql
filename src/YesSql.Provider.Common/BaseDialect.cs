@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using YesSql.Sql;
 
@@ -207,9 +208,10 @@ namespace YesSql.Provider
             foreach (var o in orderBy)
             {
                 var trimmed = o.Trim();
+                var table = trimmed.Split('.')[0];
 
                 // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
-                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && !select.Contains(o))
+                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && !select.Contains(o) && !select.Any(s=>s==$"{table}.*"))
                 {
                     select.Add(",");
                     select.Add(o);

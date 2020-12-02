@@ -24,6 +24,8 @@ namespace YesSql.Sql
         protected bool _distinct;
         protected string _skip;
         protected string _count;
+        protected List<string> _parentSelect;
+        protected List<string> _parentWhere;
 
 
         protected List<string> SelectSegments => _select = _select ?? new List<string>();
@@ -35,6 +37,8 @@ namespace YesSql.Sql
         protected List<string> HavingSegments => _having = _having ?? new List<string>();
         protected List<string> OrderSegments => _order = _order ?? new List<string>();
         protected List<string> TrailSegments => _trail = _trail ?? new List<string>();
+        protected List<string> ParentQuerySelectSegments => _parentSelect = _parentSelect ?? new List<string>();
+        protected List<string> ParentQueryWhereSegments => _parentWhere = _parentWhere ?? new List<string>();        
 
         public Dictionary<string, object> Parameters { get; protected set; } = new Dictionary<string, object>();
 
@@ -144,6 +148,39 @@ namespace YesSql.Sql
             }
         }
 
+        public void ParentSelector(string selector)
+        {
+            ParentQuerySelectSegments.Clear();
+            ParentQuerySelectSegments.Add(selector);
+        }
+
+        public void ParentSelector(string table, string column)
+        {
+            ParentSelector(FormatColumn(table, column));
+        }
+
+        public void AddParentSelector(string select)
+        {
+            ParentQuerySelectSegments.Add(select);
+        }
+
+        public void InsertParentSelector(string select)
+        {
+            ParentQuerySelectSegments.Insert(0, select);
+        }
+
+        public string GetParentSelector()
+        {
+            if (ParentQuerySelectSegments.Count == 1)
+            {
+                return ParentQuerySelectSegments[0];
+            }
+            else
+            {
+                return string.Join("", ParentQuerySelectSegments);
+            }
+        }
+
         public void Distinct()
         {
             _distinct = true;
@@ -208,6 +245,34 @@ namespace YesSql.Sql
 
             WhereSegments.Add(where);
         }
+        public virtual void ParentWhereAnd(string where)
+        {
+            if (String.IsNullOrWhiteSpace(where))
+            {
+                return;
+            }
+
+            if (ParentQueryWhereSegments.Count > 0)
+            {
+                ParentQueryWhereSegments.Add(" AND ");
+            }
+
+            ParentQueryWhereSegments.Add(where);
+        }
+        public virtual void ParentWhereOr(string where)
+        {
+            if (String.IsNullOrWhiteSpace(where))
+            {
+                return;
+            }
+
+            if (ParentQueryWhereSegments.Count > 0)
+            {
+                ParentQueryWhereSegments.Add(" OR ");
+            }
+
+            ParentQueryWhereSegments.Add(where);
+        }
 
         public bool HasJoin => _join != null && _join.Count > 0;
 
@@ -267,10 +332,20 @@ namespace YesSql.Sql
         {
             TrailSegments.Add(segment);
         }
-
         public virtual void ClearTrail()
         {
             TrailSegments.Clear();
+        }
+        public string GetOrder()
+        {
+            if (_order.Count == 1)
+            {
+                return _order[0];
+            }
+            else
+            {
+                return string.Join("", _order);
+            }
         }
 
         public virtual string ToSqlString()
@@ -284,6 +359,15 @@ namespace YesSql.Sql
 
                 var sb = new StringBuilder();
 
+                if (_parentSelect != null)
+                {
+                    sb.Append("SELECT ");
+                    foreach (var s in _parentSelect)
+                    {
+                        sb.Append(s);
+                    }
+                    sb.Append(" FROM (");
+                }
                 sb.Append("SELECT ");
 
                 if (_distinct)
@@ -349,7 +433,7 @@ namespace YesSql.Sql
                     }
                 }
 
-                if (_order != null)
+                if (_order != null && _parentSelect == null)
                 {
                     sb.Append(" ORDER BY ");
 
@@ -364,6 +448,19 @@ namespace YesSql.Sql
                     foreach (var s in _trail)
                     {
                         sb.Append(s);
+                    }
+                }
+
+                if (_parentSelect != null)
+                {
+                    sb.Append(") yessqlQuery ");
+                    if (_parentWhere != null)
+                    {
+                        sb.Append(" WHERE ");
+                        foreach (var s in _parentWhere)
+                        {
+                            sb.Append(s);
+                        }
                     }
                 }
 
