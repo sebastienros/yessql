@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "YesSql.Tests": {
+      "commandName": "Project"
+    }
+  }
+}

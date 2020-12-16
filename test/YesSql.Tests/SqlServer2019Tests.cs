@@ -12,8 +12,8 @@ namespace YesSql.Tests
 
         protected override IConfiguration CreateConfiguration()
         {
-            var connectionString = 
-                Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING") 
+            var connectionString =
+                Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING")
                 ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
                 ;
 

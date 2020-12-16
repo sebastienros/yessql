@@ -30,7 +30,7 @@ namespace YesSql.Tests
         public CoreTests(ITestOutputHelper output)
         {
             _output = output;
-            
+
             var configuration = CreateConfiguration();
 
             CleanDatabase(configuration, false);
@@ -74,6 +74,7 @@ namespace YesSql.Tests
 
                     builder.DropMapIndexTable<PersonByName>("Collection1");
                     builder.DropMapIndexTable<PersonByNameCol>("Collection1");
+                    builder.DropMapIndexTable<TenantLocationIndex>();
 
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Collection1"));
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
@@ -81,6 +82,7 @@ namespace YesSql.Tests
                     builder.DropTable(DbBlockIdGenerator.TableName);
 
                     OnCleanDatabase(builder, transaction);
+
 
                     transaction.Commit();
                 }
@@ -113,6 +115,12 @@ namespace YesSql.Tests
                     builder.CreateReduceIndexTable<AttachmentByDay>(column => column
                             .Column<int>(nameof(AttachmentByDay.Count))
                             .Column<int>(nameof(AttachmentByDay.Date))
+                        );
+
+                    builder.CreateMapIndexTable<TenantLocationIndex>(column => column
+                           .Column<string>(nameof(TenantLocation.Name), col => col.WithLength(1000))
+                           .Column<Guid>(nameof(TenantLocation.TenantId))
+                           .Column<bool>(nameof(TenantLocation.IsRunning))
                         );
 
                     builder.CreateReduceIndexTable<UserByRoleNameIndex>(column => column
@@ -2568,7 +2576,7 @@ namespace YesSql.Tests
 
             _store.RegisterIndexes<ShapeIndexProvider<Circle>>();
             _store.RegisterIndexes<ShapeIndexProvider<Square>>();
-            
+
             using (var session = _store.CreateSession())
             {
                 session.Save(new Square { Size = 10 });
@@ -4474,7 +4482,7 @@ namespace YesSql.Tests
                 session.Save(property);
             }
         }
-        
+
         [Fact]
         public async Task ShouldCommitInMultipleCollections()
         {
