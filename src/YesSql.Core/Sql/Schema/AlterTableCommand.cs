@@ -27,7 +27,8 @@ namespace YesSql.Sql.Schema
 
         public void AddColumn<T>(string columnName, Action<IAddColumnCommand> column = null)
         {
-            var dbType = SchemaUtils.ToDbType(typeof(T));
+            DbType dbType = _dialect.GetDbType(typeof(T));
+
             AddColumn(columnName, dbType, column);
         }
 

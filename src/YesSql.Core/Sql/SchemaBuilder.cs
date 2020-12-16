@@ -50,8 +50,8 @@ namespace YesSql.Sql
             try
             {
                 var indexName = indexType.Name;
-                var indexTable = TableNameConvention.GetIndexTable(indexType, collection); 
-                var createTable = new CreateTableCommand(Prefix(indexTable));
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+                var createTable = new CreateTableCommand(Prefix(indexTable), Dialect);
                 var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 createTable
@@ -80,12 +80,11 @@ namespace YesSql.Sql
             {
                 var indexName = indexType.Name;
                 var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
-                var createTable = new CreateTableCommand(Prefix(indexTable));
+                var createTable = new CreateTableCommand(Prefix(indexTable), Dialect);
                 var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
-                    ;
+                    .Column<int>("Id", column => column.Identity().NotNull());
 
                 table(createTable);
                 Execute(_commandInterpreter.CreateSql(createTable));
@@ -169,7 +168,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var createTable = new CreateTableCommand(Prefix(name));
+                var createTable = new CreateTableCommand(Prefix(name), Dialect);
                 table(createTable);
                 Execute(_commandInterpreter.CreateSql(createTable));
             }
@@ -207,7 +206,7 @@ namespace YesSql.Sql
         {
             var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
             AlterTable(indexTable, table);
-            
+
             return this;
         }
 

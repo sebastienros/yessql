@@ -167,5 +167,12 @@ namespace YesSql
         /// Create a <see cref="ISqlBuilder" /> instance.
         /// </summary>
         ISqlBuilder CreateBuilder(string tablePrefix);
+
+        /// <summary>
+        /// Gets the corresponding DbType for the given Type
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        DbType GetDbType(Type type);
     }
 }

@@ -5,9 +5,12 @@ namespace YesSql.Sql.Schema
 {
     public class CreateTableCommand : SchemaCommand, ICreateTableCommand
     {
-        public CreateTableCommand(string name)
+        private readonly ISqlDialect _dialect;
+
+        public CreateTableCommand(string name, ISqlDialect dialect)
             : base(name, SchemaCommandType.CreateTable)
         {
+            _dialect = dialect;
         }
 
         public ICreateTableCommand Column(string columnName, DbType dbType, Action<ICreateColumnCommand> column = null)
@@ -23,7 +26,8 @@ namespace YesSql.Sql.Schema
 
         public ICreateTableCommand Column<T>(string columnName, Action<ICreateColumnCommand> column = null)
         {
-            var dbType = SchemaUtils.ToDbType(typeof(T));
+            DbType dbType = _dialect.GetDbType(typeof(T));
+
             return Column(columnName, dbType, column);
         }
 

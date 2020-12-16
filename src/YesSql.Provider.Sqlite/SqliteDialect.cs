@@ -46,6 +46,17 @@ namespace YesSql.Provider.Sqlite
             Methods.Add("year", new TemplateFunction("cast(strftime('%Y', {0}) as int)"));
         }
 
+        public override DbType GetDbType(Type type)
+        {
+            if(type == typeof(Guid))
+            {
+                // Dapper can't map string to Guid for with Sqllite, so when Guid is used, we'll assume string instead
+                return base.GetDbType(typeof(string));
+            }
+
+            return base.GetDbType(type);
+        }
+
         public override string Name => "Sqlite";
 
         public override string IdentityColumnString => "integer primary key autoincrement";

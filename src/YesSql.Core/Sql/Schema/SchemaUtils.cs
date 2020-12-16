@@ -4,6 +4,7 @@ using System.Data;
 
 namespace YesSql.Sql.Schema
 {
+    [Obsolete("Use the ISqlDialect instead")]
     public static class SchemaUtils
     {
         private static Dictionary<Type, DbType> DbTypes = new Dictionary<Type, DbType>
