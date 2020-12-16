@@ -4778,5 +4778,95 @@ namespace YesSql.Tests
                 c.Name = "Clio 2";
             }
         }
+
+
+        [Fact]
+        public async Task AbleToCreateGuidAsUniqueIdentifier()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder.DropMapIndexTable<TenantLocationIndex>();
+
+                    builder.CreateMapIndexTable<TenantLocationIndex>(column => column
+                           .Column<string>(nameof(TenantLocation.Name), col => col.WithLength(1000))
+                           .Column<Guid>(nameof(TenantLocation.TenantId))
+                           .Column<bool>(nameof(TenantLocation.IsRunning))
+                        );
+
+                    builder.AlterTable(nameof(TenantLocationIndex), table => table
+                           .CreateIndex("IDX_TenantLocation", nameof(TenantLocation.Name), nameof(TenantLocation.TenantId)));
+
+                    transaction.Commit();
+                }
+
+                _store.RegisterIndexes<TenantLocationIndexProvider>();
+
+                var tenantId1 = Guid.NewGuid();
+                var tenantId2 = Guid.NewGuid();
+
+                string nameOfFirstLocation = "First";
+                var location1 = new TenantLocation
+                {
+                    Name = nameOfFirstLocation,
+                    IsRunning = true,
+                    TenantId = tenantId1,
+                };
+
+                var location2 = new TenantLocation
+                {
+                    Name = "Second",
+                    IsRunning = false,
+                    TenantId = tenantId1,
+                };
+
+                var location3 = new TenantLocation
+                {
+                    Name = "Third",
+                    IsRunning = true,
+                    TenantId = tenantId2,
+                };
+
+                using (var session = _store.CreateSession())
+                {
+                    session.Save(location1);
+                    session.Save(location2);
+                    session.Save(location3);
+
+                    TenantLocation firstLocation = await session.Query<TenantLocation, TenantLocationIndex>(location => location.Name == nameOfFirstLocation).FirstOrDefaultAsync();
+                    int totalLocationsForTenant1 = await session.Query<TenantLocation, TenantLocationIndex>(location => location.TenantId == tenantId1).CountAsync();
+                    int totalLocationsForTenant2 = await session.Query<TenantLocation, TenantLocationIndex>(location => location.TenantId == tenantId2).CountAsync();
+
+                    int totalIndexesForTenant1 = await session.QueryIndex<TenantLocationIndex>(index => index.TenantId == tenantId1).CountAsync();
+                    int totalIndexesForTenant2 = await session.QueryIndex<TenantLocationIndex>(index => index.TenantId == tenantId2).CountAsync();
+                    TenantLocationIndex location3Index = await session.QueryIndex<TenantLocationIndex>(index => index.TenantId == tenantId2).FirstOrDefaultAsync();
+                    TenantLocationIndex foundLocation = await session.QueryIndex<TenantLocationIndex>(index => index.TenantId == tenantId1).FirstOrDefaultAsync();
+
+                    Assert.Equal(2, totalLocationsForTenant1);
+                    Assert.Equal(1, totalLocationsForTenant2);
+                    Assert.NotNull(firstLocation);
+                    Assert.Equal(location1.Name, firstLocation.Name);
+                    Assert.Equal(location1.TenantId, firstLocation.TenantId);
+
+                    Assert.Equal(2, totalIndexesForTenant1);
+                    Assert.Equal(1, totalIndexesForTenant2);
+                    Assert.NotNull(location3Index);
+                    Assert.Equal(location3.Name, location3Index.Name);
+                    Assert.Equal(location3.IsRunning, location3Index.IsRunning);
+                    Assert.NotNull(foundLocation);
+                    Assert.Equal(location1.Name, foundLocation.Name);
+                    Assert.Equal(location1.TenantId, foundLocation.TenantId);
+
+                    session.Delete(location1);
+                    session.Delete(location2);
+                    session.Delete(location3);
+                }
+            }
+        }
     }
 }
