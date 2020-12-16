@@ -1,3 +1,4 @@
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -46,6 +47,13 @@ namespace YesSql.Provider.Sqlite
             Methods.Add("year", new TemplateFunction("cast(strftime('%Y', {0}) as int)"));
         }
 
+
+        public override void RegisterTypeHandlers()
+        {
+            base.RegisterTypeHandlers();
+
+            SqlMapper.AddTypeHandler(new SqliteGuidTypeHandler());
+        }
         public override DbType GetDbType(Type type)
         {
             if(type == typeof(Guid))
