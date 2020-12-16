@@ -25,7 +25,7 @@ namespace YesSql.Sql.Schema
             { typeof(decimal), DbType.Decimal },
             { typeof(DateTime), DbType.DateTime },
             { typeof(DateTimeOffset), DbType.DateTime },
-            { typeof(Guid), DbType.String }
+            { typeof(Guid), DbType.Guid }
         };
 
 
