@@ -9,7 +9,7 @@ namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
-        protected Dictionary<Type, DbType> DbTypes = new Dictionary<Type, DbType>
+        protected static Dictionary<Type, DbType> DbTypes = new Dictionary<Type, DbType>
         {
             { typeof(object), DbType.Binary },
             { typeof(byte[]), DbType.Binary },
@@ -30,7 +30,6 @@ namespace YesSql.Provider
             { typeof(DateTimeOffset), DbType.DateTime },
             { typeof(Guid), DbType.Guid }
         };
-
 
         public virtual DbType GetDbType(Type type)
         {

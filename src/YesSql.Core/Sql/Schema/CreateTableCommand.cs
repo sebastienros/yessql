@@ -1,5 +1,8 @@
 using System;
 using System.Data;
+using System.Linq.Expressions;
+using System.Reflection;
+using YesSql.Utils;
 
 namespace YesSql.Sql.Schema
 {
@@ -29,6 +32,19 @@ namespace YesSql.Sql.Schema
             DbType dbType = _dialect.GetDbType(typeof(T));
 
             return Column(columnName, dbType, column);
+        }
+
+
+        public ICreateTableCommand Column<TModel>(Expression<Func<TModel, object>> expression, Action<ICreateColumnCommand> column = null)
+        {
+            PropertyInfo property = ReflectionHelpers.FromExpression(expression);
+
+            if (property == null)
+            {
+                throw new ArgumentException($"The lambda expression should point to a valid Property.");
+            }
+
+            return Column(property.Name, _dialect.GetDbType(property.PropertyType), column);
         }
 
     }

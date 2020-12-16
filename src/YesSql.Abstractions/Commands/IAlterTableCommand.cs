@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Linq.Expressions;
 
 namespace YesSql.Sql.Schema
 {
@@ -12,5 +13,6 @@ namespace YesSql.Sql.Schema
         void DropColumn(string columnName);
         void CreateIndex(string indexName, params string[] columnNames);
         void DropIndex(string indexName);
+        void AddColumn<TModel>(Expression<Func<TModel, object>> expression, Action<IAddColumnCommand> column = null);
     }
 }

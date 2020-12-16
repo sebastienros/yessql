@@ -50,8 +50,9 @@ namespace YesSql.Provider.Sqlite
         {
             if(type == typeof(Guid))
             {
-                // Dapper can't map string to Guid for with Sqllite, so when Guid is used, we'll assume string instead
-                return base.GetDbType(typeof(string));
+                // Dapper can't cast 'System.String' to 'System.Guid' with Sqlite.
+                // so when Guid is used, we'll assume string instead
+                return DbType.String;
             }
 
             return base.GetDbType(type);

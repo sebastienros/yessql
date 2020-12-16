@@ -4795,7 +4795,7 @@ namespace YesSql.Tests
 
                     builder.CreateMapIndexTable<TenantLocationIndex>(column => column
                            .Column<string>(nameof(TenantLocation.Name), col => col.WithLength(100))
-                           .Column<Guid>(nameof(TenantLocation.TenantId))
+                           .Column<TenantLocation>(nameof(TenantLocation.TenantId))
                            .Column<bool>(nameof(TenantLocation.IsRunning))
                         );
 
@@ -4865,6 +4865,63 @@ namespace YesSql.Tests
                     session.Delete(location1);
                     session.Delete(location2);
                     session.Delete(location3);
+                }
+            }
+        }
+
+
+        [Fact]
+        public async Task AbleToCreateColumnsUsingExpression()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                try
+                {
+                    using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                    {
+                        var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                        builder.CreateTable("TenantLocations", table =>
+                        {
+                            table.Column<TenantLocation>(model => model.Name, column => column.WithLength(100));
+                            table.Column<TenantLocation>(model => model.TenantId);
+                            table.Column<TenantLocation>(model => model.IsRunning);
+                            table.Column<TenantLocation>(model => model.AddressLine1);
+                            table.Column<TenantLocation>(model => model.AddressCity);
+                        });
+
+                        transaction.Commit();
+                    }
+
+                    using (var session = _store.CreateSession())
+                    {
+                        var location = new TenantLocation()
+                        {
+                            Name = "Test 1",
+                            TenantId = Guid.NewGuid(),
+                            IsRunning = false,
+                            AddressLine1 = "123 Main Street",
+                        };
+
+                        session.Save(location);
+
+                        var totalRecords = await session.Query<TenantLocation>().CountAsync();
+
+                        Assert.Equal(1, totalRecords);
+                    }
+                }
+                finally
+                {
+                    using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                    {
+                        var builder = new SchemaBuilder(_store.Configuration, transaction, false);
+
+                        builder.DropTable("TenantLocations");
+
+                        transaction.Commit();
+                    }
                 }
             }
         }

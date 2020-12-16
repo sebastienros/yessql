@@ -1,5 +1,8 @@
 using System;
 using System.Data;
+using System.Linq.Expressions;
+using System.Reflection;
+using YesSql.Utils;
 
 namespace YesSql.Sql.Schema
 {
@@ -23,6 +26,18 @@ namespace YesSql.Sql.Schema
             column?.Invoke(command);
 
             TableCommands.Add(command);
+        }
+
+        public void AddColumn<TModel>(Expression<Func<TModel, object>> expression, Action<IAddColumnCommand> column = null)
+        {
+            PropertyInfo property = ReflectionHelpers.FromExpression(expression);
+
+            if (property == null)
+            {
+                throw new ArgumentException($"The lambda expression should point to a valid Property.");
+            }
+
+            AddColumn(property.Name, _dialect.GetDbType(property.PropertyType), column);
         }
 
         public void AddColumn<T>(string columnName, Action<IAddColumnCommand> column = null)
