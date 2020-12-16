@@ -1,7 +1,7 @@
+using MySqlConnector;
 using System;
 using System.Data.Common;
 using System.Threading.Tasks;
-using MySqlConnector;
 using Xunit;
 using Xunit.Abstractions;
 using YesSql.Provider.MySql;
@@ -17,7 +17,7 @@ namespace YesSql.Tests
     /// </summary>
     public class MySqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=root;pwd=;database=yessql;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=user1;pwd=Password12!;database=yessql;";
 
         protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
 
