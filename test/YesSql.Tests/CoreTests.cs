@@ -4795,7 +4795,7 @@ namespace YesSql.Tests
 
                     builder.CreateMapIndexTable<TenantLocationIndex>(column => column
                            .Column<string>(nameof(TenantLocation.Name), col => col.WithLength(100))
-                           .Column<TenantLocation>(nameof(TenantLocation.TenantId))
+                           .Column<Guid>(nameof(TenantLocation.TenantId))
                            .Column<bool>(nameof(TenantLocation.IsRunning))
                         );
 
