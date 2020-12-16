@@ -4794,7 +4794,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<TenantLocationIndex>();
 
                     builder.CreateMapIndexTable<TenantLocationIndex>(column => column
-                           .Column<string>(nameof(TenantLocation.Name), col => col.WithLength(1000))
+                           .Column<string>(nameof(TenantLocation.Name), col => col.WithLength(100))
                            .Column<Guid>(nameof(TenantLocation.TenantId))
                            .Column<bool>(nameof(TenantLocation.IsRunning))
                         );
