@@ -45,6 +45,17 @@ namespace YesSql.Provider.PostgreSql
             Methods.Add("month", new TemplateFunction("extract(month from {0})"));
             Methods.Add("year", new TemplateFunction("extract(year from {0})"));
         }
+        public override DbType GetDbType(Type type)
+        {
+            if (type == typeof(Guid))
+            {
+                // Dapper can't cast 'System.String' to 'System.Guid' with PostgreSql.
+                // so when Guid is used, we'll assume string instead
+                return DbType.String;
+            }
+
+            return base.GetDbType(type);
+        }
 
         public static PostgreSqlDialect Make()
         {
