@@ -1,6 +1,8 @@
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using YesSql.Core.Handlers;
 using YesSql.Sql;
 
 namespace YesSql.Provider.PostgreSql
@@ -42,6 +44,15 @@ namespace YesSql.Provider.PostgreSql
             Methods.Add("day", new TemplateFunction("extract(day from {0})"));
             Methods.Add("month", new TemplateFunction("extract(month from {0})"));
             Methods.Add("year", new TemplateFunction("extract(year from {0})"));
+        }
+
+        public static PostgreSqlDialect Make()
+        {
+            var dialect = new PostgreSqlDialect();
+
+            SqlMapper.AddTypeHandler(new GuidToStringTypeHandler());
+
+            return dialect;
         }
 
         public override string Name => "PostgreSql";

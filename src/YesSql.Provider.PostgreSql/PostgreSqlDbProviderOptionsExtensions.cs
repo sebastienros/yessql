@@ -28,7 +28,7 @@ namespace YesSql.Provider.PostgreSql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration.SqlDialect = new PostgreSqlDialect();
+            configuration.SqlDialect = PostgreSqlDialect.Make();
             configuration.CommandInterpreter = new PostgreSqlCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;

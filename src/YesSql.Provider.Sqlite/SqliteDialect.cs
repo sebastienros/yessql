@@ -2,6 +2,7 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using YesSql.Core.Handlers;
 using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
@@ -47,16 +48,19 @@ namespace YesSql.Provider.Sqlite
             Methods.Add("year", new TemplateFunction("cast(strftime('%Y', {0}) as int)"));
         }
 
-
-        public override void RegisterTypeHandlers()
+        public static SqliteDialect Make()
         {
-            base.RegisterTypeHandlers();
+            var dialect = new SqliteDialect();
 
-            SqlMapper.AddTypeHandler(new SqliteGuidTypeHandler());
+            SqlMapper.AddTypeHandler(new GuidToStringTypeHandler());
+
+            return dialect;
         }
+
+
         public override DbType GetDbType(Type type)
         {
-            if(type == typeof(Guid))
+            if (type == typeof(Guid))
             {
                 // Dapper can't cast 'System.String' to 'System.Guid' with Sqlite.
                 // so when Guid is used, we'll assume string instead

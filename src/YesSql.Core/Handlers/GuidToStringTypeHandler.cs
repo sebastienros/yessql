@@ -2,9 +2,9 @@ using Dapper;
 using System;
 using System.Data;
 
-namespace YesSql.Provider.Sqlite
+namespace YesSql.Core.Handlers
 {
-    public class SqliteGuidTypeHandler : SqlMapper.TypeHandler<Guid>
+    public class GuidToStringTypeHandler : SqlMapper.TypeHandler<Guid>
     {
         public override Guid Parse(object value)
         {

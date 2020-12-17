@@ -31,12 +31,6 @@ namespace YesSql.Provider
             { typeof(Guid), DbType.Guid }
         };
 
-
-        public virtual void RegisterTypeHandlers()
-        {
-
-        }
-
         public virtual DbType GetDbType(Type type)
         {
             if (DbTypes.TryGetValue(type, out DbType dbType))
@@ -219,8 +213,6 @@ namespace YesSql.Provider
         public abstract void Page(ISqlBuilder sqlBuilder, string offset, string limit);
         public virtual ISqlBuilder CreateBuilder(string tablePrefix)
         {
-            RegisterTypeHandlers();
-
             return new SqlBuilder(tablePrefix, this);
         }
 

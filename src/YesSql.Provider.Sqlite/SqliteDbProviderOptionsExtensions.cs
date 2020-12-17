@@ -11,8 +11,8 @@ namespace YesSql.Provider.Sqlite
             string connectionString)
         {
             return UseSqLite(
-                configuration, 
-                connectionString, 
+                configuration,
+                connectionString,
                 IsolationLevel.Serializable);
         }
 
@@ -31,7 +31,7 @@ namespace YesSql.Provider.Sqlite
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration.SqlDialect = new SqliteDialect();
+            configuration.SqlDialect = SqliteDialect.Make();
             configuration.CommandInterpreter = new SqliteCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
