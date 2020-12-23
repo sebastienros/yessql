@@ -1258,6 +1258,63 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryMultipleIndexes2()
+        {
+            // We should be able to query documents on multiple rows in an index
+            // This mean the same Index table needs to be JOINed
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman"
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(hanselman);
+                session.Save(guthrie);
+                session.Save(bill);
+                session.Save(steve);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person>()
+                    .All( // This .All should produce an AND query, but it produces an OR query.
+                        x => x.Any(
+                            x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                            x => x.With<PersonIdentity>(x => x.Identity == "Guthrie"),
+                        x => x.Any(
+                            x => x.With<PersonIdentity>(x => x.Identity != "Gates"),
+                            x => x.With<PersonIdentity>(x => x.Identity != "Balmer"))
+                        ))
+                    .CountAsync()
+                    );
+            }
+        }
+
+
+        [Fact]
         public async Task ShouldDeletePreviousIndexes()
         {
             // When an index returns multiple map indexes, changing these results should remove the previous ones.
