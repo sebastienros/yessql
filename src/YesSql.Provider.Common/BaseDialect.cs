@@ -53,6 +53,7 @@ namespace YesSql.Provider
 
         public abstract string RandomOrderByClause { get; }
 
+        public virtual bool SupportsBatching => true;
         public virtual bool SupportsIdentityColumns => true;
 
         public virtual bool SupportsUnique => true;

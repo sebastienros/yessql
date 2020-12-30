@@ -39,6 +39,11 @@ namespace YesSql
         string NullColumnString { get; }
 
         /// <summary>
+        /// Whether the underlying database support batching.
+        /// </summary>
+        bool SupportsBatching { get; }
+        
+        /// <summary>
         /// Whether the dialect support unique queries.
         /// </summary>
         bool SupportsUnique { get; }

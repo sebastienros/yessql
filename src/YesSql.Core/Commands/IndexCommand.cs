@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
@@ -43,7 +44,7 @@ namespace YesSql.Commands
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
-            if (TypeProperties.TryGetValue(type.FullName, out PropertyInfo[] pis))
+            if (TypeProperties.TryGetValue(type.FullName, out var pis))
             {
                 return pis;
             }
@@ -57,7 +58,7 @@ namespace YesSql.Commands
         {
             var key = new CompoundKey(dialect.Name, type.FullName, _store.Configuration.TablePrefix, Collection);
 
-            if (!InsertsList.TryGetValue(key, out string result))
+            if (!InsertsList.TryGetValue(key, out var result))
             {
                 var values = dialect.DefaultValuesInsert;
 
@@ -101,7 +102,7 @@ namespace YesSql.Commands
         {
             var key = new CompoundKey(dialect.Name, type.FullName, _store.Configuration.TablePrefix, Collection);
 
-            if (!UpdatesList.TryGetValue(key, out string result))
+            if (!UpdatesList.TryGetValue(key, out var result))
             {
                 var allProperties = TypePropertiesCache(type);
                 var values = new StringBuilder(null);
@@ -132,12 +133,14 @@ namespace YesSql.Commands
                 ;
         }
 
+        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters);
+
         public struct CompoundKey : IEquatable<CompoundKey>
         {
-            private string _key1;
-            private string _key2;
-            private string _key3;
-            private string _key4;
+            private readonly string _key1;
+            private readonly string _key2;
+            private readonly string _key3;
+            private readonly string _key4;
 
             public CompoundKey(string key1, string key2, string key3, string key4)
             {

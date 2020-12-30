@@ -50,5 +50,10 @@ namespace YesSql.Commands
                 await connection.ExecuteAsync(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
             }
         }
+
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
+        {
+            return false;
+        }
     }
 }

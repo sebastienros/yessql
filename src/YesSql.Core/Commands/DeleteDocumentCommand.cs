@@ -11,11 +11,6 @@ namespace YesSql.Commands
         private readonly IStore _store;
         public override int ExecutionOrder { get; } = 4;
 
-        public DeleteDocumentCommand(IEnumerable<Document> documents, IStore store, string collection) : base(documents, collection)
-        {
-            _store = store;
-        }
-
         public DeleteDocumentCommand(Document document, IStore store, string collection) : base(document, collection)
         {
             _store = store;
@@ -24,9 +19,22 @@ namespace YesSql.Commands
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
-            var deleteCmd = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
+            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = @Id;";
             logger.LogTrace(deleteCmd);
-            return connection.ExecuteAsync(deleteCmd, Documents, transaction);
+            return connection.ExecuteAsync(deleteCmd, Document, transaction);
+        }
+
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
+        {
+            var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
+
+            var index = queries.Count;
+            var idParameter = $"@Id_{index}";
+            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = {idParameter};";
+            queries.Add(deleteCmd);
+            parameters[idParameter] = Document.Id;
+
+            return true;
         }
     }
 }

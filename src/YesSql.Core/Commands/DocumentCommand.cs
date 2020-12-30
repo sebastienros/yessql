@@ -20,21 +20,19 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public DocumentCommand(Document document, string collection) :
-            this(new[] { document }, collection)
+        public DocumentCommand(Document document, string collection)
         {
-        }
 
-        public DocumentCommand(IEnumerable<Document> documents, string collection)
-        {
-            Documents = documents;
+            Document = document;
             Collection = collection;
         }
 
-        public IEnumerable<Document> Documents { get; }
+        public Document Document { get; }
 
         public string Collection { get; }
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
+
+        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters);
     }
 }

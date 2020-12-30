@@ -11,24 +11,37 @@ namespace YesSql.Commands
     public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName
     {
         private readonly IStore _store;
-        public IEnumerable<int> DocumentIds { get; }
+        public int DocumentId { get; }
         public Type IndexType { get; }
         public string Collection { get; }
         public int ExecutionOrder { get; } = 1;
 
-        public DeleteMapIndexCommand(Type indexType, IEnumerable<int> documentIds, IStore store, string collection)
+        public DeleteMapIndexCommand(Type indexType, int documentId, IStore store, string collection)
         {
             IndexType = indexType;
-            DocumentIds = documentIds;
+            DocumentId = documentId;
             Collection = collection;
             _store = store;
         }
 
         public Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger )
         {
-            var command = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection)) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @Id";
+            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = @Id;";
             logger.LogTrace(command);
-            return connection.ExecuteAsync(command, DocumentIds.Select(x => new { Id = x }), transaction);
+            return connection.ExecuteAsync(command, new { Id = DocumentId }, transaction);
+        }
+
+        public bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
+        {
+            var index = queries.Count;
+
+            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = @Id_{index};";
+
+            queries.Add(command);
+
+            parameters["Id_" + index] = DocumentId;
+
+            return true;
         }
     }
 }
