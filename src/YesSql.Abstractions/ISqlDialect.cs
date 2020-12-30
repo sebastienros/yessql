@@ -69,9 +69,14 @@ namespace YesSql
         string IdentityColumnString { get; }
 
         /// <summary>
-        /// Gets the identity select SQL statement.
+        /// Gets the identity select SQL statement to append to an insert in order to return the last generated identifier.
         /// </summary>
         string IdentitySelectString { get; }
+
+        /// <summary>
+        /// Gets the identity select SQL statement.
+        /// </summary>
+        string IdentityLastId(string table, string column);
 
         /// <summary>
         /// Gets the default precision of decimals.

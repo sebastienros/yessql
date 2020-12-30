@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Reflection;
@@ -33,6 +34,6 @@ namespace YesSql.Commands
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
 
-        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters);
+        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions);
     }
 }

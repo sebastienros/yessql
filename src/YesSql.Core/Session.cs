@@ -848,7 +848,7 @@ namespace YesSql
 
                 foreach (var command in page)
                 {
-                    if (!command.AddToBatch(_dialect, batch.Queries, batch.Parameters))
+                    if (!command.AddToBatch(_dialect, batch.Queries, batch.Parameters, batch.Actions))
                     {
                         // If the command can't be added to a batch, we execute it independently
 

@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ namespace YesSql.Commands
 
         public override int ExecutionOrder { get; } = 1;
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
         {
             var type = Index.GetType();
             var name = type.Name;

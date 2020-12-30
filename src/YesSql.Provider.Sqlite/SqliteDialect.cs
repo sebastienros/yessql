@@ -51,6 +51,7 @@ namespace YesSql.Provider.Sqlite
         public override string IdentityColumnString => "integer primary key autoincrement";
 
         public override string IdentitySelectString => "; select last_insert_rowid()";
+        public override string IdentityLastId(string table, string column) => "last_insert_rowid()";
 
         public override string RandomOrderByClause => "random()";
 

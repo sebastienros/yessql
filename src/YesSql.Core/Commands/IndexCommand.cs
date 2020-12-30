@@ -8,13 +8,17 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Indexes;
+using YesSql.Serialization;
 
 namespace YesSql.Commands
 {
     public abstract class IndexCommand : IIndexCommand
     {
+        protected const string ParameterSuffix = "_$$$";
+
         protected readonly IStore _store;
 
+        private static readonly ConcurrentDictionary<Type, Dictionary<string, PropertyInfoAccessor>> TypeAccessors = new ConcurrentDictionary<Type, Dictionary<string, PropertyInfoAccessor>>();
         private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<string, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new ConcurrentDictionary<CompoundKey, string>();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new ConcurrentDictionary<CompoundKey, string>();
@@ -40,6 +44,33 @@ namespace YesSql.Commands
         {
             InsertsList.Clear();
             UpdatesList.Clear();
+        }
+
+        protected static Dictionary<string, PropertyInfoAccessor> GetAccessors(object item)
+        {
+            return TypeAccessors.GetOrAdd(item.GetType(), static type =>
+            {
+                var dictionary = new Dictionary<string, PropertyInfoAccessor>();
+
+                foreach (var property in TypePropertiesCache(type))
+                {
+                    dictionary[property.Name] = new PropertyInfoAccessor(property);
+                }
+
+                return dictionary;
+            });
+        }
+
+        protected static Dictionary<string, object> GetProperties(object item)
+        {
+            var accessors = GetAccessors(item);
+            var values = new Dictionary<string, object>();
+            foreach (var entry in accessors)
+            {
+                values[entry.Key] = entry.Value.Get(item);
+            }
+
+            return values;
         }
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
@@ -82,17 +113,17 @@ namespace YesSql.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbParameterList.Append("@" + property.Name);
+                        sbParameterList.Append("@").Append(property.Name).Append(ParameterSuffix);
                         if (i < allProperties.Count() - 1)
                         {
                             sbParameterList.Append(", ");
                         }
                     }
 
-                    values = $"({sbColumnList}) VALUES ({sbParameterList})";
+                    values = $"({sbColumnList}) values ({sbParameterList})";
                 }
 
-                InsertsList[key] = result = $"INSERT INTO {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")}";
+                InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
             }
 
             return result;            
@@ -110,14 +141,14 @@ namespace YesSql.Commands
                 for (var i = 0; i < allProperties.Length; i++)
                 {
                     var property = allProperties[i];
-                    values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name);
+                    values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name + ParameterSuffix);
                     if (i < allProperties.Length - 1)
                     {
                         values.Append(", ");
                     }
                 }
 
-                UpdatesList[key] = result = $"UPDATE {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} SET {values} WHERE {dialect.QuoteForColumnName("Id")} = @Id;";
+                UpdatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
             }
 
             return result;
@@ -133,7 +164,7 @@ namespace YesSql.Commands
                 ;
         }
 
-        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters);
+        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions);
 
         public struct CompoundKey : IEquatable<CompoundKey>
         {

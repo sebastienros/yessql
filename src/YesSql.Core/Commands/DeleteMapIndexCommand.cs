@@ -31,7 +31,7 @@ namespace YesSql.Commands
             return connection.ExecuteAsync(command, new { Id = DocumentId }, transaction);
         }
 
-        public bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
+        public bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
         {
             var index = queries.Count;
 

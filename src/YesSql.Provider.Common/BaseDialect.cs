@@ -44,7 +44,8 @@ namespace YesSql.Provider
         public virtual bool HasDataTypeInIdentityColumn => false;
 
         public abstract string IdentitySelectString { get; }
-
+        public abstract string IdentityLastId(string table, string column);
+        
         public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
 
         public virtual string NullColumnString => String.Empty;

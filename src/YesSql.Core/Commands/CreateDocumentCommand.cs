@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
@@ -30,7 +31,7 @@ namespace YesSql.Commands
             return connection.ExecuteAsync(insertCmd, Document, transaction);
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
         {
             var index = queries.Count;
 

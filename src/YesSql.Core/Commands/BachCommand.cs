@@ -17,10 +17,10 @@ namespace YesSql.Commands
 
         public List<string> Queries { get; set; } = new List<string>();
         public Dictionary<string, object> Parameters { get; set; } = new Dictionary<string, object>();
-
+        public List<Action<DbDataReader>> Actions = new List<Action<DbDataReader>>();
         public int ExecutionOrder => 0;
 
-        public bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
+        public bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
         {
             if (queries == Queries)
             {
@@ -62,7 +62,13 @@ namespace YesSql.Commands
                     logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BachCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
                 }
 
-                var count = await connection.ExecuteAsync(command, Parameters, transaction);
+                using (var dr = await connection.ExecuteReaderAsync(command, Parameters, transaction))
+                {
+                    foreach (var action in Actions)
+                    {
+                        action(dr);
+                    }
+                }
             }
         }
     }

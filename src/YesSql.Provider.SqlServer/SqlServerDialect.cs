@@ -49,6 +49,8 @@ namespace YesSql.Provider.SqlServer
 
         public override string Name => "SqlServer";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
+        public override string IdentityLastId(string table, string column) => "SCOPE_IDENTITY()";
+
         public override string RandomOrderByClause => "newid()";
 
         public override byte DefaultDecimalPrecision => 19;
