@@ -4247,7 +4247,7 @@ namespace YesSql.Tests
                     task1Loaded.Set();
 
                     // Wait for the other thread to load the person before updating it
-                    if (!task2Loaded.WaitOne(1000))
+                    if (!task2Loaded.WaitOne(5000))
                     {
                         Assert.True(false, "task2Loaded timeout");
                         session.Cancel();
@@ -4265,7 +4265,7 @@ namespace YesSql.Tests
 
             var task2 = Task.Run(async () =>
             {
-                task1Loaded.WaitOne(1000);
+                task1Loaded.WaitOne(5000);
 
                 await Assert.ThrowsAsync<ConcurrencyException>(async () =>
                 {
@@ -4277,7 +4277,7 @@ namespace YesSql.Tests
                         task2Loaded.Set();
 
                         // Wait for the other thread to save the person before updating it
-                        if (!task1Saved.WaitOne(1000))
+                        if (!task1Saved.WaitOne(5000))
                         {
                             Assert.True(false, "task1Saved timeout");
                             session.Cancel();
