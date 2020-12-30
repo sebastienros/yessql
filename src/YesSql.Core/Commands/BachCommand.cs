@@ -41,6 +41,11 @@ namespace YesSql.Commands
                 throw new InvalidOperationException("Batching is not supported for this dialect");
             }
 
+            if (Queries.Count == 0)
+            {
+                return;
+            }
+
             using (var sb = _batchPool.Allocate())
             {
                 foreach (var query in Queries)
