@@ -16,18 +16,18 @@ namespace YesSql.Commands
         private static ObjectPool<StringBuilderPool> _batchPool = StringBuilderPool.CreatePool(8, DefaultBuilderCapacity);
 
         public List<string> Queries { get; set; } = new List<string>();
-        public Dictionary<string, object> Parameters { get; set; } = new Dictionary<string, object>();
+        public DynamicParameters Parameters { get; set; } = new DynamicParameters();
         public List<Action<DbDataReader>> Actions = new List<Action<DbDataReader>>();
         public int ExecutionOrder => 0;
 
-        public bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             if (queries == Queries)
             {
                 queries.AddRange(Queries);
-                foreach (var entry in parameters)
+                foreach (var name in parameters.ParameterNames)
                 {
-                    Parameters[entry.Key] = entry.Value;
+                    Parameters.Add(name, parameters.Get<object>(name));
                 }
             }
 

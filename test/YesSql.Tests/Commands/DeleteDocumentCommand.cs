@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace YesSql.Tests.Commands
 
         public override int ExecutionOrder => 4;
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             throw new NotImplementedException();
         }

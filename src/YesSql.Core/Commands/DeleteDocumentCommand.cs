@@ -25,14 +25,14 @@ namespace YesSql.Commands
             return connection.ExecuteAsync(deleteCmd, Document, transaction);
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var index = queries.Count;
             var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = @Id_{index};";
             queries.Add(deleteCmd);
-            parameters["Id_" + index] = Document.Id;
+            parameters.Add("Id_" + index, Document.Id);
 
             return true;
         }

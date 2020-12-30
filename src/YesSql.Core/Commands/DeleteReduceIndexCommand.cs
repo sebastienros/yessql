@@ -16,7 +16,7 @@ namespace YesSql.Commands
 
         public override int ExecutionOrder { get; } = 1;
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             var type = Index.GetType();
             var name = type.Name;
@@ -28,7 +28,7 @@ namespace YesSql.Commands
             var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} where { dialect.QuoteForColumnName("Id")} = @Id_{index};";
             queries.Add(bridgeSql);
             queries.Add(command);
-            parameters["Id_" + index] = Index.Id;
+            parameters.Add("Id_" + index, Index.Id);
 
             return true;
         }

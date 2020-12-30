@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Indexes;
+using YesSql.Sql.Schema;
 
 namespace YesSql.Commands
 {
@@ -71,7 +72,7 @@ namespace YesSql.Commands
             }
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             var type = Index.GetType();
             var index = queries.Count;
@@ -79,12 +80,9 @@ namespace YesSql.Commands
             sql = sql.Replace(ParameterSuffix, index.ToString());
             queries.Add(sql);
 
-            foreach (var entry in GetProperties(Index))
-            {
-                parameters[entry.Key + index.ToString()] = entry.Value;
-            }
+            GetProperties(parameters, Index, index.ToString());
 
-            parameters[$"Id{index}"] = Index.Id;
+            parameters.Add($"Id{index}", Index.Id, System.Data.DbType.Int32);
 
             // Update the documents list
             if (Index is ReduceIndex)
@@ -93,20 +91,20 @@ namespace YesSql.Commands
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
 
-                parameters[$"Id_{index}"] = Index.Id;
+                parameters.Add($"Id_{index}", Index.Id);
 
                 for (var i = 0; i < _addedDocumentIds.Length; i++)
                 {
                     var bridgeSqlAdd = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName)} ({columnList}) values (@Id_{index}, @AddedId_{index}_{i});";
                     queries.Add(bridgeSqlAdd);
-                    parameters[$"AddedId_{index}_{i}"] = _addedDocumentIds[i];
+                    parameters.Add($"AddedId_{index}_{i}", _addedDocumentIds[i]);
                 }
 
                 for (var i = 0; i < _deletedDocumentIds.Length; i++)
                 {
                     var bridgeSqlRemove = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName)} where {dialect.QuoteForColumnName("DocumentId")} = @RemovedId_{index}_{i} and {dialect.QuoteForColumnName(type.Name + "Id")} = @Id_{index};";
                     queries.Add(bridgeSqlRemove);
-                    parameters[$"RemovedId_{index}_{i}"] = _deletedDocumentIds[i];
+                    parameters.Add($"RemovedId_{index}_{i}", _deletedDocumentIds[i]);
                 }
             }
 

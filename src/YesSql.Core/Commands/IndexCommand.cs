@@ -1,7 +1,9 @@
+using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
@@ -9,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 using YesSql.Serialization;
+using YesSql.Sql.Schema;
 
 namespace YesSql.Commands
 {
@@ -18,7 +21,7 @@ namespace YesSql.Commands
 
         protected readonly IStore _store;
 
-        private static readonly ConcurrentDictionary<Type, Dictionary<string, PropertyInfoAccessor>> TypeAccessors = new ConcurrentDictionary<Type, Dictionary<string, PropertyInfoAccessor>>();
+        private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor>();
         private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<string, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new ConcurrentDictionary<CompoundKey, string>();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new ConcurrentDictionary<CompoundKey, string>();
@@ -46,31 +49,15 @@ namespace YesSql.Commands
             UpdatesList.Clear();
         }
 
-        protected static Dictionary<string, PropertyInfoAccessor> GetAccessors(object item)
+        protected static void GetProperties(DynamicParameters parameters, object item, string suffix)
         {
-            return TypeAccessors.GetOrAdd(item.GetType(), static type =>
+            var type = item.GetType();
+
+            foreach (var property in TypePropertiesCache(type))
             {
-                var dictionary = new Dictionary<string, PropertyInfoAccessor>();
-
-                foreach (var property in TypePropertiesCache(type))
-                {
-                    dictionary[property.Name] = new PropertyInfoAccessor(property);
-                }
-
-                return dictionary;
-            });
-        }
-
-        protected static Dictionary<string, object> GetProperties(object item)
-        {
-            var accessors = GetAccessors(item);
-            var values = new Dictionary<string, object>();
-            foreach (var entry in accessors)
-            {
-                values[entry.Key] = entry.Value.Get(item);
+                var accessor = PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
+                parameters.Add(property.Name + suffix, accessor.Get(item), SchemaUtils.ToDbType(property.PropertyType));
             }
-
-            return values;
         }
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
@@ -164,7 +151,7 @@ namespace YesSql.Commands
                 ;
         }
 
-        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions);
+        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions);
 
         public struct CompoundKey : IEquatable<CompoundKey>
         {

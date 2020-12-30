@@ -44,7 +44,7 @@ namespace YesSql.Commands
             return;
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             // Can't batch if version needs to be checked
             // TODO: If the scalar result still works in batches, we might need to count what is the expected total number
@@ -61,17 +61,14 @@ namespace YesSql.Commands
 
             var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
                 + $"set {dialect.QuoteForColumnName("Content")} = @Content_{index}, {dialect.QuoteForColumnName("Version")} = @Version_{index} where "
-                + $"{dialect.QuoteForColumnName("Id")} = @Id_{index} "
-                + (_checkVersion > -1
-                    ? $" and {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)} ;"
-                    : ";")
+                + $"{dialect.QuoteForColumnName("Id")} = @Id_{index};"
                 ;
 
             queries.Add(updateCmd);
 
-            parameters["Id_" + index] = Document.Id;
-            parameters["Content_" + index] = Document.Content;
-            parameters["Version_" + index] = Document.Version;
+            parameters.Add("Id_" + index, Document.Id);
+            parameters.Add("Content_" + index, Document.Content);
+            parameters.Add("Version_" + index, Document.Version);
 
             return true;
         }

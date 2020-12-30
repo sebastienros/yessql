@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Indexes;
+using YesSql.Sql.Schema;
 
 namespace YesSql.Commands
 {
@@ -52,7 +53,7 @@ namespace YesSql.Commands
             }
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             if (Index is ReduceIndex && _addedDocumentIds.Length > 1)
             {
@@ -86,10 +87,7 @@ namespace YesSql.Commands
                 dr.NextResult();
             });
 
-            foreach (var entry in GetProperties(Index))
-            {
-                parameters[entry.Key + index.ToString()] = entry.Value;
-            }
+            GetProperties(parameters, Index, index.ToString());
 
             var tableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection);
 
@@ -97,7 +95,7 @@ namespace YesSql.Commands
             {
                 var command = "update " + dialect.QuoteForTableName(tableName) + " set " + dialect.QuoteForColumnName("DocumentId") + $" = @mapid_{index} where " + dialect.QuoteForColumnName("Id") + " = (" + dialect.IdentityLastId(tableName, "Id") + ");";
                 queries.Add(command);
-                parameters["mapid_" + index.ToString()] = Index.GetAddedDocuments().Single().Id;
+                parameters.Add("mapid_" + index.ToString(), Index.GetAddedDocuments().Single().Id);
 
             }
             else
@@ -107,7 +105,7 @@ namespace YesSql.Commands
                 var bridgeTableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 queries.Add($"insert into {dialect.QuoteForTableName(bridgeTableName)} ({columnList}) values ({dialect.IdentityLastId(tableName, "Id")}, @DocumentId_{index});");
-                parameters[$"DocumentId_{index}"] = _addedDocumentIds[0];
+                parameters.Add($"DocumentId_{index}", _addedDocumentIds[0]);
             }
 
             return true;

@@ -31,7 +31,7 @@ namespace YesSql.Commands
             return connection.ExecuteAsync(insertCmd, Document, transaction);
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
         {
             var index = queries.Count;
 
@@ -40,10 +40,10 @@ namespace YesSql.Commands
 
             queries.Add(insertCmd);
             
-            parameters["Id_" + index] = Document.Id;
-            parameters["Type_" + index] = Document.Type;
-            parameters["Content_" + index] = Document.Content;
-            parameters["Version_" + index] = Document.Version;
+            parameters.Add("Id_" + index, Document.Id);
+            parameters.Add("Type_" + index, Document.Type);
+            parameters.Add("Content_" + index, Document.Content);
+            parameters.Add("Version_" + index, Document.Version);
 
             return true;
         }
