@@ -93,10 +93,9 @@ namespace YesSql.Commands
 
             if (Index is MapIndex)
             {
-                var command = "update " + dialect.QuoteForTableName(tableName) + " set " + dialect.QuoteForColumnName("DocumentId") + $" = @mapid_{index} where " + dialect.QuoteForColumnName("Id") + " = (" + dialect.IdentityLastId(tableName, "Id") + ");";
+                var command = $"update {dialect.QuoteForTableName(tableName)} set {dialect.QuoteForColumnName("DocumentId")} = @mapid_{index} where {dialect.QuoteForColumnName("Id")} = ({dialect.IdentityLastId});";
                 queries.Add(command);
-                parameters.Add("mapid_" + index.ToString(), Index.GetAddedDocuments().Single().Id);
-
+                parameters.Add($"mapid_{index}", Index.GetAddedDocuments().Single().Id);
             }
             else
             {
@@ -104,7 +103,7 @@ namespace YesSql.Commands
 
                 var bridgeTableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
-                queries.Add($"insert into {dialect.QuoteForTableName(bridgeTableName)} ({columnList}) values ({dialect.IdentityLastId(tableName, "Id")}, @DocumentId_{index});");
+                queries.Add($"insert into {dialect.QuoteForTableName(bridgeTableName)} ({columnList}) values ({dialect.IdentityLastId}, @DocumentId_{index});");
                 parameters.Add($"DocumentId_{index}", _addedDocumentIds[0]);
             }
 

@@ -76,7 +76,7 @@ namespace YesSql
         /// <summary>
         /// Gets the identity select SQL statement.
         /// </summary>
-        string IdentityLastId(string table, string column);
+        string IdentityLastId { get; }
 
         /// <summary>
         /// Gets the default precision of decimals.
