@@ -12,7 +12,7 @@ namespace YesSql.Commands
     {
         public static int DefaultBuilderCapacity = 10 * 1024;
 
-        // Dedicate pool since batches should be of the same size
+        // Dedicated pool since batches should be of the same size
         private static ObjectPool<StringBuilderPool> _batchPool = StringBuilderPool.CreatePool(8, DefaultBuilderCapacity);
 
         public List<string> Queries { get; set; } = new List<string>();
