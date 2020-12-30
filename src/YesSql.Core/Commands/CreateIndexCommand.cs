@@ -82,7 +82,7 @@ namespace YesSql.Commands
             actions.Add(dr =>
             {
                 dr.Read();
-                Index.Id = dr.GetInt32(0);
+                Index.Id = Convert.ToInt32(dr[0]);
                 dr.NextResult();
             });
 
