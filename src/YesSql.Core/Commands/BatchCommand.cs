@@ -8,7 +8,7 @@ using YesSql.Utils;
 
 namespace YesSql.Commands
 {
-    public class BachCommand : IIndexCommand
+    public class BatchCommand : IIndexCommand
     {
         public static int DefaultBuilderCapacity = 10 * 1024;
 
@@ -59,7 +59,7 @@ namespace YesSql.Commands
 
                 if (command.Length > DefaultBuilderCapacity)
                 {
-                    logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BachCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
+                    logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
                 }
 
                 using (var dr = await connection.ExecuteReaderAsync(command, Parameters, transaction))

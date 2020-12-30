@@ -844,7 +844,7 @@ namespace YesSql
 
             foreach (var page in _commands.OrderBy(x => x.ExecutionOrder).PagesOf(_store.Configuration.CommandsPageSize))
             {
-                var batch = new BachCommand();
+                var batch = new BatchCommand();
 
                 foreach (var command in page)
                 {
@@ -857,7 +857,7 @@ namespace YesSql
                             batches.Add(batch);
 
                             // Then start a new batch
-                            batch = new BachCommand();
+                            batch = new BatchCommand();
                         }
 
                         batches.Add(command);
