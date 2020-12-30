@@ -106,6 +106,6 @@ namespace YesSql.Provider.Sqlite
             return "[" + tableName + "]";
         }
 
-        public override bool SupportsBatching => false;
+        public override bool SupportsBatching => true;
     }
 }

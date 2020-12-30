@@ -45,6 +45,16 @@ namespace YesSql.Commands
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, Dictionary<string, object> parameters)
         {
+            // Can't batch if version needs to be checked
+            // TODO: If the scalar result still works in batches, we might need to count what is the expected total number
+            // and compare this value. However deletes are a "best effort" so they might delete 0 or many items, and the updates might
+            // need their own batch commands.
+
+            if (_checkVersion > -1)
+            {
+                return false;
+            }
+
             var index = queries.Count;
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 

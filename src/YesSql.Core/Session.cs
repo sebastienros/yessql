@@ -850,11 +850,17 @@ namespace YesSql
                 {
                     if (!command.AddToBatch(_dialect, batch.Queries, batch.Parameters))
                     {
-                        // If the commnand can't be added to a batch, we execute it independently
-                        batches.Add(command);
+                        // If the command can't be added to a batch, we execute it independently
 
-                        // Then start a new batch
-                        batch = new BachCommand();
+                        if (batch.Queries.Count > 0)
+                        {
+                            batches.Add(batch);
+
+                            // Then start a new batch
+                            batch = new BachCommand();
+                        }
+
+                        batches.Add(command);
                     }
                 }
 

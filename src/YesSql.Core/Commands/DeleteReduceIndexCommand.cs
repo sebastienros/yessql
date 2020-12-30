@@ -24,7 +24,7 @@ namespace YesSql.Commands
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
             var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
             var bridgeSql = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName)} where {dialect.QuoteForColumnName(name + "Id")} = @Id_{index};";
-            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} where { dialect.QuoteForColumnName("Id")} = @Id_Index;";
+            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} where { dialect.QuoteForColumnName("Id")} = @Id_{index};";
             queries.Add(bridgeSql);
             queries.Add(command);
             parameters["Id_" + index] = Index.Id;

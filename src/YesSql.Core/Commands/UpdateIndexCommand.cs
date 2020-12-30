@@ -43,7 +43,7 @@ namespace YesSql.Commands
                 var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
                 var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
 
-                if (dialect.SupportsBatching)
+                if (_addedDocumentIds.Any())
                 {
                     var dynamicParamsAdded = new DynamicParameters();
                     foreach (var id in _addedDocumentIds)
@@ -51,25 +51,20 @@ namespace YesSql.Commands
                         dynamicParamsAdded.AddDynamicParams(new { DocumentId = id, Id = Index.Id });
                     }
 
+                    logger.LogTrace(bridgeSqlAdd);
                     await connection.ExecuteAsync(bridgeSqlAdd, dynamicParamsAdded, transaction);
+                }
 
-                    logger.LogTrace(bridgeSqlRemove);
-
+                if (_deletedDocumentIds.Any())
+                {
                     var dynamicParamsDeleted = new DynamicParameters();
                     foreach (var id in _deletedDocumentIds)
                     {
                         dynamicParamsDeleted.AddDynamicParams(new { DocumentId = id, Id = Index.Id });
                     }
 
-                    await connection.ExecuteAsync(bridgeSqlRemove, dynamicParamsDeleted, transaction);
-                }
-                else
-                {
-                    logger.LogTrace(bridgeSqlAdd);
-                    await connection.ExecuteAsync(bridgeSqlAdd, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
-
                     logger.LogTrace(bridgeSqlRemove);
-                    await connection.ExecuteAsync(bridgeSqlRemove, _deletedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
+                    await connection.ExecuteAsync(bridgeSqlRemove, dynamicParamsDeleted, transaction);
                 }
             }
         }

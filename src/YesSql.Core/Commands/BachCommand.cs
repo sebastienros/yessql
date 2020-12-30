@@ -62,7 +62,7 @@ namespace YesSql.Commands
                     logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BachCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
                 }
 
-                await connection.ExecuteAsync(command, Parameters, transaction);
+                var count = await connection.ExecuteAsync(command, Parameters, transaction);
             }
         }
     }

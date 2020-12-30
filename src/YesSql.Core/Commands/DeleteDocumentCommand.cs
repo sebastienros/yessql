@@ -29,10 +29,9 @@ namespace YesSql.Commands
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var index = queries.Count;
-            var idParameter = $"@Id_{index}";
-            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = {idParameter};";
+            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = @Id_{index};";
             queries.Add(deleteCmd);
-            parameters[idParameter] = Document.Id;
+            parameters["Id_" + index] = Document.Id;
 
             return true;
         }
