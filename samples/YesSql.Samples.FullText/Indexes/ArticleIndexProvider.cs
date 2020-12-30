@@ -12,7 +12,8 @@ namespace YesSql.Samples.FullText.Indexes
             var tokenizer = new WhiteSpaceTokenizer();
             var filter = new StopWordFilter();
 
-            context.For<ArticleByWord, string>()
+            context
+                .For<ArticleByWord, string>()
                 .Map(article => filter
                     .Filter(tokenizer.Tokenize(article.Content))
                     .Select(x => new ArticleByWord { Word = x, Count = 1 })
