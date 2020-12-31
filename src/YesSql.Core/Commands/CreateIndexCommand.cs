@@ -6,7 +6,6 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Indexes;
-using YesSql.Sql.Schema;
 
 namespace YesSql.Commands
 {
@@ -33,16 +32,18 @@ namespace YesSql.Commands
             var sql = Inserts(type, dialect);
             sql = sql.Replace(ParameterSuffix, "");
             logger.LogTrace(sql);
-            Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
 
             if (Index is MapIndex)
             {
-                var command = "update " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection)) + " set " + dialect.QuoteForColumnName("DocumentId") + " = @mapid where " + dialect.QuoteForColumnName("Id") + " = @Id";
-                logger.LogTrace(command);
-                await connection.ExecuteAsync(command, new { mapid = Index.GetAddedDocuments().Single().Id, Id = Index.Id }, transaction);
+                var parameters = new DynamicParameters();
+                GetProperties(parameters, Index, "");
+                parameters.Add($"DocumentId", Index.GetAddedDocuments().Single().Id, System.Data.DbType.Int32);
+                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
             }
             else
             {
+                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
+
                 var reduceIndex = Index as ReduceIndex;
 
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
@@ -93,9 +94,7 @@ namespace YesSql.Commands
 
             if (Index is MapIndex)
             {
-                var command = $"update {dialect.QuoteForTableName(tableName)} set {dialect.QuoteForColumnName("DocumentId")} = @mapid_{index} where {dialect.QuoteForColumnName("Id")} = ({dialect.IdentityLastId});";
-                queries.Add(command);
-                parameters.Add($"mapid_{index}", Index.GetAddedDocuments().Single().Id);
+                parameters.Add($"DocumentId{index}", Index.GetAddedDocuments().Single().Id);
             }
             else
             {
