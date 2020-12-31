@@ -78,7 +78,7 @@ namespace YesSql.Commands
 
             if (!InsertsList.TryGetValue(key, out var result))
             {
-                var values = dialect.DefaultValuesInsert;
+                string values;
 
                 var allProperties = TypePropertiesCache(type);
 
@@ -107,7 +107,25 @@ namespace YesSql.Commands
                         }
                     }
 
+                    if (typeof(MapIndex).IsAssignableFrom(type))
+                    {
+                        // We can set the document id 
+                        sbColumnList.Append(", ").Append(dialect.QuoteForColumnName("DocumentId"));
+                        sbParameterList.Append(", @DocumentId").Append(ParameterSuffix);
+                    }
+
                     values = $"({sbColumnList}) values ({sbParameterList})";
+                }
+                else
+                {
+                    if (typeof(MapIndex).IsAssignableFrom(type))
+                    {
+                        values = $"({dialect.QuoteForColumnName("DocumentId")}) values (@DocumentId{ParameterSuffix})";
+                    }
+                    else
+                    {
+                        values = dialect.DefaultValuesInsert;
+                    }
                 }
 
                 InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
