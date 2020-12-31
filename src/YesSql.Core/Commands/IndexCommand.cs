@@ -120,7 +120,7 @@ namespace YesSql.Commands
                 {
                     if (typeof(MapIndex).IsAssignableFrom(type))
                     {
-                        values = $"(DocumentId) values (@DocumentId{ParameterSuffix})";
+                        values = $"({dialect.QuoteForColumnName("DocumentId")}) values (@DocumentId{ParameterSuffix})";
                     }
                     else
                     {
