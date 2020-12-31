@@ -7,7 +7,6 @@ namespace YesSql.Indexes
     public class DescribeContext<T> : IDescriptor
     {
         private readonly Dictionary<Type, List<IDescribeFor>> _describes = new Dictionary<Type, List<IDescribeFor>>();
-        private Func<object, bool> _filter;
 
         public IEnumerable<IndexDescriptor> Describe(params Type[] types)
         {
@@ -22,16 +21,16 @@ namespace YesSql.Indexes
                     Delete = kp.GetDelete(),
                     GroupKey = kp.GroupProperty,
                     IndexType = kp.IndexType,
-                    Filter = _filter
+                    Filter = kp.Filter
                 });
         }
 
-        public IMapFor<T, TIndex> For<TIndex>(Func<T, bool> predicate = null) where TIndex : IIndex
+        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
         {
-            return For<TIndex, object>(predicate);
+            return For<TIndex, object>();
         }
 
-        public IMapFor<T, TIndex> For<TIndex, TKey>(Func<T, bool> predicate = null) where TIndex : IIndex
+        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
         {
             List<IDescribeFor> descriptors;
 
@@ -42,11 +41,6 @@ namespace YesSql.Indexes
 
             var describeFor = new IndexDescriptor<T, TIndex, TKey>();
             descriptors.Add(describeFor);
-
-            if (predicate != null)
-            {
-                _filter = s => predicate((T)s);
-            }
 
             return describeFor;
         }

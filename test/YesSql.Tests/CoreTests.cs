@@ -3972,6 +3972,58 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldNotGenerateDeleteSatementsForFilteredIndexProviders()
+        {
+            var logger = new TestLogger();
+
+            _store.Configuration.Logger = logger;
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexFilterProvider1>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = "A" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().ListAsync();
+                Assert.Equal("A", results.ElementAt(0).Firstname);
+                session.Delete(results.First());
+            }
+
+            Assert.NotEmpty(logger.ToString());
+            Assert.DoesNotContain("PersonByAge", logger.ToString());
+        }
+
+        [Fact]
+        public async Task ShouldGenerateDeleteSatementsForFilteredIndexProviders()
+        {
+            var logger = new TestLogger();
+
+            _store.Configuration.Logger = logger;
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexFilterProvider2>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = "A" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().ListAsync();
+                Assert.Equal("A", results.ElementAt(0).Firstname);
+                session.Delete(results.First());
+            }
+
+            Assert.NotEmpty(logger.ToString());
+            Assert.Contains("PersonByAge", logger.ToString());
+        }
+
+        [Fact]
         public void ShouldCreateMoreObjectThanIdBlock()
         {
             var lastId = 0;
