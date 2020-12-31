@@ -110,7 +110,7 @@ namespace YesSql.Commands
                     if (typeof(MapIndex).IsAssignableFrom(type))
                     {
                         // We can set the document id 
-                        sbColumnList.Append(", DocumentId");
+                        sbColumnList.Append(", ").Append(dialect.QuoteForColumnName("DocumentId"));
                         sbParameterList.Append(", @DocumentId").Append(ParameterSuffix);
                     }
 
