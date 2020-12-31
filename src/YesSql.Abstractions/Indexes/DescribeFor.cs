@@ -14,6 +14,7 @@ namespace YesSql.Indexes
         Func<IIndex, IEnumerable<IIndex>, IIndex> GetDelete();
         PropertyInfo GroupProperty { get; set; }
         Type IndexType { get; }
+        Func<object, bool> Filter { get; }
     }
 
     public interface IMapFor<out T, TIndex> where TIndex : IIndex
@@ -22,6 +23,7 @@ namespace YesSql.Indexes
         IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map);
         IGroupFor<TIndex> Map(Func<T, Task<TIndex>> map);
         IGroupFor<TIndex> Map(Func<T, Task<IEnumerable<TIndex>>> map);
+        IMapFor<T, TIndex> When(Func<T, bool> predicate);
     }
 
     public interface IGroupFor<TIndex> where TIndex : IIndex
@@ -45,13 +47,22 @@ namespace YesSql.Indexes
         private Func<IGrouping<TKey, TIndex>, TIndex> _reduce;
         private Func<TIndex, IEnumerable<TIndex>, TIndex> _delete;
         private IDescribeFor _reduceDescribeFor;
+        private Func<object, bool> _filter;
 
         public PropertyInfo GroupProperty { get; set; }
         public Type IndexType { get { return typeof(TIndex); } }
 
+        public Func<object, bool> Filter => _filter;
+
         public IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map)
         {
             _map = x => Task.FromResult(map(x));
+            return this;
+        }
+
+        public IMapFor<T, TIndex> When(Func<T, bool> predicate)
+        {
+            _filter = x => predicate((T) x);
             return this;
         }
 

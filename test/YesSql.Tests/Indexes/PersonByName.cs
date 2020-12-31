@@ -28,7 +28,8 @@ namespace YesSql.Tests.Indexes
         public override void Describe(DescribeContext<Person> context)
         {
             context
-                .For<PersonByName>(p => p.Firstname.StartsWith("A", System.StringComparison.OrdinalIgnoreCase))
+                .For<PersonByName>()
+                .When(p => p.Firstname.StartsWith("A", System.StringComparison.OrdinalIgnoreCase))
                 .Map(person => new PersonByName { SomeName = person.Firstname });
         }
     }
