@@ -48,6 +48,7 @@ namespace YesSql.Provider.PostgreSql
         public override string InOperator(string values) => " = any(array[" + values + "])";
         public override string NotInOperator(string values) => " <> all(array[" + values + "])";
         public override string IdentitySelectString => "RETURNING";
+        public override string IdentityLastId => $"lastval()";
         public override string IdentityColumnString => "SERIAL PRIMARY KEY";
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;

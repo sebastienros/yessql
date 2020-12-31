@@ -44,7 +44,8 @@ namespace YesSql.Provider
         public virtual bool HasDataTypeInIdentityColumn => false;
 
         public abstract string IdentitySelectString { get; }
-
+        public abstract string IdentityLastId { get; }
+        
         public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
 
         public virtual string NullColumnString => String.Empty;
@@ -53,6 +54,7 @@ namespace YesSql.Provider
 
         public abstract string RandomOrderByClause { get; }
 
+        public virtual bool SupportsBatching => true;
         public virtual bool SupportsIdentityColumns => true;
 
         public virtual bool SupportsUnique => true;

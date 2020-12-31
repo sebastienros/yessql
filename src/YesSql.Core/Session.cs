@@ -31,8 +31,8 @@ namespace YesSql
         protected List<IIndexProvider> _indexes;
 
         protected string _tablePrefix;
-        private ISqlDialect _dialect;
-        private ILogger _logger;
+        private readonly ISqlDialect _dialect;
+        private readonly ILogger _logger;
 
         public Session(Store store, IsolationLevel isolationLevel)
         {
@@ -244,12 +244,12 @@ namespace YesSql
                 throw new ArgumentNullException("obj");
             }
 
-            if (entity is Document document)
+            if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitely");
             }
 
-            if (entity is IIndex index)
+            if (entity is IIndex)
             {
                 throw new ArgumentException("An index should not be saved explicitely");
             }
@@ -332,7 +332,7 @@ namespace YesSql
                 }
             }
 
-            string newContent = Store.Configuration.ContentSerializer.Serialize(entity);
+            var newContent = Store.Configuration.ContentSerializer.Serialize(entity);
 
             // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
             // been changed before doing another query
@@ -526,7 +526,6 @@ namespace YesSql
 
             var result = new List<T>();
             var defaultAccessor = _store.GetIdAccessor(typeof(T));
-            var accessor = defaultAccessor;
             var typeName = Store.TypeNames[typeof(T)];
 
             var state = GetState(collection);
@@ -542,6 +541,7 @@ namespace YesSql
                 {
                     T item;
 
+                    IAccessor<int> accessor;
                     // If the document type doesn't match the requested one, check it's a base type
                     if (!String.Equals(typeName, d.Type, StringComparison.Ordinal))
                     {
@@ -790,7 +790,7 @@ namespace YesSql
 
                 BatchCommands();
 
-                foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
+                foreach (var command in _commands)
                 {
                     await command.ExecuteAsync(_connection, _transaction, _dialect, _logger);
                 }
@@ -835,69 +835,43 @@ namespace YesSql
                 return;
             }
 
-            List<CreateDocumentCommand> createDocumentCommands = null;
-            List<DeleteDocumentCommand> deleteDocumentCommands = null;
-            Dictionary<Type, List<DeleteMapIndexCommand>> deleteMapIndexCommandsDictionary = null;
-
-            for (var i = _commands.Count - 1; i >= 0; i--)
+            if (!_dialect.SupportsBatching)
             {
-                var command = _commands[i];
+                return;
+            }
 
-                switch (command)
+            var batches = new List<IIndexCommand>();
+
+            foreach (var page in _commands.OrderBy(x => x.ExecutionOrder).PagesOf(_store.Configuration.CommandsPageSize))
+            {
+                var batch = new BatchCommand();
+
+                foreach (var command in page)
                 {
+                    if (!command.AddToBatch(_dialect, batch.Queries, batch.Parameters, batch.Actions))
+                    {
+                        // If the command can't be added to a batch, we execute it independently
 
-                    case CreateDocumentCommand createDocumentCommand:
-                        createDocumentCommands ??= new List<CreateDocumentCommand>();
-                        createDocumentCommands.Add(createDocumentCommand);
-                        _commands.RemoveAt(i);
-                        break;
-
-                    case DeleteDocumentCommand deleteDocumentCommand:
-                        deleteDocumentCommands ??= new List<DeleteDocumentCommand>();
-                        deleteDocumentCommands.Add(deleteDocumentCommand);
-                        _commands.RemoveAt(i);
-                        break;
-
-                    case DeleteMapIndexCommand deleteMapIndexCommand:
-                        deleteMapIndexCommandsDictionary ??= new Dictionary<Type, List<DeleteMapIndexCommand>>();
-                        if (!deleteMapIndexCommandsDictionary.TryGetValue(deleteMapIndexCommand.IndexType, out var deleteMapIndexCommands))
+                        if (batch.Queries.Count > 0)
                         {
-                            deleteMapIndexCommands = new List<DeleteMapIndexCommand>();
-                            deleteMapIndexCommandsDictionary.Add(deleteMapIndexCommand.IndexType, deleteMapIndexCommands);
+                            batches.Add(batch);
+
+                            // Then start a new batch
+                            batch = new BatchCommand();
                         }
 
-                        deleteMapIndexCommands.Add(deleteMapIndexCommand);
-                        _commands.RemoveAt(i);
-                        break;
-                }
-            }
-
-            if (createDocumentCommands != null)
-            {
-                foreach (var page in createDocumentCommands.PagesOfByCollection(_store.Configuration.CommandsPageSize))
-                {
-                    _commands.Add(new CreateDocumentCommand(page.Value.SelectMany(x => x.Documents), Store.Configuration.TableNameConvention, _tablePrefix, page.Key));
-                }
-            }
-
-            if (deleteDocumentCommands != null)
-            {
-                foreach (var page in deleteDocumentCommands.PagesOfByCollection(_store.Configuration.CommandsPageSize))
-                {
-                    _commands.Add(new DeleteDocumentCommand(page.Value.SelectMany(x => x.Documents), Store, page.Key));
-                }
-            }
-
-            if (deleteMapIndexCommandsDictionary != null)
-            {
-                foreach (var entry in deleteMapIndexCommandsDictionary)
-                {
-                    foreach (var page in entry.Value.PagesOfByCollection(_store.Configuration.CommandsPageSize))
-                    {
-                        _commands.Add(new DeleteMapIndexCommand(entry.Key, page.Value.SelectMany(x => x.DocumentIds), Store, page.Key));
+                        batches.Add(command);
                     }
                 }
+
+                if (batch.Queries.Count > 0)
+                {
+                    batches.Add(batch);
+                }
             }
+
+            _commands.Clear();
+            _commands.AddRange(batches);
         }
 
         public async Task CommitAsync()
@@ -1224,7 +1198,7 @@ namespace YesSql
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {
-                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, new[] { document.Id }, Store, collection));
+                    _commands.Add(new DeleteMapIndexCommand(descriptor.IndexType, document.Id, Store, collection));
                 }
                 else
                 {

@@ -39,6 +39,11 @@ namespace YesSql
         string NullColumnString { get; }
 
         /// <summary>
+        /// Whether the underlying database support batching.
+        /// </summary>
+        bool SupportsBatching { get; }
+        
+        /// <summary>
         /// Whether the dialect support unique queries.
         /// </summary>
         bool SupportsUnique { get; }
@@ -64,9 +69,14 @@ namespace YesSql
         string IdentityColumnString { get; }
 
         /// <summary>
-        /// Gets the identity select SQL statement.
+        /// Gets the identity select SQL statement to append to an insert in order to return the last generated identifier.
         /// </summary>
         string IdentitySelectString { get; }
+
+        /// <summary>
+        /// Gets the identity select SQL statement.
+        /// </summary>
+        string IdentityLastId { get; }
 
         /// <summary>
         /// Gets the default precision of decimals.

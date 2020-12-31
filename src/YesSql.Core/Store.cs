@@ -1,6 +1,5 @@
 using Dapper;
 using Microsoft.Extensions.Logging;
-using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,6 +13,7 @@ using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
+using YesSql.Utils;
 
 namespace YesSql
 {

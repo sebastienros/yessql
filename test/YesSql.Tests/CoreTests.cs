@@ -167,10 +167,9 @@ namespace YesSql.Tests
 
                     builder.CreateMapIndexTable<Binary>(column => column
                             .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
-                            .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(65535))
-                            .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(16777215))
-                            .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(16777216))
-                            .Column<byte[]>(nameof(Binary.Content5))
+                            .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
+                            .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
+                            .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
                         );
 
                     builder.CreateMapIndexTable<PersonByName>(column => column
@@ -4248,7 +4247,7 @@ namespace YesSql.Tests
                     task1Loaded.Set();
 
                     // Wait for the other thread to load the person before updating it
-                    if (!task2Loaded.WaitOne(1000))
+                    if (!task2Loaded.WaitOne(5000))
                     {
                         Assert.True(false, "task2Loaded timeout");
                         session.Cancel();
@@ -4266,7 +4265,7 @@ namespace YesSql.Tests
 
             var task2 = Task.Run(async () =>
             {
-                task1Loaded.WaitOne(1000);
+                task1Loaded.WaitOne(5000);
 
                 await Assert.ThrowsAsync<ConcurrencyException>(async () =>
                 {
@@ -4278,7 +4277,7 @@ namespace YesSql.Tests
                         task2Loaded.Set();
 
                         // Wait for the other thread to save the person before updating it
-                        if (!task1Saved.WaitOne(1000))
+                        if (!task1Saved.WaitOne(5000))
                         {
                             Assert.True(false, "task1Saved timeout");
                             session.Cancel();
@@ -4422,11 +4421,9 @@ namespace YesSql.Tests
 
                 Assert.NotNull(binary);
                 Assert.Equal(255, binary.Content1.Length);
-                Assert.Equal(65535, binary.Content2.Length);
-                // This size is not supported on appveyor
-                //Assert.Equal(16777215, binary.Content3.Length);
-                //Assert.Equal(16777216, binary.Content4.Length);
-                Assert.Equal(8000, binary.Content5.Length);
+                Assert.Equal(8000, binary.Content2.Length);
+                Assert.Equal(65535, binary.Content3.Length);
+                Assert.Null(binary.Content4);
             }
         }
 
