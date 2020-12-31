@@ -1143,6 +1143,12 @@ namespace YesSql
 
             foreach (var descriptor in descriptors)
             {
+                // Ignore index if the object is filtered out
+                if (descriptor.Filter != null && !descriptor.Filter.Invoke(obj))
+                {
+                    continue;
+                }
+
                 var mapped = await descriptor.Map(obj);
 
                 if (mapped != null)
@@ -1195,6 +1201,12 @@ namespace YesSql
 
             foreach (var descriptor in descriptors)
             {
+                // Ignore index if the object is filtered out
+                if (descriptor.Filter != null && !descriptor.Filter.Invoke(obj))
+                {
+                    continue;
+                }
+
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
                 {

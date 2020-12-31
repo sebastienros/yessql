@@ -15,5 +15,6 @@ namespace YesSql.Indexes
         public Func<IIndex, IEnumerable<IIndex>, IIndex> Delete { get; set; }
         public PropertyInfo GroupKey { get; set; }
         public Type IndexType { get; set; }
+        public Func<object, bool> Filter { get; set; }
     }
 }

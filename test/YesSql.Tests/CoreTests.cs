@@ -347,6 +347,24 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldApplyIndexFilter()
+        {
+            _store.RegisterIndexes<PersonWithAIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = "Alex" });
+                session.Save(new Person { Firstname = "Bill" });
+                session.Save(new Person { Firstname = "assan" });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryIndex<PersonByName>().CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldMapAsyncIndex()
         {
             _store.RegisterIndexes<PersonAsyncIndexProvider>();

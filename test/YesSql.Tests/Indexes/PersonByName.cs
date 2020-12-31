@@ -23,6 +23,16 @@ namespace YesSql.Tests.Indexes
         }
     }
 
+    public class PersonWithAIndexProvider : IndexProvider<Person>
+    {
+        public override void Describe(DescribeContext<Person> context)
+        {
+            context
+                .For<PersonByName>(p => p.Firstname.StartsWith("A", System.StringComparison.OrdinalIgnoreCase))
+                .Map(person => new PersonByName { SomeName = person.Firstname });
+        }
+    }
+
     public class PersonAsyncIndexProvider : IndexProvider<Person>
     {
         public override void Describe(DescribeContext<Person> context)
