@@ -60,6 +60,7 @@ namespace YesSql.Tests
                     builder.DropReduceIndexTable<AttachmentByDay>();
                     builder.DropMapIndexTable<ArticleByPublishedDate>();
                     builder.DropMapIndexTable<PersonByName>();
+                    builder.DropMapIndexTable<CarIndex>();
                     builder.DropMapIndexTable<PersonByNameCol>();
                     builder.DropMapIndexTable<PersonIdentity>();
                     builder.DropMapIndexTable<EmailByAttachment>();
@@ -127,6 +128,11 @@ namespace YesSql.Tests
 
                     builder.CreateMapIndexTable<PersonByName>(column => column
                             .Column<string>(nameof(PersonByName.SomeName))
+                        );
+
+                    builder.CreateMapIndexTable<CarIndex>(column => column
+                            .Column<string>(nameof(CarIndex.Name))
+                            .Column<Categories>(nameof(CarIndex.Category))
                         );
 
                     builder.CreateMapIndexTable<PersonByNameCol>(column => column
@@ -343,6 +349,27 @@ namespace YesSql.Tests
 
                 Assert.NotNull(person);
                 Assert.Equal("Bill", (string)person.SomeName);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldMapEnums()
+        {
+            _store.RegisterIndexes<CarIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Car { Name = "Truck", Category = Categories.Truck });
+                session.Save(new Car { Name = "Van", Category = Categories.Van });
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal("Van", (await session.QueryIndex<CarIndex>(x => x.Category == Categories.Van).FirstOrDefaultAsync()).Name);
+                Assert.Equal("Truck", (await session.QueryIndex<CarIndex>(x => x.Category == Categories.Truck).FirstOrDefaultAsync()).Name);
+
+                Assert.Equal("Van", (await session.Query<Car, CarIndex>(x => x.Category == Categories.Van).FirstOrDefaultAsync()).Name);
+                Assert.Equal("Truck", (await session.Query<Car, CarIndex>(x => x.Category == Categories.Truck).FirstOrDefaultAsync()).Name);
             }
         }
 

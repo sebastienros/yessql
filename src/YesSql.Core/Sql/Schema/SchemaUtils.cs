@@ -25,7 +25,23 @@ namespace YesSql.Sql.Schema
             { typeof(decimal), DbType.Decimal },
             { typeof(DateTime), DbType.DateTime },
             { typeof(DateTimeOffset), DbType.DateTime },
-            { typeof(Guid), DbType.String }
+            { typeof(Guid), DbType.String },
+
+            // Nullable types to prevent extra reflection on common ones
+            { typeof(char?), DbType.String },
+            { typeof(bool?), DbType.Boolean },
+            { typeof(sbyte?), DbType.SByte },
+            { typeof(short?), DbType.Int16 },
+            { typeof(ushort?), DbType.UInt16 },
+            { typeof(int?), DbType.Int32 },
+            { typeof(uint?), DbType.UInt32 },
+            { typeof(long?), DbType.Int64 },
+            { typeof(ulong?), DbType.UInt64 },
+            { typeof(float?), DbType.Single },
+            { typeof(double?), DbType.Double },
+            { typeof(decimal?), DbType.Decimal },
+            { typeof(DateTime?), DbType.DateTime },
+            { typeof(DateTimeOffset?), DbType.DateTime },
         };
 
 
@@ -38,8 +54,13 @@ namespace YesSql.Sql.Schema
                 return dbType;
             }
 
+            if (type.IsEnum)
+            {
+                return DbType.Int32;
+            }
+
             // Nullable<T> ?
-            if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 var nullable = Nullable.GetUnderlyingType(type);
 
