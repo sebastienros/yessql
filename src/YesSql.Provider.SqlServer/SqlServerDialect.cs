@@ -29,9 +29,9 @@ namespace YesSql.Provider.SqlServer
             {DbType.Int64, "BIGINT"},
             {DbType.UInt64, "NUMERIC(20)"},
             {DbType.Single, "REAL"},
-            {DbType.AnsiStringFixedLength, "CHAR(255)"},
+            {DbType.AnsiStringFixedLength, "CHAR(1)"},
             {DbType.AnsiString, "VARCHAR(255)"},
-            {DbType.StringFixedLength, "NCHAR(255)"},
+            {DbType.StringFixedLength, "NCHAR(1)"},
             {DbType.String, "NVARCHAR(255)"},
         };
 

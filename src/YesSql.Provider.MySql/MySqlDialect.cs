@@ -29,7 +29,7 @@ namespace YesSql.Provider.MySql
             {DbType.UInt64, "bigint unsigned"},
             {DbType.AnsiStringFixedLength, "char"},
             {DbType.AnsiString, "varchar(127)"},
-            {DbType.StringFixedLength, "varchar"},
+            {DbType.StringFixedLength, "char"},
             {DbType.String, "varchar(255)"},
         };
 

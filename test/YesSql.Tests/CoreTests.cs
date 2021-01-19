@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using YesSql.Commands;
+using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.Commands;
@@ -64,6 +66,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonByNameCol>();
                     builder.DropMapIndexTable<PersonIdentity>();
                     builder.DropMapIndexTable<EmailByAttachment>();
+                    builder.DropMapIndexTable<TypesIndex>();
 
                     builder.DropMapIndexTable<ShapeIndex>();
                     builder.DropMapIndexTable<PersonByAge>();
@@ -176,6 +179,41 @@ namespace YesSql.Tests
                             .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
                             .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
                             .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
+                        );
+
+                    builder.CreateMapIndexTable<TypesIndex>(column => column
+                            .Column<bool>(nameof(TypesIndex.ValueBool))
+                            //.Column<char>(nameof(TypesIndex.ValueChar))
+                            .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
+                            //.Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
+                            .Column<decimal>(nameof(TypesIndex.ValueDecimal))
+                            .Column<double>(nameof(TypesIndex.ValueDouble))
+                            .Column<float>(nameof(TypesIndex.ValueFloat))
+                            //.Column<Guid>(nameof(TypesIndex.ValueGuid))
+                            .Column<int>(nameof(TypesIndex.ValueInt))
+                            .Column<long>(nameof(TypesIndex.ValueLong))
+                            .Column<sbyte>(nameof(TypesIndex.ValueSByte))
+                            .Column<short>(nameof(TypesIndex.ValueShort))
+                            //.Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
+                            .Column<uint>(nameof(TypesIndex.ValueUInt))
+                            .Column<ulong>(nameof(TypesIndex.ValueULong))
+                            .Column<ushort>(nameof(TypesIndex.ValueUShort))
+                            .Column<bool?>(nameof(TypesIndex.NullableBool), c => c.Nullable())
+                            .Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
+                            .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
+                            .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
+                            .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
+                            .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
+                            .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
+                            .Column<Guid?>(nameof(TypesIndex.NullableGuid), c => c.Nullable())
+                            .Column<int?>(nameof(TypesIndex.NullableInt), c => c.Nullable())
+                            .Column<long?>(nameof(TypesIndex.NullableLong), c => c.Nullable())
+                            .Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
+                            .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
+                            .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
+                            .Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
+                            .Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
+                            .Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
                         );
 
                     builder.CreateMapIndexTable<PersonByName>(column => column
@@ -4863,6 +4901,38 @@ namespace YesSql.Tests
 
                 c.Name = "Clio 2";
             }
+        }
+
+        [Fact]
+        public async Task NullValuesShouldBeStoredInNullableFields()
+        {
+            var dummy = new Person();
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex();
+                //index.ValueChar = 'a';
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = await session.QueryIndex<TypesIndex>().FirstOrDefaultAsync();
+
+                Assert.Null(index.NullableBool);
+            }
+
         }
     }
 }

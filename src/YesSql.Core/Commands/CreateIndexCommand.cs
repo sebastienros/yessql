@@ -38,7 +38,7 @@ namespace YesSql.Commands
                 var parameters = new DynamicParameters();
                 GetProperties(parameters, Index, "");
                 parameters.Add($"DocumentId", Index.GetAddedDocuments().Single().Id, System.Data.DbType.Int32);
-                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
+                Index.Id = await connection.ExecuteScalarAsync<int>(sql, parameters, transaction);
             }
             else
             {

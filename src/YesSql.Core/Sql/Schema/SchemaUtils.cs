@@ -11,7 +11,7 @@ namespace YesSql.Sql.Schema
             { typeof(object), DbType.Binary },
             { typeof(byte[]), DbType.Binary },
             { typeof(string), DbType.String },
-            { typeof(char), DbType.String },
+            { typeof(char), DbType.StringFixedLength },
             { typeof(bool), DbType.Boolean },
             { typeof(sbyte), DbType.SByte },
             { typeof(short), DbType.Int16 },
@@ -24,11 +24,12 @@ namespace YesSql.Sql.Schema
             { typeof(double), DbType.Double },
             { typeof(decimal), DbType.Decimal },
             { typeof(DateTime), DbType.DateTime },
-            { typeof(DateTimeOffset), DbType.DateTime },
-            { typeof(Guid), DbType.String },
+            { typeof(DateTimeOffset), DbType.DateTimeOffset },
+            { typeof(Guid), DbType.Guid },
+            { typeof(TimeSpan), DbType.Time },
 
             // Nullable types to prevent extra reflection on common ones
-            { typeof(char?), DbType.String },
+            { typeof(char?), DbType.StringFixedLength },
             { typeof(bool?), DbType.Boolean },
             { typeof(sbyte?), DbType.SByte },
             { typeof(short?), DbType.Int16 },
@@ -41,7 +42,10 @@ namespace YesSql.Sql.Schema
             { typeof(double?), DbType.Double },
             { typeof(decimal?), DbType.Decimal },
             { typeof(DateTime?), DbType.DateTime },
-            { typeof(DateTimeOffset?), DbType.DateTime },
+            { typeof(DateTimeOffset?), DbType.DateTimeOffset },
+            { typeof(Guid?), DbType.Guid },
+            { typeof(TimeSpan?), DbType.Time },
+
         };
 
 

@@ -27,9 +27,9 @@ namespace YesSql.Provider.PostgreSql
             {DbType.UInt16, "int2"},
             {DbType.UInt32, "int4"},
             {DbType.UInt64, "int8"},
-            {DbType.AnsiStringFixedLength, "char(255)"},
+            {DbType.AnsiStringFixedLength, "char(1)"},
             {DbType.AnsiString, "varchar(255)"},
-            {DbType.StringFixedLength, "char(255)"},
+            {DbType.StringFixedLength, "char(1)"},
             {DbType.String, "varchar(255)"},
             {DbType.Currency, "decimal(16,4)"}
         };
