@@ -19,7 +19,7 @@ namespace YesSql.Provider.SqlServer
             {DbType.DateTimeOffset, "datetimeoffset" },
             {DbType.Boolean, "BIT"},
             {DbType.Byte, "TINYINT"},
-            //{DbType.SByte, "SMALLINT"},
+            {DbType.SByte, "SMALLINT"},
             {DbType.Currency, "MONEY"},
             {DbType.Decimal, "DECIMAL({0},{1})"},
             {DbType.Double, "FLOAT(53)"},
@@ -69,7 +69,7 @@ namespace YesSql.Provider.SqlServer
                         return "NVARCHAR(max)";
                     }
 
-                    if (dbType == DbType.AnsiString)
+                    if (dbType == DbType.AnsiString || dbType == DbType.AnsiStringFixedLength)
                     {
                         return "VARCHAR(max)";
                     }
@@ -83,17 +83,27 @@ namespace YesSql.Provider.SqlServer
                 {
                     if (dbType == DbType.String)
                     {
-                        return "NVARCHAR(" + length + ")";
+                        return $"NVARCHAR({length})";
                     }
 
                     if (dbType == DbType.AnsiString)
                     {
-                        return "VARCHAR(" + length + ")";
+                        return $"VARCHAR({length})";
+                    }
+
+                    if (dbType == DbType.StringFixedLength)
+                    {
+                        return $"NCHAR({length})";
+                    }
+
+                    if (dbType == DbType.AnsiStringFixedLength)
+                    {
+                        return $"CHAR({length})";
                     }
 
                     if (dbType == DbType.Binary)
                     {
-                        return "VARBINARY(" + length + ")";
+                        return $"VARBINARY({length})";
                     }
                 }
             }

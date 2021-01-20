@@ -49,6 +49,14 @@ namespace YesSql
         internal ImmutableDictionary<long, QueryState> CompiledQueries =
             ImmutableDictionary<long, QueryState>.Empty;
 
+        static Store()
+        {
+            SqlMapper.ResetTypeHandlers();
+            SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
+            SqlMapper.AddTypeHandler(new GuidHandler());
+            SqlMapper.AddTypeHandler(new TimeSpanHandler());
+        }
+
         private Store()
         {
             Indexes = new List<IIndexProvider>();

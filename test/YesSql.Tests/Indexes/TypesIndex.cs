@@ -19,7 +19,7 @@ namespace YesSql.Tests.Indexes
         public decimal ValueDecimal { get; set; }
         public DateTime ValueDateTime { get; set; }
         //public DateTimeOffset ValueDateTimeOffset { get; set; }
-        public Guid ValueGuid { get; set; } = Guid.NewGuid();
+        //public Guid ValueGuid { get; set; } = Guid.NewGuid();
         //public TimeSpan ValueTimeSpan { get; set; }
 
         public char? NullableChar { get; set; }
