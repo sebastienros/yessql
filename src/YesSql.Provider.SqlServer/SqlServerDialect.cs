@@ -8,7 +8,7 @@ namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "UNIQUEIDENTIFIER"},
             {DbType.Binary, "VARBINARY(8000)"},
@@ -35,6 +35,52 @@ namespace YesSql.Provider.SqlServer
             {DbType.StringFixedLength, "NCHAR(1)"},
             {DbType.String, "NVARCHAR(255)"},
         };
+
+        static SqlServerDialect()
+        {
+            _propertyTypes = new Dictionary<Type, DbType>()
+            {
+                { typeof(object), DbType.Binary },
+                { typeof(byte[]), DbType.Binary },
+                { typeof(string), DbType.String },
+                { typeof(char), DbType.StringFixedLength },
+                { typeof(bool), DbType.Boolean },
+                { typeof(byte), DbType.Byte },
+                { typeof(sbyte), DbType.SByte }, // not supported
+                { typeof(short), DbType.Int16 },
+                { typeof(ushort), DbType.UInt16 }, // not supported
+                { typeof(int), DbType.Int32 },
+                { typeof(uint), DbType.UInt32 },
+                { typeof(long), DbType.Int64 },
+                { typeof(ulong), DbType.UInt64 },
+                { typeof(float), DbType.Single },
+                { typeof(double), DbType.Double },
+                { typeof(decimal), DbType.Decimal },
+                { typeof(DateTime), DbType.DateTime },
+                { typeof(DateTimeOffset), DbType.DateTimeOffset },
+                { typeof(Guid), DbType.Guid },
+                { typeof(TimeSpan), DbType.UInt64 },
+
+                // Nullable types to prevent extra reflection on common ones
+                { typeof(char?), DbType.StringFixedLength },
+                { typeof(bool?), DbType.Boolean },
+                { typeof(byte?), DbType.Byte },
+                { typeof(sbyte?), DbType.Int16 },
+                { typeof(short?), DbType.Int16 },
+                { typeof(ushort?), DbType.UInt16 },
+                { typeof(int?), DbType.Int32 },
+                { typeof(uint?), DbType.UInt32 },
+                { typeof(long?), DbType.Int64 },
+                { typeof(ulong?), DbType.UInt64 },
+                { typeof(float?), DbType.Single },
+                { typeof(double?), DbType.Double },
+                { typeof(decimal?), DbType.Decimal },
+                { typeof(DateTime?), DbType.DateTime },
+                { typeof(DateTimeOffset?), DbType.DateTimeOffset },
+                { typeof(Guid?), DbType.Guid },
+                { typeof(TimeSpan?), DbType.Int64 } // Mapping TimeSpan to Ticks
+            };
+        }
 
         public SqlServerDialect()
         {
@@ -108,7 +154,7 @@ namespace YesSql.Provider.SqlServer
                 }
             }
 
-            if (ColumnTypes.TryGetValue(dbType, out string value))
+            if (_columnTypes.TryGetValue(dbType, out string value))
             {
                 if (dbType == DbType.Decimal)
                 {

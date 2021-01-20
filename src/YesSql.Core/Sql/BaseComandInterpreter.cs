@@ -180,10 +180,12 @@ namespace YesSql.Sql
                 _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.ColumnName));
 
+            var dbType = _dialect.ToDbType(command.DbType);
+
             // type
-            if (command.DbType != DbType.Object)
+            if (dbType != DbType.Object)
             {
-                builder.Append(_dialect.GetTypeName(command.DbType, command.Length, command.Precision, command.Scale));
+                builder.Append(_dialect.GetTypeName(dbType, command.Length, command.Precision, command.Scale));
             }
             else
             {
@@ -265,7 +267,9 @@ namespace YesSql.Sql
 
             if (!command.IsIdentity || _dialect.HasDataTypeInIdentityColumn)
             {
-                builder.Append(_dialect.GetTypeName(command.DbType, command.Length, command.Precision, command.Scale));
+                var dbType = _dialect.ToDbType(command.DbType);
+
+                builder.Append(_dialect.GetTypeName(dbType, command.Length, command.Precision, command.Scale));
             }
 
             // append identity if handled

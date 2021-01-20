@@ -9,8 +9,37 @@ namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
-        public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
 
+        protected static Dictionary<Type, DbType> _propertyTypes;
+
+        public DbType ToDbType(Type type)
+        {
+            DbType dbType;
+
+            if (_propertyTypes.TryGetValue(type, out dbType))
+            {
+                return dbType;
+            }
+
+            if (type.IsEnum)
+            {
+                return DbType.Int32;
+            }
+
+            // Nullable<T> ?
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                var nullable = Nullable.GetUnderlyingType(type);
+
+                if (nullable != null)
+                {
+                    return ToDbType(nullable);
+                }
+            }
+
+            return DbType.Object;
+        }
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {

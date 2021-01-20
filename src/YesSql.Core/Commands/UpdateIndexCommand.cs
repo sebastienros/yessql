@@ -80,7 +80,7 @@ namespace YesSql.Commands
             sql = sql.Replace(ParameterSuffix, index.ToString());
             queries.Add(sql);
 
-            GetProperties(parameters, Index, index.ToString());
+            GetProperties(parameters, Index, index.ToString(), dialect);
 
             parameters.Add($"Id{index}", Index.Id, System.Data.DbType.Int32);
 

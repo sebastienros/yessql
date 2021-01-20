@@ -1,10 +1,10 @@
-using System.Data;
+using System;
 
 namespace YesSql.Sql.Schema
 {
     public interface IAlterColumnCommand : IColumnCommand
     {
-        IAlterColumnCommand WithType(DbType dbType, int? length);
-        IAlterColumnCommand WithType(DbType dbType, byte precision, byte scale);
+        IAlterColumnCommand WithType(Type dbType, int? length);
+        IAlterColumnCommand WithType(Type dbType, byte precision, byte scale);
     }
 }

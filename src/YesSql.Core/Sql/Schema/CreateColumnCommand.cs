@@ -1,3 +1,4 @@
+using System;
 using System.Data;
 
 namespace YesSql.Sql.Schema
@@ -81,7 +82,7 @@ namespace YesSql.Sql.Schema
             return WithLength(10000);
         }
 
-        public new ICreateColumnCommand WithType(DbType dbType)
+        public new ICreateColumnCommand WithType(Type dbType)
         {
             base.WithType(dbType);
             return this;
