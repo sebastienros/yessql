@@ -58,7 +58,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(DateTime), DbType.DateTime },
                 { typeof(DateTimeOffset), DbType.DateTimeOffset },
                 { typeof(Guid), DbType.Guid },
-                { typeof(TimeSpan), DbType.Time },
+                { typeof(TimeSpan), DbType.Int64 },
 
                 // Nullable types to prevent extra reflection on common ones
                 { typeof(char?), DbType.StringFixedLength },
@@ -77,12 +77,14 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(DateTime?), DbType.DateTime },
                 { typeof(DateTimeOffset?), DbType.DateTimeOffset },
                 { typeof(Guid?), DbType.Guid },
-                { typeof(TimeSpan?), DbType.Time }
+                { typeof(TimeSpan?), DbType.Int64 }
             };
         }
 
         public PostgreSqlDialect()
         {
+            AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
             Methods.Add("hour", new TemplateFunction("extract(hour from {0})"));
