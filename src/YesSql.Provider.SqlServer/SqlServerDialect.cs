@@ -16,7 +16,7 @@ namespace YesSql.Provider.SqlServer
             {DbType.Date, "DATETIME"},
             {DbType.DateTime, "DATETIME" },
             {DbType.DateTime2, "DATETIME2" },
-            {DbType.DateTimeOffset, "datetimeoffset" },
+            {DbType.DateTimeOffset, "DATETIMEOFFSET" },
             {DbType.Boolean, "BIT"},
             {DbType.Byte, "TINYINT"},
             {DbType.SByte, "SMALLINT"},

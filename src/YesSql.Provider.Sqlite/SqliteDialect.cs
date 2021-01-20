@@ -30,7 +30,7 @@ namespace YesSql.Provider.Sqlite
             { DbType.Date, "DATE" },
             { DbType.DateTime, "DATETIME" },
             { DbType.DateTime2, "DATETIME" },
-            { DbType.DateTimeOffset, "DATETIME" },
+            { DbType.DateTimeOffset, "TEXT" },
             { DbType.Time, "TIME" },
             { DbType.Boolean, "BOOL" },
             { DbType.Guid, "UNIQUEIDENTIFIER" }

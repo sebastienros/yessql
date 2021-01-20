@@ -185,7 +185,7 @@ namespace YesSql.Tests
                             .Column<bool>(nameof(TypesIndex.ValueBool))
                             //.Column<char>(nameof(TypesIndex.ValueChar))
                             .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
-                            //.Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
+                            .Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
                             .Column<decimal>(nameof(TypesIndex.ValueDecimal))
                             .Column<double>(nameof(TypesIndex.ValueDouble))
                             .Column<float>(nameof(TypesIndex.ValueFloat))
@@ -201,7 +201,7 @@ namespace YesSql.Tests
                             .Column<bool?>(nameof(TypesIndex.NullableBool), c => c.Nullable())
                             //.Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
                             .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
-                            //.Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
+                            .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
                             .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
                             .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
                             .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
@@ -4911,6 +4911,7 @@ namespace YesSql.Tests
             var valueDateTime = new DateTime(2021, 1, 20);
             var valueGuid = Guid.NewGuid();
             var valueBool = false;
+            var valueDateTimeOffset = new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0));
 
             // Create fake document to associate to index
             using (var session = _store.CreateSession())
@@ -4925,6 +4926,7 @@ namespace YesSql.Tests
                 index.ValueDateTime = valueDateTime;
                 index.ValueGuid = valueGuid;
                 index.ValueBool = valueBool;
+                index.ValueDateTimeOffset = valueDateTimeOffset;
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -4940,6 +4942,7 @@ namespace YesSql.Tests
                 Assert.Equal(valueDateTime, index.ValueDateTime);
                 Assert.Equal(valueGuid, index.ValueGuid);
                 Assert.Equal(valueBool, index.ValueBool);
+                Assert.Equal(valueDateTimeOffset, index.ValueDateTimeOffset);
             }
 
         }
@@ -4979,6 +4982,7 @@ namespace YesSql.Tests
                 Assert.Null(index.NullableInt);
                 Assert.Null(index.NullableLong);
                 Assert.Null(index.NullableShort);
+                Assert.Null(index.NullableDateTimeOffset);
             }
 
         }

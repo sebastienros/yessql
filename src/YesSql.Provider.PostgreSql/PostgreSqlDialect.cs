@@ -15,7 +15,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.Time, "time"},
             {DbType.DateTime, "timestamp" },
             {DbType.DateTime2, "timestamp" },
-            {DbType.DateTimeOffset, "timestamp" },
+            {DbType.DateTimeOffset, "varchar(255)" },
             {DbType.Boolean, "boolean"},
             {DbType.Byte, "int2"},
             {DbType.SByte, "int2"},

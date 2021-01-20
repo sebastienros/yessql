@@ -18,7 +18,7 @@ namespace YesSql.Tests.Indexes
         public double ValueDouble { get; set; }
         public decimal ValueDecimal { get; set; }
         public DateTime ValueDateTime { get; set; }
-        //public DateTimeOffset ValueDateTimeOffset { get; set; }
+        public DateTimeOffset ValueDateTimeOffset { get; set; }
         public Guid ValueGuid { get; set; }
         //public TimeSpan ValueTimeSpan { get; set; }
 
@@ -35,7 +35,7 @@ namespace YesSql.Tests.Indexes
         public double? NullableDouble { get; set; }
         public decimal? NullableDecimal { get; set; }
         public DateTime? NullableDateTime { get; set; }
-        //public DateTimeOffset? NullableDateTimeOffset { get; set; }
+        public DateTimeOffset? NullableDateTimeOffset { get; set; }
         public Guid? NullableGuid { get; set; }
         //public TimeSpan? NullableTimeSpan { get; set; }
     }
