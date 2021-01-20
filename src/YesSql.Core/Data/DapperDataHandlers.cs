@@ -14,6 +14,11 @@ namespace YesSql.Data
     {
         public override DateTimeOffset Parse(object value)
         {
+            if (value is null)
+            {
+                return DateTimeOffset.MinValue;
+            }
+
             if (value is string s)
             {
                 return DateTimeOffset.Parse(s);
@@ -27,7 +32,7 @@ namespace YesSql.Data
                 return d;
             }
 
-            return Convert.ToDateTime(value);
+            return DateTimeOffset.MinValue;
         }            
     }
 
@@ -35,6 +40,11 @@ namespace YesSql.Data
     {
         public override Guid Parse(object value)
         {
+            if (value is null)
+            {
+                return Guid.Empty;
+            }
+
             if (value is string s)
             {
                 return Guid.Parse(s);
@@ -52,6 +62,11 @@ namespace YesSql.Data
     {
         public override TimeSpan Parse(object value)
         {
+            if (value is null)
+            {
+                return TimeSpan.Zero;
+            }
+
             if (value is string s)
             {
                 return TimeSpan.Parse(s);
