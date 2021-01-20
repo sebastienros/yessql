@@ -22,21 +22,21 @@ namespace YesSql.Tests.Indexes
         public Guid ValueGuid { get; set; }
         //public TimeSpan ValueTimeSpan { get; set; }
 
-        public char? NullableChar { get; set; }
+        //public char? NullableChar { get; set; }
         public bool? NullableBool { get; set; }
-        public sbyte? NullableSByte { get; set; }
+        //public sbyte? NullableSByte { get; set; }
         public short? NullableShort { get; set; }
-        public ushort? NullableUShort { get; set; }
+        //public ushort? NullableUShort { get; set; }
         public int? NullableInt { get; set; }
-        public uint? NullableUInt { get; set; }
+        //public uint? NullableUInt { get; set; }
         public long? NullableLong { get; set; }
-        public ulong? NullableULong { get; set; }
+        //public ulong? NullableULong { get; set; }
         public float? NullableFloat { get; set; }
         public double? NullableDouble { get; set; }
         public decimal? NullableDecimal { get; set; }
         public DateTime? NullableDateTime { get; set; }
-        public DateTimeOffset? NullableDateTimeOffset { get; set; }
+        //public DateTimeOffset? NullableDateTimeOffset { get; set; }
         public Guid? NullableGuid { get; set; }
-        public TimeSpan? NullableTimeSpan { get; set; }
+        //public TimeSpan? NullableTimeSpan { get; set; }
     }
 }
