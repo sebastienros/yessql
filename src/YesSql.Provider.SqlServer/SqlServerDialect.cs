@@ -19,7 +19,7 @@ namespace YesSql.Provider.SqlServer
             {DbType.DateTimeOffset, "datetimeoffset" },
             {DbType.Boolean, "BIT"},
             {DbType.Byte, "TINYINT"},
-            {DbType.SByte, "SMALLINT"},
+            //{DbType.SByte, "SMALLINT"},
             {DbType.Currency, "MONEY"},
             {DbType.Decimal, "DECIMAL({0},{1})"},
             {DbType.Double, "FLOAT(53)"},
