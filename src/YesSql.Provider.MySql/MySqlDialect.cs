@@ -19,6 +19,7 @@ namespace YesSql.Provider.MySql
             {DbType.DateTimeOffset, "datetime" },
             {DbType.Boolean, "bit"},
             {DbType.Byte, "tinyint unsigned"},
+            {DbType.SByte, "tinyint unsigned"},
             {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Double, "double"},
             {DbType.Int16, "smallint"},

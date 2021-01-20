@@ -18,6 +18,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.DateTimeOffset, "timestamp" },
             {DbType.Boolean, "boolean"},
             {DbType.Byte, "int2"},
+            {DbType.SByte, "int2"},
             {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Single, "float4"},
             {DbType.Double, "float8"},
