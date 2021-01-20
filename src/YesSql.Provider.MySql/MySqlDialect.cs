@@ -240,6 +240,11 @@ namespace YesSql.Provider.MySql
 
         public override string GetSqlValue(object value)
         {
+            if (value == null)
+            {
+                return "null";
+            }
+
             if (value.GetType() == typeof(TimeSpan))
             {
                 return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
