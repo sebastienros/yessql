@@ -22,6 +22,7 @@ namespace YesSql.Provider.MySql
             {DbType.SByte, "tinyint unsigned"},
             {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Double, "double"},
+            {DbType.Single, "float"},
             {DbType.Int16, "smallint"},
             {DbType.UInt16, "smallint unsigned"},
             {DbType.Int32, "int"},

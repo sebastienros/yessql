@@ -4908,6 +4908,10 @@ namespace YesSql.Tests
         {
             var dummy = new Person();
 
+            var valueDateTime = new DateTime(2021, 1, 20);
+            var valueGuid = Guid.NewGuid();
+            var valueBool = false;
+
             // Create fake document to associate to index
             using (var session = _store.CreateSession())
             {
@@ -4918,11 +4922,9 @@ namespace YesSql.Tests
             {
                 var index = new TypesIndex();
 
-                var dateTime = new DateTime(2021, 1, 20);
-                var guid = Guid.NewGuid();
-
-                index.ValueDateTime = dateTime;
-                index.ValueGuid = guid;
+                index.ValueDateTime = valueDateTime;
+                index.ValueGuid = valueGuid;
+                index.ValueBool = valueBool;
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -4935,7 +4937,19 @@ namespace YesSql.Tests
             {
                 var index = await session.QueryIndex<TypesIndex>().FirstOrDefaultAsync();
 
+                Assert.Equal(valueDateTime, index.ValueDateTime);
+                Assert.Equal(valueGuid, index.ValueGuid);
+                Assert.Equal(valueBool, index.ValueBool);
+
                 Assert.Null(index.NullableBool);
+                Assert.Null(index.NullableDateTime);
+                Assert.Null(index.NullableDecimal);
+                Assert.Null(index.NullableDouble);
+                Assert.Null(index.NullableFloat);
+                Assert.Null(index.NullableGuid);
+                Assert.Null(index.NullableInt);
+                Assert.Null(index.NullableLong);
+                Assert.Null(index.NullableShort);
             }
 
         }
