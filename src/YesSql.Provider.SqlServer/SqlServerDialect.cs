@@ -238,13 +238,7 @@ namespace YesSql.Provider.SqlServer
                 return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
             }
 
-            switch (Convert.GetTypeCode(value))
-            {
-                case TypeCode.Boolean:
-                    return (bool)value ? "TRUE" : "FALSE";
-                default:
-                    return base.GetSqlValue(value);
-            }
+            return base.GetSqlValue(value);
         }
     }
 }
