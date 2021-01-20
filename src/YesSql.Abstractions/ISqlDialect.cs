@@ -14,6 +14,10 @@ namespace YesSql
 
         bool TryConvert(object source, Type valueType, out object result);
 
+        void ResetTypeHandlers();
+
+        void AddTypeHandler<T, U>(Func<T, U> handler);
+
         /// <summary>
         /// Gets the name of the dialect.
         /// </summary>

@@ -43,6 +43,21 @@ namespace YesSql.Provider
 
         public virtual bool TryConvert(object source, Type valueType, out object result)
         {
+
+            if (_typeHandlers.Count > 0)
+            {
+                if (_typeHandlers.TryGetValue(valueType, out var handlers) && handlers.Count > 0)
+                {
+                    foreach (var handler in handlers)
+                    {
+                        source = handler(source);
+                    }
+
+                    result = source;
+                    return true;
+                }
+            }
+
             result = null;
             return false;
         }
@@ -255,6 +270,23 @@ namespace YesSql.Provider
             }
 
             return select;
+        }
+
+        private readonly Dictionary<Type, List<Func<object, object>>> _typeHandlers = new Dictionary<Type, List<Func<object, object>>>();
+
+        public void ResetTypeHandlers()
+        {
+            _typeHandlers.Clear();
+        }
+
+        public void AddTypeHandler<T, U>(Func<T, U> handler)
+        {
+            if (!_typeHandlers.TryGetValue(typeof(T), out var handlers))
+            {
+                _typeHandlers[typeof(T)] = handlers = new List<Func<object, object>>();
+            }
+
+            handlers.Add(i => handler((T)i));
         }
     }
 }

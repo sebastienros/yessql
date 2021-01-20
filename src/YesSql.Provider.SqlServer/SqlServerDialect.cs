@@ -84,6 +84,8 @@ namespace YesSql.Provider.SqlServer
 
         public SqlServerDialect()
         {
+            AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));
             Methods.Add("hour", new TemplateFunction("datepart(hour, {0})"));
@@ -92,18 +94,6 @@ namespace YesSql.Provider.SqlServer
             //Methods.Add("day", new TemplateFunction("datepart(day, {0})"));
             //Methods.Add("month", new TemplateFunction("datepart(month, {0})"));
             //Methods.Add("year", new TemplateFunction("datepart(year, {0})"));
-        }
-
-        public override bool TryConvert(object source, Type valueType, out object result)
-        {
-            if (valueType == typeof(TimeSpan) || (valueType == typeof(TimeSpan?) && source != null))
-            {
-                result = ((TimeSpan)source).Ticks;
-                return true;
-            }
-
-            result = null;
-            return false;
         }
 
         public override string Name => "SqlServer";

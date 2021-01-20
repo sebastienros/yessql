@@ -57,7 +57,7 @@ namespace YesSql.Provider.MySql
                 { typeof(DateTime), DbType.DateTime },
                 { typeof(DateTimeOffset), DbType.DateTimeOffset },
                 { typeof(Guid), DbType.Guid },
-                { typeof(TimeSpan), DbType.Time },
+                { typeof(TimeSpan), DbType.Int64 },
 
                 // Nullable types to prevent extra reflection on common ones
                 { typeof(char?), DbType.StringFixedLength },
@@ -76,8 +76,13 @@ namespace YesSql.Provider.MySql
                 { typeof(DateTime?), DbType.DateTime },
                 { typeof(DateTimeOffset?), DbType.DateTimeOffset },
                 { typeof(Guid?), DbType.Guid },
-                { typeof(TimeSpan?), DbType.Time }
+                { typeof(TimeSpan?), DbType.Int64 }
             };
+        }
+
+        public MySqlDialect()
+        {
+            AddTypeHandler<TimeSpan, long>(x => x.Ticks);
         }
 
         public override string Name => "MySql";
