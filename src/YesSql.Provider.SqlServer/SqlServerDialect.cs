@@ -59,7 +59,7 @@ namespace YesSql.Provider.SqlServer
                 { typeof(DateTime), DbType.DateTime },
                 { typeof(DateTimeOffset), DbType.DateTimeOffset },
                 { typeof(Guid), DbType.Guid },
-                { typeof(TimeSpan), DbType.Int64 },
+                { typeof(TimeSpan), DbType.String },
 
                 // Nullable types to prevent extra reflection on common ones
                 { typeof(char?), DbType.StringFixedLength },
