@@ -32,7 +32,8 @@ namespace YesSql.Sql.Schema
             // Nullable types to prevent extra reflection on common ones
             { typeof(char?), DbType.StringFixedLength },
             { typeof(bool?), DbType.Boolean },
-            { typeof(sbyte?), DbType.SByte },
+            //{ typeof(sbyte?), DbType.SByte },
+            { typeof(sbyte?), DbType.Int16 },
             { typeof(short?), DbType.Int16 },
             { typeof(ushort?), DbType.UInt16 },
             { typeof(int?), DbType.Int32 },
