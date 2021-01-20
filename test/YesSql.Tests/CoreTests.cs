@@ -189,7 +189,7 @@ namespace YesSql.Tests
                             .Column<decimal>(nameof(TypesIndex.ValueDecimal))
                             .Column<double>(nameof(TypesIndex.ValueDouble))
                             .Column<float>(nameof(TypesIndex.ValueFloat))
-                            //.Column<Guid>(nameof(TypesIndex.ValueGuid))
+                            .Column<Guid>(nameof(TypesIndex.ValueGuid))
                             .Column<int>(nameof(TypesIndex.ValueInt))
                             .Column<long>(nameof(TypesIndex.ValueLong))
                             .Column<sbyte>(nameof(TypesIndex.ValueSByte))

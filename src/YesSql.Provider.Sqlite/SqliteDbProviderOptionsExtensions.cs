@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Data;
@@ -30,6 +31,10 @@ namespace YesSql.Provider.Sqlite
             {
                 throw new ArgumentException(nameof(connectionString));
             }
+
+            SqlMapper.AddTypeHandler<DateTimeOffset>(new DateTimeOffsetHandler());
+            SqlMapper.AddTypeHandler<Guid>(new GuidHandler());
+            SqlMapper.AddTypeHandler<TimeSpan>(new TimeSpanHandler());
 
             configuration.SqlDialect = new SqliteDialect();
             configuration.CommandInterpreter = new SqliteCommandInterpreter(configuration.SqlDialect);
