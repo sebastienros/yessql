@@ -53,7 +53,10 @@ namespace YesSql
         {
             SqlMapper.ResetTypeHandlers();
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
+            
+            // Required by Sqlite. Guids are stored as text (uniqueidentifier) and are converted back to Guid with this handler.
             SqlMapper.AddTypeHandler(new GuidHandler());
+
             SqlMapper.AddTypeHandler(new TimeSpanHandler());
         }
 

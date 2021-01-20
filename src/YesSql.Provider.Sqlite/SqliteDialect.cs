@@ -7,7 +7,7 @@ namespace YesSql.Provider.Sqlite
 {
     public class SqliteDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
             { DbType.Binary, "BLOB" },
             { DbType.Byte, "TINYINT" },
@@ -61,7 +61,7 @@ namespace YesSql.Provider.Sqlite
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
-            if (ColumnTypes.TryGetValue(dbType, out string value))
+            if (_columnTypes.TryGetValue(dbType, out var value))
             {
                 return value;
             }

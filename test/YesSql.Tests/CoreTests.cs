@@ -4904,7 +4904,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task NullValuesShouldBeStoredInNullableFields()
+        public async Task AllDataTypesShouldBeStored()
         {
             var dummy = new Person();
 
@@ -4940,6 +4940,35 @@ namespace YesSql.Tests
                 Assert.Equal(valueDateTime, index.ValueDateTime);
                 Assert.Equal(valueGuid, index.ValueGuid);
                 Assert.Equal(valueBool, index.ValueBool);
+            }
+
+        }
+
+        [Fact]
+        public async Task NullValuesShouldBeStoredInNullableFields()
+        {
+            var dummy = new Person();
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex();
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = await session.QueryIndex<TypesIndex>().FirstOrDefaultAsync();
 
                 Assert.Null(index.NullableBool);
                 Assert.Null(index.NullableDateTime);
