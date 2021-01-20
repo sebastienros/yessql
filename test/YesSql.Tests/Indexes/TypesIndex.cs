@@ -7,7 +7,7 @@ namespace YesSql.Tests.Indexes
     {
         //public char ValueChar { get; set; }
         public bool ValueBool { get; set; }
-        public sbyte ValueSByte { get; set; }
+        //public sbyte ValueSByte { get; set; }
         public short ValueShort { get; set; }
         public ushort ValueUShort { get; set; }
         public int ValueInt { get; set; }
@@ -19,7 +19,7 @@ namespace YesSql.Tests.Indexes
         public decimal ValueDecimal { get; set; }
         public DateTime ValueDateTime { get; set; }
         //public DateTimeOffset ValueDateTimeOffset { get; set; }
-        //public Guid ValueGuid { get; set; } = Guid.NewGuid();
+        public Guid ValueGuid { get; set; }
         //public TimeSpan ValueTimeSpan { get; set; }
 
         public char? NullableChar { get; set; }
