@@ -13,10 +13,10 @@ namespace YesSql.Sql.Schema
             { typeof(string), DbType.String },
             { typeof(char), DbType.StringFixedLength },
             { typeof(bool), DbType.Boolean },
-            //{ typeof(sbyte), DbType.SByte },
+            { typeof(sbyte), DbType.SByte }, // not supported
             { typeof(sbyte), DbType.Int16 },
             { typeof(short), DbType.Int16 },
-            { typeof(ushort), DbType.UInt16 },
+            { typeof(ushort), DbType.UInt16 }, // not supported
             { typeof(int), DbType.Int32 },
             { typeof(uint), DbType.UInt32 },
             { typeof(long), DbType.Int64 },
@@ -32,7 +32,7 @@ namespace YesSql.Sql.Schema
             // Nullable types to prevent extra reflection on common ones
             { typeof(char?), DbType.StringFixedLength },
             { typeof(bool?), DbType.Boolean },
-            //{ typeof(sbyte?), DbType.SByte },
+            { typeof(sbyte?), DbType.SByte },
             { typeof(sbyte?), DbType.Int16 },
             { typeof(short?), DbType.Int16 },
             { typeof(ushort?), DbType.UInt16 },

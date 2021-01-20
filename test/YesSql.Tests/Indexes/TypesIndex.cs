@@ -9,11 +9,11 @@ namespace YesSql.Tests.Indexes
         public bool ValueBool { get; set; }
         //public sbyte ValueSByte { get; set; }
         public short ValueShort { get; set; }
-        public ushort ValueUShort { get; set; }
+        //public ushort ValueUShort { get; set; }
         public int ValueInt { get; set; }
-        public uint ValueUInt { get; set; }
+        //public uint ValueUInt { get; set; }
         public long ValueLong { get; set; }
-        public ulong ValueULong { get; set; }
+        //public ulong ValueULong { get; set; }
         public float ValueFloat { get; set; }
         public double ValueDouble { get; set; }
         public decimal ValueDecimal { get; set; }
