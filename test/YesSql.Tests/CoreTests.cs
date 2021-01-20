@@ -4947,7 +4947,7 @@ namespace YesSql.Tests
 
         }
 
-        [Fact]
+        //[Fact]
         public async Task NullValuesShouldBeStoredInNullableFields()
         {
             var dummy = new Person();
