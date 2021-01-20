@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Text;
 using YesSql.Sql;
 
@@ -223,6 +224,27 @@ namespace YesSql.Provider.SqlServer
             }
 
             builder.Append(")");
+        }
+
+        public override string GetSqlValue(object value)
+        {
+            if (value == null)
+            {
+                return "null";
+            }
+
+            if (value.GetType() == typeof(TimeSpan))
+            {
+                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+            }
+
+            switch (Convert.GetTypeCode(value))
+            {
+                case TypeCode.Boolean:
+                    return (bool)value ? "TRUE" : "FALSE";
+                default:
+                    return base.GetSqlValue(value);
+            }
         }
     }
 }

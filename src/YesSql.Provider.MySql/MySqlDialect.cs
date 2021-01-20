@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Text;
 
 namespace YesSql.Provider.MySql
@@ -235,6 +236,16 @@ namespace YesSql.Provider.MySql
             }
 
             builder.Append(")");
+        }
+
+        public override string GetSqlValue(object value)
+        {
+            if (value.GetType() == typeof(TimeSpan))
+            {
+                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return base.GetSqlValue(value);
         }
     }
 }

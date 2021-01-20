@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using YesSql.Sql;
 
 namespace YesSql.Provider.PostgreSql
@@ -200,6 +201,11 @@ namespace YesSql.Provider.PostgreSql
             if (value == null)
             {
                 return "null";
+            }
+
+            if (value.GetType() == typeof(TimeSpan))
+            {
+                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
             }
 
             switch (Convert.GetTypeCode(value))

@@ -4910,7 +4910,7 @@ namespace YesSql.Tests
 
             var valueTimeSpan = new TimeSpan(1, 2, 3, 4, 5);
             var valueDateTime = new DateTime(2021, 1, 20);
-            var valueGuid = Guid.NewGuid();
+            var valueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e");
             var valueBool = false;
             var valueDateTimeOffset = new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0));
 
@@ -4940,6 +4940,54 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var index = await session.QueryIndex<TypesIndex>().FirstOrDefaultAsync();
+
+                Assert.Equal(valueDateTime, index.ValueDateTime);
+                Assert.Equal(valueGuid, index.ValueGuid);
+                Assert.Equal(valueBool, index.ValueBool);
+                Assert.Equal(valueDateTimeOffset, index.ValueDateTimeOffset);
+                Assert.Equal(valueTimeSpan, index.ValueTimeSpan);
+
+                Assert.Equal(0, index.ValueDecimal);
+                Assert.Equal(0, index.ValueDouble);
+                Assert.Equal(0, index.ValueFloat);
+                Assert.Equal(0, index.ValueInt);
+                Assert.Equal(0, index.ValueLong);
+                Assert.Equal(0, index.ValueShort);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // Ensure that query builing is also converting the values
+                var index = await session.QueryIndex<TypesIndex>(x => 
+                x.ValueBool == valueBool
+                && x.ValueDateTime == valueDateTime 
+                && x.ValueDateTimeOffset == valueDateTimeOffset 
+                && x.ValueTimeSpan == valueTimeSpan
+                && x.ValueGuid == valueGuid).FirstOrDefaultAsync();
+
+                Assert.Equal(valueDateTime, index.ValueDateTime);
+                Assert.Equal(valueGuid, index.ValueGuid);
+                Assert.Equal(valueBool, index.ValueBool);
+                Assert.Equal(valueDateTimeOffset, index.ValueDateTimeOffset);
+                Assert.Equal(valueTimeSpan, index.ValueTimeSpan);
+
+                Assert.Equal(0, index.ValueDecimal);
+                Assert.Equal(0, index.ValueDouble);
+                Assert.Equal(0, index.ValueFloat);
+                Assert.Equal(0, index.ValueInt);
+                Assert.Equal(0, index.ValueLong);
+                Assert.Equal(0, index.ValueShort);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // Ensure that query builing is also converting constants
+                var index = await session.QueryIndex<TypesIndex>(x =>
+                x.ValueBool == false
+                && x.ValueDateTime == new DateTime(2021, 1, 20)
+                && x.ValueDateTimeOffset == new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0))
+                && x.ValueTimeSpan == new TimeSpan(1, 2, 3, 4, 5)
+                && x.ValueGuid == Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e")).FirstOrDefaultAsync();
 
                 Assert.Equal(valueDateTime, index.ValueDateTime);
                 Assert.Equal(valueGuid, index.ValueGuid);
