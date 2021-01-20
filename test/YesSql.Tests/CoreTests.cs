@@ -194,7 +194,7 @@ namespace YesSql.Tests
                             .Column<long>(nameof(TypesIndex.ValueLong))
                             //.Column<sbyte>(nameof(TypesIndex.ValueSByte))
                             .Column<short>(nameof(TypesIndex.ValueShort))
-                            //.Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
+                            .Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
                             //.Column<uint>(nameof(TypesIndex.ValueUInt))
                             //.Column<ulong>(nameof(TypesIndex.ValueULong))
                             //.Column<ushort>(nameof(TypesIndex.ValueUShort))
@@ -210,7 +210,7 @@ namespace YesSql.Tests
                             .Column<long?>(nameof(TypesIndex.NullableLong), c => c.Nullable())
                             //.Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
                             .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
-                            //.Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
+                            .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
                             //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
                             //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
                             //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
@@ -4908,6 +4908,7 @@ namespace YesSql.Tests
         {
             var dummy = new Person();
 
+            var valueTimeSpan = new TimeSpan(1, 2, 3, 4, 5);
             var valueDateTime = new DateTime(2021, 1, 20);
             var valueGuid = Guid.NewGuid();
             var valueBool = false;
@@ -4927,6 +4928,7 @@ namespace YesSql.Tests
                 index.ValueGuid = valueGuid;
                 index.ValueBool = valueBool;
                 index.ValueDateTimeOffset = valueDateTimeOffset;
+                index.ValueTimeSpan = valueTimeSpan;
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -4943,6 +4945,14 @@ namespace YesSql.Tests
                 Assert.Equal(valueGuid, index.ValueGuid);
                 Assert.Equal(valueBool, index.ValueBool);
                 Assert.Equal(valueDateTimeOffset, index.ValueDateTimeOffset);
+                Assert.Equal(valueTimeSpan, index.ValueTimeSpan);
+
+                Assert.Equal(0, index.ValueDecimal);
+                Assert.Equal(0, index.ValueDouble);
+                Assert.Equal(0, index.ValueFloat);
+                Assert.Equal(0, index.ValueInt);
+                Assert.Equal(0, index.ValueLong);
+                Assert.Equal(0, index.ValueShort);
             }
 
         }

@@ -52,11 +52,14 @@ namespace YesSql
         static Store()
         {
             SqlMapper.ResetTypeHandlers();
+
+            // Databases that don't support DateTimeOffset natively will store these in string columns.
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
             
             // Required by Sqlite. Guids are stored as text (uniqueidentifier) and are converted back to Guid with this handler.
             SqlMapper.AddTypeHandler(new GuidHandler());
 
+            // Databases that don't support TimeSpan natively will store these in string columns.
             SqlMapper.AddTypeHandler(new TimeSpanHandler());
         }
 
