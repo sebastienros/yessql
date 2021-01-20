@@ -55,7 +55,15 @@ namespace YesSql.Commands
             foreach (var property in TypePropertiesCache(type))
             {
                 var accessor = PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
-                parameters.Add(property.Name + suffix, accessor.Get(item), dialect.ToDbType(property.PropertyType));
+
+                var value = accessor.Get(item);
+
+                if (dialect.TryConvert(value, property.PropertyType, out var converted))
+                {
+                    value = converted;
+                }
+
+                parameters.Add(property.Name + suffix, value, dialect.ToDbType(property.PropertyType));
             }
         }
 

@@ -59,7 +59,7 @@ namespace YesSql
             // Required by Sqlite. Guids are stored as text (uniqueidentifier) and are converted back to Guid with this handler.
             SqlMapper.AddTypeHandler(new GuidHandler());
 
-            // Databases that don't support TimeSpan natively will store these in string columns.
+            // Databases that don't support TimeSpan natively will store these in int columns as ticks.
             SqlMapper.AddTypeHandler(new TimeSpanHandler());
         }
 

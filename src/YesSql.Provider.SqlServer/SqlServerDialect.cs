@@ -59,7 +59,7 @@ namespace YesSql.Provider.SqlServer
                 { typeof(DateTime), DbType.DateTime },
                 { typeof(DateTimeOffset), DbType.DateTimeOffset },
                 { typeof(Guid), DbType.Guid },
-                { typeof(TimeSpan), DbType.String },
+                { typeof(TimeSpan), DbType.Int64 },
 
                 // Nullable types to prevent extra reflection on common ones
                 { typeof(char?), DbType.StringFixedLength },
@@ -92,6 +92,18 @@ namespace YesSql.Provider.SqlServer
             //Methods.Add("day", new TemplateFunction("datepart(day, {0})"));
             //Methods.Add("month", new TemplateFunction("datepart(month, {0})"));
             //Methods.Add("year", new TemplateFunction("datepart(year, {0})"));
+        }
+
+        public override bool TryConvert(object source, Type valueType, out object result)
+        {
+            if (valueType == typeof(TimeSpan) || (valueType == typeof(TimeSpan?) && source != null))
+            {
+                result = ((TimeSpan)source).Ticks;
+                return true;
+            }
+
+            result = null;
+            return false;
         }
 
         public override string Name => "SqlServer";

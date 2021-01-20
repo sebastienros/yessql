@@ -40,6 +40,13 @@ namespace YesSql.Provider
 
             return DbType.Object;
         }
+
+        public virtual bool TryConvert(object source, Type valueType, out object result)
+        {
+            result = null;
+            return false;
+        }
+
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {

@@ -12,6 +12,8 @@ namespace YesSql
         /// </summary>
         DbType ToDbType(Type type);
 
+        bool TryConvert(object source, Type valueType, out object result);
+
         /// <summary>
         /// Gets the name of the dialect.
         /// </summary>

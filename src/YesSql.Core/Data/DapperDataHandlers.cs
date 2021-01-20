@@ -71,7 +71,13 @@ namespace YesSql.Data
             {
                 return TimeSpan.Parse(s);
             }
-            else if (value is TimeSpan t)
+
+            if (value is long l)
+            {
+                return new TimeSpan(l);
+            }
+
+            if (value is TimeSpan t)
             {
                 return t;
             }
