@@ -10,7 +10,7 @@ namespace YesSql.Provider.PostgreSql
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
-            {DbType.Guid, "char(36)"},
+            {DbType.Guid, "uuid"},
             {DbType.Binary, "bytea"},
             {DbType.Date, "date"},
             {DbType.Time, "time"},
@@ -85,7 +85,7 @@ namespace YesSql.Provider.PostgreSql
         public PostgreSqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
-            AddTypeHandler<DateTimeOffset, DateTime>(x => x.ToUniversalTime().DateTime);
+            AddTypeHandler<DateTimeOffset, DateTime>(x => x.UtcDateTime);
 
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
@@ -213,7 +213,7 @@ namespace YesSql.Provider.PostgreSql
 
             if (type == typeof(DateTimeOffset))
             {
-                return base.GetSqlValue(((DateTimeOffset)value).ToUniversalTime().DateTime);
+                return base.GetSqlValue(((DateTimeOffset)value).UtcDateTime);
             }
 
             switch (Convert.GetTypeCode(value))

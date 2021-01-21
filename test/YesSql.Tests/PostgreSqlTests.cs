@@ -45,11 +45,11 @@ namespace YesSql.Tests
             catch { }
         }
 
-        [Fact(Skip = "Stopped working on the CI for an unknown reason")]
-        public override Task ShouldIndexWithDateTime()
-        {
-            return base.ShouldIndexWithDateTime();
-        }
+        //[Fact(Skip = "Stopped working on the CI for an unknown reason")]
+        //public override Task ShouldIndexWithDateTime()
+        //{
+        //    return base.ShouldIndexWithDateTime();
+        //}
 
         [Fact(Skip = "Postgres locks on the table")]
         public override Task ShouldReadUncommittedRecords()
