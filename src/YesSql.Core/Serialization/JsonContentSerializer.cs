@@ -7,7 +7,8 @@ namespace YesSql.Serialization
     {
         private readonly static JsonSerializerSettings _jsonSettings = new JsonSerializerSettings {
             TypeNameHandling = TypeNameHandling.Auto,
-            DateTimeZoneHandling = DateTimeZoneHandling.Utc
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+            NullValueHandling = NullValueHandling.Ignore
         };
 
         public object Deserialize(string content, Type type)
