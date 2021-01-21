@@ -518,16 +518,24 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+
+                        _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                        {
+                            var localValue = ((FieldInfo)memberExpression.Member).GetValue(o);
+
+                            if (localValue != null && _dialect.TryConvert(localValue, localValue.GetType(), out var convertedLocal))
+                            {
+                                localValue = convertedLocal;
+                            }
+
+                            sqlBuilder.Parameters[_parameterName] = localValue;
+                        });
+
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
 
                         if (value != null && _dialect.TryConvert(value, value.GetType(), out var converted))
                         {
                             value = converted;
-                        }
-
-                        if (_compiledQuery != null)
-                        {
-                            _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = value);
                         }
 
                         return Expression.Constant(value);
@@ -554,6 +562,19 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+
+                        _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                        {
+                            var localValue = ((PropertyInfo)memberExpression.Member).GetValue(o);
+
+                            if (localValue != null && _dialect.TryConvert(localValue, localValue.GetType(), out var convertedLocal))
+                            {
+                                localValue = convertedLocal;
+                            }
+
+                            sqlBuilder.Parameters[_parameterName] = localValue;
+                        });
+
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
 
                         if (value != null && _dialect.TryConvert(value, value.GetType(), out var converted))
@@ -561,11 +582,6 @@ namespace YesSql.Services
                             value = converted;
                         }
 
-                        if (_compiledQuery != null)
-                        {
-                            _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = value);
-                        }
-                        
                         return Expression.Constant(value);
                     }
                     break;
