@@ -16,7 +16,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.Time, "time"},
             {DbType.DateTime, "timestamp" },
             {DbType.DateTime2, "timestamp" },
-            {DbType.DateTimeOffset, "varchar(255)" },
+            {DbType.DateTimeOffset, "varchar(255)" }, // should not be reached since DateTimeOffset is converted to strings
             {DbType.Boolean, "boolean"},
             {DbType.Byte, "int2"},
             {DbType.SByte, "int2"},
@@ -57,7 +57,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double), DbType.Double },
                 { typeof(decimal), DbType.Decimal },
                 { typeof(DateTime), DbType.DateTime },
-                { typeof(DateTimeOffset), DbType.DateTimeOffset },
+                { typeof(DateTimeOffset), DbType.String },
                 { typeof(Guid), DbType.Guid },
                 { typeof(TimeSpan), DbType.Int64 },
 
@@ -76,7 +76,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double?), DbType.Double },
                 { typeof(decimal?), DbType.Decimal },
                 { typeof(DateTime?), DbType.DateTime },
-                { typeof(DateTimeOffset?), DbType.DateTimeOffset },
+                { typeof(DateTimeOffset?), DbType.String },
                 { typeof(Guid?), DbType.Guid },
                 { typeof(TimeSpan?), DbType.Int64 }
             };
@@ -203,9 +203,16 @@ namespace YesSql.Provider.PostgreSql
                 return "null";
             }
 
-            if (value.GetType() == typeof(TimeSpan))
+            var type = value.GetType();
+
+            if (type == typeof(TimeSpan))
             {
                 return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+            }
+
+            if (type == typeof(DateTimeOffset))
+            {
+                return ((DateTimeOffset)value).ToString(CultureInfo.InvariantCulture);
             }
 
             switch (Convert.GetTypeCode(value))
