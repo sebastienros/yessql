@@ -240,5 +240,8 @@ namespace YesSql.Provider.SqlServer
 
             return base.GetSqlValue(value);
         }
+
+        public override bool SupportsIfExistsBeforeTableName => true;
+
     }
 }

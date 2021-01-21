@@ -5074,7 +5074,7 @@ namespace YesSql.Tests
             }
         }
 
-        //[Fact]
+        [Fact]
         public async Task NullValuesShouldBeStoredInNullableFields()
         {
             var dummy = new Person();
@@ -5110,8 +5110,8 @@ namespace YesSql.Tests
                 Assert.Null(index.NullableLong);
                 Assert.Null(index.NullableShort);
                 Assert.Null(index.NullableDateTimeOffset);
+                Assert.Null(index.NullableTimeSpan);
             }
-
         }
     }
 }

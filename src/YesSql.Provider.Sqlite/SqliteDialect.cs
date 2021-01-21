@@ -152,5 +152,7 @@ namespace YesSql.Provider.Sqlite
         {
             return "[" + tableName + "]";
         }
+
+        public override bool SupportsIfExistsBeforeTableName => true;
     }
 }
