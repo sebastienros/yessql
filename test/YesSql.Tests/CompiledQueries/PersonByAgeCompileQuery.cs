@@ -44,4 +44,12 @@ namespace YesSql.Tests.CompiledQueries
             return query => query.With<PersonByAge>().OrderByDescending(x => x.Age);
         }
     }
+
+    public class PersonPagedQuery : ICompiledQuery<Person>
+    {
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByAge>().Take(1);
+        }
+    }
 }

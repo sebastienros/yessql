@@ -909,6 +909,32 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldPageCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 10; i++)
+                {
+                    session.Save(new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Gates",
+                        Age = i
+                    });
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.ExecuteQuery(new PersonPagedQuery()).ListAsync();
+
+                Assert.Single(results);
+            }
+        }
+
+        [Fact]
         public virtual async Task ShouldRunCompiledQueriesConcurrently()
         {
             _store.RegisterIndexes<PersonAgeIndexProvider>();

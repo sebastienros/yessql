@@ -118,11 +118,6 @@ namespace YesSql.Services
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
             clone._builder = new StringBuilder(_builder.ToString());
 
-            // Clear previous paging if any
-            clone._sqlBuilder.ClearTrail();
-            clone._sqlBuilder.Skip(null);
-            clone._sqlBuilder.Take(null);
-
             return clone;
         }
     }
