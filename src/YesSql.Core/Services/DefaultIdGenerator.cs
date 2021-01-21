@@ -47,11 +47,19 @@ namespace YesSql.Services
         {
             // Extract the current max value from the database
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+            await using (var connection = configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#else
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#endif
                 {
                     var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -64,7 +72,11 @@ namespace YesSql.Services
                     configuration.Logger.LogTrace(sql);
                     var result = await selectCommand.ExecuteScalarAsync();
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                    await transaction.CommitAsync();
+#else
                     transaction.Commit();
+#endif
 
                     _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
                 }

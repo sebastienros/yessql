@@ -699,18 +699,6 @@ namespace YesSql
             }
         }
 
-        private void ReleaseConnection()
-        {
-            ReleaseTransaction();
-
-            if (_connection != null)
-            {
-                _connection.Close();
-                _connection.Dispose();
-                _connection = null;
-            }
-        }
-
         /// <summary>
         /// Called when the instance is reused from an object pool and doesn't go
         /// through the constructor.
@@ -885,12 +873,17 @@ namespace YesSql
             }
             finally
             {
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                await CommitTransactionAsync();
+#else
                 CommitTransaction();
+#endif
             }
         }
 
         private void CommitTransaction()
         {
+            // This method is still used in Dispose() when SUPPORTS_ASYNC_TRANSACTIONS is defined
             try
             {
                 if (!_cancel)
@@ -911,6 +904,112 @@ namespace YesSql
             finally
             {
                 ReleaseConnection();
+            }
+        }
+
+
+#if SUPPORTS_ASYNC_TRANSACTIONS
+        public async ValueTask DisposeAsync()
+        {
+            // Do nothing if Dispose() was already called
+            if (_disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!_cancel && HasWork())
+                {
+                    // This should never go there, CommitAsync() should be called explicitely
+                    // and asynchronously before Dispose() is invoked
+                    await FlushAsync();
+                }
+            }
+            finally
+            {
+                _disposed = true;
+
+                await CommitTransactionAsync();
+
+                ReleaseSession();
+            }
+        }
+
+        private async Task CommitTransactionAsync()
+        {
+            try
+            {
+                if (!_cancel)
+                {
+                    if (_transaction != null)
+                    {
+                        await _transaction.CommitAsync();
+                    }
+                }
+                else
+                {
+                    if (_transaction != null)
+                    {
+                        await _transaction.RollbackAsync();
+                    }
+                }
+            }
+            finally
+            {
+                await ReleaseConnectionAsync();
+            }
+        }
+
+        private async Task ReleaseConnectionAsync()
+        {
+            ReleaseTransaction();
+
+            if (_connection != null)
+            {
+                await _connection.CloseAsync();
+                await _connection.DisposeAsync();
+                _connection = null;
+            }
+        }
+
+#else
+        public async ValueTask DisposeAsync()
+        {
+            // Do nothing if Dispose() was already called
+            if (_disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!_cancel && HasWork())
+                {
+                    // This should never go there, CommitAsync() should be called explicitely
+                    // and asynchronously before Dispose() is invoked
+                    await FlushAsync();
+                }
+            }
+            finally
+            {
+                _disposed = true;
+
+                CommitTransaction();
+
+                ReleaseSession();
+            }
+        }
+#endif
+        private void ReleaseConnection()
+        {
+            ReleaseTransaction();
+
+            if (_connection != null)
+            {
+                _connection.Close();
+                _connection.Dispose();
+                _connection = null;
             }
         }
 
@@ -1277,7 +1376,7 @@ namespace YesSql
 
         public IStore Store => _store;
 
-        #region Storage implementation
+#region Storage implementation
 
         private struct IdString
         {
@@ -1286,6 +1385,6 @@ namespace YesSql
             public string Content;
 #pragma warning restore 0649
         }
-        #endregion
+#endregion
     }
 }
