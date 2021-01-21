@@ -5087,7 +5087,13 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var index = new TypesIndex();
+                var index = new TypesIndex
+                {
+                    ValueTimeSpan = new TimeSpan(1, 2, 3, 4, 5),
+                    ValueDateTime = new DateTime(2021, 1, 20),
+                    ValueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e"),
+                    ValueDateTimeOffset = new DateTimeOffset(new DateTime(2021, 1, 20), new TimeSpan(1, 2, 0))
+                };
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
