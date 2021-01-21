@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using YesSql.Commands;
+using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.Commands;
@@ -64,6 +66,7 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonByNameCol>();
                     builder.DropMapIndexTable<PersonIdentity>();
                     builder.DropMapIndexTable<EmailByAttachment>();
+                    builder.DropMapIndexTable<TypesIndex>();
 
                     builder.DropMapIndexTable<ShapeIndex>();
                     builder.DropMapIndexTable<PersonByAge>();
@@ -176,6 +179,41 @@ namespace YesSql.Tests
                             .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
                             .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
                             .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
+                        );
+
+                    builder.CreateMapIndexTable<TypesIndex>(column => column
+                            .Column<bool>(nameof(TypesIndex.ValueBool))
+                            //.Column<char>(nameof(TypesIndex.ValueChar))
+                            .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
+                            .Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
+                            .Column<decimal>(nameof(TypesIndex.ValueDecimal))
+                            .Column<double>(nameof(TypesIndex.ValueDouble))
+                            .Column<float>(nameof(TypesIndex.ValueFloat))
+                            .Column<Guid>(nameof(TypesIndex.ValueGuid))
+                            .Column<int>(nameof(TypesIndex.ValueInt))
+                            .Column<long>(nameof(TypesIndex.ValueLong))
+                            //.Column<sbyte>(nameof(TypesIndex.ValueSByte))
+                            .Column<short>(nameof(TypesIndex.ValueShort))
+                            .Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
+                            //.Column<uint>(nameof(TypesIndex.ValueUInt))
+                            //.Column<ulong>(nameof(TypesIndex.ValueULong))
+                            //.Column<ushort>(nameof(TypesIndex.ValueUShort))
+                            .Column<bool?>(nameof(TypesIndex.NullableBool), c => c.Nullable())
+                            //.Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
+                            .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
+                            .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
+                            .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
+                            .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
+                            .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
+                            .Column<Guid?>(nameof(TypesIndex.NullableGuid), c => c.Nullable())
+                            .Column<int?>(nameof(TypesIndex.NullableInt), c => c.Nullable())
+                            .Column<long?>(nameof(TypesIndex.NullableLong), c => c.Nullable())
+                            //.Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
+                            .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
+                            .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
+                            //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
+                            //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
+                            //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
                         );
 
                     builder.CreateMapIndexTable<PersonByName>(column => column
@@ -4862,6 +4900,223 @@ namespace YesSql.Tests
                 await session.Query<Person>().FirstOrDefaultAsync();
 
                 c.Name = "Clio 2";
+            }
+        }
+
+        [Fact]
+        public async Task AllDataTypesShouldBeStored()
+        {
+            var dummy = new Person();
+
+            var valueTimeSpan = new TimeSpan(1, 2, 3, 4, 5);
+            var valueDateTime = new DateTime(2021, 1, 20);
+            var valueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e");
+            var valueBool = false;
+            var valueDateTimeOffset = new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0));
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex();
+
+                index.ValueDateTime = valueDateTime;
+                index.ValueGuid = valueGuid;
+                index.ValueBool = valueBool;
+                index.ValueDateTimeOffset = valueDateTimeOffset;
+                index.ValueTimeSpan = valueTimeSpan;
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = await session.QueryIndex<TypesIndex>().FirstOrDefaultAsync();
+
+                Assert.Equal(valueDateTime, index.ValueDateTime);
+                Assert.Equal(valueGuid, index.ValueGuid);
+                Assert.Equal(valueBool, index.ValueBool);
+                Assert.Equal(valueDateTimeOffset, index.ValueDateTimeOffset);
+                Assert.Equal(valueTimeSpan, index.ValueTimeSpan);
+
+                Assert.Equal(0, index.ValueDecimal);
+                Assert.Equal(0, index.ValueDouble);
+                Assert.Equal(0, index.ValueFloat);
+                Assert.Equal(0, index.ValueInt);
+                Assert.Equal(0, index.ValueLong);
+                Assert.Equal(0, index.ValueShort);
+            }
+        }
+
+        [Fact]
+        public async Task AllDataTypesShouldBeQueryableWithProperties()
+        {
+            var dummy = new Person();
+
+            var valueTimeSpan = new TimeSpan(1, 2, 3, 4, 5);
+            var valueDateTime = new DateTime(2021, 1, 20);
+            var valueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e");
+            var valueBool = false;
+            var valueDateTimeOffset = new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0));
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex();
+
+                index.ValueDateTime = valueDateTime;
+                index.ValueGuid = valueGuid;
+                index.ValueBool = valueBool;
+                index.ValueDateTimeOffset = valueDateTimeOffset;
+                index.ValueTimeSpan = valueTimeSpan;
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // Ensure that query builing is also converting the values
+                var index = await session.QueryIndex<TypesIndex>(x =>
+                x.ValueBool == valueBool
+                && x.ValueDateTime == valueDateTime
+                && x.ValueDateTimeOffset == valueDateTimeOffset
+                && x.ValueTimeSpan == valueTimeSpan
+                && x.ValueGuid == valueGuid).FirstOrDefaultAsync();
+
+                Assert.Equal(valueDateTime, index.ValueDateTime);
+                Assert.Equal(valueGuid, index.ValueGuid);
+                Assert.Equal(valueBool, index.ValueBool);
+                Assert.Equal(valueDateTimeOffset, index.ValueDateTimeOffset);
+                Assert.Equal(valueTimeSpan, index.ValueTimeSpan);
+
+                Assert.Equal(0, index.ValueDecimal);
+                Assert.Equal(0, index.ValueDouble);
+                Assert.Equal(0, index.ValueFloat);
+                Assert.Equal(0, index.ValueInt);
+                Assert.Equal(0, index.ValueLong);
+                Assert.Equal(0, index.ValueShort);
+            }
+        }
+
+        [Fact]
+        public async Task AllDataTypesShouldBeQueryableWithConstants()
+        {
+            var dummy = new Person();
+
+            var valueTimeSpan = new TimeSpan(1, 2, 3, 4, 5);
+            var valueDateTime = new DateTime(2021, 1, 20);
+            var valueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e");
+            var valueBool = false;
+            var valueDateTimeOffset = new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0));
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex();
+
+                index.ValueDateTime = valueDateTime;
+                index.ValueGuid = valueGuid;
+                index.ValueBool = valueBool;
+                index.ValueDateTimeOffset = valueDateTimeOffset;
+                index.ValueTimeSpan = valueTimeSpan;
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // Ensure that query builing is also converting constants
+                var index = await session.QueryIndex<TypesIndex>(x =>
+                x.ValueBool == false
+                && x.ValueDateTime == new DateTime(2021, 1, 20)
+                && x.ValueDateTimeOffset == new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0))
+                && x.ValueTimeSpan == new TimeSpan(1, 2, 3, 4, 5)
+                && x.ValueGuid == Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e")).FirstOrDefaultAsync();
+
+                Assert.Equal(valueDateTime, index.ValueDateTime);
+                Assert.Equal(valueGuid, index.ValueGuid);
+                Assert.Equal(valueBool, index.ValueBool);
+                Assert.Equal(valueDateTimeOffset, index.ValueDateTimeOffset);
+                Assert.Equal(valueTimeSpan, index.ValueTimeSpan);
+
+                Assert.Equal(0, index.ValueDecimal);
+                Assert.Equal(0, index.ValueDouble);
+                Assert.Equal(0, index.ValueFloat);
+                Assert.Equal(0, index.ValueInt);
+                Assert.Equal(0, index.ValueLong);
+                Assert.Equal(0, index.ValueShort);
+            }
+        }
+
+        [Fact]
+        public async Task NullValuesShouldBeStoredInNullableFields()
+        {
+            var dummy = new Person();
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex
+                {
+                    ValueTimeSpan = new TimeSpan(1, 2, 3, 4, 5),
+                    ValueDateTime = new DateTime(2021, 1, 20),
+                    ValueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e"),
+                    ValueDateTimeOffset = new DateTimeOffset(new DateTime(2021, 1, 20), new TimeSpan(1, 2, 0))
+                };
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = await session.QueryIndex<TypesIndex>().FirstOrDefaultAsync();
+
+                Assert.Null(index.NullableBool);
+                Assert.Null(index.NullableDateTime);
+                Assert.Null(index.NullableDecimal);
+                Assert.Null(index.NullableDouble);
+                Assert.Null(index.NullableFloat);
+                Assert.Null(index.NullableGuid);
+                Assert.Null(index.NullableInt);
+                Assert.Null(index.NullableLong);
+                Assert.Null(index.NullableShort);
+                Assert.Null(index.NullableDateTimeOffset);
+                Assert.Null(index.NullableTimeSpan);
             }
         }
     }

@@ -518,10 +518,17 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                        _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((FieldInfo)memberExpression.Member).GetValue(o));
+
+                        _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                        {
+                            var localValue = ((FieldInfo)memberExpression.Member).GetValue(o);
+
+                            sqlBuilder.Parameters[_parameterName] = _dialect.TryConvert(localValue);
+                        });
 
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
-                        return Expression.Constant(value);
+
+                        return Expression.Constant(_dialect.TryConvert(value));
                     }
                     else if (memberExpression.Member.MemberType == MemberTypes.Property)
                     {
@@ -545,10 +552,17 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                        _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((PropertyInfo)memberExpression.Member).GetValue(o));
+
+                        _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                        {
+                            var localValue = ((PropertyInfo)memberExpression.Member).GetValue(o);
+
+                            sqlBuilder.Parameters[_parameterName] = _dialect.TryConvert(localValue);
+                        });
 
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
-                        return Expression.Constant(value);
+
+                        return Expression.Constant(_dialect.TryConvert(value));
                     }
                     break;
             }
@@ -619,9 +633,16 @@ namespace YesSql.Services
                         var binaryExpression = (BinaryExpression)expression;
                         if (binaryExpression.Left is ConstantExpression left && binaryExpression.Right is ConstantExpression right)
                         {
-                            builder.Append(_dialect.GetSqlValue(left.Value));
+                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                            _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(left.Value));
+                            builder.Append(_queryState._lastParameterName);
+                            
                             builder.Append(GetBinaryOperator(expression));
-                            builder.Append(_dialect.GetSqlValue(right.Value));
+
+                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                            _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(right.Value));
+                            builder.Append(_queryState._lastParameterName);
+                        
                             return;
                         }
 
@@ -694,7 +715,8 @@ namespace YesSql.Services
                     break;
                 case ExpressionType.Constant:
                     _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                    _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, ((ConstantExpression)expression).Value);
+                    var value = ((ConstantExpression)expression).Value;
+                    _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(value));
                     builder.Append(_queryState._lastParameterName);
                     break;
                 case ExpressionType.Call:

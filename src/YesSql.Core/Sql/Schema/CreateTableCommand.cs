@@ -10,7 +10,7 @@ namespace YesSql.Sql.Schema
         {
         }
 
-        public ICreateTableCommand Column(string columnName, DbType dbType, Action<ICreateColumnCommand> column = null)
+        public ICreateTableCommand Column(string columnName, Type dbType, Action<ICreateColumnCommand> column = null)
         {
             var command = new CreateColumnCommand(Name, columnName);
             command.WithType(dbType);
@@ -23,8 +23,7 @@ namespace YesSql.Sql.Schema
 
         public ICreateTableCommand Column<T>(string columnName, Action<ICreateColumnCommand> column = null)
         {
-            var dbType = SchemaUtils.ToDbType(typeof(T));
-            return Column(columnName, dbType, column);
+            return Column(columnName, typeof(T), column);
         }
 
     }

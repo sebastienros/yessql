@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using YesSql.Sql;
 
 namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
-            {DbType.Guid, "char(36)"},
+            {DbType.Guid, "uuid"},
             {DbType.Binary, "bytea"},
             {DbType.Date, "date"},
             {DbType.Time, "time"},
@@ -18,6 +19,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.DateTimeOffset, "timestamp" },
             {DbType.Boolean, "boolean"},
             {DbType.Byte, "int2"},
+            {DbType.SByte, "int2"},
             {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Single, "float4"},
             {DbType.Double, "float8"},
@@ -27,15 +29,64 @@ namespace YesSql.Provider.PostgreSql
             {DbType.UInt16, "int2"},
             {DbType.UInt32, "int4"},
             {DbType.UInt64, "int8"},
-            {DbType.AnsiStringFixedLength, "char(255)"},
+            {DbType.AnsiStringFixedLength, "char(1)"},
             {DbType.AnsiString, "varchar(255)"},
-            {DbType.StringFixedLength, "char(255)"},
+            {DbType.StringFixedLength, "char(1)"},
             {DbType.String, "varchar(255)"},
             {DbType.Currency, "decimal(16,4)"}
         };
 
+        static PostgreSqlDialect()
+        {
+            _propertyTypes = new Dictionary<Type, DbType>()
+            {
+                { typeof(object), DbType.Binary },
+                { typeof(byte[]), DbType.Binary },
+                { typeof(string), DbType.String },
+                { typeof(char), DbType.StringFixedLength },
+                { typeof(bool), DbType.Boolean },
+                { typeof(byte), DbType.Byte },
+                { typeof(sbyte), DbType.SByte }, // not supported
+                { typeof(short), DbType.Int16 },
+                { typeof(ushort), DbType.UInt16 }, // not supported
+                { typeof(int), DbType.Int32 },
+                { typeof(uint), DbType.UInt32 },
+                { typeof(long), DbType.Int64 },
+                { typeof(ulong), DbType.UInt64 },
+                { typeof(float), DbType.Single },
+                { typeof(double), DbType.Double },
+                { typeof(decimal), DbType.Decimal },
+                { typeof(DateTime), DbType.DateTime },
+                { typeof(DateTimeOffset), DbType.DateTime }, // stored as UTC datetime
+                { typeof(Guid), DbType.Guid },
+                { typeof(TimeSpan), DbType.Int64 }, // stored as ticks
+
+                // Nullable types to prevent extra reflection on common ones
+                { typeof(char?), DbType.StringFixedLength },
+                { typeof(bool?), DbType.Boolean },
+                { typeof(byte?), DbType.Byte },
+                { typeof(sbyte?), DbType.Int16 },
+                { typeof(short?), DbType.Int16 },
+                { typeof(ushort?), DbType.UInt16 },
+                { typeof(int?), DbType.Int32 },
+                { typeof(uint?), DbType.UInt32 },
+                { typeof(long?), DbType.Int64 },
+                { typeof(ulong?), DbType.UInt64 },
+                { typeof(float?), DbType.Single },
+                { typeof(double?), DbType.Double },
+                { typeof(decimal?), DbType.Decimal },
+                { typeof(DateTime?), DbType.DateTime },
+                { typeof(DateTimeOffset?), DbType.DateTime },
+                { typeof(Guid?), DbType.Guid },
+                { typeof(TimeSpan?), DbType.Int64 }
+            };
+        }
+
         public PostgreSqlDialect()
         {
+            AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+            AddTypeHandler<DateTimeOffset, DateTime>(x => x.UtcDateTime);
+
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
             Methods.Add("hour", new TemplateFunction("extract(hour from {0})"));
@@ -84,7 +135,7 @@ namespace YesSql.Provider.PostgreSql
                 }
             }
 
-            if (ColumnTypes.TryGetValue(dbType, out string value))
+            if (_columnTypes.TryGetValue(dbType, out string value))
             {
                 if (dbType == DbType.Decimal)
                 {
@@ -151,6 +202,18 @@ namespace YesSql.Provider.PostgreSql
             if (value == null)
             {
                 return "null";
+            }
+
+            var type = value.GetType();
+
+            if (type == typeof(TimeSpan))
+            {
+                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+            }
+
+            if (type == typeof(DateTimeOffset))
+            {
+                return base.GetSqlValue(((DateTimeOffset)value).UtcDateTime);
             }
 
             switch (Convert.GetTypeCode(value))

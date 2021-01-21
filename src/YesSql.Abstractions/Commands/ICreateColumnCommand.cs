@@ -1,5 +1,3 @@
-using System.Data;
-
 namespace YesSql.Sql.Schema
 {
     public interface ICreateColumnCommand : IColumnCommand

@@ -36,9 +36,9 @@ namespace YesSql.Commands
             if (Index is MapIndex)
             {
                 var parameters = new DynamicParameters();
-                GetProperties(parameters, Index, "");
+                GetProperties(parameters, Index, "", dialect);
                 parameters.Add($"DocumentId", Index.GetAddedDocuments().Single().Id, System.Data.DbType.Int32);
-                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
+                Index.Id = await connection.ExecuteScalarAsync<int>(sql, parameters, transaction);
             }
             else
             {
@@ -88,7 +88,7 @@ namespace YesSql.Commands
                 dr.NextResult();
             });
 
-            GetProperties(parameters, Index, index.ToString());
+            GetProperties(parameters, Index, index.ToString(), dialect);
 
             var tableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection);
 

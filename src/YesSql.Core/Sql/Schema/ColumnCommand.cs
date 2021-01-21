@@ -1,4 +1,4 @@
-using System.Data;
+using System;
 
 namespace YesSql.Sql.Schema
 {
@@ -10,7 +10,7 @@ namespace YesSql.Sql.Schema
             : base(tableName)
         {
             ColumnName = name;
-            DbType = DbType.Object;
+            DbType = typeof(object);
             Default = null;
             Length = null;
             Scale = null;
@@ -20,13 +20,13 @@ namespace YesSql.Sql.Schema
 
         public byte? Precision { get; protected set; }
 
-        public DbType DbType { get; private set; }
+        public Type DbType { get; private set; }
 
         public object Default { get; private set; }
 
         public int? Length { get; private set; }
 
-        public IColumnCommand WithType(DbType dbType)
+        public IColumnCommand WithType(Type dbType)
         {
             DbType = dbType;
             return this;

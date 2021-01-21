@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 using YesSql.Serialization;
-using YesSql.Sql.Schema;
 
 namespace YesSql.Commands
 {
@@ -49,14 +48,17 @@ namespace YesSql.Commands
             UpdatesList.Clear();
         }
 
-        protected static void GetProperties(DynamicParameters parameters, object item, string suffix)
+        protected static void GetProperties(DynamicParameters parameters, object item, string suffix, ISqlDialect dialect)
         {
             var type = item.GetType();
 
             foreach (var property in TypePropertiesCache(type))
             {
                 var accessor = PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
-                parameters.Add(property.Name + suffix, accessor.Get(item), SchemaUtils.ToDbType(property.PropertyType));
+
+                var value = accessor.Get(item);
+
+                parameters.Add(property.Name + suffix, dialect.TryConvert(value), dialect.ToDbType(property.PropertyType));
             }
         }
 

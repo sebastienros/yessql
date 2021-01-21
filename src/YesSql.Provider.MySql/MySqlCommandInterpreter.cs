@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -20,10 +20,12 @@ namespace YesSql.Provider.MySql
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength = builder.Length;
 
+            var dbType = _dialect.ToDbType(command.DbType);
+
             // type
-            if (command.DbType != DbType.Object)
+            if (dbType != DbType.Object)
             {
-                builder.Append(_dialect.GetTypeName(command.DbType, command.Length, command.Precision, command.Scale));
+                builder.Append(_dialect.GetTypeName(dbType, command.Length, command.Precision, command.Scale));
             }
             else
             {

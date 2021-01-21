@@ -9,7 +9,55 @@ namespace YesSql.Provider
 {
     public abstract class BaseDialect : ISqlDialect
     {
-        public Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
+
+        protected static Dictionary<Type, DbType> _propertyTypes;
+
+        public DbType ToDbType(Type type)
+        {
+            DbType dbType;
+
+            if (_propertyTypes.TryGetValue(type, out dbType))
+            {
+                return dbType;
+            }
+
+            if (type.IsEnum)
+            {
+                return DbType.Int32;
+            }
+
+            // Nullable<T> ?
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                var nullable = Nullable.GetUnderlyingType(type);
+
+                if (nullable != null)
+                {
+                    return ToDbType(nullable);
+                }
+            }
+
+            return DbType.Object;
+        }
+
+        public virtual object TryConvert(object source)
+        {
+            if (source != null && _typeHandlers.Count > 0)
+            {
+                if (_typeHandlers.TryGetValue(source.GetType(), out var handlers) && handlers.Count > 0)
+                {
+                    foreach (var handler in handlers)
+                    {
+                        source = handler(source);
+                    }
+
+                    return source;
+                }
+            }
+
+            return source;
+        }
 
         public abstract string Name { get; }
         public virtual string InOperator(string values)
@@ -219,6 +267,23 @@ namespace YesSql.Provider
             }
 
             return select;
+        }
+
+        private readonly Dictionary<Type, List<Func<object, object>>> _typeHandlers = new Dictionary<Type, List<Func<object, object>>>();
+
+        public void ResetTypeHandlers()
+        {
+            _typeHandlers.Clear();
+        }
+
+        public void AddTypeHandler<T, U>(Func<T, U> handler)
+        {
+            if (!_typeHandlers.TryGetValue(typeof(T), out var handlers))
+            {
+                _typeHandlers[typeof(T)] = handlers = new List<Func<object, object>>();
+            }
+
+            handlers.Add(i => handler((T)i));
         }
     }
 }

@@ -1,4 +1,4 @@
-using System.Data;
+using System;
 
 namespace YesSql.Sql.Schema
 {
@@ -9,19 +9,19 @@ namespace YesSql.Sql.Schema
         {
         }
 
-        public new IAlterColumnCommand WithType(DbType dbType)
+        public new IAlterColumnCommand WithType(Type dbType)
         {
             base.WithType(dbType);
             return this;
         }
 
-        public IAlterColumnCommand WithType(DbType dbType, int? length)
+        public IAlterColumnCommand WithType(Type dbType, int? length)
         {
             base.WithType(dbType).WithLength(length);
             return this;
         }
 
-        public IAlterColumnCommand WithType(DbType dbType, byte precision, byte scale)
+        public IAlterColumnCommand WithType(Type dbType, byte precision, byte scale)
         {
             base.WithType(dbType);
             Precision = precision;

@@ -1,4 +1,4 @@
-using System.Data;
+using System;
 
 namespace YesSql.Sql.Schema
 {
@@ -10,7 +10,7 @@ namespace YesSql.Sql.Schema
 
         byte? Precision { get; }
 
-        DbType DbType { get; }
+        Type DbType { get; }
 
         object Default { get; }
 

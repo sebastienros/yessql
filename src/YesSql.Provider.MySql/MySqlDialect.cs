@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Text;
-using MySqlConnector;
 
 namespace YesSql.Provider.MySql
 {
     public class MySqlDialect : BaseDialect
     {
-        private static Dictionary<DbType, string> ColumnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "char(36)"},
             {DbType.Binary, "varbinary(8000)"},
@@ -16,11 +16,13 @@ namespace YesSql.Provider.MySql
             {DbType.Date, "datetime"},
             {DbType.DateTime, "datetime" },
             {DbType.DateTime2, "datetime" },
-            {DbType.DateTimeOffset, "datetime" },
+            {DbType.DateTimeOffset, "varchar(255)" },
             {DbType.Boolean, "bit"},
             {DbType.Byte, "tinyint unsigned"},
+            {DbType.SByte, "tinyint unsigned"},
             {DbType.Decimal, "decimal({0}, {1})"},
             {DbType.Double, "double"},
+            {DbType.Single, "float"},
             {DbType.Int16, "smallint"},
             {DbType.UInt16, "smallint unsigned"},
             {DbType.Int32, "int"},
@@ -29,9 +31,60 @@ namespace YesSql.Provider.MySql
             {DbType.UInt64, "bigint unsigned"},
             {DbType.AnsiStringFixedLength, "char"},
             {DbType.AnsiString, "varchar(127)"},
-            {DbType.StringFixedLength, "varchar"},
+            {DbType.StringFixedLength, "char"},
             {DbType.String, "varchar(255)"},
         };
+
+        static MySqlDialect()
+        {
+            _propertyTypes = new Dictionary<Type, DbType>()
+            {
+                { typeof(object), DbType.Binary },
+                { typeof(byte[]), DbType.Binary },
+                { typeof(string), DbType.String },
+                { typeof(char), DbType.StringFixedLength },
+                { typeof(bool), DbType.Boolean },
+                { typeof(byte), DbType.Byte },
+                { typeof(sbyte), DbType.SByte }, // not supported
+                { typeof(short), DbType.Int16 },
+                { typeof(ushort), DbType.UInt16 }, // not supported
+                { typeof(int), DbType.Int32 },
+                { typeof(uint), DbType.UInt32 },
+                { typeof(long), DbType.Int64 },
+                { typeof(ulong), DbType.UInt64 },
+                { typeof(float), DbType.Single },
+                { typeof(double), DbType.Double },
+                { typeof(decimal), DbType.Decimal },
+                { typeof(DateTime), DbType.DateTime },
+                { typeof(DateTimeOffset), DbType.DateTimeOffset },
+                { typeof(Guid), DbType.Guid },
+                { typeof(TimeSpan), DbType.Int64 },
+
+                // Nullable types to prevent extra reflection on common ones
+                { typeof(char?), DbType.StringFixedLength },
+                { typeof(bool?), DbType.Boolean },
+                { typeof(byte?), DbType.Byte },
+                { typeof(sbyte?), DbType.Int16 },
+                { typeof(short?), DbType.Int16 },
+                { typeof(ushort?), DbType.UInt16 },
+                { typeof(int?), DbType.Int32 },
+                { typeof(uint?), DbType.UInt32 },
+                { typeof(long?), DbType.Int64 },
+                { typeof(ulong?), DbType.UInt64 },
+                { typeof(float?), DbType.Single },
+                { typeof(double?), DbType.Double },
+                { typeof(decimal?), DbType.Decimal },
+                { typeof(DateTime?), DbType.DateTime },
+                { typeof(DateTimeOffset?), DbType.DateTimeOffset },
+                { typeof(Guid?), DbType.Guid },
+                { typeof(TimeSpan?), DbType.Int64 }
+            };
+        }
+
+        public MySqlDialect()
+        {
+            AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+        }
 
         public override string Name => "MySql";
         public override string IdentitySelectString => "; select LAST_INSERT_ID()";
@@ -94,7 +147,7 @@ namespace YesSql.Provider.MySql
                 }
             }
 
-            if (ColumnTypes.TryGetValue(dbType, out string value))
+            if (_columnTypes.TryGetValue(dbType, out string value))
             {
                 if(dbType == DbType.Decimal)
                 {
@@ -183,6 +236,21 @@ namespace YesSql.Provider.MySql
             }
 
             builder.Append(")");
+        }
+
+        public override string GetSqlValue(object value)
+        {
+            if (value == null)
+            {
+                return "null";
+            }
+
+            if (value.GetType() == typeof(TimeSpan))
+            {
+                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return base.GetSqlValue(value);
         }
     }
 }

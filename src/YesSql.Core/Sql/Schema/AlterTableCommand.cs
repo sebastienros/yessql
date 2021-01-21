@@ -15,7 +15,7 @@ namespace YesSql.Sql.Schema
             _tablePrefix = tablePrefix;
         }
 
-        public void AddColumn(string columnName, DbType dbType, Action<IAddColumnCommand> column = null)
+        public void AddColumn(string columnName, Type dbType, Action<IAddColumnCommand> column = null)
         {
             var command = new AddColumnCommand(Name, columnName);
             command.WithType(dbType);
@@ -27,8 +27,7 @@ namespace YesSql.Sql.Schema
 
         public void AddColumn<T>(string columnName, Action<IAddColumnCommand> column = null)
         {
-            var dbType = SchemaUtils.ToDbType(typeof(T));
-            AddColumn(columnName, dbType, column);
+            AddColumn(columnName, typeof(T), column);
         }
 
         public void DropColumn(string columnName)

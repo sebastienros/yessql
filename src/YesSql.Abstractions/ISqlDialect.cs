@@ -8,6 +8,17 @@ namespace YesSql
     public interface ISqlDialect
     {
         /// <summary>
+        /// Returns the DbType that a type is mapped to for this dialect.
+        /// </summary>
+        DbType ToDbType(Type type);
+
+        object TryConvert(object source);
+
+        void ResetTypeHandlers();
+
+        void AddTypeHandler<T, U>(Func<T, U> handler);
+
+        /// <summary>
         /// Gets the name of the dialect.
         /// </summary>
         string Name { get; }
