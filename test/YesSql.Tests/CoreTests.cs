@@ -5016,7 +5016,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task AllDataTypesShouldBeQeuryableWithConstants()
+        public async Task AllDataTypesShouldBeQueryableWithConstants()
         {
             var dummy = new Person();
 

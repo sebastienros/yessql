@@ -58,12 +58,7 @@ namespace YesSql.Commands
 
                 var value = accessor.Get(item);
 
-                if (dialect.TryConvert(value, property.PropertyType, out var converted))
-                {
-                    value = converted;
-                }
-
-                parameters.Add(property.Name + suffix, value, dialect.ToDbType(property.PropertyType));
+                parameters.Add(property.Name + suffix, dialect.TryConvert(value), dialect.ToDbType(property.PropertyType));
             }
         }
 

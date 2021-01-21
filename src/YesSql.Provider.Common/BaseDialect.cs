@@ -41,24 +41,22 @@ namespace YesSql.Provider
             return DbType.Object;
         }
 
-        public virtual bool TryConvert(object source, Type valueType, out object result)
+        public virtual object TryConvert(object source)
         {
-            if (_typeHandlers.Count > 0)
+            if (source != null && _typeHandlers.Count > 0)
             {
-                if (_typeHandlers.TryGetValue(valueType, out var handlers) && handlers.Count > 0)
+                if (_typeHandlers.TryGetValue(source.GetType(), out var handlers) && handlers.Count > 0)
                 {
                     foreach (var handler in handlers)
                     {
                         source = handler(source);
                     }
 
-                    result = source;
-                    return true;
+                    return source;
                 }
             }
 
-            result = null;
-            return false;
+            return source;
         }
 
         public abstract string Name { get; }

@@ -523,22 +523,12 @@ namespace YesSql.Services
                         {
                             var localValue = ((FieldInfo)memberExpression.Member).GetValue(o);
 
-                            if (localValue != null && _dialect.TryConvert(localValue, localValue.GetType(), out var convertedLocal))
-                            {
-                                localValue = convertedLocal;
-                            }
-
-                            sqlBuilder.Parameters[_parameterName] = localValue;
+                            sqlBuilder.Parameters[_parameterName] = _dialect.TryConvert(localValue);
                         });
 
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
 
-                        if (value != null && _dialect.TryConvert(value, value.GetType(), out var converted))
-                        {
-                            value = converted;
-                        }
-
-                        return Expression.Constant(value);
+                        return Expression.Constant(_dialect.TryConvert(value));
                     }
                     else if (memberExpression.Member.MemberType == MemberTypes.Property)
                     {
@@ -567,22 +557,12 @@ namespace YesSql.Services
                         {
                             var localValue = ((PropertyInfo)memberExpression.Member).GetValue(o);
 
-                            if (localValue != null && _dialect.TryConvert(localValue, localValue.GetType(), out var convertedLocal))
-                            {
-                                localValue = convertedLocal;
-                            }
-
-                            sqlBuilder.Parameters[_parameterName] = localValue;
+                            sqlBuilder.Parameters[_parameterName] = _dialect.TryConvert(localValue);
                         });
 
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
 
-                        if (value != null && _dialect.TryConvert(value, value.GetType(), out var converted))
-                        {
-                            value = converted;
-                        }
-
-                        return Expression.Constant(value);
+                        return Expression.Constant(_dialect.TryConvert(value));
                     }
                     break;
             }
@@ -653,9 +633,9 @@ namespace YesSql.Services
                         var binaryExpression = (BinaryExpression)expression;
                         if (binaryExpression.Left is ConstantExpression left && binaryExpression.Right is ConstantExpression right)
                         {
-                            builder.Append(_dialect.GetSqlValue(left.Value));
+                            builder.Append(_dialect.GetSqlValue(_dialect.TryConvert(left.Value)));
                             builder.Append(GetBinaryOperator(expression));
-                            builder.Append(_dialect.GetSqlValue(right.Value));
+                            builder.Append(_dialect.GetSqlValue(_dialect.TryConvert(right.Value)));
                             return;
                         }
 
@@ -728,7 +708,8 @@ namespace YesSql.Services
                     break;
                 case ExpressionType.Constant:
                     _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                    _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, ((ConstantExpression)expression).Value);
+                    var value = ((ConstantExpression)expression).Value;
+                    _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(value));
                     builder.Append(_queryState._lastParameterName);
                     break;
                 case ExpressionType.Call:

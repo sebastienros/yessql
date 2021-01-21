@@ -12,7 +12,7 @@ namespace YesSql
         /// </summary>
         DbType ToDbType(Type type);
 
-        bool TryConvert(object source, Type valueType, out object result);
+        object TryConvert(object source);
 
         void ResetTypeHandlers();
 
