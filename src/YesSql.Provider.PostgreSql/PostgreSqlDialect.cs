@@ -16,7 +16,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.Time, "time"},
             {DbType.DateTime, "timestamp" },
             {DbType.DateTime2, "timestamp" },
-            {DbType.DateTimeOffset, "varchar(255)" }, // should not be reached since DateTimeOffset is converted to strings
+            {DbType.DateTimeOffset, "timestamp" },
             {DbType.Boolean, "boolean"},
             {DbType.Byte, "int2"},
             {DbType.SByte, "int2"},
@@ -57,9 +57,9 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double), DbType.Double },
                 { typeof(decimal), DbType.Decimal },
                 { typeof(DateTime), DbType.DateTime },
-                { typeof(DateTimeOffset), DbType.String },
+                { typeof(DateTimeOffset), DbType.DateTime }, // stored as UTC datetime
                 { typeof(Guid), DbType.Guid },
-                { typeof(TimeSpan), DbType.Int64 },
+                { typeof(TimeSpan), DbType.Int64 }, // stored as ticks
 
                 // Nullable types to prevent extra reflection on common ones
                 { typeof(char?), DbType.StringFixedLength },
@@ -76,7 +76,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double?), DbType.Double },
                 { typeof(decimal?), DbType.Decimal },
                 { typeof(DateTime?), DbType.DateTime },
-                { typeof(DateTimeOffset?), DbType.String },
+                { typeof(DateTimeOffset?), DbType.DateTime },
                 { typeof(Guid?), DbType.Guid },
                 { typeof(TimeSpan?), DbType.Int64 }
             };
@@ -85,6 +85,7 @@ namespace YesSql.Provider.PostgreSql
         public PostgreSqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+            AddTypeHandler<DateTimeOffset, DateTime>(x => x.ToUniversalTime().DateTime);
 
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
@@ -212,7 +213,7 @@ namespace YesSql.Provider.PostgreSql
 
             if (type == typeof(DateTimeOffset))
             {
-                return ((DateTimeOffset)value).ToString(CultureInfo.InvariantCulture);
+                return base.GetSqlValue(((DateTimeOffset)value).ToUniversalTime().DateTime);
             }
 
             switch (Convert.GetTypeCode(value))
