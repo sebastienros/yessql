@@ -57,7 +57,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double), DbType.Double },
                 { typeof(decimal), DbType.Decimal },
                 { typeof(DateTime), DbType.DateTime },
-                { typeof(DateTimeOffset), DbType.DateTimeOffset },
+                { typeof(DateTimeOffset), DbType.String },
                 { typeof(Guid), DbType.Guid },
                 { typeof(TimeSpan), DbType.Int64 },
 
@@ -76,7 +76,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double?), DbType.Double },
                 { typeof(decimal?), DbType.Decimal },
                 { typeof(DateTime?), DbType.DateTime },
-                { typeof(DateTimeOffset?), DbType.DateTimeOffset },
+                { typeof(DateTimeOffset?), DbType.String },
                 { typeof(Guid?), DbType.Guid },
                 { typeof(TimeSpan?), DbType.Int64 }
             };
@@ -85,6 +85,7 @@ namespace YesSql.Provider.PostgreSql
         public PostgreSqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+            AddTypeHandler<DateTimeOffset, string>(x => x.ToString(CultureInfo.InvariantCulture));
 
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
