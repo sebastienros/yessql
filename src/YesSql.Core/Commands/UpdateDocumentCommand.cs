@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 
@@ -44,7 +45,7 @@ namespace YesSql.Commands
             return;
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions)
         {
             // Can't batch if version needs to be checked
             // TODO: If the scalar result still works in batches, we might need to count what is the expected total number
@@ -66,9 +67,10 @@ namespace YesSql.Commands
 
             queries.Add(updateCmd);
 
-            parameters.Add("Id_" + index, Document.Id);
-            parameters.Add("Content_" + index, Document.Content);
-            parameters.Add("Version_" + index, Document.Version);
+            batchCommand
+                .AddParameter("Id_" + index, Document.Id, DbType.Int32)
+                .AddParameter("Content_" + index, Document.Content, DbType.String)
+                .AddParameter("Version_" + index, Document.Version , DbType.Int64);
 
             return true;
         }

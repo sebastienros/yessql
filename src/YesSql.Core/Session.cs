@@ -832,11 +832,11 @@ namespace YesSql
 
             foreach (var page in _commands.OrderBy(x => x.ExecutionOrder).PagesOf(_store.Configuration.CommandsPageSize))
             {
-                var batch = new BatchCommand();
+                var batch = new BatchCommand(_connection.CreateCommand());
 
                 foreach (var command in page)
                 {
-                    if (!command.AddToBatch(_dialect, batch.Queries, batch.Parameters, batch.Actions))
+                    if (!command.AddToBatch(_dialect, batch.Queries, batch.Command, batch.Actions))
                     {
                         // If the command can't be added to a batch, we execute it independently
 
@@ -845,7 +845,7 @@ namespace YesSql
                             batches.Add(batch);
 
                             // Then start a new batch
-                            batch = new BatchCommand();
+                            batch = new BatchCommand(_connection.CreateCommand());
                         }
 
                         batches.Add(command);
