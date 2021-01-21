@@ -633,9 +633,16 @@ namespace YesSql.Services
                         var binaryExpression = (BinaryExpression)expression;
                         if (binaryExpression.Left is ConstantExpression left && binaryExpression.Right is ConstantExpression right)
                         {
-                            builder.Append(_dialect.GetSqlValue(_dialect.TryConvert(left.Value)));
+                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                            _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(left.Value));
+                            builder.Append(_queryState._lastParameterName);
+                            
                             builder.Append(GetBinaryOperator(expression));
-                            builder.Append(_dialect.GetSqlValue(_dialect.TryConvert(right.Value)));
+
+                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                            _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(right.Value));
+                            builder.Append(_queryState._lastParameterName);
+                        
                             return;
                         }
 
