@@ -252,8 +252,5 @@ namespace YesSql.Provider.MySql
 
             return base.GetSqlValue(value);
         }
-
-        public override bool SupportsIfExistsBeforeTableName => true;
-
     }
 }
