@@ -4954,14 +4954,49 @@ namespace YesSql.Tests
                 Assert.Equal(0, index.ValueLong);
                 Assert.Equal(0, index.ValueShort);
             }
+        }
+
+        [Fact]
+        public async Task AllDataTypesShouldBeQueryableWithProperties()
+        {
+            var dummy = new Person();
+
+            var valueTimeSpan = new TimeSpan(1, 2, 3, 4, 5);
+            var valueDateTime = new DateTime(2021, 1, 20);
+            var valueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e");
+            var valueBool = false;
+            var valueDateTimeOffset = new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0));
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex();
+
+                index.ValueDateTime = valueDateTime;
+                index.ValueGuid = valueGuid;
+                index.ValueBool = valueBool;
+                index.ValueDateTimeOffset = valueDateTimeOffset;
+                index.ValueTimeSpan = valueTimeSpan;
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+            }
 
             using (var session = _store.CreateSession())
             {
                 // Ensure that query builing is also converting the values
-                var index = await session.QueryIndex<TypesIndex>(x => 
+                var index = await session.QueryIndex<TypesIndex>(x =>
                 x.ValueBool == valueBool
-                && x.ValueDateTime == valueDateTime 
-                && x.ValueDateTimeOffset == valueDateTimeOffset 
+                && x.ValueDateTime == valueDateTime
+                && x.ValueDateTimeOffset == valueDateTimeOffset
                 && x.ValueTimeSpan == valueTimeSpan
                 && x.ValueGuid == valueGuid).FirstOrDefaultAsync();
 
@@ -4977,6 +5012,41 @@ namespace YesSql.Tests
                 Assert.Equal(0, index.ValueInt);
                 Assert.Equal(0, index.ValueLong);
                 Assert.Equal(0, index.ValueShort);
+            }
+        }
+
+        [Fact]
+        public async Task AllDataTypesShouldBeQeuryableWithConstants()
+        {
+            var dummy = new Person();
+
+            var valueTimeSpan = new TimeSpan(1, 2, 3, 4, 5);
+            var valueDateTime = new DateTime(2021, 1, 20);
+            var valueGuid = Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e");
+            var valueBool = false;
+            var valueDateTimeOffset = new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0));
+
+            // Create fake document to associate to index
+            using (var session = _store.CreateSession())
+            {
+                session.Save(dummy);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex();
+
+                index.ValueDateTime = valueDateTime;
+                index.ValueGuid = valueGuid;
+                index.ValueBool = valueBool;
+                index.ValueDateTimeOffset = valueDateTimeOffset;
+                index.ValueTimeSpan = valueTimeSpan;
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var transaction = await session.DemandAsync();
+
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5002,7 +5072,6 @@ namespace YesSql.Tests
                 Assert.Equal(0, index.ValueLong);
                 Assert.Equal(0, index.ValueShort);
             }
-
         }
 
         //[Fact]
