@@ -518,9 +518,18 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                        _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((FieldInfo)memberExpression.Member).GetValue(o));
-
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
+
+                        if (value != null && _dialect.TryConvert(value, value.GetType(), out var converted))
+                        {
+                            value = converted;
+                        }
+
+                        if (_compiledQuery != null)
+                        {
+                            _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = value);
+                        }
+
                         return Expression.Constant(value);
                     }
                     else if (memberExpression.Member.MemberType == MemberTypes.Property)
@@ -545,9 +554,18 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                        _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = ((PropertyInfo)memberExpression.Member).GetValue(o));
-
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
+
+                        if (value != null && _dialect.TryConvert(value, value.GetType(), out var converted))
+                        {
+                            value = converted;
+                        }
+
+                        if (_compiledQuery != null)
+                        {
+                            _queryState._parameterBindings.Add((o, sqlBuilder) => sqlBuilder.Parameters[_parameterName] = value);
+                        }
+                        
                         return Expression.Constant(value);
                     }
                     break;

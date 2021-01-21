@@ -43,7 +43,6 @@ namespace YesSql.Provider
 
         public virtual bool TryConvert(object source, Type valueType, out object result)
         {
-
             if (_typeHandlers.Count > 0)
             {
                 if (_typeHandlers.TryGetValue(valueType, out var handlers) && handlers.Count > 0)
