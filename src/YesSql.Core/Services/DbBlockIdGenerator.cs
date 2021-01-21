@@ -47,13 +47,21 @@ namespace YesSql.Services
             UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+#else
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+#endif
             {
                 await connection.OpenAsync();
 
                 try
                 {
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                    await using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
+#else
                     using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
+#endif
                     {
                         var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
@@ -65,7 +73,11 @@ namespace YesSql.Services
                                 .CreateIndex("IX_Dimension", "dimension")
                             );
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                        await transaction.CommitAsync();
+#else
                         transaction.Commit();
+#endif
                     }
                 }
                 catch
@@ -180,11 +192,19 @@ namespace YesSql.Services
 
             object nextval;
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+            await using (var connection = configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#else
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#endif
                 {
                     // Does the record already exist?
                     var selectCommand = transaction.Connection.CreateCommand();
@@ -200,7 +220,11 @@ namespace YesSql.Services
                     _store.Configuration.Logger.LogTrace(SelectCommand);
                     nextval = await selectCommand.ExecuteScalarAsync();
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                    await transaction.CommitAsync();
+#else
                     transaction.Commit();
+#endif
                 }
 
                 if (nextval == null)
@@ -208,7 +232,11 @@ namespace YesSql.Services
                     // Try to create a new record. If it fails, retry reading the record.
                     try
                     {
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                        await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#else
                         using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#endif
                         {
                             nextval = 1;
 
@@ -232,7 +260,11 @@ namespace YesSql.Services
                             _store.Configuration.Logger.LogTrace(InsertCommand);
                             await command.ExecuteNonQueryAsync();
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                            await transaction.CommitAsync();
+#else
                             transaction.Commit();
+#endif
                         }
                     }
                     catch

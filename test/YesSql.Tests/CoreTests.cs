@@ -3023,6 +3023,33 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldSaveChangesWithIDisposableAsync()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                session.Save(circle);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var circle = await session.Query().For<Circle>().FirstOrDefaultAsync();
+                Assert.NotNull(circle);
+                circle.Radius = 20;
+                session.Save(circle);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(20, (await session.Query().For<Circle>().FirstOrDefaultAsync()).Radius);
+            }
+        }
+
+        [Fact]
         public async Task ShouldNotSaveChangesAutomatically()
         {
             using (var session = _store.CreateSession())
