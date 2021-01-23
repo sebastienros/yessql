@@ -864,6 +864,8 @@ namespace YesSql
                     batch.Actions.AddRange(localActions);
                     for (var i = localDbCommand.Parameters.Count - 1; i >= 0; i--)
                     {
+                        // npgsql will prevent a parameter from being added to a collection
+                        // if it's already in another one
                         var parameter = localDbCommand.Parameters[i];
                         localDbCommand.Parameters.RemoveAt(i);
                         batch.Command.Parameters.Add(parameter);
