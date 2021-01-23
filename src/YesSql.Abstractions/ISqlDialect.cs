@@ -7,6 +7,17 @@ namespace YesSql
 {
     public interface ISqlDialect
     {
+
+        /// <summary>
+        /// Gets the maximum number of commands per batch.
+        /// </summary>
+        int MaxCommandsPageSize { get; }
+
+        /// <summary>
+        /// Gets the maximum number of parameters per command.
+        /// </summary>
+        int MaxParametersPerCommand { get; }
+
         /// <summary>
         /// Returns the DbType that a type is mapped to for this dialect.
         /// </summary>

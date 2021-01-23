@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,15 +32,13 @@ namespace YesSql.Commands
             return connection.ExecuteAsync(command, new { Id = DocumentId }, transaction);
         }
 
-        public bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
+        public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
         {
-            var index = queries.Count;
+            var sql = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = @Id_{index};";
 
-            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = @Id_{index};";
+            queries.Add(sql);
 
-            queries.Add(command);
-
-            parameters.Add("Id_" + index, DocumentId);
+            command.AddParameter($"Id_{index}", DocumentId, DbType.Int32);
 
             return true;
         }

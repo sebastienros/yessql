@@ -1,4 +1,3 @@
-using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
@@ -48,7 +47,7 @@ namespace YesSql.Commands
             UpdatesList.Clear();
         }
 
-        protected static void GetProperties(DynamicParameters parameters, object item, string suffix, ISqlDialect dialect)
+        protected static void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
         {
             var type = item.GetType();
 
@@ -58,7 +57,11 @@ namespace YesSql.Commands
 
                 var value = accessor.Get(item);
 
-                parameters.Add(property.Name + suffix, dialect.TryConvert(value), dialect.ToDbType(property.PropertyType));
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = property.Name + suffix;
+                parameter.Value = dialect.TryConvert(value) ?? DBNull.Value;
+                parameter.DbType = dialect.ToDbType(property.PropertyType);
+                command.Parameters.Add(parameter);
             }
         }
 
@@ -171,7 +174,7 @@ namespace YesSql.Commands
                 ;
         }
 
-        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions);
+        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
 
         public struct CompoundKey : IEquatable<CompoundKey>
         {

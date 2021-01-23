@@ -43,7 +43,12 @@ namespace YesSql.Provider
 
         public virtual object TryConvert(object source)
         {
-            if (source != null && _typeHandlers.Count > 0)
+            if (source == null)
+            {
+                return source;
+            }
+
+            if (_typeHandlers.Count > 0)
             {
                 if (_typeHandlers.TryGetValue(source.GetType(), out var handlers) && handlers.Count > 0)
                 {
@@ -54,6 +59,11 @@ namespace YesSql.Provider
 
                     return source;
                 }
+            }
+
+            if (source.GetType().IsEnum)
+            {
+                return Convert.ToInt32(source);
             }
 
             return source;
@@ -176,6 +186,10 @@ namespace YesSql.Provider
         public abstract byte DefaultDecimalPrecision { get; }
 
         public abstract byte DefaultDecimalScale { get; }
+
+        public virtual int MaxCommandsPageSize => int.MaxValue;
+
+        public virtual int MaxParametersPerCommand => int.MaxValue;
 
         protected virtual string Quote(string value)
         {

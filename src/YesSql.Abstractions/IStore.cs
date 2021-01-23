@@ -43,11 +43,6 @@ namespace YesSql
         IEnumerable<IndexDescriptor> Describe(Type target, string collection = null);
 
         /// <summary>
-        /// Returns the <see cref="ISqlDialect" /> instance used to create this store.
-        /// </summary>
-        ISqlDialect Dialect { get; }
-
-        /// <summary>
         /// Returns the <see cref="ITypeService" /> instance used to create this store.
         /// </summary>
         ITypeService TypeNames { get; }

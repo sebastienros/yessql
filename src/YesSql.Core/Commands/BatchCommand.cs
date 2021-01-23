@@ -1,7 +1,8 @@
-using Dapper;
+//using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 using YesSql.Utils;
@@ -13,21 +14,26 @@ namespace YesSql.Commands
         public static int DefaultBuilderCapacity = 10 * 1024;
 
         // Dedicated pool since batches should be of the same size
-        private static ObjectPool<StringBuilderPool> _batchPool = StringBuilderPool.CreatePool(8, DefaultBuilderCapacity);
+        private static readonly ObjectPool<StringBuilderPool> _batchPool = StringBuilderPool.CreatePool(8, DefaultBuilderCapacity);
 
         public List<string> Queries { get; set; } = new List<string>();
-        public DynamicParameters Parameters { get; set; } = new DynamicParameters();
+        public DbCommand Command { get; set; } 
         public List<Action<DbDataReader>> Actions = new List<Action<DbDataReader>>();
         public int ExecutionOrder => 0;
 
-        public bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
+        public BatchCommand(DbCommand command)
+        {
+            Command = command;
+        }
+
+        public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             if (queries == Queries)
             {
                 queries.AddRange(Queries);
-                foreach (var name in parameters.ParameterNames)
+                foreach (var parameter in Command.Parameters)
                 {
-                    Parameters.Add(name, parameters.Get<object>(name));
+                    batchCommand.Parameters.Add(parameter);
                 }
             }
 
@@ -62,7 +68,10 @@ namespace YesSql.Commands
                     logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
                 }
 
-                using (var dr = await connection.ExecuteReaderAsync(command, Parameters, transaction))
+                Command.Transaction = transaction;
+                Command.CommandText = command;
+
+                using (var dr = await Command.ExecuteReaderAsync())
                 {
                     foreach (var action in Actions)
                     {
@@ -70,6 +79,35 @@ namespace YesSql.Commands
                     }
                 }
             }
+        }
+    }
+
+    public static class CommandExtensions
+    {
+        public static DbCommand AddParameter(this DbCommand command, string name, object value, DbType dbType)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value ?? DBNull.Value;
+            parameter.DbType = dbType;
+
+            command.Parameters.Add(parameter);
+            return command;
+        }
+
+        public static DbCommand AddParameter(this DbCommand command, string name, int value)
+        {
+            return AddParameter(command, name, value, DbType.Int32);
+        }
+
+        public static DbCommand AddParameter(this DbCommand command, string name, long value)
+        {
+            return AddParameter(command, name, value, DbType.Int64);
+        }
+
+        public static DbCommand AddParameter(this DbCommand command, string name, string value)
+        {
+            return AddParameter(command, name, value, DbType.String);
         }
     }
 }

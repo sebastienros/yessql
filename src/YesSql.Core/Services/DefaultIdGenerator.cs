@@ -34,7 +34,7 @@ namespace YesSql.Services
 
         public Task InitializeAsync(IStore store, ISchemaBuilder builder)
         {
-            _dialect = store.Dialect;
+            _dialect = store.Configuration.SqlDialect;
 
 #if NET451
             return Task.FromResult(0);

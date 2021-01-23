@@ -31,19 +31,18 @@ namespace YesSql.Commands
             return connection.ExecuteAsync(insertCmd, Document, transaction);
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DynamicParameters parameters, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
-            var index = queries.Count;
-
             var documentTable = _tableNameConvention.GetDocumentTable(Collection);
             var insertCmd = $"insert into {dialect.QuoteForTableName(_tablePrefix + documentTable)} ({dialect.QuoteForColumnName("Id")}, {dialect.QuoteForColumnName("Type")}, {dialect.QuoteForColumnName("Content")}, {dialect.QuoteForColumnName("Version")}) values (@Id_{index}, @Type_{index}, @Content_{index}, @Version_{index});";
 
             queries.Add(insertCmd);
-            
-            parameters.Add("Id_" + index, Document.Id);
-            parameters.Add("Type_" + index, Document.Type);
-            parameters.Add("Content_" + index, Document.Content);
-            parameters.Add("Version_" + index, Document.Version);
+
+            batchCommand
+                .AddParameter("Id_" + index, Document.Id)
+                .AddParameter("Type_" + index, Document.Type)
+                .AddParameter("Content_" + index, Document.Content)
+                .AddParameter("Version_" + index, Document.Version);
 
             return true;
         }

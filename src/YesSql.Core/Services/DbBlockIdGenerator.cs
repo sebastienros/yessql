@@ -39,7 +39,7 @@ namespace YesSql.Services
 
         public async Task InitializeAsync(IStore store, ISchemaBuilder builder)
         {
-            _dialect = store.Dialect;
+            _dialect = store.Configuration.SqlDialect;
             _tablePrefix = store.Configuration.TablePrefix;
             _store = store;
 
