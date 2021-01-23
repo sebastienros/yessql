@@ -862,8 +862,10 @@ namespace YesSql
                     // We can add the queries to the current batch
                     batch.Queries.AddRange(localQueries);
                     batch.Actions.AddRange(localActions);
-                    foreach (var parameter in localDbCommand.Parameters)
+                    for (var i = localDbCommand.Parameters.Count - 1; i >= 0; i--)
                     {
+                        var parameter = localDbCommand.Parameters[i];
+                        localDbCommand.Parameters.RemoveAt(i);
                         batch.Command.Parameters.Add(parameter);
                     }
                 }
