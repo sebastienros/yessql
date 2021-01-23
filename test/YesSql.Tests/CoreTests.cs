@@ -4333,9 +4333,9 @@ namespace YesSql.Tests
                         );
 
                     var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
-                        _store.Dialect.QuoteForTableName(prefixedTable),
-                        _store.Dialect.QuoteForColumnName(column1),
-                        _store.Dialect.GetSqlValue(value)
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                        _store.Configuration.SqlDialect.QuoteForColumnName(column1),
+                        _store.Configuration.SqlDialect.GetSqlValue(value)
                         );
 
                     connection.Execute(sqlInsert, transaction: transaction);
@@ -4346,8 +4346,8 @@ namespace YesSql.Tests
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     var sqlSelect = String.Format("SELECT {0} FROM {1}",
-                        _store.Dialect.QuoteForColumnName(column1),
-                        _store.Dialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForColumnName(column1),
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -4371,8 +4371,8 @@ namespace YesSql.Tests
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     var sqlSelect = String.Format("SELECT {0} FROM {1}",
-                        _store.Dialect.QuoteForColumnName(column2),
-                        _store.Dialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForColumnName(column2),
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -4893,9 +4893,9 @@ namespace YesSql.Tests
         [ClassData(typeof(DecimalPrecisionAndScaleDataGenerator))]
         public void SqlDecimalPrecisionAndScale(byte? precision, byte? scale)
         {
-            string expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? _store.Dialect.DefaultDecimalPrecision, scale ?? _store.Dialect.DefaultDecimalScale);
+            string expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? _store.Configuration.SqlDialect.DefaultDecimalPrecision, scale ?? _store.Configuration.SqlDialect.DefaultDecimalScale);
 
-            string result = _store.Dialect.GetTypeName(DbType.Decimal, null, precision, scale);
+            string result = _store.Configuration.SqlDialect.GetTypeName(DbType.Decimal, null, precision, scale);
 
             Assert.Equal(expected, result);
         }
@@ -4961,7 +4961,7 @@ namespace YesSql.Tests
 
                 var transaction = await session.DemandAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5014,7 +5014,7 @@ namespace YesSql.Tests
 
                 var transaction = await session.DemandAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5073,7 +5073,7 @@ namespace YesSql.Tests
 
                 var transaction = await session.DemandAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5126,7 +5126,7 @@ namespace YesSql.Tests
 
                 var transaction = await session.DemandAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Dialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5144,6 +5144,27 @@ namespace YesSql.Tests
                 Assert.Null(index.NullableShort);
                 Assert.Null(index.NullableDateTimeOffset);
                 Assert.Null(index.NullableTimeSpan);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldSplitBatchCommandsByMaxParameters()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.Configuration.CommandsPageSize = int.MaxValue;
+
+            using (var session = _store.CreateSession())
+            {
+                // This will produce 2000 queries (1 doc + 1 index) and 8000 parameters (4/doc and 4/index)
+                for (var i = 0; i < 1000; i++)
+                {
+                    session.Save(new Person { Age = i, Firstname = i.ToString(), Lastname = i.ToString() });
+                }
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1000, await session.QueryIndex<PersonByAge>().CountAsync());
             }
         }
     }

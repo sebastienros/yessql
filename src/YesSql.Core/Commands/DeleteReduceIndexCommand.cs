@@ -16,11 +16,10 @@ namespace YesSql.Commands
 
         public override int ExecutionOrder { get; } = 1;
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             var type = Index.GetType();
             var name = type.Name;
-            var index = queries.Count;
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
             var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;

@@ -55,7 +55,7 @@ namespace YesSql.Commands
             }
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             if (Index is ReduceIndex && _addedDocumentIds.Length > 1)
             {
@@ -77,7 +77,6 @@ namespace YesSql.Commands
 
             var type = Index.GetType();
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
-            var index = queries.Count;
             var sql = Inserts(type, dialect);
             sql = sql.Replace(ParameterSuffix, index.ToString());
             queries.Add(sql);

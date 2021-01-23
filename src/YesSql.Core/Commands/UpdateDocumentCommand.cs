@@ -45,7 +45,7 @@ namespace YesSql.Commands
             return;
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             // Can't batch if version needs to be checked
             // TODO: If the scalar result still works in batches, we might need to count what is the expected total number
@@ -57,7 +57,6 @@ namespace YesSql.Commands
                 return false;
             }
 
-            var index = queries.Count;
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "

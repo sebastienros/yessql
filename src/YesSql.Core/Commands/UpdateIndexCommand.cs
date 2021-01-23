@@ -72,10 +72,9 @@ namespace YesSql.Commands
             }
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions)
+        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
         {
             var type = Index.GetType();
-            var index = queries.Count;
             var sql = Updates(type, dialect);
             sql = sql.Replace(ParameterSuffix, index.ToString());
             queries.Add(sql);

@@ -373,7 +373,7 @@ namespace YesSql.Services
         {
             _collection = collection;
             _session = session;
-            _dialect = session.Store.Dialect;
+            _dialect = session.Store.Configuration.SqlDialect;
             _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix), session.Store, collection);
         }
 
@@ -382,7 +382,7 @@ namespace YesSql.Services
             _queryState = queryState;
             _compiledQuery = compiledQuery;
             _session = session;
-            _dialect = session.Store.Dialect;
+            _dialect = session.Store.Configuration.SqlDialect;
         }
 
         public override string ToString()

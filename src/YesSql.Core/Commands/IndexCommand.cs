@@ -174,7 +174,7 @@ namespace YesSql.Commands
                 ;
         }
 
-        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions);
+        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
 
         public struct CompoundKey : IEquatable<CompoundKey>
         {

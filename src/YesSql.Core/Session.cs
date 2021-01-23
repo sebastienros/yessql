@@ -823,39 +823,75 @@ namespace YesSql
                 return;
             }
 
-            if (!_dialect.SupportsBatching)
+            if (!_dialect.SupportsBatching || _store.Configuration.CommandsPageSize == 0)
             {
                 return;
             }
 
             var batches = new List<IIndexCommand>();
 
-            foreach (var page in _commands.OrderBy(x => x.ExecutionOrder).PagesOf(_store.Configuration.CommandsPageSize))
+            // holds the queries, parameters and actions returned by an IIndexCommand, until we know we can
+            // add it to a batch if it fits the limits (page size and parameters boundaries)
+            var localDbCommand = _connection.CreateCommand();
+            var localQueries = new List<string>();
+            var localActions = new List<Action<DbDataReader>>();
+
+            var batch = new BatchCommand(_connection.CreateCommand());
+            var index = 0;
+
+            foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
             {
-                var batch = new BatchCommand(_connection.CreateCommand());
+                index++;
 
-                foreach (var command in page)
+                // Can the command be batched
+                if (command.AddToBatch(_dialect, localQueries, localDbCommand, localActions, index))
                 {
-                    if (!command.AddToBatch(_dialect, batch.Queries, batch.Command, batch.Actions))
+                    // Does it go over the page or parameters limits
+
+                    var tooManyQueries = batch.Queries.Count + localQueries.Count > _store.Configuration.CommandsPageSize;
+                    var tooManyCommands = batch.Command.Parameters.Count + localDbCommand.Parameters.Count > _store.Configuration.SqlDialect.MaxParametersPerCommand;
+
+                    if (tooManyQueries || tooManyCommands)
                     {
-                        // If the command can't be added to a batch, we execute it independently
+                        batches.Add(batch);
 
-                        if (batch.Queries.Count > 0)
-                        {
-                            batches.Add(batch);
+                        // Then start a new batch
+                        batch = new BatchCommand(_connection.CreateCommand());
+                    }
 
-                            // Then start a new batch
-                            batch = new BatchCommand(_connection.CreateCommand());
-                        }
-
-                        batches.Add(command);
+                    // We can add the queries to the current batch
+                    batch.Queries.AddRange(localQueries);
+                    batch.Actions.AddRange(localActions);
+                    foreach (var parameter in localDbCommand.Parameters)
+                    {
+                        batch.Command.Parameters.Add(parameter);
                     }
                 }
-
-                if (batch.Queries.Count > 0)
+                else
                 {
-                    batches.Add(batch);
+                    // The command can't be added to a batch, we leave it in the list of commands to execute individually
+
+                    // Finalize the current batch
+                    if (batch.Queries.Count > 0)
+                    {
+                        batches.Add(batch);
+
+                        // Then start a new batch
+                        batch = new BatchCommand(_connection.CreateCommand());
+                    }
+
+                    batches.Add(command);
                 }
+
+                localQueries.Clear();
+                localDbCommand.Parameters.Clear();
+                localActions.Clear();
+            }
+
+            // If the ongoing batch is not empty, add it
+            if (batch.Queries.Count > 0)
+            {
+                batches.Add(batch);
             }
 
             _commands.Clear();

@@ -187,6 +187,10 @@ namespace YesSql.Provider
 
         public abstract byte DefaultDecimalScale { get; }
 
+        public virtual int MaxCommandsPageSize => int.MaxValue;
+
+        public virtual int MaxParametersPerCommand => int.MaxValue;
+
         protected virtual string Quote(string value)
         {
             return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
