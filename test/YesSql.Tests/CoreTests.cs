@@ -5190,7 +5190,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1000, await session.QueryIndex<PersonByAge>().CountAsync());
+                var persons = (await session.Query<Person>().ListAsync());
+                Assert.Equal(1000, persons.Count());
+                // This will produce a query that batches at 2099 parameters which will fail.
+                // When reduced to a maximum to 2098, i.e. stopping the batch before 2099, it will pass.
+                foreach (var person in persons)
+                {   
+                    session.Save(person);
+                }              
             }
         }
     }

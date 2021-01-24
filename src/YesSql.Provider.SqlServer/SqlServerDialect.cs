@@ -243,6 +243,6 @@ namespace YesSql.Provider.SqlServer
 
         public override bool SupportsIfExistsBeforeTableName => true;
 
-        public override int MaxParametersPerCommand => 2099;
+        public override int MaxParametersPerCommand => 2098;
     }
 }
