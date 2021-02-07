@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Text;
+using YesSql.Sql;
 
 namespace YesSql.Provider.MySql
 {
@@ -84,6 +85,7 @@ namespace YesSql.Provider.MySql
         public MySqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+            Methods.Add("now", new TemplateFunction("UTC_TIMESTAMP()"));
         }
 
         public override string Name => "MySql";

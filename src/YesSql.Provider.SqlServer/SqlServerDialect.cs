@@ -90,6 +90,7 @@ namespace YesSql.Provider.SqlServer
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));
             Methods.Add("hour", new TemplateFunction("datepart(hour, {0})"));
+            Methods.Add("now", new TemplateFunction("getUtcDate()"));
 
             // These are not necessary since SQL Server 2008 
             //Methods.Add("day", new TemplateFunction("datepart(day, {0})"));

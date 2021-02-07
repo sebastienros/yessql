@@ -93,6 +93,7 @@ namespace YesSql.Provider.PostgreSql
             Methods.Add("day", new TemplateFunction("extract(day from {0})"));
             Methods.Add("month", new TemplateFunction("extract(month from {0})"));
             Methods.Add("year", new TemplateFunction("extract(year from {0})"));
+            Methods.Add("now", new TemplateFunction("now() at time zone 'utc'"));
         }
 
         public override string Name => "PostgreSql";

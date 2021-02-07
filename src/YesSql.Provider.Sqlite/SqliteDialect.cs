@@ -90,6 +90,7 @@ namespace YesSql.Provider.Sqlite
             Methods.Add("day", new TemplateFunction("cast(strftime('%d', {0}) as int)"));
             Methods.Add("month", new TemplateFunction("cast(strftime('%m', {0}) as int)"));
             Methods.Add("year", new TemplateFunction("cast(strftime('%Y', {0}) as int)"));
+            Methods.Add("now", new TemplateFunction("DATETIME('now')"));
         }
 
         public override string Name => "Sqlite";
