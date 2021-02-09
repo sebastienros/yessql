@@ -196,7 +196,9 @@ namespace YesSql.Provider.SqlServer
 
         public override string GetDropIndexString(string indexName, string tableName)
         {
-            return "drop index if exists " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName);
+            var command = "IF EXISTS (SELECT * FROM sys.indexes WHERE NAME = N'" + QuoteForColumnName(indexName) +  "')"
+                        + "DROP INDEX" + QuoteForColumnName(indexName) + " ON " + QuoteForTableName(tableName);
+            return command;
         }
 
         public override string QuoteForColumnName(string columnName)
