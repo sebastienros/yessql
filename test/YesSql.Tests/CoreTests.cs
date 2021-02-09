@@ -3667,6 +3667,48 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task SqlNowFunction()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            var now = DateTime.UtcNow;
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 1; i < 11; i++)
+                {
+                    session.Save(new Article
+                    {
+                        PublishedUtc = now.AddDays(i)
+                    });
+                    session.Save(new Article
+                    {
+                        PublishedUtc = now.AddDays(-i)
+                    });
+                }
+            }
+
+            int publishedInTheFutureResult, publishedInThePastResult;
+            DateTime firstDateTimeResult, secondDateTimeResult;
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                var dialect = _store.Configuration.SqlDialect;
+
+                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " +  dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
+                publishedInTheFutureResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInTheFutureSql);
+
+                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
+                publishedInThePastResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInThePastSql);
+            }
+
+            Assert.Equal(10, publishedInTheFutureResult);
+            Assert.Equal(10, publishedInThePastResult);
+        }
+
+        [Fact]
         public virtual async Task CanUseStaticMethodsInLinqQueries()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
