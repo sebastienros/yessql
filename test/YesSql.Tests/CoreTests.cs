@@ -3697,23 +3697,15 @@ namespace YesSql.Tests
 
                 var dialect = _store.Configuration.SqlDialect;
 
-                var selectNowSql = "SELECT " + dialect.RenderMethod("now");
-                firstDateTimeResult = await connection.QueryFirstOrDefaultAsync<DateTime>(selectNowSql);
-
                 var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " +  dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
                 publishedInTheFutureResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInTheFutureSql);
 
                 var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
                 publishedInThePastResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInThePastSql);
-
-                var selectNowAfterSql = "SELECT " + dialect.RenderMethod("now");
-                secondDateTimeResult = await connection.QueryFirstOrDefaultAsync<DateTime>(selectNowSql);
             }
 
             Assert.Equal(10, publishedInTheFutureResult);
             Assert.Equal(10, publishedInThePastResult);
-            Assert.True(secondDateTimeResult > firstDateTimeResult);
-            Assert.Equal(now.ToString("yyyy-MM-dd"), firstDateTimeResult.ToString("yyyy-MM-dd"));
         }
 
         [Fact]
