@@ -5259,27 +5259,6 @@ namespace YesSql.Tests
                 Firstname = "",
                 Version = 0
             };
-
-            using (var sessionOnlyForRead = _store.CreateSession())
-            {
-                var person = await sessionOnlyForRead.Query<Person>().FirstOrDefaultAsync();
-                Assert.Equal("Bill", (string)person.Firstname);
-
-                try
-                {
-                    using (var sessionForWrite = _store.CreateSession())
-                    {
-                        var personForWrite = await sessionForWrite.Query<Person>().FirstOrDefaultAsync();
-                        personForWrite.Firstname = "Jim";
-                        sessionForWrite.Save(personForWrite);
-                        sessionForWrite.CommitAsync();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Assert.Contains("lock", e.Message.ToLower());
-                }
-            }
             using (var sessionReadOnly = _store.CreateSessionReadOnly())
             {
                 var person = await sessionReadOnly.Query<Person>().FirstOrDefaultAsync();
