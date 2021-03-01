@@ -533,7 +533,7 @@ namespace YesSql
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
-                if (state.IdentityMap.TryGetEntityById(d.Id, out var entity))
+                if (_transaction != null && state.IdentityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
                 }
@@ -569,10 +569,12 @@ namespace YesSql
                         accessor.Set(item, d.Id);
                     }
 
-                    // track the loaded object
-                    state.IdentityMap.AddEntity(d.Id, item);
-                    state.IdentityMap.AddDocument(d);
-
+                    if (_transaction != null)
+                    {
+                        // track the loaded object
+                        state.IdentityMap.AddEntity(d.Id, item);
+                        state.IdentityMap.AddDocument(d);
+                    }
                     result.Add(item);
                 }
             };
@@ -1041,7 +1043,7 @@ namespace YesSql
             }
         }
 #endif
-        private void ReleaseConnection()
+        public void ReleaseConnection()
         {
             ReleaseTransaction();
 
@@ -1399,10 +1401,22 @@ namespace YesSql
 
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.
-                _transaction = _connection.BeginTransaction(_isolationLevel);
+                if (_isolationLevel == IsolationLevel.Unspecified)
+                {
+                    _transaction = null;
+                }
+                else
+                {
+                    _transaction = _connection.BeginTransaction(_isolationLevel);
+                }
             }
 
             return _transaction;
+        }
+
+        internal DbConnection GetConnection()
+        {
+            return _connection;
         }
 
         public void Cancel()

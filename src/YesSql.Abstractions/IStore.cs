@@ -58,5 +58,14 @@ namespace YesSql
         {
             return store.CreateSession(store.Configuration.IsolationLevel);
         }
+
+        /// <summary>
+        /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/> with
+        /// the default <see cref="IsolationLevel"/>.
+        /// </summary>
+        public static ISessionReadOnly CreateSessionReadOnly(this IStore store)
+        {
+            return store.CreateSession(IsolationLevel.Unspecified);
+        }
     }
 }

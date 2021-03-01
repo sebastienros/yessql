@@ -10,7 +10,7 @@ namespace YesSql
     /// <summary>
     /// Represents a connection to the document store.
     /// </summary>
-    public interface ISession : IDisposable, IAsyncDisposable
+    public interface ISession : ISessionReadOnly, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// Saves a new or existing object to the store, and updates
@@ -51,27 +51,6 @@ namespace YesSql
         void Detach(object item, string collection = null);
 
         /// <summary>
-        /// Loads objects by id.
-        /// </summary>
-        /// <returns>A collection of objects in the same order they were defined.</returns>
-        Task<IEnumerable<T>> GetAsync<T>(int[] ids, string collection = null) where T : class;
-
-        /// <summary>
-        /// Creates a new <see cref="IQuery"/> object.
-        /// </summary>
-        IQuery Query(string collection = null);
-
-        /// <summary>
-        /// Executes a compiled query.
-        /// </summary>
-        /// <remarks>
-        /// A compiled query is an instance of a class implementing <see cref="ICompiledQuery{T}" />.
-        /// Compiled queries allow YesSql to cache the SQL statement that would be otherwise generated
-        /// on each invocation of the LINQ query. 
-        /// </remarks>
-        IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class;
-
-        /// <summary>
         /// Cancels any pending commands.
         /// </summary>
         void Cancel();
@@ -107,24 +86,10 @@ namespace YesSql
         /// <param name="collection">The name of the collection to store the object in.</param>
         /// <returns>The <see cref="ISession"/> instance.</returns>
         ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null);
-
-        /// <summary>
-        /// Gets the <see cref="Store" /> instance that created this session. 
-        /// </summary>
-        IStore Store { get; }
     }
 
     public static class SessionExtensions
     {
-        /// <summary>
-        /// Loads an object by its id.
-        /// </summary>
-        /// <returns>The object or <c>null</c>.</returns>
-        public async static Task<T> GetAsync<T>(this ISession session, int id, string collection = null) where T : class
-        {
-            return (await session.GetAsync<T>(new[] { id }, collection)).FirstOrDefault();
-        }
-
         /// <summary>
         /// Imports an object in the local identity map.
         /// </summary>

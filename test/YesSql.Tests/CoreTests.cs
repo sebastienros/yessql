@@ -5242,5 +5242,59 @@ namespace YesSql.Tests
                 }              
             }
         }
+
+        [Fact]
+        public virtual async Task ShouldNotCauseInterlockASessionReadOnly()
+        {
+            // Create initial document
+            using (var session = _store.CreateSession())
+            {
+                var email = new Person { Firstname = "Bill" };
+
+                session.Save(email);
+            }
+
+            var viewModel = new Person
+            {
+                Firstname = "",
+                Version = 0
+            };
+
+            using (var sessionOnlyForRead = _store.CreateSession())
+            {
+                var person = await sessionOnlyForRead.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Bill", (string)person.Firstname);
+
+                try
+                {
+                    using (var sessionForWrite = _store.CreateSession())
+                    {
+                        var personForWrite = await sessionForWrite.Query<Person>().FirstOrDefaultAsync();
+                        personForWrite.Firstname = "Jim";
+                        sessionForWrite.Save(personForWrite);
+                        sessionForWrite.CommitAsync();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains("lock", e.Message.ToLower());
+                }
+            }
+            using (var sessionReadOnly = _store.CreateSessionReadOnly())
+            {
+                var person = await sessionReadOnly.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Bill", (string)person.Firstname);
+
+                using (var sessionForWrite = _store.CreateSession())
+                {
+                    var personForWrite = await sessionForWrite.Query<Person>().FirstOrDefaultAsync();
+                    personForWrite.Firstname = "Jim";
+                    sessionForWrite.Save(personForWrite);
+                    sessionForWrite.CommitAsync();
+                }
+                person = await sessionReadOnly.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Jim", (string)person.Firstname);
+            }
+        }
     }
 }
