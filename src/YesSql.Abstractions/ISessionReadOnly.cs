@@ -50,9 +50,9 @@ namespace YesSql
         /// Loads an object by its id.
         /// </summary>
         /// <returns>The object or <c>null</c>.</returns>
-        public async static Task<T> GetAsync<T>(this ISession session, int id, string collection = null) where T : class
+        public async static Task<T> GetAsync<T>(this ISessionReadOnly sessionReadOnly, int id, string collection = null) where T : class
         {
-            return (await session.GetAsync<T>(new[] { id }, collection)).FirstOrDefault();
+            return (await sessionReadOnly.GetAsync<T>(new[] { id }, collection)).FirstOrDefault();
         }
     }
 }
