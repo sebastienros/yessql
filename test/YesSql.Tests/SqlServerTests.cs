@@ -442,5 +442,75 @@ namespace YesSql.Tests
                 session.Save(property);
             }
         }
+        
+        [Fact]
+        public virtual async Task ShouldNotCauseInterlockASessionReadOnly()
+        {
+            IStore storeOfAnotherThread = await StoreFactory.CreateAndInitializeAsync(CreateConfiguration());
+            storeOfAnotherThread.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
+            storeOfAnotherThread.TypeNames[typeof(Person)] = "People";
+            // Create initial document
+            using (var session = _store.CreateSession())
+            {
+                var email = new Person { Firstname = "Bill" };
+
+                session.Save(email);
+            }
+
+            var viewModel = new Person
+            {
+                Firstname = "",
+                Version = 0
+            };
+
+            using (var sessionFirstThread = _store.CreateSession())
+            {
+                var person = await sessionFirstThread.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Bill", (string)person.Firstname);
+                person.Firstname = "Billy";
+                sessionFirstThread.Save(person);
+                await sessionFirstThread.FlushAsync();
+
+                try
+                {
+                    // this is the query another thread could be doing
+                    using (var sessionSecondThread = storeOfAnotherThread.CreateSession())
+                    {
+                        var personSecondThread = await sessionSecondThread.Query<Person>().FirstOrDefaultAsync();
+                        personSecondThread.Firstname = "George";
+                        sessionSecondThread.Save(personSecondThread);
+                        await sessionSecondThread.CommitAsync();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains("timeout", e.Message.ToLower());
+                }
+            }
+            using (var sessionReadOnlyFirstThread = _store.CreateSessionReadOnly())
+            {
+                var person = await sessionReadOnlyFirstThread.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Billy", (string)person.Firstname);
+
+                using (var sessionSecondThread = storeOfAnotherThread.CreateSession())
+                {
+                    var personSecondThread = await sessionSecondThread.Query<Person>().FirstOrDefaultAsync();
+                    personSecondThread.Firstname = "George";
+                    sessionSecondThread.Save(personSecondThread);
+                    await sessionSecondThread.FlushAsync();
+                    await sessionSecondThread.CommitAsync();
+                }
+                using (var sessionFirstThread = _store.CreateSession())
+                {
+                    person.Firstname = "Bill";
+                    sessionFirstThread.Import(person);
+                    await sessionFirstThread.CommitAsync();
+                }
+                person = await sessionReadOnlyFirstThread.Query<Person>().FirstOrDefaultAsync();
+                Assert.Equal("Bill", (string)person.Firstname);
+            }
+
+            storeOfAnotherThread.Dispose();
+        }
     }
 }
