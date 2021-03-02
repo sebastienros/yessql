@@ -68,9 +68,6 @@ namespace YesSql.Services
                         localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
                             .Column<string>("dimension", column => column.PrimaryKey().NotNull())
                             .Column<ulong>("nextval")
-                            )
-                            .AlterTable(DbBlockIdGenerator.TableName, table => table
-                                .CreateIndex("IX_Dimension", "dimension")
                             );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
