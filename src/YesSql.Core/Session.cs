@@ -24,6 +24,7 @@ namespace YesSql
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
+        private volatile bool _suppressedFinalize;
         private bool _flushing;
         private IsolationLevel _isolationLevel;
         private DbConnection _connection;
@@ -656,6 +657,10 @@ namespace YesSql
                 CommitTransaction();
 
                 ReleaseSession();
+
+                GC.SuppressFinalize(this);
+
+                _suppressedFinalize = true;
             }
         }
 
@@ -708,6 +713,12 @@ namespace YesSql
             _disposed = false;
             _cancel = false;
             _isolationLevel = isolationLevel;
+
+            if (_suppressedFinalize == true)
+            {
+                GC.ReRegisterForFinalize(this);
+                _suppressedFinalize = false;
+            }
         }
 
         public async Task FlushAsync()
@@ -973,6 +984,10 @@ namespace YesSql
                 await CommitTransactionAsync();
 
                 ReleaseSession();
+
+                GC.SuppressFinalize(this);
+
+                _suppressedFinalize = true;
             }
         }
 
@@ -1038,6 +1053,10 @@ namespace YesSql
                 CommitTransaction();
 
                 ReleaseSession();
+
+                GC.SuppressFinalize(this);
+
+                _suppressedFinalize = true;
             }
         }
 #endif
