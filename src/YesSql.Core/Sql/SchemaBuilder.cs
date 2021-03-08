@@ -95,10 +95,6 @@ namespace YesSql.Sql
                 table(createTable);
                 Execute(_commandInterpreter.CreateSql(createTable));
 
-                AlterTable(indexTable, table =>
-                    table.CreateIndex($"IDX_PK_{indexTable}", "Id")
-                    );
-
                 var bridgeTableName = indexTable + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
