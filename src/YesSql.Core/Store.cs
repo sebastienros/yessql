@@ -214,7 +214,7 @@ namespace YesSql
                                 .Column<int>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
                                 .Column<string>(nameof(Document.Type), column => column.NotNull())
                                 .Column<string>(nameof(Document.Content), column => column.Unlimited())
-                                .Column<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
                             )
                             .AlterTable(documentTable, table => table
                                 .CreateIndex("IX_" + documentTable + "_Type", "Type")
