@@ -56,10 +56,15 @@ namespace YesSql.Sql
 
                 createTable
                     .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
-                    .Column<int>("DocumentId");
+                    .Column<int>("DocumentId")
+                    ;
 
                 table(createTable);
                 Execute(_commandInterpreter.CreateSql(createTable));
+
+                AlterTable(indexTable, table =>
+                    table.CreateIndex($"IDX_PK_{indexTable}", "Id")
+                    );
 
                 CreateForeignKey("FK_" + (collection ?? "") + indexName, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
             }
@@ -90,12 +95,20 @@ namespace YesSql.Sql
                 table(createTable);
                 Execute(_commandInterpreter.CreateSql(createTable));
 
+                AlterTable(indexTable, table =>
+                    table.CreateIndex($"IDX_PK_{indexTable}", "Id")
+                    );
+
                 var bridgeTableName = indexTable + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
                     .Column<int>(indexName + "Id", column => column.NotNull())
                     .Column<int>("DocumentId", column => column.NotNull())
                 );
+
+                AlterTable(bridgeTableName, table =>
+                    table.CreateIndex($"IDX_PK_{bridgeTableName}", indexName + "Id", "DocumentId")
+                    );
 
                 CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { indexName + "Id" }, indexTable, new[] { "Id" });
                 CreateForeignKey("FK_" + bridgeTableName + "_DocumentId", bridgeTableName, new[] { "DocumentId" }, documentTable, new[] { "Id" });
