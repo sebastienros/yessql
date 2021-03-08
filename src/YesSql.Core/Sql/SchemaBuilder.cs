@@ -89,7 +89,7 @@ namespace YesSql.Sql
                 var documentTable = TableNameConvention.GetDocumentTable(collection);
 
                 createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
+                    .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
                     ;
 
                 table(createTable);
