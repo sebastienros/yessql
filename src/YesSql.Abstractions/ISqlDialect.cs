@@ -86,7 +86,7 @@ namespace YesSql
         bool SupportsIdentityColumns { get; }
 
         /// <summary>
-        /// Gets the identity column SQL statement.
+        /// Gets the primary key with identity column SQL statement.
         /// </summary>
         string IdentityColumnString { get; }
 

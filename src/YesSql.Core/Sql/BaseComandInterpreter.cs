@@ -79,7 +79,10 @@ namespace YesSql.Sql
                 Run(builder, createColumn);
             }
 
+            // We only create PK statements on columns that don't have IsIdentity since IsIdentity statements also contains the notion of primary key.
+
             var primaryKeys = command.TableCommands.OfType<CreateColumnCommand>().Where(ccc => ccc.IsPrimaryKey && !ccc.IsIdentity).Select(ccc => _dialect.QuoteForColumnName(ccc.ColumnName)).ToArray();
+            
             if (primaryKeys.Any())
             {
                 if (appendComma)

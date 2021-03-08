@@ -54,8 +54,10 @@ namespace YesSql.Sql
                 var createTable = new CreateTableCommand(Prefix(indexTable));
                 var documentTable = TableNameConvention.GetDocumentTable(collection);
 
+                // NB: Identity() implies PrimaryKey()
+
                 createTable
-                    .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
+                    .Column<int>("Id", column => column.Identity().NotNull())
                     .Column<int>("DocumentId")
                     ;
 
@@ -88,8 +90,10 @@ namespace YesSql.Sql
                 var createTable = new CreateTableCommand(Prefix(indexTable));
                 var documentTable = TableNameConvention.GetDocumentTable(collection);
 
+                // NB: Identity() implies PrimaryKey()
+
                 createTable
-                    .Column<int>("Id", column => column.PrimaryKey().Identity().NotNull())
+                    .Column<int>("Id", column => column.Identity().NotNull())
                     ;
 
                 table(createTable);
