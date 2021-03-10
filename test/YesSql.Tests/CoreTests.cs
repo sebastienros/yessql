@@ -5276,7 +5276,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task InheritedClassRegistereadAnArrayTest()
+        public async Task InheritedClassRegisteredAsAnArrayTest()
         {
             _store.RegisterIndexes(
               new IIndexProvider[]
