@@ -226,6 +226,15 @@ namespace YesSql.Tests
                             "Collection1"
                             );
 
+                    builder.CreateMapIndexTable<AnotherPersonByAge>(column => column
+                            .Column<int>(nameof(AnotherPersonByAge.Age))
+                            .Column<bool>(nameof(AnotherPersonByAge.Adult))
+                            .Column<string>(nameof(AnotherPersonByAge.Name))
+                            .Column<string>(nameof(AnotherPersonByAge.AdditionalField1))
+                            .Column<string>(nameof(AnotherPersonByAge.AdditionalField2))
+                            .Column<string>(nameof(AnotherPersonByAge.AdditionalField3))
+                            );
+
                     transaction.Commit();
                 }
             }
@@ -5240,6 +5249,57 @@ namespace YesSql.Tests
                 {   
                     session.Save(person);
                 }              
+            }
+        }
+
+        [Fact]
+        public async Task InheritedClassTest()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.RegisterIndexes<AnotherPersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var test = new Person { Firstname = "Bill" };
+                var bill = new AnotherPerson { Firstname = "Bill", AdditionalField1 = "test" };
+                session.Save(test);
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.QueryIndex<AnotherPersonByAge>().Where(d => d.AdditionalField1 == "test").FirstOrDefaultAsync();
+
+                Assert.NotNull(person);
+                Assert.Equal("test", (string)person.AdditionalField1);
+            }
+        }
+
+        [Fact]
+        public async Task InheritedClassRegistereadAnArrayTest()
+        {
+            _store.RegisterIndexes(
+              new IIndexProvider[]
+              {
+                 new AnotherPersonAgeIndexProvider(),
+                 new PersonAgeIndexProvider()
+              }
+            );
+
+            using (var session = _store.CreateSession())
+            {
+                var test = new Person { Firstname = "Bill" };
+                var bill = new AnotherPerson { Firstname = "Bill", AdditionalField1 = "test" };
+                session.Save(test);
+                session.Save(bill);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var person = await session.QueryIndex<AnotherPersonByAge>().Where(d => d.AdditionalField1 == "test").FirstOrDefaultAsync();
+
+                Assert.NotNull(person);
+                Assert.Equal("test", (string)person.AdditionalField1);
             }
         }
     }
