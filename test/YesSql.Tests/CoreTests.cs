@@ -67,6 +67,8 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PersonIdentity>();
                     builder.DropMapIndexTable<EmailByAttachment>();
                     builder.DropMapIndexTable<TypesIndex>();
+                    builder.DropMapIndexTable<AnimalIndex>();
+                    builder.DropMapIndexTable<DogIndex>();
 
                     builder.DropMapIndexTable<ShapeIndex>();
                     builder.DropMapIndexTable<PersonByAge>();
