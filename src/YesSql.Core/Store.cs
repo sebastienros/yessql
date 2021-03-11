@@ -341,7 +341,7 @@ namespace YesSql
 
             foreach (var provider in indexProviders)
             {
-                if (provider.ForType().IsAssignableFrom(target) &&
+                if (provider.ForType().Equals(target) &&
                     String.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
                 {
                     provider.Describe(context);

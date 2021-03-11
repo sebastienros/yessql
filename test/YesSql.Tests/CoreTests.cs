@@ -226,13 +226,13 @@ namespace YesSql.Tests
                             "Collection1"
                             );
 
-                    builder.CreateMapIndexTable<AnotherPersonByAge>(column => column
-                            .Column<int>(nameof(AnotherPersonByAge.Age))
-                            .Column<bool>(nameof(AnotherPersonByAge.Adult))
-                            .Column<string>(nameof(AnotherPersonByAge.Name))
-                            .Column<string>(nameof(AnotherPersonByAge.AdditionalField1))
-                            .Column<string>(nameof(AnotherPersonByAge.AdditionalField2))
-                            .Column<string>(nameof(AnotherPersonByAge.AdditionalField3))
+                    builder.CreateMapIndexTable<AnimalIndex>(column => column
+                            .Column<string>(nameof(AnimalIndex.Name))
+                            );
+
+                    builder.CreateMapIndexTable<DogIndex>(column => column
+                            .Column<string>(nameof(DogIndex.Name))
+                            .Column<string>(nameof(DogIndex.Breed))
                             );
 
                     transaction.Commit();
@@ -5253,53 +5253,59 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task InheritedClassTest()
+        public async Task ShouldRegisterIndexProviderWithModelInheritance()
         {
-            _store.RegisterIndexes<PersonAgeIndexProvider>();
-            _store.RegisterIndexes<AnotherPersonAgeIndexProvider>();
+            _store.RegisterIndexes<AnimalIndexProvider>();
+            _store.RegisterIndexes<DogIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
-                var test = new Person { Firstname = "Bill" };
-                var bill = new AnotherPerson { Firstname = "Bill", AdditionalField1 = "test" };
-                session.Save(test);
-                session.Save(bill);
+                var fish = new Animal { Name = "fish" };
+                var germanShepherd = new Dog { Breed = "German Shepherd" };
+                session.Save(fish);
+                session.Save(germanShepherd);
             }
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.QueryIndex<AnotherPersonByAge>().Where(d => d.AdditionalField1 == "test").FirstOrDefaultAsync();
+                var animal = await session.QueryIndex<AnimalIndex>().Where(a => a.Name == "fish").FirstOrDefaultAsync();
+                Assert.NotNull(animal);
+                Assert.Equal("fish", animal.Name);
 
-                Assert.NotNull(person);
-                Assert.Equal("test", (string)person.AdditionalField1);
+                var dog = await session.QueryIndex<DogIndex>().Where(d => d.Breed == "German Shepherd").FirstOrDefaultAsync();
+                Assert.NotNull(dog);
+                Assert.Equal("German Shepherd", dog.Breed);
             }
         }
 
         [Fact]
-        public async Task InheritedClassRegisteredAsAnArrayTest()
+        public async Task ShouldRegisterIndexProvidersWithModelInheritance2()
         {
             _store.RegisterIndexes(
               new IIndexProvider[]
               {
-                 new AnotherPersonAgeIndexProvider(),
-                 new PersonAgeIndexProvider()
+                 new AnimalIndexProvider(),
+                 new DogIndexProvider()
               }
             );
 
             using (var session = _store.CreateSession())
             {
-                var test = new Person { Firstname = "Bill" };
-                var bill = new AnotherPerson { Firstname = "Bill", AdditionalField1 = "test" };
-                session.Save(test);
-                session.Save(bill);
+                var fish = new Animal { Name = "fish" };
+                var germanShepherd = new Dog { Breed = "German Shepherd" };
+                session.Save(fish);
+                session.Save(germanShepherd);
             }
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.QueryIndex<AnotherPersonByAge>().Where(d => d.AdditionalField1 == "test").FirstOrDefaultAsync();
+                var animal = await session.QueryIndex<AnimalIndex>().Where(a => a.Name == "fish").FirstOrDefaultAsync();
+                Assert.NotNull(animal);
+                Assert.Equal("fish", animal.Name);
 
-                Assert.NotNull(person);
-                Assert.Equal("test", (string)person.AdditionalField1);
+                var dog = await session.QueryIndex<DogIndex>().Where(d => d.Breed == "German Shepherd").FirstOrDefaultAsync();
+                Assert.NotNull(dog);
+                Assert.Equal("German Shepherd", dog.Breed);
             }
         }
     }
