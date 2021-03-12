@@ -76,8 +76,8 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PropertyIndex>();
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
-                    builder.DropMapIndexTable<PersonByName>("Collection1");
                     builder.DropMapIndexTable<PersonByNameCol>("Collection1");
+                    builder.DropMapIndexTable<PersonByLastnameCol>("Collection1");
 
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Collection1"));
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
@@ -216,13 +216,13 @@ namespace YesSql.Tests
                             //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
                         );
 
-                    builder.CreateMapIndexTable<PersonByName>(column => column
-                            .Column<string>(nameof(PersonByName.SomeName)),
+                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
+                            .Column<string>(nameof(PersonByNameCol.Name)),
                             "Collection1"
                             );
 
-                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
-                            .Column<string>(nameof(PersonByNameCol.Name)),
+                    builder.CreateMapIndexTable<PersonByLastnameCol>(column => column
+                            .Column<string>(nameof(PersonByLastnameCol.Lastname)),
                             "Collection1"
                             );
 
@@ -3481,6 +3481,42 @@ namespace YesSql.Tests
             {
                 Assert.Equal(1, await session.Query<Person>().CountAsync());
                 Assert.Equal(0, await session.QueryIndex<PersonByNameCol>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryInnerSelectWithCollection()
+        {
+            _store.RegisterIndexes<PersonIndexProviderCol>("Collection1");
+            _store.RegisterIndexes<PersonIndexLastnameProviderCol>("Collection1");
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>().Where(x => x.Name.IsIn<PersonByLastnameCol>(y => y.Lastname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("C"), "Collection1")).CountAsync());
+                // Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
+
+                // Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
+                // Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
             }
         }
 

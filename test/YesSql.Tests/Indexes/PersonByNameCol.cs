@@ -10,6 +10,8 @@ namespace YesSql.Tests.Indexes
 
     public class PersonIndexProviderCol : IndexProvider<Person>
     {
+        public PersonIndexProviderCol() => CollectionName = "Collection1";
+        
         public override void Describe(DescribeContext<Person> context)
         {
             context
