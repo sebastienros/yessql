@@ -78,6 +78,7 @@ namespace YesSql.Tests
 
                     builder.DropMapIndexTable<PersonByName>("Collection1");
                     builder.DropMapIndexTable<PersonByNameCol>("Collection1");
+                    builder.DropReduceIndexTable<PersonsByNameCol>("Collection1");
 
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Collection1"));
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
@@ -225,6 +226,12 @@ namespace YesSql.Tests
                             .Column<string>(nameof(PersonByNameCol.Name)),
                             "Collection1"
                             );
+
+                   builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
+                            .Column<string>(nameof(PersonsByNameCol.Name))
+                            .Column<int>(nameof(PersonsByNameCol.Count)),
+                            "Collection1"
+                            );                            
 
                     transaction.Commit();
                 }
@@ -3483,6 +3490,34 @@ namespace YesSql.Tests
                 Assert.Equal(0, await session.QueryIndex<PersonByNameCol>().CountAsync());
             }
         }
+
+
+        [Fact]
+        public async Task ShouldSaveReduceIndexInCollection()
+        {
+            _store.RegisterIndexes<PersonsByNameIndexProviderCol>("Collection1");
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill"
+                };
+
+                var bill2 = new Person
+                {
+                    Firstname = "Bill"
+                };
+
+                session.Save(bill, "Collection1");
+                session.Save(bill2, "Collection1");
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, (await session.QueryIndex<PersonsByNameCol>(x => x.Name == "Bill", "Collection1").FirstOrDefaultAsync()).Count);
+            }
+        }        
 
         [Fact]
         public async Task ShouldGetAndDeletePerCollection()
