@@ -1671,7 +1671,7 @@ namespace YesSql.Services
     public static class DefaultQueryExtensionsIndexWithCollection
     {
         /// <summary>
-        /// Matches all values that are in the specified collection <see cref="TIndex"/> index, and the specified predicate.
+        /// Matches all values that are in the specified <see cref="TIndex"/> index collection, and the specified predicate.
         /// </summary>
         public static bool IsIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where, string collection)
         {
@@ -1679,7 +1679,7 @@ namespace YesSql.Services
         }
 
         /// <summary>
-        /// Matches all values that are in the specified collection <see cref="TIndex"/> index.
+        /// Matches all values that are in the specified collection <see cref="TIndex"/> index collection.
         /// </summary>
         public static bool IsInAny<TIndex>(this object source, Expression<Func<TIndex, object>> select, string collection)
         {
@@ -1687,7 +1687,7 @@ namespace YesSql.Services
         }
 
         /// <summary>
-        /// Matches all values that are not in the specified collection <see cref="TIndex"/> index, and the specified predicate.
+        /// Matches all values that are not in the specified <see cref="TIndex"/> index collection, and the specified predicate.
         /// </summary>
         public static bool IsNotIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where, string collection)
         {
@@ -1695,7 +1695,7 @@ namespace YesSql.Services
         } 
 
         /// <summary>
-        /// Matches all values that are not in the specified collection <see cref="TIndex"/> index.
+        /// Matches all values that are not in the specified <see cref="TIndex"/> index collection.
         /// </summary>
         public static bool IsNotInAny<TIndex>(this object source, Expression<Func<TIndex, object>> select, string collection)
         {
