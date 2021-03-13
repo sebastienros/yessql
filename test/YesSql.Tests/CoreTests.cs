@@ -77,7 +77,7 @@ namespace YesSql.Tests
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
                     builder.DropMapIndexTable<PersonByNameCol>("Col1");
-                    builder.DropMapIndexTable<PersonByLastnameCol>("Col1");
+                    builder.DropMapIndexTable<PersonByBothNamesCol>("Col1");
                     builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
 
 
@@ -228,8 +228,9 @@ namespace YesSql.Tests
                             "Col1"
                             );
 
-                    builder.CreateMapIndexTable<PersonByLastnameCol>(column => column
-                            .Column<string>(nameof(PersonByLastnameCol.Lastname)),
+                    builder.CreateMapIndexTable<PersonByBothNamesCol>(column => column
+                            .Column<string>(nameof(PersonByBothNamesCol.Firstname))
+                            .Column<string>(nameof(PersonByBothNamesCol.Lastname)),
                             "Col1"
                             );
 
@@ -3525,41 +3526,44 @@ namespace YesSql.Tests
             }
         }        
 
-        // [Fact]
-        // public async Task ShouldQueryInnerSelectWithCollection()
-        // {
-        //     _store.RegisterIndexes<PersonIndexProviderCol>("Col1");
-        //     _store.RegisterIndexes<PersonIndexLastnameProviderCol>("Col1");
+        [Fact]
+        public async Task ShouldQueryInnerSelectWithCollection()
+        {
+            _store.RegisterIndexes<PersonIndexProviderCol>("Col1");
+            _store.RegisterIndexes<PersonIndexBothNamesProviderCol>("Col1");
 
-        //     using (var session = _store.CreateSession())
-        //     {
-        //         var bill = new Person
-        //         {
-        //             Firstname = "Bill",
-        //             Lastname = "Gates",
-        //             Age = 50
-        //         };
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
 
-        //         var elon = new Person
-        //         {
-        //             Firstname = "Elon",
-        //             Lastname = "Musk",
-        //             Age = 12
-        //         };
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
 
-        //         session.Save(bill);
-        //         session.Save(elon);
-        //     }
+                session.Save(bill, "Col1");
+                session.Save(elon, "Col1");
+            }
 
-        //     using (var session = _store.CreateSession())
-        //     {
-        //         // Assert.Equal(1, await session.Query<Person, PersonByNameCol>().Where(x => x.Name.IsIn<PersonByLastnameCol>(y => y.Lastname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("C"), "Col1")).CountAsync());
-        //         // Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Bill", "Col1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByBothNamesCol>(x => x.Lastname == "Gates", "Col1").CountAsync());
 
-        //         // Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
-        //         // Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
-        //     }
-        // }
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G"), "Col1")).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("M"), "Col1")).CountAsync());
+
+                Assert.Equal(2, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname, "Col1")).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotInAny<PersonByBothNamesCol>(y => y.Firstname, "Col1")).CountAsync());
+            }
+        }
 
         [Fact]
         public async Task ShouldGetAndDeletePerCollection()
