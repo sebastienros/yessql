@@ -1679,7 +1679,7 @@ namespace YesSql.Services
         }
 
         /// <summary>
-        /// Matches all values that are in the specified collection <see cref="TIndex"/> index collection.
+        /// Matches all values that are in the specified <see cref="TIndex"/> index collection.
         /// </summary>
         public static bool IsInAny<TIndex>(this object source, Expression<Func<TIndex, object>> select, string collection)
         {
