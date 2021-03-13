@@ -1154,7 +1154,7 @@ namespace YesSql
                             }
                         }
 
-                        var dbIndex = await ReduceForAsync(descriptor, currentKey);
+                        var dbIndex = await ReduceForAsync(descriptor, currentKey, collection);
 
                         // if index present in db and new objects, reduce them
                         if (dbIndex != null && index != null)
@@ -1233,11 +1233,11 @@ namespace YesSql
             }
         }
 
-        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey)
+        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection)
         {
             await DemandAsync();
 
-            var name = _tablePrefix + descriptor.IndexType.Name;
+            var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
             var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);

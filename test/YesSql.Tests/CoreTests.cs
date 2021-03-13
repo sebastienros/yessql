@@ -76,10 +76,12 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PropertyIndex>();
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
-                    builder.DropMapIndexTable<PersonByNameCol>("Collection1");
-                    builder.DropMapIndexTable<PersonByLastnameCol>("Collection1");
+                    builder.DropMapIndexTable<PersonByNameCol>("Col1");
+                    builder.DropMapIndexTable<PersonByLastnameCol>("Col1");
+                    builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
 
-                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Collection1"));
+
+                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Col1"));
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
 
                     builder.DropTable(DbBlockIdGenerator.TableName);
@@ -100,7 +102,7 @@ namespace YesSql.Tests
         {
             _store = StoreFactory.CreateAndInitializeAsync(configuration).GetAwaiter().GetResult();
 
-            _store.InitializeCollectionAsync("Collection1").GetAwaiter().GetResult();
+            _store.InitializeCollectionAsync("Col1").GetAwaiter().GetResult();
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -216,15 +218,26 @@ namespace YesSql.Tests
                             //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
                         );
 
+                    builder.CreateMapIndexTable<PersonByName>(column => column
+                            .Column<string>(nameof(PersonByName.SomeName)),
+                            "Col1"
+                            );
+
                     builder.CreateMapIndexTable<PersonByNameCol>(column => column
                             .Column<string>(nameof(PersonByNameCol.Name)),
-                            "Collection1"
+                            "Col1"
                             );
 
                     builder.CreateMapIndexTable<PersonByLastnameCol>(column => column
                             .Column<string>(nameof(PersonByLastnameCol.Lastname)),
-                            "Collection1"
+                            "Col1"
                             );
+
+                   builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
+                            .Column<string>(nameof(PersonsByNameCol.Name))
+                            .Column<int>(nameof(PersonsByNameCol.Count)),
+                            "Col1"
+                            );                            
 
                     transaction.Commit();
                 }
@@ -3425,19 +3438,19 @@ namespace YesSql.Tests
                     Lastname = "Balmer"
                 };
 
-                session.Save(steve, "Collection1");
+                session.Save(steve, "Col1");
             }
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query("Collection1").Any().CountAsync());
+                Assert.Equal(1, await session.Query("Col1").Any().CountAsync());
             }
         }
 
         [Fact]
         public async Task ShouldFilterMapIndexPerCollection()
         {
-            _store.RegisterIndexes<PersonIndexProviderCol>("Collection1");
+            _store.RegisterIndexes<PersonIndexProviderCol>("Col1");
 
             using (var session = _store.CreateSession())
             {
@@ -3453,15 +3466,15 @@ namespace YesSql.Tests
                     Lastname = "Balmer"
                 };
 
-                session.Save(bill, "Collection1");
-                session.Save(steve, "Collection1");
+                session.Save(bill, "Col1");
+                session.Save(steve, "Col1");
             }
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(2, await session.Query<Person, PersonByNameCol>("Collection1").CountAsync());
-                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Steve", "Collection1").CountAsync());
-                Assert.Equal(1, await session.Query<Person, PersonByNameCol>("Collection1").Where(x => x.Name == "Steve").CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByNameCol>("Col1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Steve", "Col1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>("Col1").Where(x => x.Name == "Steve").CountAsync());
             }
 
             // Store a Person in the default collection
@@ -3484,41 +3497,69 @@ namespace YesSql.Tests
             }
         }
 
+
         [Fact]
-        public async Task ShouldQueryInnerSelectWithCollection()
+        public async Task ShouldSaveReduceIndexInCollection()
         {
-            _store.RegisterIndexes<PersonIndexProviderCol>("Collection1");
-            _store.RegisterIndexes<PersonIndexLastnameProviderCol>("Collection1");
+            _store.RegisterIndexes<PersonsByNameIndexProviderCol>("Col1");
 
             using (var session = _store.CreateSession())
             {
                 var bill = new Person
                 {
-                    Firstname = "Bill",
-                    Lastname = "Gates",
-                    Age = 50
+                    Firstname = "Bill"
                 };
 
-                var elon = new Person
+                var bill2 = new Person
                 {
-                    Firstname = "Elon",
-                    Lastname = "Musk",
-                    Age = 12
+                    Firstname = "Bill"
                 };
 
-                session.Save(bill);
-                session.Save(elon);
+                session.Save(bill, "Col1");
+                session.Save(bill2, "Col1");
             }
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query<Person, PersonByNameCol>().Where(x => x.Name.IsIn<PersonByLastnameCol>(y => y.Lastname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("C"), "Collection1")).CountAsync());
-                // Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
-
-                // Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
-                // Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
+                Assert.Equal(2, (await session.QueryIndex<PersonsByNameCol>(x => x.Name == "Bill", "Col1").FirstOrDefaultAsync()).Count);
             }
-        }
+        }        
+
+        // [Fact]
+        // public async Task ShouldQueryInnerSelectWithCollection()
+        // {
+        //     _store.RegisterIndexes<PersonIndexProviderCol>("Col1");
+        //     _store.RegisterIndexes<PersonIndexLastnameProviderCol>("Col1");
+
+        //     using (var session = _store.CreateSession())
+        //     {
+        //         var bill = new Person
+        //         {
+        //             Firstname = "Bill",
+        //             Lastname = "Gates",
+        //             Age = 50
+        //         };
+
+        //         var elon = new Person
+        //         {
+        //             Firstname = "Elon",
+        //             Lastname = "Musk",
+        //             Age = 12
+        //         };
+
+        //         session.Save(bill);
+        //         session.Save(elon);
+        //     }
+
+        //     using (var session = _store.CreateSession())
+        //     {
+        //         // Assert.Equal(1, await session.Query<Person, PersonByNameCol>().Where(x => x.Name.IsIn<PersonByLastnameCol>(y => y.Lastname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("C"), "Col1")).CountAsync());
+        //         // Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
+
+        //         // Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
+        //         // Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
+        //     }
+        // }
 
         [Fact]
         public async Task ShouldGetAndDeletePerCollection()
@@ -3531,23 +3572,23 @@ namespace YesSql.Tests
                     Lastname = "Gates",
                 };
 
-                session.Save(bill, "Collection1");
+                session.Save(bill, "Col1");
             }
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.Query<Person>("Collection1").FirstOrDefaultAsync();
+                var person = await session.Query<Person>("Col1").FirstOrDefaultAsync();
                 Assert.NotNull(person);
 
-                person = await session.GetAsync<Person>(person.Id, "Collection1");
+                person = await session.GetAsync<Person>(person.Id, "Col1");
                 Assert.NotNull(person);
 
-                session.Delete(person, "Collection1");
+                session.Delete(person, "Col1");
             }
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.Query<Person>("Collection1").FirstOrDefaultAsync();
+                var person = await session.Query<Person>("Col1").FirstOrDefaultAsync();
                 Assert.Null(person);
             }
         }
@@ -4245,7 +4286,7 @@ namespace YesSql.Tests
 
         [Theory]
         [InlineData("")]
-        [InlineData("Collection1")]
+        [InlineData("Col1")]
         public async Task ShouldGenerateIdsConcurrently(string collection)
         {
             var cts = new CancellationTokenSource(10000);
@@ -4758,12 +4799,12 @@ namespace YesSql.Tests
                 };
 
 
-                session.Save(bill, "Collection1");
+                session.Save(bill, "Col1");
             }
 
             using (var session = _store.CreateSession())
             {
-                var count = await session.Query("Collection1").Any().CountAsync();
+                var count = await session.Query("Col1").Any().CountAsync();
                 Assert.Equal(1, count);
 
                 count = await session.Query().Any().CountAsync();
@@ -4774,7 +4815,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldStoreCollectionIndexesInDistinctTables()
         {
-            _store.RegisterIndexes<PersonIndexProvider>("Collection1");
+            _store.RegisterIndexes<PersonIndexProvider>("Col1");
 
             using (var session = _store.CreateSession())
             {
@@ -4792,13 +4833,13 @@ namespace YesSql.Tests
                     Lastname = "Gates"
                 };
 
-                session.Save(bill, "Collection1");
+                session.Save(bill, "Col1");
             }
 
             using (var session = _store.CreateSession())
             {
                 Assert.Equal(0, await session.QueryIndex<PersonByName>().CountAsync());
-                Assert.Equal(1, await session.QueryIndex<PersonByName>("Collection1").CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>("Col1").CountAsync());
             }
         }
 
