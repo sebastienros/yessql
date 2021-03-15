@@ -75,11 +75,11 @@ namespace YesSql.Tests
                     builder.DropMapIndexTable<PublishedArticle>();
                     builder.DropMapIndexTable<PropertyIndex>();
                     builder.DropReduceIndexTable<UserByRoleNameIndex>();
-
+                    
+                    builder.DropMapIndexTable<PersonByName>("Col1");
                     builder.DropMapIndexTable<PersonByNameCol>("Col1");
                     builder.DropMapIndexTable<PersonByBothNamesCol>("Col1");
                     builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
-
 
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Col1"));
                     builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
