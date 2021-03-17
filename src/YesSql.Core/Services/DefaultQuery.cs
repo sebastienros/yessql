@@ -301,13 +301,12 @@ namespace YesSql.Services
                 {
                     InFilter(query, builder, dialect, expression, false, expression.Arguments[1], expression.Arguments[2]);
                 };
-           
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotIn")] =
                 (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, true, expression.Arguments[1], expression.Arguments[2]);
-                };    
+                };
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsInAny")] =
                 (query, builder, dialect, expression) =>
@@ -319,7 +318,7 @@ namespace YesSql.Services
                 (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, true, expression.Arguments[1], null);
-                };               
+                };
         }
 
         private static void InFilter(DefaultQuery query, StringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate, Expression selector, Expression indexFilter)
