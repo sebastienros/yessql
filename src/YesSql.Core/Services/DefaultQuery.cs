@@ -341,7 +341,9 @@ namespace YesSql.Services
             sqlBuilder.Selector(_builder.ToString());
             _builder.Clear();
 
-            sqlBuilder.Table(((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type.Name, query._queryState.GetTypeAlias(tIndex));
+            // Get the current collection name from the query state.
+            var tableName = query._session._store.Configuration.TableNameConvention.GetIndexTable(tIndex, query._queryState._collection);
+            sqlBuilder.Table(tableName, query._queryState.GetTypeAlias(tIndex));
 
             if (indexFilter != null)
             {
