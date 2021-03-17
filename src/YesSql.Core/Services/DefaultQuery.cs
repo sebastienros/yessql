@@ -301,24 +301,13 @@ namespace YesSql.Services
                 {
                     InFilter(query, builder, dialect, expression, false, expression.Arguments[1], expression.Arguments[2]);
                 };
-
-            MethodMappings[typeof(DefaultQueryExtensionsIndexWithCollection).GetMethod("IsIn")] =
-                (query, builder, dialect, expression) =>
-                {
-                    InFilter(query, builder, dialect, expression, false, expression.Arguments[1], expression.Arguments[2], expression.Arguments[3]);
-                };                
+           
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotIn")] =
                 (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, true, expression.Arguments[1], expression.Arguments[2]);
-                };           
-
-            MethodMappings[typeof(DefaultQueryExtensionsIndexWithCollection).GetMethod("IsNotIn")] =
-                (query, builder, dialect, expression) =>
-                {
-                    InFilter(query, builder, dialect, expression, true, expression.Arguments[1], expression.Arguments[2], expression.Arguments[3]);
-                };                
+                };    
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsInAny")] =
                 (query, builder, dialect, expression) =>
@@ -326,26 +315,14 @@ namespace YesSql.Services
                     InFilter(query, builder, dialect, expression, false, expression.Arguments[1], null);
                 };
 
-            MethodMappings[typeof(DefaultQueryExtensionsIndexWithCollection).GetMethod("IsInAny")] =
-                (query, builder, dialect, expression) =>
-                {
-                    InFilter(query, builder, dialect, expression, false, expression.Arguments[1], null, expression.Arguments[2]);
-                };                
-
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotInAny")] =
                 (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, true, expression.Arguments[1], null);
-                };
-
-            MethodMappings[typeof(DefaultQueryExtensionsIndexWithCollection).GetMethod("IsNotInAny")] =
-                (query, builder, dialect, expression) =>
-                {
-                    InFilter(query, builder, dialect, expression, true, expression.Arguments[1], null, expression.Arguments[2]);
-                };                
+                };               
         }
 
-        private static void InFilter(DefaultQuery query, StringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate, Expression selector, Expression indexFilter, Expression collection = null)
+        private static void InFilter(DefaultQuery query, StringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate, Expression selector, Expression indexFilter)
         {
             // type of the index
             var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
@@ -365,14 +342,8 @@ namespace YesSql.Services
             sqlBuilder.Selector(_builder.ToString());
             _builder.Clear();
 
-            string collectionName = null;
-            if (collection is ConstantExpression collectionExpr)
-            {
-                collectionName = collectionExpr.Value as string;
-            }
-
-            var tableName = query._session._store.Configuration.TableNameConvention.GetIndexTable(tIndex, collectionName);
-
+            // Get the current collection name from the query state.
+            var tableName = query._session._store.Configuration.TableNameConvention.GetIndexTable(tIndex, query._queryState._collection);
             sqlBuilder.Table(tableName, query._queryState.GetTypeAlias(tIndex));
 
             if (indexFilter != null)
@@ -1667,39 +1638,4 @@ namespace YesSql.Services
             return false;
         }
     }
-
-    public static class DefaultQueryExtensionsIndexWithCollection
-    {
-        /// <summary>
-        /// Matches all values that are in the specified <see cref="TIndex"/> index collection, and the specified predicate.
-        /// </summary>
-        public static bool IsIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where, string collection)
-        {
-            return false;
-        }
-
-        /// <summary>
-        /// Matches all values that are in the specified <see cref="TIndex"/> index collection.
-        /// </summary>
-        public static bool IsInAny<TIndex>(this object source, Expression<Func<TIndex, object>> select, string collection)
-        {
-            return false;
-        }
-
-        /// <summary>
-        /// Matches all values that are not in the specified <see cref="TIndex"/> index collection, and the specified predicate.
-        /// </summary>
-        public static bool IsNotIn<TIndex>(this object source, Expression<Func<TIndex, object>> select, Expression<Func<TIndex, bool>> where, string collection)
-        {
-            return false;
-        } 
-
-        /// <summary>
-        /// Matches all values that are not in the specified <see cref="TIndex"/> index collection.
-        /// </summary>
-        public static bool IsNotInAny<TIndex>(this object source, Expression<Func<TIndex, object>> select, string collection)
-        {
-            return false;
-        }               
-    }     
 }

@@ -3557,11 +3557,15 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Bill", "Col1").CountAsync());
                 Assert.Equal(1, await session.Query<Person, PersonByBothNamesCol>(x => x.Lastname == "Gates", "Col1").CountAsync());
 
-                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G"), "Col1")).CountAsync());
-                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("M"), "Col1")).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G"))).CountAsync());
 
-                Assert.Equal(2, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname, "Col1")).CountAsync());
-                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotInAny<PersonByBothNamesCol>(y => y.Firstname, "Col1")).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("M"))).CountAsync());
+
+                Assert.Equal(2, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
+
+                Assert.Equal(2, await session.Query("Col1").For<Person>().With<PersonByNameCol>().Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());                
+
             }
         }
 
