@@ -119,6 +119,9 @@ namespace YesSql.Provider
 
         public virtual bool SupportsForeignKeyConstraintInAlterTable => true;
 
+        public virtual string FormatKeyName(string name) => name;
+        public virtual string FormatIndexName(string name) => name;
+
         public virtual string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)
         {
             var res = new StringBuilder(200);

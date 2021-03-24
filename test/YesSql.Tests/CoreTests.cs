@@ -234,11 +234,11 @@ namespace YesSql.Tests
                             "Col1"
                             );
 
-                   builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
+                    builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
                             .Column<string>(nameof(PersonsByNameCol.Name))
                             .Column<int>(nameof(PersonsByNameCol.Count)),
                             "Col1"
-                            );                            
+                            );                                                        
 
                     transaction.Commit();
                 }

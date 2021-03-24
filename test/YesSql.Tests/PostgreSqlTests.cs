@@ -99,5 +99,39 @@ namespace YesSql.Tests
                 session.Save(property);
             }
         }
+
+        [Fact]
+        public async Task ShouldCreateHashedIndexKeyName()
+        {
+            // NB: Postgres will not throw here when the key is too long. It will simply truncate it.
+            // This will cause exceptions in other tables when the 'short' key is truncated again.
+            await _store.InitializeCollectionAsync("LongCollection");
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
+                        .Column<string>(nameof(PersonsByNameCol.Name))
+                        .Column<int>(nameof(PersonsByNameCol.Count)),
+                        "LongCollection"
+                        );
+
+                    transaction.Commit();
+                }
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder.DropReduceIndexTable<PersonsByNameCol>("LongCollection");
+                    transaction.Commit();
+                }
+            }
+        }        
     }
 }

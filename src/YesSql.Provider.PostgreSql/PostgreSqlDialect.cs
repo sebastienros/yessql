@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using YesSql.Sql;
+using YesSql.Utils;
 
 namespace YesSql.Provider.PostgreSql
 {
@@ -149,6 +150,25 @@ namespace YesSql.Provider.PostgreSql
             throw new Exception("DbType not found for: " + dbType);
         }
 
+        public override string FormatKeyName(string name)
+        {
+            if (name.Length >= 63)
+            {
+                return "FK_" + HashHelper.HashName(name);
+            }
+
+            return name;
+        }
+        
+        public override string FormatIndexName(string name)
+        {
+            if (name.Length >= 63)
+            {
+                return "IDX_FK_" + HashHelper.HashName(name);
+            }
+
+            return name;
+        }  
         public override string GetDropForeignKeyConstraintString(string name)
         {
             return " drop foreign key " + name;
