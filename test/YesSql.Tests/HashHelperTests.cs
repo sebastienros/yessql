@@ -10,15 +10,16 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldBeDeterministic()
         {
-            var first = HashHelper.HashName(_longKeyName);
-            var second = HashHelper.HashName(_longKeyName);
+            var first = HashHelper.HashName("FK_", _longKeyName);
+            var second = HashHelper.HashName("FK_", _longKeyName);
             Assert.Equal(first, second);
         }
 
         [Fact]
-        public void ShouldBe52Chars()
+        public void ShouldBe55Chars()
         {
-            Assert.Equal(52, HashHelper.HashName(_longKeyName).Length);
+            // 52 + FK_ = 55
+            Assert.Equal(55, HashHelper.HashName("FK_", _longKeyName).Length);
         }
     }
 }

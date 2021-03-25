@@ -165,9 +165,11 @@ namespace YesSql.Provider.MySql
 
         public override string FormatKeyName(string name)
         {
+            // https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html
+            // MySql limits identifiers to 64 char.
             if (name.Length >= 64)
             {
-                return "FK_" + HashHelper.HashName(name);
+                return HashHelper.HashName("FK_", name);
             }
 
             return name;
@@ -175,9 +177,11 @@ namespace YesSql.Provider.MySql
 
         public override string FormatIndexName(string name)
         {
+            // https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html
+            // MySql limits identifiers to 64 char.
             if (name.Length >= 64)
             {
-                return "IDX_FK_" + HashHelper.HashName(name);
+                return HashHelper.HashName("IDX_FK_", name);
             }
 
             return name;

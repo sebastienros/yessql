@@ -171,17 +171,17 @@ namespace YesSql
         string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
 
         /// <summary>
-        /// Formats a foreign key name to the length constraints of the dialect.
+        /// Formats a foreign key name to a deterministic value within the length constraints of the dialect.
         /// </summary>
         string FormatKeyName(string name);
 
         /// <summary>
-        /// Formats a index name to the length constraints of the dialect.
+        /// Formats a index name to a deterministic value within the length constraints of the dialect.
         /// </summary>
         string FormatIndexName(string name);        
         
         /// <summary>
-        /// Returns the DISTING SELECT SQL statement.
+        /// Returns the DISTINCT SELECT SQL statement.
         /// </summary>
         List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy);
 

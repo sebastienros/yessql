@@ -152,9 +152,11 @@ namespace YesSql.Provider.PostgreSql
 
         public override string FormatKeyName(string name)
         {
+            // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+            // Postgres limits identifiers to NAMEDATALEN-1 char, where NAMEDATALEN is 64.
             if (name.Length >= 63)
             {
-                return "FK_" + HashHelper.HashName(name);
+                return HashHelper.HashName("FK_", name);
             }
 
             return name;
@@ -162,9 +164,11 @@ namespace YesSql.Provider.PostgreSql
         
         public override string FormatIndexName(string name)
         {
+            // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+            // Postgres limits identifiers to NAMEDATALEN-1 char, where NAMEDATALEN is 64.
             if (name.Length >= 63)
             {
-                return "IDX_FK_" + HashHelper.HashName(name);
+                return HashHelper.HashName("IDX_FK_", name);
             }
 
             return name;
