@@ -23,12 +23,17 @@ namespace YesSql.Tests
 
         protected override IConfiguration CreateConfiguration()
         {
-            return new Configuration()
+            var configuration = new Configuration()
                 .UseSqlServer(ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
+            configuration.SqlDialect = SqlServerDialect;
+            
+            return configuration;
         }
+
+        protected virtual SqlServerDialect SqlServerDialect => new SqlServerDialect();
 
         protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
         {
