@@ -246,8 +246,9 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new CreateForeignKeyCommand(Prefix(name), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
-                Execute(_commandInterpreter.CreateSql(command));
+                var command = new CreateForeignKeyCommand(Dialect.FormatKeyName(Prefix(name)), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
+                var sql = _commandInterpreter.CreateSql(command);
+                Execute(sql);
             }
             catch
             {
@@ -264,7 +265,7 @@ namespace YesSql.Sql
         {
             try
             {
-                var command = new DropForeignKeyCommand(Prefix(srcTable), Prefix(name));
+                var command = new DropForeignKeyCommand(Dialect.FormatKeyName(Prefix(srcTable)), Prefix(name));
                 Execute(_commandInterpreter.CreateSql(command));
             }
             catch

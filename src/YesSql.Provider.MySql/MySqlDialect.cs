@@ -4,6 +4,7 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using YesSql.Sql;
+using YesSql.Utils;
 
 namespace YesSql.Provider.MySql
 {
@@ -151,7 +152,7 @@ namespace YesSql.Provider.MySql
 
             if (_columnTypes.TryGetValue(dbType, out string value))
             {
-                if(dbType == DbType.Decimal)
+                if (dbType == DbType.Decimal)
                 {
                     value = string.Format(value, precision ?? DefaultDecimalPrecision, scale ?? DefaultDecimalScale);
                 }
@@ -162,9 +163,33 @@ namespace YesSql.Provider.MySql
             throw new Exception("DbType not found for: " + dbType);
         }
 
+        public override string FormatKeyName(string name)
+        {
+            // https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html
+            // MySql limits identifiers to 64 char.
+            if (name.Length >= 64)
+            {
+                return HashHelper.HashName("FK_", name);
+            }
+
+            return name;
+        }
+
+        public override string FormatIndexName(string name)
+        {
+            // https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html
+            // MySql limits identifiers to 64 char.
+            if (name.Length >= 64)
+            {
+                return HashHelper.HashName("IDX_FK_", name);
+            }
+
+            return name;
+        }        
+
         public override string GetDropForeignKeyConstraintString(string name)
         {
-            return " drop foreign key " + name;
+            return " drop foreign key " + FormatKeyName(name);
         }
 
         public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)

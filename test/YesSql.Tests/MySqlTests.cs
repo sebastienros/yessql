@@ -240,7 +240,6 @@ namespace YesSql.Tests
             }
         }
 
-
         [Fact]
         public async Task ShouldCreateIndexPropertyWithMaxBitKeys()
         {
@@ -267,6 +266,40 @@ namespace YesSql.Tests
                         .AlterTable(nameof(PropertyIndex), table => table
                         .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
 
+                    transaction.Commit();
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCreateHashedIndexKeyName()
+        {
+            await _store.InitializeCollectionAsync("LongCollection");
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    // tpFK_LongCollection_PersonsByNameCol_LongCollection_Document_Id : 64 chars. Throws exception if not hashed.
+                    
+                    builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
+                        .Column<string>(nameof(PersonsByNameCol.Name))
+                        .Column<int>(nameof(PersonsByNameCol.Count)),
+                        "LongCollection"
+                        );
+
+                    transaction.Commit();
+                }
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder.DropReduceIndexTable<PersonsByNameCol>("LongCollection");
                     transaction.Commit();
                 }
             }

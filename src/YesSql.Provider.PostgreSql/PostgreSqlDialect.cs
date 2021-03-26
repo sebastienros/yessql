@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using YesSql.Sql;
+using YesSql.Utils;
 
 namespace YesSql.Provider.PostgreSql
 {
@@ -149,6 +150,29 @@ namespace YesSql.Provider.PostgreSql
             throw new Exception("DbType not found for: " + dbType);
         }
 
+        public override string FormatKeyName(string name)
+        {
+            // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+            // Postgres limits identifiers to NAMEDATALEN-1 char, where NAMEDATALEN is 64.
+            if (name.Length >= 63)
+            {
+                return HashHelper.HashName("FK_", name);
+            }
+
+            return name;
+        }
+        
+        public override string FormatIndexName(string name)
+        {
+            // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+            // Postgres limits identifiers to NAMEDATALEN-1 char, where NAMEDATALEN is 64.
+            if (name.Length >= 63)
+            {
+                return HashHelper.HashName("IDX_FK_", name);
+            }
+
+            return name;
+        }  
         public override string GetDropForeignKeyConstraintString(string name)
         {
             return " drop foreign key " + name;

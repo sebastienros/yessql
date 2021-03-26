@@ -60,7 +60,7 @@ namespace YesSql.Sql.Schema
                 indexName = _tablePrefix + indexName;
             }
 
-            var command = new AddIndexCommand(Name, indexName, columnNames);
+            var command = new AddIndexCommand(Name, _dialect.FormatIndexName(indexName), columnNames);
             TableCommands.Add(command);
         }
 
@@ -71,7 +71,7 @@ namespace YesSql.Sql.Schema
                 indexName = _tablePrefix + indexName;
             }
 
-            var command = new DropIndexCommand(Name, indexName);
+            var command = new DropIndexCommand(Name, _dialect.FormatIndexName(indexName));
             TableCommands.Add(command);
         }
     }
