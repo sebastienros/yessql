@@ -1380,6 +1380,102 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldScopeMultipleIndexQueries()
+        {
+            // When querying multiple indexes the root predicate should be scoped.
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman"
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                var mads = new Person
+                {
+                    Firstname = "Mads",
+                    Lastname = "Kristensen"
+                };
+
+                session.Save(hanselman);
+                session.Save(guthrie);
+                session.Save(mads);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person>()
+                    .Any(
+                        x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                        x => x.With<PersonIdentity>(x => x.Identity == "Guthrie")
+                    )
+                    .All(
+                        x => x.With<PersonIdentity>(x => x.Identity.IsNotIn<PersonIdentity>(s => s.Identity, s => s.Identity == "Kristensen"))
+                    )
+                    .CountAsync()
+                    );
+            }
+        }
+
+        [Fact]
+        public async Task ShouldScopeNestedMultipleIndexQueries()
+        {
+            // When querying multiple indexes the current predicate should be scoped.
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman"
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                var mads = new Person
+                {
+                    Firstname = "Mads",
+                    Lastname = "Kristensen"
+                };
+
+                session.Save(hanselman);
+                session.Save(guthrie);
+                session.Save(mads);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person>()
+                    .All(
+                        x => x.Any(
+                            x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                            x => x.With<PersonIdentity>(x => x.Identity == "Guthrie")
+                        ),
+                        x => x.All(
+                            x => x.With<PersonIdentity>(x => x.Identity.IsNotIn<PersonIdentity>(s => s.Identity, s => s.Identity == "Kristensen"))
+                        )
+                    )
+                    .CountAsync()
+                    );
+            }
+        }              
+
+        [Fact]
         public async Task ShouldDeletePreviousIndexes()
         {
             // When an index returns multiple map indexes, changing these results should remove the previous ones.

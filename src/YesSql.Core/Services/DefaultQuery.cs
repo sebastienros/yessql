@@ -1277,17 +1277,29 @@ namespace YesSql.Services
 
             IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)
             {
-                return ComposeQuery(predicates, new OrNode());
+                // Scope the currentPredicate so multiple calls will not act on the new predicate.
+                var currentPredicate = _query._queryState._currentPredicate;
+                var query = ComposeQuery(predicates, new OrNode());
+                // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
+                _query._queryState._currentPredicate = currentPredicate;
+
+                return query;
             }
 
             IQuery<T> IQuery<T>.All(params Func<IQuery<T>, IQuery<T>>[] predicates)
             {
-                return ComposeQuery(predicates, new AndNode());
+                // Scope the currentPredicate so multiple calls will not act on the new predicate.
+                var currentPredicate = _query._queryState._currentPredicate;
+                var query = ComposeQuery(predicates, new AndNode());
+                // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
+                _query._queryState._currentPredicate = currentPredicate;
+
+                return query;
             }
 
             private IQuery<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
             {
-                (_query._queryState._currentPredicate as CompositeNode).Children.Add(predicate);
+                _query._queryState._currentPredicate.Children.Add(predicate);
 
                 _query._queryState._currentPredicate = predicate;
 
