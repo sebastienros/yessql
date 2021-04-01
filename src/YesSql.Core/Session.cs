@@ -644,36 +644,11 @@ namespace YesSql
             }
             finally
             {
-                GC.SuppressFinalize(this);
-
                 _disposed = true;
 
                 CommitTransaction();
-            }
-        }
 
-        /// <summary>
-        /// Clears all the resources associated to the transaction.
-        /// </summary>
-        private void ReleaseTransaction()
-        {
-            foreach (var state in _collectionStates.Values)
-            {
-                // IndentityMap is cleared in ReleaseSession()
-                state._concurrent?.Clear();
-                state._saved?.Clear();
-                state._updated?.Clear();
-                state._tracked?.Clear();
-                state._deleted?.Clear();
-                state._maps?.Clear();
-            }
-
-            _commands.Clear();
-
-            if (_transaction != null)
-            {
-                _transaction.Dispose();
-                _transaction = null;
+                GC.SuppressFinalize(this);
             }
         }
 
@@ -935,11 +910,11 @@ namespace YesSql
             }
             finally
             {
-                GC.SuppressFinalize(this);
-
                 _disposed = true;
 
                 await CommitTransactionAsync();
+
+                GC.SuppressFinalize(this);
             }
         }
 
@@ -968,9 +943,34 @@ namespace YesSql
             }
         }
 
+        /// <summary>
+        /// Clears all the resources associated to the transaction.
+        /// </summary>
+        private async Task ReleaseTransactionAsync()
+        {
+            foreach (var state in _collectionStates.Values)
+            {
+                // IndentityMap is cleared in ReleaseSession()
+                state._concurrent?.Clear();
+                state._saved?.Clear();
+                state._updated?.Clear();
+                state._tracked?.Clear();
+                state._deleted?.Clear();
+                state._maps?.Clear();
+            }
+
+            _commands.Clear();
+
+            if (_transaction != null)
+            {
+                await _transaction.DisposeAsync();
+                _transaction = null;
+            }
+        }
+
         private async Task ReleaseConnectionAsync()
         {
-            ReleaseTransaction();
+            await ReleaseTransactionAsync();
 
             if (_connection != null)
             {
@@ -1000,15 +1000,40 @@ namespace YesSql
             }
             finally
             {
-                GC.SuppressFinalize(this);
-
                 _disposed = true;
 
                 CommitTransaction();
 
+                GC.SuppressFinalize(this);
             }
         }
 #endif
+
+        /// <summary>
+        /// Clears all the resources associated to the transaction.
+        /// </summary>
+        private void ReleaseTransaction()
+        {
+            foreach (var state in _collectionStates.Values)
+            {
+                // IndentityMap is cleared in ReleaseSession()
+                state._concurrent?.Clear();
+                state._saved?.Clear();
+                state._updated?.Clear();
+                state._tracked?.Clear();
+                state._deleted?.Clear();
+                state._maps?.Clear();
+            }
+
+            _commands.Clear();
+
+            if (_transaction != null)
+            {
+                _transaction.Dispose();
+                _transaction = null;
+            }
+        }
+
         private void ReleaseConnection()
         {
             ReleaseTransaction();
