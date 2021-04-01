@@ -31,7 +31,11 @@ namespace YesSql.Commands
 
             var sql = Inserts(type, dialect);
             sql = sql.Replace(ParameterSuffix, "");
-            logger.LogTrace(sql);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(sql);
+            }
 
             if (Index is MapIndex)
             {
@@ -50,7 +54,12 @@ namespace YesSql.Commands
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 var bridgeSql = "insert into " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
-                logger.LogTrace(bridgeSql);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace(bridgeSql);
+                }
+
                 await connection.ExecuteAsync(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
             }
         }

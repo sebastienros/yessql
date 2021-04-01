@@ -61,7 +61,10 @@ namespace YesSql.Commands
 
                 var command = sb.ToString();
 
-                logger.LogTrace(command);
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace(command);
+                }
 
                 if (command.Length > DefaultBuilderCapacity)
                 {

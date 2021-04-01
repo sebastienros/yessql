@@ -26,7 +26,10 @@ namespace YesSql.Commands
 
             var insertCmd = $"insert into {dialect.QuoteForTableName(_tablePrefix + documentTable)} ({dialect.QuoteForColumnName("Id")}, {dialect.QuoteForColumnName("Type")}, {dialect.QuoteForColumnName("Content")}, {dialect.QuoteForColumnName("Version")}) values (@Id, @Type, @Content, @Version);";
 
-            logger.LogTrace(insertCmd);
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(insertCmd);
+            }
 
             return connection.ExecuteAsync(insertCmd, Document, transaction);
         }

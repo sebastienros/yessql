@@ -35,7 +35,10 @@ namespace YesSql.Commands
                     : ";")
                 ;
 
-            logger.LogTrace(updateCmd);
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(updateCmd);
+            }
 
             var updatedCount = await connection.ExecuteAsync(updateCmd, Document, transaction);
 

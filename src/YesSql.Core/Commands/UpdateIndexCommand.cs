@@ -34,7 +34,10 @@ namespace YesSql.Commands
 
             var sql = Updates(type, dialect);
             sql = sql.Replace(ParameterSuffix, "");
-            logger.LogTrace(sql);
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(sql);
+            }
             await connection.ExecuteAsync(sql, Index, transaction);
 
             // Update the documents list
@@ -54,7 +57,10 @@ namespace YesSql.Commands
                         dynamicParamsAdded.AddDynamicParams(new { DocumentId = id, Id = Index.Id });
                     }
 
-                    logger.LogTrace(bridgeSqlAdd);
+                    if (logger.IsEnabled(LogLevel.Trace))
+                    {
+                        logger.LogTrace(bridgeSqlAdd);
+                    }
                     await connection.ExecuteAsync(bridgeSqlAdd, dynamicParamsAdded, transaction);
                 }
 
@@ -66,7 +72,10 @@ namespace YesSql.Commands
                         dynamicParamsDeleted.AddDynamicParams(new { DocumentId = id, Id = Index.Id });
                     }
 
-                    logger.LogTrace(bridgeSqlRemove);
+                    if (logger.IsEnabled(LogLevel.Trace))
+                    {
+                        logger.LogTrace(bridgeSqlRemove);
+                    }
                     await connection.ExecuteAsync(bridgeSqlRemove, dynamicParamsDeleted, transaction);
                 }
             }
