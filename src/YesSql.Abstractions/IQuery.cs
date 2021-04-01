@@ -39,9 +39,19 @@ namespace YesSql
         IQuery<T> Any(params Func<IQuery<T>, IQuery<T>>[] predicates);
 
         /// <summary>
+        /// Filters any predicates on newly joined indexes.
+        /// </summary>
+        Task<IQuery<T>> AnyAsync(params Func<IQuery<T>, Task<IQuery<T>>>[] predicates);
+
+        /// <summary>
         /// Filters all predicates on newly joined indexes.
         /// </summary>
         IQuery<T> All(params Func<IQuery<T>, IQuery<T>>[] predicates);
+
+        /// <summary>
+        /// Filters all predicates on newly joined indexes.
+        /// </summary>
+        Task<IQuery<T>> AllAsync(params Func<IQuery<T>, Task<IQuery<T>>>[] predicates);
 
         /// <summary>
         /// Filters the documents with a record in the specified index.

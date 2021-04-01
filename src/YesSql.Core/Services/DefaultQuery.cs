@@ -1284,11 +1284,32 @@ namespace YesSql.Services
                 return query;
             }
 
+            Task<IQuery<T>> IQuery<T>.AnyAsync(params Func<IQuery<T>, Task<IQuery<T>>>[] predicates)
+            {
+                // Scope the currentPredicate so multiple calls will not act on the new predicate.
+                var currentPredicate = _query._queryState._currentPredicate;
+                var query = ComposeQueryAsync(predicates, new OrNode());
+                // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
+                _query._queryState._currentPredicate = currentPredicate;
+
+                return query;
+            }
+
             IQuery<T> IQuery<T>.All(params Func<IQuery<T>, IQuery<T>>[] predicates)
             {
                 // Scope the currentPredicate so multiple calls will not act on the new predicate.
                 var currentPredicate = _query._queryState._currentPredicate;
                 var query = ComposeQuery(predicates, new AndNode());
+                // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
+                _query._queryState._currentPredicate = currentPredicate;
+
+                return query;
+            }
+            Task<IQuery<T>> IQuery<T>.AllAsync(params Func<IQuery<T>, Task<IQuery<T>>>[] predicates)
+            {
+                // Scope the currentPredicate so multiple calls will not act on the new predicate.
+                var currentPredicate = _query._queryState._currentPredicate;
+                var query = ComposeQueryAsync(predicates, new AndNode());
                 // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
                 _query._queryState._currentPredicate = currentPredicate;
 
@@ -1308,6 +1329,24 @@ namespace YesSql.Services
                     _query._queryState._bindings.Add(name, new List<Type>());
 
                     p(this);
+                }
+
+                return new Query<T>(_query);
+            }
+            
+            private async Task<IQuery<T>> ComposeQueryAsync(Func<IQuery<T>, Task<IQuery<T>>>[] predicates, CompositeNode predicate)
+            {
+                _query._queryState._currentPredicate.Children.Add(predicate);
+
+                _query._queryState._currentPredicate = predicate;
+
+                foreach (var p in predicates)
+                {
+                    var name = "a" + (_query._queryState._bindings.Count + 1);
+                    _query._queryState._bindingName = name;
+                    _query._queryState._bindings.Add(name, new List<Type>());
+
+                    await p(this);
                 }
 
                 return new Query<T>(_query);
