@@ -1,4 +1,4 @@
-image: Previous Visual Studio 2019
+image: Visual Studio 2019
 skip_branch_with_pr: true
 branches:
   only:
@@ -34,22 +34,18 @@ before_test:
   - PATH=C:\Program Files\PostgreSQL\9.6\bin\;%PATH%
   - createdb yessql
 test_script:
-#  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release --framework net5.0
-  - echo "Tests 1"
+  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release --framework net5.0
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release
-  - echo "Tests 2"
-  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.ProviderTests" --configuration Release --framework net5.0
-  - echo "Tests 3"
-#  - |
-#    net start MSSQL$SQL2017
-#    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2017Tests" --configuration Release --framework net5.0
-#    net stop MSSQL$SQL2017
-#  - |
-#    net start MSSQL$SQL2019
-#    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2019Tests" --configuration Release --framework net5.0
-#    net stop MSSQL$SQL2019
-#  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release --framework net5.0
-  - echo "Tests finished"
+#  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.ProviderTests" --configuration Release --framework net5.0
+  - |
+    net start MSSQL$SQL2017
+    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2017Tests" --configuration Release --framework net5.0
+    net stop MSSQL$SQL2017
+  - |
+    net start MSSQL$SQL2019
+    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2019Tests" --configuration Release --framework net5.0
+    net stop MSSQL$SQL2019
+  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release --framework net5.0
 after_test:
   - dotnet pack -c Release
 artifacts:
