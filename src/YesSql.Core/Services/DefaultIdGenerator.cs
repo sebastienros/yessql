@@ -69,7 +69,10 @@ namespace YesSql.Services
                     selectCommand.CommandText = sql;
                     selectCommand.Transaction = transaction;
 
-                    configuration.Logger.LogTrace(sql);
+                    if (configuration.Logger.IsEnabled(LogLevel.Trace))
+                    {
+                        configuration.Logger.LogTrace(sql);
+                    }
                     var result = await selectCommand.ExecuteScalarAsync();
 
 #if SUPPORTS_ASYNC_TRANSACTIONS

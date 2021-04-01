@@ -22,7 +22,12 @@ namespace YesSql.Commands
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
             var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = @Id;";
-            logger.LogTrace(deleteCmd);
+            
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(deleteCmd);
+            }
+            
             return connection.ExecuteAsync(deleteCmd, Document, transaction);
         }
 

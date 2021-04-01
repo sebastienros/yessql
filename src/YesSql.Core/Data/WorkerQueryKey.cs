@@ -1,22 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
 
 namespace YesSql.Data
 {
     /// <summary>
     /// An instance of <see cref="WorkerQueryKey"/> represents the state of <see cref="WorkerQueryKey"/>.
     /// </summary>
-    public struct WorkerQueryKey : IEquatable<WorkerQueryKey>
+    public readonly struct WorkerQueryKey : IEquatable<WorkerQueryKey>
     {
-        private static readonly ThreadLocal<StringBuilder> _stringBuilder = new ThreadLocal<StringBuilder>(() => new StringBuilder());
-
         private readonly string _prefix;
+        private readonly int[] _ids;
         private readonly Dictionary<string, object> _parameters;
-
-        private int? _hashcode;
+        private readonly int _hashcode;
 
         public WorkerQueryKey(string prefix, int[] ids)
         {
@@ -31,45 +26,19 @@ namespace YesSql.Data
             }
 
             _prefix = prefix;
-
-            if (ids != null && ids.Length > 0)
-            {
-                var stringBuilder = _stringBuilder.Value;
-                stringBuilder.Clear();
-                stringBuilder.Append(_prefix);
-
-                foreach (var id in ids)
-                {
-                    stringBuilder.Append(";").Append(id);
-                }
-
-                _prefix = stringBuilder.ToString();
-            }
-
-            _hashcode = default(int?);
             _parameters = null;
+            _ids = ids;
+            _hashcode = 0;
+            _hashcode = BuildHashCode();
         }
 
         public WorkerQueryKey(string prefix, Dictionary<string, object> parameters)
         {
             _prefix = prefix;
             _parameters = parameters;
-            _hashcode = default(int?);
-            
-            if (parameters.Count < 5 && parameters.All(x => x.Value is ValueType))
-            {
-                var stringBuilder = _stringBuilder.Value;
-                stringBuilder.Clear();
-                stringBuilder.Append(_prefix);
-
-                foreach (var parameter in _parameters)
-                {
-                    stringBuilder.Append(";").Append(parameter.Key).Append("=").Append(parameter.Value);
-                }
-
-                _parameters = null;
-                _prefix = stringBuilder.ToString();
-            }
+            _ids = null;
+            _hashcode = 0;
+            _hashcode = BuildHashCode();
         }
 
         /// <inheritdoc />
@@ -98,40 +67,47 @@ namespace YesSql.Data
             }
         }
 
+        private int BuildHashCode()
+        {
+            var combinedHash = 5381;
+            combinedHash = ((combinedHash << 5) + combinedHash) ^ _prefix.GetHashCode();
+
+
+            if (_parameters != null)
+            {
+                foreach (var parameter in _parameters)
+                {
+                    if (parameter.Key != null)
+                    {
+                        combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Key.GetHashCode();
+                    }
+
+                    if (parameter.Value != null)
+                    {
+                        combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Value.GetHashCode();
+                    }
+                }
+
+                return combinedHash;
+            }
+
+            if (_ids != null)
+            {
+                foreach (var id in _ids)
+                {
+                    combinedHash = ((combinedHash << 5) + combinedHash) ^ id;
+                }
+
+                return combinedHash;
+            }
+
+            return default;
+        }
+
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            // Caching as the key is immutable and it can be called
-            // multiple times during a request.
-            if (!_hashcode.HasValue)
-            {
-                if (_parameters != null)
-                {
-                    var combinedHash = 5381;
-                    combinedHash = ((combinedHash << 5) + combinedHash) ^ _prefix.GetHashCode();
-
-                    foreach (var parameter in _parameters)
-                    {
-                        if (parameter.Key != null)
-                        {
-                            combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Key.GetHashCode();
-                        }
-
-                        if (parameter.Value != null)
-                        {
-                            combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Value.GetHashCode();
-                        }
-                    }
-
-                    _hashcode = combinedHash;
-                }
-                else
-                {
-                    _hashcode = _prefix.GetHashCode();
-                }
-            }
-
-            return _hashcode.Value;
+            return _hashcode;
         }
 
         private static bool SameParameters(Dictionary<string, object> values1, Dictionary<string, object> values2)
@@ -141,7 +117,7 @@ namespace YesSql.Data
                 return true;
             }
 
-            if (values1 == null || values2 == null || values1.Count != values2.Count)
+            if ((values1 == null && values2 != null) || (values1 != null && values2 == null) || values1.Count != values2.Count)
             {
                 return false;
             }
@@ -173,6 +149,29 @@ namespace YesSql.Data
                     return false;
                 }
             }
+        }
+
+        private static bool SameIds(int[] values1, int[] values2)
+        {
+            if (values1 == values2)
+            {
+                return true;
+            }
+
+            if ((values1 == null && values2 != null) || (values1 != null && values2 == null) || values1.Length != values2.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < values1.Length; i++)
+            {
+                if (values1[i] != values2[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

@@ -96,9 +96,19 @@ namespace YesSql
         Task CommitAsync();
 
         /// <summary>
-        /// Returns a <see cref="DbTransaction"/> that is used by this instance.
+        /// Returns the <see cref="DbConnection"/> that is used by this instance.
         /// </summary>
-        Task<DbTransaction> DemandAsync();
+        Task<DbConnection> DemandAsync();
+
+        /// <summary>
+        /// Begin the <see cref="DbConnection"/> that is used by this instance.
+        /// </summary>
+        Task<DbTransaction> BeginTransactionAsync();
+
+        /// <summary>
+        /// Returns the current <see cref="DbTransaction"/> if it exists.
+        /// </summary>
+        DbTransaction CurrentTransaction { get; }
 
         /// <summary>
         /// Registers index providers that are used only during the lifetime of this session.

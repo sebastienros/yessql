@@ -396,22 +396,18 @@ namespace YesSql
 
             try
             {
-                var result = await _store.ProduceAsync(key, (args) =>
+                var result = await _store.ProduceAsync(key, (state) =>
                 {
-                    var localStore = (Store)args[0];
-                    var localConnection = (DbConnection)args[1];
-                    var localTransaction = (DbTransaction)args[2];
-                    var localCommand = (string)args[3];
-                    var localParameters = (object)args[4];
+                    var logger = state.Store.Configuration.Logger;
 
-                    localStore.Configuration.Logger.LogTrace(localCommand);
-                    return localConnection.QueryAsync<Document>(localCommand, localParameters, localTransaction);
+                    if (logger.IsEnabled(LogLevel.Trace))
+                    { 
+                        logger.LogTrace(state.Command);
+                    }
+
+                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
                 },
-                _store,
-                _connection,
-                _transaction,
-                command,
-                new { Id = id });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id } });
 
                 return result.FirstOrDefault();
             }
@@ -494,19 +490,18 @@ namespace YesSql
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             try
             {
-                var documents = await _store.ProduceAsync(key, (args) =>
+                var documents = await _store.ProduceAsync(key, (state) =>
                 {
-                    var localConnection = (DbConnection)args[0];
-                    var localTransaction = (DbTransaction)args[1];
-                    var localCommand = (string)args[2];
-                    var localParamters = args[3];
+                    var logger = state.Store.Configuration.Logger;
 
-                    return localConnection.QueryAsync<Document>(localCommand, localParamters, localTransaction);
+                    if (logger.IsEnabled(LogLevel.Trace))
+                    {
+                        logger.LogTrace(state.Command);
+                    }
+
+                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
                 },
-                _connection,
-                _transaction,
-                command,
-                new { Ids = ids });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids } });
 
                 return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray(), collection);
             }
@@ -785,7 +780,7 @@ namespace YesSql
                 // compute all reduce indexes
                 await ReduceAsync();
 
-                await DemandAsync();
+                await BeginTransactionAsync();
 
                 BatchCommands();
 
@@ -1393,32 +1388,43 @@ namespace YesSql
         }
 
         /// <summary>
-        /// Initializes a new transaction if none has been yet
+        /// Initializes a new connection if none has been yet. Use this method when reads need to be done.
         /// </summary>
-        public async Task<DbTransaction> DemandAsync()
+        public async Task<DbConnection> DemandAsync()
+        {
+            CheckDisposed();
+
+            _connection ??= _store.Configuration.ConnectionFactory.CreateConnection();
+
+            if (_connection.State == ConnectionState.Closed)
+            {
+                await _connection.OpenAsync();
+            }
+
+            return _connection;
+        }
+
+        public DbTransaction CurrentTransaction => _transaction;
+
+        /// <summary>
+        /// Begins a new transaction if none has been yet. Use this method when writes need to be done.
+        /// </summary>
+        public async Task<DbTransaction> BeginTransactionAsync()
         {
             CheckDisposed();
 
             if (_transaction == null)
             {
-                if (_connection == null)
-                {
-                    _connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                    if (_connection == null)
-                    {
-                        throw new InvalidOperationException("The connection couldn't be converted to DbConnection");
-                    }
-                }
-
-                if (_connection.State == ConnectionState.Closed)
-                {
-                    await _connection.OpenAsync();
-                }
+                await DemandAsync();
 
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                _transaction = await _connection.BeginTransactionAsync(_isolationLevel);
+#else
                 _transaction = _connection.BeginTransaction(_isolationLevel);
+#endif
+
             }
 
             return _transaction;

@@ -135,7 +135,10 @@ namespace YesSql.Services
 
                         selectCommand.Transaction = transaction;
 
-                        _store.Configuration.Logger.LogTrace(SelectCommand);
+                        if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
+                        {
+                            _store.Configuration.Logger.LogTrace(SelectCommand);
+                        }
                         nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
                         var updateCommand = connection.CreateCommand();
@@ -158,7 +161,10 @@ namespace YesSql.Services
 
                         updateCommand.Transaction = transaction;
 
-                        _store.Configuration.Logger.LogTrace(UpdateCommand);
+                        if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
+                        {
+                            _store.Configuration.Logger.LogTrace(UpdateCommand);
+                        }
                         affectedRows = updateCommand.ExecuteNonQuery();
 
                         transaction.Commit();
@@ -214,7 +220,10 @@ namespace YesSql.Services
 
                     selectCommand.Transaction = transaction;
 
-                    _store.Configuration.Logger.LogTrace(SelectCommand);
+                    if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
+                    {
+                        _store.Configuration.Logger.LogTrace(SelectCommand);
+                    }
                     nextval = await selectCommand.ExecuteScalarAsync();
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
@@ -254,7 +263,10 @@ namespace YesSql.Services
                             nextValParameter.ParameterName = "@nextval";
                             command.Parameters.Add(nextValParameter);
 
-                            _store.Configuration.Logger.LogTrace(InsertCommand);
+                            if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
+                            {
+                                _store.Configuration.Logger.LogTrace(InsertCommand);
+                            }
                             await command.ExecuteNonQueryAsync();
 
 #if SUPPORTS_ASYNC_TRANSACTIONS

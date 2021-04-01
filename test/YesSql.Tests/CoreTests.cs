@@ -605,14 +605,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var connection = (await session.DemandAsync()).Connection;
+                var connection = await session.DemandAsync();
                 var dialect = _store.Configuration.SqlDialect;
                 var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
 
                 var person = await session.Query<Person, PersonByName>().Where(sql).FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
-                Assert.Equal("Bill", (string)person.Firstname);
+                Assert.Equal("Bill", person.Firstname);
             }
         }
 
@@ -3421,6 +3421,8 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldReadUncommittedRecords()
         {
+            // Since the default mode is not ReadUncommitted, a specific transaction needs to be started
+
             /*
              * session1 created
              * session1 0 index found
@@ -3445,6 +3447,8 @@ namespace YesSql.Tests
             {
                 using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session1.BeginTransactionAsync();
+
                     Assert.Equal(0, await session1.QueryIndex<PersonByName>().CountAsync());
 
                     var bill = new Person
@@ -3467,6 +3471,8 @@ namespace YesSql.Tests
 
                 using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session1.BeginTransactionAsync();
+
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
             });
@@ -3480,6 +3486,8 @@ namespace YesSql.Tests
 
                 using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session2.BeginTransactionAsync();
+
                     Assert.Equal(1, await session2.QueryIndex<PersonByName>().CountAsync());
 
                     var steve = new Person
@@ -3497,6 +3505,8 @@ namespace YesSql.Tests
 
                 using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session2.BeginTransactionAsync();
+
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
 
@@ -3870,7 +3880,6 @@ namespace YesSql.Tests
             }
 
             int publishedInTheFutureResult, publishedInThePastResult;
-            DateTime firstDateTimeResult, secondDateTimeResult;
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -4004,7 +4013,7 @@ namespace YesSql.Tests
             }
 
             var concurrency = 32;
-            var MaxTransactions = 10000;
+            var MaxTransactions = int.MaxValue;
 
             var counter = 0;
             var stopping = false;
@@ -4092,7 +4101,7 @@ namespace YesSql.Tests
             // Not running the statement in case it fails (non deterministic)
             // Assert.True(gatedCounter > nonGatedCounter);
 
-            Console.WriteLine($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
+            throw new Exception($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
         }
 
         [Fact]
@@ -5208,9 +5217,10 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var transaction = await session.DemandAsync();
+                var connection = await session.DemandAsync();
+                var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5261,9 +5271,10 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var transaction = await session.DemandAsync();
+                var connection = await session.DemandAsync();
+                var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5320,9 +5331,10 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var transaction = await session.DemandAsync();
+                var connection = await session.DemandAsync();
+                var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
@@ -5373,9 +5385,10 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var transaction = await session.DemandAsync();
+                var connection = await session.DemandAsync();
+                var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(transaction.Connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
             }
 
             using (var session = _store.CreateSession())
