@@ -1,20 +1,15 @@
-//using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
-using YesSql.Utils;
 
 namespace YesSql.Commands
 {
     public class BatchCommand : IIndexCommand
     {
         public static int DefaultBuilderCapacity = 10 * 1024;
-
-        // Dedicated pool since batches should be of the same size
-        private static readonly ObjectPool<StringBuilderPool> _batchPool = StringBuilderPool.CreatePool(8, DefaultBuilderCapacity);
 
         public List<string> Queries { get; set; } = new List<string>();
         public DbCommand Command { get; set; } 
@@ -52,34 +47,26 @@ namespace YesSql.Commands
                 return;
             }
 
-            using (var sb = _batchPool.Allocate())
+            var command = String.Concat(Queries);
+
+            if (logger.IsEnabled(LogLevel.Trace))
             {
-                foreach (var query in Queries)
+                logger.LogTrace(command);
+            }
+
+            if (command.Length > DefaultBuilderCapacity)
+            {
+                logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
+            }
+
+            Command.Transaction = transaction;
+            Command.CommandText = command;
+
+            using (var dr = await Command.ExecuteReaderAsync())
+            {
+                foreach (var action in Actions)
                 {
-                    sb.Builder.AppendLine(query);
-                }
-
-                var command = sb.ToString();
-
-                if (logger.IsEnabled(LogLevel.Trace))
-                {
-                    logger.LogTrace(command);
-                }
-
-                if (command.Length > DefaultBuilderCapacity)
-                {
-                    logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
-                }
-
-                Command.Transaction = transaction;
-                Command.CommandText = command;
-
-                using (var dr = await Command.ExecuteReaderAsync())
-                {
-                    foreach (var action in Actions)
-                    {
-                        action(dr);
-                    }
+                    action(dr);
                 }
             }
         }
