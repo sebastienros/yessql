@@ -22,10 +22,9 @@ namespace YesSql
         internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
         private readonly Dictionary<string, SessionState> _collectionStates;
         private readonly SessionState _defaultState;
-        protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
+        private Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors;
         internal readonly Store _store;
         private volatile bool _disposed;
-        private volatile bool _suppressedFinalize;
         private bool _flushing;
         protected bool _cancel;
         protected List<IIndexProvider> _indexes;
@@ -645,37 +644,16 @@ namespace YesSql
             }
             finally
             {
+                GC.SuppressFinalize(this);
+
                 _disposed = true;
 
                 CommitTransaction();
-
-                ReleaseSession();
-
-                GC.SuppressFinalize(this);
-
-                _suppressedFinalize = true;
             }
         }
 
         /// <summary>
-        /// Clears all the resources associated to the session.
-        /// </summary>
-        private void ReleaseSession()
-        {
-            foreach (var state in _collectionStates.Values)
-            {
-                // The other properties are cleared in ReleaseTransaction()
-                state._identityMap?.Clear();
-            }
-
-            _descriptors.Clear();
-            _indexes?.Clear();
-
-            _store.ReleaseSession(this);
-        }
-
-        /// <summary>
-        /// Clears all the resources associated to the unit of work.
+        /// Clears all the resources associated to the transaction.
         /// </summary>
         private void ReleaseTransaction()
         {
@@ -696,22 +674,6 @@ namespace YesSql
             {
                 _transaction.Dispose();
                 _transaction = null;
-            }
-        }
-
-        /// <summary>
-        /// Called when the instance is reused from an object pool and doesn't go
-        /// through the constructor.
-        /// </summary>
-        internal void StartLease(IsolationLevel isolationLevel)
-        {
-            _disposed = false;
-            _cancel = false;
-
-            if (_suppressedFinalize == true)
-            {
-                GC.ReRegisterForFinalize(this);
-                _suppressedFinalize = false;
             }
         }
 
@@ -973,15 +935,11 @@ namespace YesSql
             }
             finally
             {
+                GC.SuppressFinalize(this);
+
                 _disposed = true;
 
                 await CommitTransactionAsync();
-
-                ReleaseSession();
-
-                GC.SuppressFinalize(this);
-
-                _suppressedFinalize = true;
             }
         }
 
@@ -1042,15 +1000,12 @@ namespace YesSql
             }
             finally
             {
+                GC.SuppressFinalize(this);
+
                 _disposed = true;
 
                 CommitTransaction();
 
-                ReleaseSession();
-
-                GC.SuppressFinalize(this);
-
-                _suppressedFinalize = true;
             }
         }
 #endif
@@ -1270,7 +1225,12 @@ namespace YesSql
         /// </summary>
         private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collection)
         {
-            var cacheKey = t.FullName + ":" + collection;
+            _descriptors ??= new Dictionary<string, IEnumerable<IndexDescriptor>>();
+
+            var cacheKey = String.IsNullOrEmpty(collection) 
+                ? t.FullName
+                : String.Concat(t.FullName + ":" + collection)
+                ;
 
             if (!_descriptors.TryGetValue(cacheKey, out var typedDescriptors))
             {

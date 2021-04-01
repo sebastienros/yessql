@@ -3786,32 +3786,6 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task PooledSessionsShouldCommit()
-        {
-            using (var session = _store.CreateSession())
-            {
-                session.Save(new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                });
-
-                Assert.Equal(1, await session.Query<Person>().CountAsync());
-            }
-
-            using (var session = _store.CreateSession())
-            {
-                session.Save(new Person
-                {
-                    Firstname = "Bill2",
-                    Lastname = "Gates"
-                });
-
-                Assert.Equal(2, await session.Query<Person>().CountAsync());
-            }
-        }
-
-        [Fact]
         public async Task TrackDocumentQuery()
         {
             Person person1, person2;
@@ -4017,7 +3991,7 @@ namespace YesSql.Tests
             }
 
             var concurrency = 32;
-            var MaxTransactions = int.MaxValue;
+            var MaxTransactions = 10000;
 
             var counter = 0;
             var stopping = false;
