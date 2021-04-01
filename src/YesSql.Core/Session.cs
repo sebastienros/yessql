@@ -269,7 +269,7 @@ namespace YesSql
 
             doc.Id = id;
 
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var versionAccessor = _store.GetVersionAccessor(entity.GetType());
             if (versionAccessor != null)
@@ -378,7 +378,7 @@ namespace YesSql
 
             await MapNew(oldDoc, entity, collection);
 
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             oldDoc.Content = newContent;
 
@@ -387,7 +387,7 @@ namespace YesSql
 
         private async Task<Document> GetDocumentByIdAsync(int id, string collection)
         {
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -481,7 +481,7 @@ namespace YesSql
             // Auto-flush
             await FlushAsync();
 
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -1230,7 +1230,7 @@ namespace YesSql
 
         private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection)
         {
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
@@ -1390,7 +1390,7 @@ namespace YesSql
         /// <summary>
         /// Initializes a new connection if none has been yet. Use this method when reads need to be done.
         /// </summary>
-        public async Task<DbConnection> DemandAsync()
+        public async Task<DbConnection> CreateConnectionAsync()
         {
             CheckDisposed();
 
@@ -1415,7 +1415,7 @@ namespace YesSql
 
             if (_transaction == null)
             {
-                await DemandAsync();
+                await CreateConnectionAsync();
 
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.

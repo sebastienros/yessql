@@ -98,7 +98,7 @@ namespace YesSql
         /// <summary>
         /// Returns the <see cref="DbConnection"/> that is used by this instance.
         /// </summary>
-        Task<DbConnection> DemandAsync();
+        Task<DbConnection> CreateConnectionAsync();
 
         /// <summary>
         /// Begin the <see cref="DbConnection"/> that is used by this instance.

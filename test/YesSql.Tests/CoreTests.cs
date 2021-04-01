@@ -605,7 +605,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var dialect = _store.Configuration.SqlDialect;
                 var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
 
@@ -5217,7 +5217,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
@@ -5271,7 +5271,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
@@ -5331,7 +5331,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
@@ -5385,7 +5385,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
