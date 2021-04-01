@@ -265,7 +265,7 @@ namespace YesSql
         /// <returns></returns>
         private Session MakeSession()
         {
-            return new Session(this, Configuration.IsolationLevel);
+            return new Session(this);
         }
 
         internal void ReleaseSession(Session session)

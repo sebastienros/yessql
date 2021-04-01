@@ -16,18 +16,17 @@ namespace YesSql
 {
     public class Session : ISession
     {
+        private DbConnection _connection;
         private DbTransaction _transaction;
 
         internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
-        private readonly Dictionary<string, SessionState> CollectionStates;
+        private readonly Dictionary<string, SessionState> _collectionStates;
         private readonly SessionState _defaultState;
         protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
         internal readonly Store _store;
         private volatile bool _disposed;
         private volatile bool _suppressedFinalize;
         private bool _flushing;
-        private IsolationLevel _isolationLevel;
-        private DbConnection _connection;
         protected bool _cancel;
         protected List<IIndexProvider> _indexes;
 
@@ -35,16 +34,15 @@ namespace YesSql
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
 
-        public Session(Store store, IsolationLevel isolationLevel)
+        public Session(Store store)
         {
             _store = store;
-            _isolationLevel = isolationLevel;
             _tablePrefix = _store.Configuration.TablePrefix;
             _dialect = store.Dialect;
             _logger = store.Configuration.Logger;
 
             _defaultState = new SessionState();
-            CollectionStates = new Dictionary<string, SessionState>()
+            _collectionStates = new Dictionary<string, SessionState>()
             {
                 [""] = _defaultState
             };
@@ -77,10 +75,10 @@ namespace YesSql
                 return _defaultState;
             }
 
-            if (!CollectionStates.TryGetValue(collection, out var state))
+            if (!_collectionStates.TryGetValue(collection, out var state))
             {
                 state = new SessionState();
-                CollectionStates[collection] = state;
+                _collectionStates[collection] = state;
             }
 
             return state;
@@ -664,9 +662,10 @@ namespace YesSql
         /// </summary>
         private void ReleaseSession()
         {
-            foreach (var state in CollectionStates.Values)
+            foreach (var state in _collectionStates.Values)
             {
-                state.IdentityMap.Clear();
+                // The other properties are cleared in ReleaseTransaction()
+                state._identityMap?.Clear();
             }
 
             _descriptors.Clear();
@@ -680,14 +679,15 @@ namespace YesSql
         /// </summary>
         private void ReleaseTransaction()
         {
-            foreach (var state in CollectionStates.Values)
+            foreach (var state in _collectionStates.Values)
             {
-                state.Concurrent.Clear();
-                state.Saved.Clear();
-                state.Updated.Clear();
-                state.Tracked.Clear();
-                state.Deleted.Clear();
-                state.Maps.Clear();
+                // IndentityMap is cleared in ReleaseSession()
+                state._concurrent?.Clear();
+                state._saved?.Clear();
+                state._updated?.Clear();
+                state._tracked?.Clear();
+                state._deleted?.Clear();
+                state._maps?.Clear();
             }
 
             _commands.Clear();
@@ -707,7 +707,6 @@ namespace YesSql
         {
             _disposed = false;
             _cancel = false;
-            _isolationLevel = isolationLevel;
 
             if (_suppressedFinalize == true)
             {
@@ -742,7 +741,7 @@ namespace YesSql
             try
             {
                 // saving all tracked entities
-                foreach (var collectionState in CollectionStates)
+                foreach (var collectionState in _collectionStates)
                 {
                     var state = collectionState.Value;
                     var collection = collectionState.Key;
@@ -797,7 +796,7 @@ namespace YesSql
             }
             finally
             {
-                foreach (var state in CollectionStates.Values)
+                foreach (var state in _collectionStates.Values)
                 {
                     // Track all saved and updated entities in case they are modified before
                     // CommitAsync is called
@@ -1072,7 +1071,7 @@ namespace YesSql
         /// </summary>
         internal bool HasWork()
         {
-            foreach (var state in CollectionStates.Values)
+            foreach (var state in _collectionStates.Values)
             {
                 if (
                     state.Saved.Count +
@@ -1087,7 +1086,7 @@ namespace YesSql
 
         private async Task ReduceAsync()
         {
-            foreach (var collectionState in CollectionStates)
+            foreach (var collectionState in _collectionStates)
             {
                 var state = collectionState.Value;
                 var collection = collectionState.Key;
@@ -1406,10 +1405,15 @@ namespace YesSql
 
         public DbTransaction CurrentTransaction => _transaction;
 
+        public Task<DbTransaction> BeginTransactionAsync()
+        {
+            return BeginTransactionAsync(Store.Configuration.IsolationLevel);
+        }
+
         /// <summary>
         /// Begins a new transaction if none has been yet. Use this method when writes need to be done.
         /// </summary>
-        public async Task<DbTransaction> BeginTransactionAsync()
+        public async Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
         {
             CheckDisposed();
 
@@ -1420,9 +1424,9 @@ namespace YesSql
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.
 #if SUPPORTS_ASYNC_TRANSACTIONS
-                _transaction = await _connection.BeginTransactionAsync(_isolationLevel);
+                _transaction = await _connection.BeginTransactionAsync(isolationLevel);
 #else
-                _transaction = _connection.BeginTransaction(_isolationLevel);
+                _transaction = _connection.BeginTransaction(isolationLevel);
 #endif
 
             }

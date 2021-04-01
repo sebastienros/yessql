@@ -3353,7 +3353,8 @@ namespace YesSql.Tests
 
             var task1 = Task.Run(async () =>
             {
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session1 = _store.CreateSession())
                 {
                     Assert.Equal(0, await session1.QueryIndex<PersonByName>().CountAsync());
 
@@ -3376,7 +3377,8 @@ namespace YesSql.Tests
                     Assert.True(false, "session2IsDisposed timeout");
                 }
 
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session1 = _store.CreateSession())
                 {
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3389,7 +3391,8 @@ namespace YesSql.Tests
                     Assert.True(false, "session1IsDisposed timeout");
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session2 = _store.CreateSession())
                 {
                     Assert.Equal(1, await session2.QueryIndex<PersonByName>().CountAsync());
 
@@ -3406,7 +3409,8 @@ namespace YesSql.Tests
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session2 = _store.CreateSession())
                 {
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3445,9 +3449,9 @@ namespace YesSql.Tests
 
             var task1 = Task.Run(async () =>
             {
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session1 = _store.CreateSession())
                 {
-                    await session1.BeginTransactionAsync();
+                    await session1.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(0, await session1.QueryIndex<PersonByName>().CountAsync());
 
@@ -3469,9 +3473,9 @@ namespace YesSql.Tests
                     }
                 }
 
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session1 = _store.CreateSession())
                 {
-                    await session1.BeginTransactionAsync();
+                    await session1.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3484,9 +3488,9 @@ namespace YesSql.Tests
                     Assert.True(false, "session1IsFlushed timeout");
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session2 = _store.CreateSession())
                 {
-                    await session2.BeginTransactionAsync();
+                    await session2.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(1, await session2.QueryIndex<PersonByName>().CountAsync());
 
@@ -3503,9 +3507,9 @@ namespace YesSql.Tests
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session2 = _store.CreateSession())
                 {
-                    await session2.BeginTransactionAsync();
+                    await session2.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
