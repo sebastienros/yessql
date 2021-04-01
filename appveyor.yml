@@ -34,6 +34,7 @@ before_test:
   - PATH=C:\Program Files\PostgreSQL\9.6\bin\;%PATH%
   - createdb yessql
 test_script:
+  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release --framework net5.0
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release
   - |
     net start MSSQL$SQL2017
@@ -43,7 +44,6 @@ test_script:
     net start MSSQL$SQL2019
     dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2019Tests" --configuration Release --framework net5.0
     net stop MSSQL$SQL2019
-  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release --framework net5.0
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.PostgreSqlTests" --configuration Release --framework net5.0
   - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.ProviderTests" --configuration Release --framework net5.0
 after_test:
