@@ -4101,7 +4101,7 @@ namespace YesSql.Tests
             // Not running the statement in case it fails (non deterministic)
             // Assert.True(gatedCounter > nonGatedCounter);
 
-            throw new Exception($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
+            Console.WriteLine($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
         }
 
         [Fact]
