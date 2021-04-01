@@ -46,6 +46,7 @@ test_script:
 #    dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqlServer2019Tests" --configuration Release --framework net5.0
 #    net stop MSSQL$SQL2019
 #  - dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.MySqlTests" --configuration Release --framework net5.0
+  - echo "Tests finished"
 after_test:
   - dotnet pack -c Release
 artifacts:
