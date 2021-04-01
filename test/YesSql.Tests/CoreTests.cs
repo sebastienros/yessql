@@ -4013,7 +4013,7 @@ namespace YesSql.Tests
             }
 
             var concurrency = 32;
-            var MaxTransactions = 10000;
+            var MaxTransactions = int.MaxValue;
 
             var counter = 0;
             var stopping = false;
@@ -4101,7 +4101,7 @@ namespace YesSql.Tests
             // Not running the statement in case it fails (non deterministic)
             // Assert.True(gatedCounter > nonGatedCounter);
 
-            Console.WriteLine($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
+            throw new Exception($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
         }
 
         [Fact]
