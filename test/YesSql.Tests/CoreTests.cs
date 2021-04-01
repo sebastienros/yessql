@@ -3421,6 +3421,8 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldReadUncommittedRecords()
         {
+            // Since the default mode is not ReadUncommitted, a specific transaction needs to be started
+
             /*
              * session1 created
              * session1 0 index found
@@ -3445,6 +3447,8 @@ namespace YesSql.Tests
             {
                 using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session1.BeginTransactionAsync();
+
                     Assert.Equal(0, await session1.QueryIndex<PersonByName>().CountAsync());
 
                     var bill = new Person
@@ -3467,6 +3471,8 @@ namespace YesSql.Tests
 
                 using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session1.BeginTransactionAsync();
+
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
             });
@@ -3480,6 +3486,8 @@ namespace YesSql.Tests
 
                 using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session2.BeginTransactionAsync();
+
                     Assert.Equal(1, await session2.QueryIndex<PersonByName>().CountAsync());
 
                     var steve = new Person
@@ -3497,6 +3505,8 @@ namespace YesSql.Tests
 
                 using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
                 {
+                    await session2.BeginTransactionAsync();
+
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
 
