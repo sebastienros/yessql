@@ -6,24 +6,30 @@ namespace YesSql
 {
     internal class SessionState
     {
-        public readonly Dictionary<IndexDescriptor, List<MapState>> Maps = new Dictionary<IndexDescriptor, List<MapState>>();
+        internal Dictionary<IndexDescriptor, List<MapState>> _maps;
+        public Dictionary<IndexDescriptor, List<MapState>> Maps => _maps ??= new Dictionary<IndexDescriptor, List<MapState>>();
 
-        public readonly IdentityMap IdentityMap = new IdentityMap();
+        internal IdentityMap _identityMap;
+        public IdentityMap IdentityMap => _identityMap ??= new IdentityMap();
 
         // entities that need to be created in the next flush
-        public readonly HashSet<object> Saved = new HashSet<object>();
+        internal HashSet<object> _saved;
+        public HashSet<object> Saved => _saved ??= new HashSet<object>();
 
         // entities that already exist and need to be updated in the next flush
-        public readonly HashSet<object> Updated = new HashSet<object>();
+        internal HashSet<object> _updated;
+        public HashSet<object> Updated => _updated ??= new HashSet<object>();
 
         // entities that are already saved or updated in a previous flush
-        public readonly HashSet<object> Tracked = new HashSet<object>();
+        internal HashSet<object> _tracked;
+        public HashSet<object> Tracked => _tracked ??= new HashSet<object>();
 
         // ids of entities that are checked for concurrency
-        public readonly HashSet<int> Concurrent = new HashSet<int>();
+        internal HashSet<int> _concurrent;
+        public HashSet<int> Concurrent => _concurrent ??= new HashSet<int>();
 
         // entities that need to be deleted in the next flush
-        public readonly HashSet<object> Deleted = new HashSet<object>();
-
+        internal HashSet<object> _deleted;
+        public HashSet<object> Deleted => _deleted ??= new HashSet<object>();
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -9,10 +8,9 @@ namespace YesSql
     public interface IStore : IDisposable
     {
         /// <summary>
-        /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/> with
-        /// the specified <see cref="IsolationLevel"/>.
+        /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/>.
         /// </summary>
-        ISession CreateSession(IsolationLevel isolationLevel);
+        ISession CreateSession();
 
         /// <summary>
         /// Registers index providers.
@@ -46,17 +44,5 @@ namespace YesSql
         /// Returns the <see cref="ITypeService" /> instance used to create this store.
         /// </summary>
         ITypeService TypeNames { get; }
-    }
-
-    public static class IStoreExtensions
-    {
-        /// <summary>
-        /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/> with
-        /// the default <see cref="IsolationLevel"/>.
-        /// </summary>
-        public static ISession CreateSession(this IStore store)
-        {
-            return store.CreateSession(store.Configuration.IsolationLevel);
-        }
     }
 }

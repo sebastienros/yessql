@@ -965,7 +965,7 @@ namespace YesSql.Services
             // Commit any pending changes before doing a query (auto-flush)
             await _session.FlushAsync();
 
-            var connection = await _session.DemandAsync();
+            var connection = await _session.CreateConnectionAsync();
             var transaction = _session.CurrentTransaction;
 
             _queryState.FlushFilters();
@@ -1084,7 +1084,7 @@ namespace YesSql.Services
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync();
 
-                var connection = await _query._session.DemandAsync();
+                var connection = await _query._session.CreateConnectionAsync();
                 var transaction = _query._session.CurrentTransaction;
 
                 _query._queryState.FlushFilters();
@@ -1172,7 +1172,7 @@ namespace YesSql.Services
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync();
 
-                var connection = await _query._session.DemandAsync();
+                var connection = await _query._session.CreateConnectionAsync();
                 var transaction = _query._session.CurrentTransaction;
 
                 _query._queryState.FlushFilters();

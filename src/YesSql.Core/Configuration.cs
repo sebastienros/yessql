@@ -19,7 +19,6 @@ namespace YesSql
             IdGenerator = new DefaultIdGenerator();
             IsolationLevel = IsolationLevel.ReadCommitted;
             TablePrefix = "";
-            SessionPoolSize = 16;
             CommandsPageSize = 500;
             QueryGatingEnabled = true;
             Logger = NullLogger.Instance;
@@ -33,7 +32,6 @@ namespace YesSql
         public IConnectionFactory ConnectionFactory { get; set; }
         public IContentSerializer ContentSerializer { get; set; }
         public string TablePrefix { get; set; }
-        public int SessionPoolSize { get; set; }
         public int CommandsPageSize { get; set; }
         public bool QueryGatingEnabled { get; set; }
         public IIdGenerator IdGenerator { get; set; }
