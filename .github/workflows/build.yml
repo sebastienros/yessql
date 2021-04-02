@@ -18,8 +18,11 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-        DOTNET_NOLOGO: true
-        DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      POSTGRESQL_CONNECTION_STRING: Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;
+      MYSQL_CONNECTION_STRING: server=localhost;uid=root;pwd=Password12!;database=yessql;
+
     services:
       postgres:
         image: postgres:11
@@ -28,10 +31,19 @@ jobs:
           POSTGRES_PASSWORD: Password12!
           POSTGRES_DB: yessql
         ports:
-        - 5432:5432
+          - 5432:5432
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
+      mariadb:
+        image: mariadb:latest
+        ports:
+          - 5432:5432
+        env:
+          MYSQL_DATABASE: yessql
+          MYSQL_ROOT_PASSWORD: Password12!
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        
     steps:
     - uses: actions/checkout@v2
     
@@ -43,5 +55,8 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
 
-    - name: Test
-      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net5.0
+    #- name: Test - PostgresQL
+    #  run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net5.0
+    
+    - name: Test - MySQL
+      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net5.0
