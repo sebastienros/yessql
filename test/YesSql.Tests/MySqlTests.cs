@@ -13,7 +13,7 @@ namespace YesSql.Tests
 {
     /// <summary>
     /// To run MySQL inside Docker, use this command:
-    /// docker run --name mysql -p 3306:3306 -d --env MYSQL_ROOT_PASSWORD=Password12! --env MYSQL_USER=user1 --env MYSQL_PASSWORD=Password12! --env MYSQL_DATABASE=yessql mysql:5.7 --max-allowed-packet=64000000
+    /// docker run --name mysql -e MYSQL_DATABASE=yessql -e MYSQL_USER=user1 -e MYSQL_PASSWORD=Password12! -e MYSQL_ALLOW_EMPTY_PASSWORD=1 -d -p 3306:3306 mysql:8
     /// </summary>
     public class MySqlTests : CoreTests
     {

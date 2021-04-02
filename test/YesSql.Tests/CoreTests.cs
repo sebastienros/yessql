@@ -19,32 +19,54 @@ using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
-    public abstract class CoreTests : IDisposable
+    public abstract class CoreTests : IAsyncLifetime
     {
         protected virtual string TablePrefix => "tp";
 
         protected virtual string DecimalColumnDefinitionFormatString => "DECIMAL({0},{1})";
 
         protected IStore _store;
+        protected static IConfiguration _configuration;
 
         protected ITestOutputHelper _output;
+        protected abstract IConfiguration CreateConfiguration();
+
 
         public CoreTests(ITestOutputHelper output)
         {
             _output = output;
-            
-            var configuration = CreateConfiguration();
-
-            CleanDatabase(configuration, false);
-            CreateTables(configuration);
         }
 
-        public void Dispose()
+        public async Task InitializeAsync()
         {
-            _store.Dispose();
+            // Create the tables only once
+            if (_configuration == null)
+            {
+                _configuration = CreateConfiguration();
+
+                CleanDatabase(_configuration, false);
+
+                _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
+                await _store.InitializeCollectionAsync("Col1");
+                _store.TypeNames[typeof(Person)] = "People";
+
+                CreateTables(_configuration);
+            }
+            else
+            {
+                _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
+                await _store.InitializeCollectionAsync("Col1");
+                _store.TypeNames[typeof(Person)] = "People";
+            }
+
+            // Clear the tables for each new test
+            ClearTables(_configuration);
         }
 
-        protected abstract IConfiguration CreateConfiguration();
+        public Task DisposeAsync()
+        {
+            return Task.CompletedTask;
+        }
 
         //[DebuggerNonUserCode]
         protected virtual void CleanDatabase(IConfiguration configuration, bool throwOnError)
@@ -93,24 +115,103 @@ namespace YesSql.Tests
             }
         }
 
+        protected virtual void ClearTables(IConfiguration configuration)
+        {
+            void DeleteReduceIndexTable<IndexType>(DbConnection connection, string collection = "")
+            {
+                var indexTable = configuration.TableNameConvention.GetIndexTable(typeof(IndexType), collection);
+                var documentTable = configuration.TableNameConvention.GetDocumentTable(collection);
+
+                var bridgeTableName = indexTable + "_" + documentTable;
+
+                try
+                {
+                    connection.Execute($"DELETE FROM {TablePrefix}{bridgeTableName}");
+                    connection.Execute($"DELETE FROM {TablePrefix}{indexTable}");
+                }
+                catch { }
+            }
+
+            void DeleteMapIndexTable<IndexType>(DbConnection connection, string collection = "")
+            {
+                var indexName = typeof(IndexType).Name;
+                var indexTable = configuration.TableNameConvention.GetIndexTable(typeof(IndexType), collection);
+
+                try 
+                { 
+                    connection.Execute($"DELETE FROM {TablePrefix}{indexTable}");
+                }
+                catch { }
+            }
+
+            void DeleteDocumentTable(DbConnection connection, string collection = "")
+            {
+                var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
+
+                try
+                { 
+                    connection.Execute($"DELETE FROM {TablePrefix}{tableName}");
+                }
+                catch { }
+            }
+
+            // Remove existing tables
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
+            {
+                connection.Open();
+
+                DeleteReduceIndexTable<ArticlesByDay>(connection);
+                DeleteReduceIndexTable<AttachmentByDay>(connection);
+                DeleteMapIndexTable<ArticleByPublishedDate>(connection);
+                DeleteMapIndexTable<PersonByName>(connection);
+                DeleteMapIndexTable<CarIndex>(connection);
+                DeleteMapIndexTable<PersonByNameCol>(connection);
+                DeleteMapIndexTable<PersonIdentity>(connection);
+                DeleteMapIndexTable<EmailByAttachment>(connection);
+                DeleteMapIndexTable<TypesIndex>(connection);
+
+                DeleteMapIndexTable<ShapeIndex>(connection);
+                DeleteMapIndexTable<PersonByAge>(connection);
+                DeleteMapIndexTable<PersonByNullableAge>(connection);
+                DeleteMapIndexTable<Binary>(connection);
+                DeleteMapIndexTable<PublishedArticle>(connection);
+                DeleteMapIndexTable<PropertyIndex>(connection);
+                DeleteReduceIndexTable<UserByRoleNameIndex>(connection);
+
+                DeleteMapIndexTable<PersonByName>(connection, "Col1");
+                DeleteMapIndexTable<PersonByNameCol>(connection, "Col1");
+                DeleteMapIndexTable<PersonByBothNamesCol>(connection, "Col1");
+                DeleteReduceIndexTable<PersonsByNameCol>(connection, "Col1");
+
+                DeleteDocumentTable(connection, "Col1");
+                DeleteDocumentTable(connection, "");
+
+                //connection.Execute($"DELETE FROM {TablePrefix}{DbBlockIdGenerator.TableName}");
+
+                OnClearTables(connection);
+
+            }
+        }
+
         protected virtual void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
+        {
+
+        }
+
+        protected virtual void OnClearTables(DbConnection connection)
         {
 
         }
 
         public void CreateTables(IConfiguration configuration)
         {
-            _store = StoreFactory.CreateAndInitializeAsync(configuration).GetAwaiter().GetResult();
-
-            _store.InitializeCollectionAsync("Col1").GetAwaiter().GetResult();
-
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 connection.Open();
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                 {
-                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+                    var builder = new SchemaBuilder(configuration, transaction);
 
                     builder.CreateReduceIndexTable<ArticlesByDay>(column => column
                             .Column<int>(nameof(ArticlesByDay.Count))
@@ -243,8 +344,6 @@ namespace YesSql.Tests
                     transaction.Commit();
                 }
             }
-
-            _store.TypeNames[typeof(Person)] = "People";
         }
 
         [Fact]
@@ -1280,21 +1379,21 @@ namespace YesSql.Tests
 
                 var p1 = await session.QueryIndex<PersonByName>().FirstOrDefaultAsync();
 
-                Assert.Equal(1, p1.Id);
+                var firstId = p1.Id;
 
                 bill.Firstname = "Bill2";
                 session.Save(bill);
 
                 var p2 = await session.QueryIndex<PersonByName>().FirstOrDefaultAsync();
 
-                Assert.Equal(2, p2.Id);
+                Assert.Equal(firstId + 1, p2.Id);
 
                 bill.Firstname = "Bill3";
                 session.Save(bill);
 
                 var p3 = await session.QueryIndex<PersonByName>().FirstOrDefaultAsync();
 
-                Assert.Equal(3, p3.Id);
+                Assert.Equal(firstId + 2, p3.Id);
 
             }
 
@@ -1315,7 +1414,7 @@ namespace YesSql.Tests
 
             _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var hanselman = new Person
                 {
@@ -1333,7 +1432,7 @@ namespace YesSql.Tests
                 session.Save(guthrie);
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 Assert.Equal(4, await session.QueryIndex<PersonIdentity>().CountAsync());
                 Assert.Equal(1, await session.QueryIndex<PersonIdentity>().Where(x => x.Identity == "Hanselman").CountAsync());
@@ -2024,7 +2123,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                for (var i = 0; i < 2099; i++)
+                for (var i = 0; i < _configuration.CommandsPageSize + 50; i++)
                 {
                     session.Save(new Person
                     {
