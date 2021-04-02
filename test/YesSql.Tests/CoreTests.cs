@@ -3861,6 +3861,8 @@ namespace YesSql.Tests
                     await session1.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
+
+                    await session1.SaveChangesAsync();
                 }
             });
 
@@ -3888,6 +3890,8 @@ namespace YesSql.Tests
                     await session2.FlushAsync();
 
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
+
+                    await session2.SaveChangesAsync();
                 }
 
                 using (var session2 = _store.CreateSession())
@@ -3895,6 +3899,8 @@ namespace YesSql.Tests
                     await session2.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
+
+                    await session2.SaveChangesAsync();
                 }
 
                 session2IsDisposed.Set();
