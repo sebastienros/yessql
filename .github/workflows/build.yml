@@ -74,8 +74,8 @@ jobs:
     - name: Test - Sqlite netcoreapp2.1
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework netcoreapp2.1
 
-    #- name: Test - PostgresQL
-    #  run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net5.0
+    - name: Test - PostgresQL
+      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net5.0
     
     - name: Test - MySQL
       run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net5.0

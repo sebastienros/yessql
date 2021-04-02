@@ -126,10 +126,12 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {TablePrefix}{bridgeTableName}");
-                    connection.Execute($"DELETE FROM {TablePrefix}{indexTable}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
-                catch { }
+                catch (Exception e) 
+                { 
+                }
             }
 
             void DeleteMapIndexTable<IndexType>(DbConnection connection, string collection = "")
@@ -139,7 +141,7 @@ namespace YesSql.Tests
 
                 try 
                 { 
-                    connection.Execute($"DELETE FROM {TablePrefix}{indexTable}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
                 catch { }
             }
@@ -150,7 +152,7 @@ namespace YesSql.Tests
 
                 try
                 { 
-                    connection.Execute($"DELETE FROM {TablePrefix}{tableName}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
                 }
                 catch { }
             }

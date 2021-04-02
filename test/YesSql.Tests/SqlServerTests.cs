@@ -30,23 +30,6 @@ namespace YesSql.Tests
                 ;
         }
 
-        protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
-        {
-            base.OnCleanDatabase(builder, transaction);
-
-            try
-            {
-                builder.DropTable("Content");
-            }
-            catch { }
-
-            try
-            {
-                builder.DropTable("Collection1_Content");
-            }
-            catch { }
-        }
-
         [Fact]
         public async Task ShouldSeedExistingIds()
         {
