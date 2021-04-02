@@ -4525,7 +4525,12 @@ namespace YesSql.Tests
                 Assert.True(false, "Non-gated threads didn't finish in time");
             }
 
+            var previousColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine($"{gatedCounter} gated queries in {swGated.Elapsed}");
+            Console.WriteLine($"{nonGatedCounter} non-gated in {swNonGated.Elapsed}");
             Console.WriteLine($"Gated: {gatedCounter * 1000 / swGated.ElapsedMilliseconds:n0} tps; NonGated: {gatedCounter * 1000 / swNonGated.ElapsedMilliseconds:n0} tps");
+            Console.ForegroundColor = previousColor;
         }
 
         [Fact]
