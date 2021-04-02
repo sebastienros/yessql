@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -129,7 +130,7 @@ namespace YesSql.Tests
                     connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
                     connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
-                catch (Exception e) 
+                catch 
                 { 
                 }
             }
@@ -4419,7 +4420,10 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var concurrency = 32;
+            var swGated = new Stopwatch();
+            var swNonGated = new Stopwatch();
+
+            var concurrency = 16;
             var MaxTransactions = int.MaxValue;
 
             var counter = 0;
@@ -4454,6 +4458,7 @@ namespace YesSql.Tests
 
             tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
+                swGated.Start();
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
                     using (var session = _store.CreateSession())
@@ -4463,17 +4468,25 @@ namespace YesSql.Tests
                         await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                     }
                 }
+                swGated.Stop();
             })).ToList();
 
-            tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
-
-            await Task.WhenAny(tasks);
+            await Task.WhenAny(tasks.Append(Task.Delay(TimeSpan.FromSeconds(3))));
 
             var gatedCounter = counter;
 
             // Flushing tasks
             stopping = true;
+
+            var delay = Task.Delay(TimeSpan.FromSeconds(10));
+
             await Task.WhenAll(tasks);
+
+            if (delay.IsCompleted)
+            {
+                Assert.True(false, "Gated threads didn't finish in time");
+            }
+
             stopping = false;
             counter = 0;
 
@@ -4483,6 +4496,7 @@ namespace YesSql.Tests
 
             tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
+                swNonGated.Start();
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
                     using (var session = _store.CreateSession())
@@ -4492,23 +4506,26 @@ namespace YesSql.Tests
                         await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                     }
                 }
+                swNonGated.Stop();
             })).ToList();
 
-            tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
-
-            await Task.WhenAny(tasks);
+            await Task.WhenAny(tasks.Append(Task.Delay(TimeSpan.FromSeconds(3))));
 
             var nonGatedCounter = counter;
 
+            delay = Task.Delay(TimeSpan.FromSeconds(10));
+
             // Flushing tasks
             stopping = true;
-            await Task.WhenAll(tasks);
+            await Task.WhenAny(tasks.Append(delay));
             stopping = false;
 
-            // Not running the statement in case it fails (non deterministic)
-            // Assert.True(gatedCounter > nonGatedCounter);
+            if (delay.IsCompleted)
+            {
+                Assert.True(false, "Non-gated threads didn't finish in time");
+            }
 
-            Console.WriteLine($"Gated: {gatedCounter} NonGated: {nonGatedCounter}");
+            Console.WriteLine($"Gated: {gatedCounter * 1000 / swGated.ElapsedMilliseconds:n0} tps; NonGated: {gatedCounter * 1000 / swNonGated.ElapsedMilliseconds:n0} tps");
         }
 
         [Fact]
