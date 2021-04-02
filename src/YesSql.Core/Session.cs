@@ -16,18 +16,16 @@ namespace YesSql
 {
     public class Session : ISession
     {
+        private DbConnection _connection;
         private DbTransaction _transaction;
 
         internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
-        private readonly Dictionary<string, SessionState> CollectionStates;
+        private readonly Dictionary<string, SessionState> _collectionStates;
         private readonly SessionState _defaultState;
-        protected readonly Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors = new Dictionary<string, IEnumerable<IndexDescriptor>>();
+        private Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors;
         internal readonly Store _store;
         private volatile bool _disposed;
-        private volatile bool _suppressedFinalize;
         private bool _flushing;
-        private IsolationLevel _isolationLevel;
-        private DbConnection _connection;
         protected bool _cancel;
         protected List<IIndexProvider> _indexes;
 
@@ -35,16 +33,15 @@ namespace YesSql
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
 
-        public Session(Store store, IsolationLevel isolationLevel)
+        public Session(Store store)
         {
             _store = store;
-            _isolationLevel = isolationLevel;
             _tablePrefix = _store.Configuration.TablePrefix;
             _dialect = store.Dialect;
             _logger = store.Configuration.Logger;
 
             _defaultState = new SessionState();
-            CollectionStates = new Dictionary<string, SessionState>()
+            _collectionStates = new Dictionary<string, SessionState>()
             {
                 [""] = _defaultState
             };
@@ -77,10 +74,10 @@ namespace YesSql
                 return _defaultState;
             }
 
-            if (!CollectionStates.TryGetValue(collection, out var state))
+            if (!_collectionStates.TryGetValue(collection, out var state))
             {
                 state = new SessionState();
-                CollectionStates[collection] = state;
+                _collectionStates[collection] = state;
             }
 
             return state;
@@ -269,7 +266,7 @@ namespace YesSql
 
             doc.Id = id;
 
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var versionAccessor = _store.GetVersionAccessor(entity.GetType());
             if (versionAccessor != null)
@@ -378,7 +375,7 @@ namespace YesSql
 
             await MapNew(oldDoc, entity, collection);
 
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             oldDoc.Content = newContent;
 
@@ -387,7 +384,7 @@ namespace YesSql
 
         private async Task<Document> GetDocumentByIdAsync(int id, string collection)
         {
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -396,22 +393,18 @@ namespace YesSql
 
             try
             {
-                var result = await _store.ProduceAsync(key, (args) =>
+                var result = await _store.ProduceAsync(key, (state) =>
                 {
-                    var localStore = (Store)args[0];
-                    var localConnection = (DbConnection)args[1];
-                    var localTransaction = (DbTransaction)args[2];
-                    var localCommand = (string)args[3];
-                    var localParameters = (object)args[4];
+                    var logger = state.Store.Configuration.Logger;
 
-                    localStore.Configuration.Logger.LogTrace(localCommand);
-                    return localConnection.QueryAsync<Document>(localCommand, localParameters, localTransaction);
+                    if (logger.IsEnabled(LogLevel.Trace))
+                    { 
+                        logger.LogTrace(state.Command);
+                    }
+
+                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
                 },
-                _store,
-                _connection,
-                _transaction,
-                command,
-                new { Id = id });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id } });
 
                 return result.FirstOrDefault();
             }
@@ -485,7 +478,7 @@ namespace YesSql
             // Auto-flush
             await FlushAsync();
 
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -494,19 +487,18 @@ namespace YesSql
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             try
             {
-                var documents = await _store.ProduceAsync(key, (args) =>
+                var documents = await _store.ProduceAsync(key, (state) =>
                 {
-                    var localConnection = (DbConnection)args[0];
-                    var localTransaction = (DbTransaction)args[1];
-                    var localCommand = (string)args[2];
-                    var localParamters = args[3];
+                    var logger = state.Store.Configuration.Logger;
 
-                    return localConnection.QueryAsync<Document>(localCommand, localParamters, localTransaction);
+                    if (logger.IsEnabled(LogLevel.Trace))
+                    {
+                        logger.LogTrace(state.Command);
+                    }
+
+                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
                 },
-                _connection,
-                _transaction,
-                command,
-                new { Ids = ids });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids } });
 
                 return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray(), collection);
             }
@@ -656,68 +648,7 @@ namespace YesSql
 
                 CommitTransaction();
 
-                ReleaseSession();
-
                 GC.SuppressFinalize(this);
-
-                _suppressedFinalize = true;
-            }
-        }
-
-        /// <summary>
-        /// Clears all the resources associated to the session.
-        /// </summary>
-        private void ReleaseSession()
-        {
-            foreach (var state in CollectionStates.Values)
-            {
-                state.IdentityMap.Clear();
-            }
-
-            _descriptors.Clear();
-            _indexes?.Clear();
-
-            _store.ReleaseSession(this);
-        }
-
-        /// <summary>
-        /// Clears all the resources associated to the unit of work.
-        /// </summary>
-        private void ReleaseTransaction()
-        {
-            foreach (var state in CollectionStates.Values)
-            {
-                state.Concurrent.Clear();
-                state.Saved.Clear();
-                state.Updated.Clear();
-                state.Tracked.Clear();
-                state.Deleted.Clear();
-                state.Maps.Clear();
-            }
-
-            _commands.Clear();
-
-            if (_transaction != null)
-            {
-                _transaction.Dispose();
-                _transaction = null;
-            }
-        }
-
-        /// <summary>
-        /// Called when the instance is reused from an object pool and doesn't go
-        /// through the constructor.
-        /// </summary>
-        internal void StartLease(IsolationLevel isolationLevel)
-        {
-            _disposed = false;
-            _cancel = false;
-            _isolationLevel = isolationLevel;
-
-            if (_suppressedFinalize == true)
-            {
-                GC.ReRegisterForFinalize(this);
-                _suppressedFinalize = false;
             }
         }
 
@@ -747,7 +678,7 @@ namespace YesSql
             try
             {
                 // saving all tracked entities
-                foreach (var collectionState in CollectionStates)
+                foreach (var collectionState in _collectionStates)
                 {
                     var state = collectionState.Value;
                     var collection = collectionState.Key;
@@ -785,7 +716,7 @@ namespace YesSql
                 // compute all reduce indexes
                 await ReduceAsync();
 
-                await DemandAsync();
+                await BeginTransactionAsync();
 
                 BatchCommands();
 
@@ -802,7 +733,7 @@ namespace YesSql
             }
             finally
             {
-                foreach (var state in CollectionStates.Values)
+                foreach (var state in _collectionStates.Values)
                 {
                     // Track all saved and updated entities in case they are modified before
                     // CommitAsync is called
@@ -983,11 +914,7 @@ namespace YesSql
 
                 await CommitTransactionAsync();
 
-                ReleaseSession();
-
                 GC.SuppressFinalize(this);
-
-                _suppressedFinalize = true;
             }
         }
 
@@ -1016,9 +943,34 @@ namespace YesSql
             }
         }
 
+        /// <summary>
+        /// Clears all the resources associated to the transaction.
+        /// </summary>
+        private async Task ReleaseTransactionAsync()
+        {
+            foreach (var state in _collectionStates.Values)
+            {
+                // IndentityMap is cleared in ReleaseSession()
+                state._concurrent?.Clear();
+                state._saved?.Clear();
+                state._updated?.Clear();
+                state._tracked?.Clear();
+                state._deleted?.Clear();
+                state._maps?.Clear();
+            }
+
+            _commands.Clear();
+
+            if (_transaction != null)
+            {
+                await _transaction.DisposeAsync();
+                _transaction = null;
+            }
+        }
+
         private async Task ReleaseConnectionAsync()
         {
-            ReleaseTransaction();
+            await ReleaseTransactionAsync();
 
             if (_connection != null)
             {
@@ -1052,14 +1004,36 @@ namespace YesSql
 
                 CommitTransaction();
 
-                ReleaseSession();
-
                 GC.SuppressFinalize(this);
-
-                _suppressedFinalize = true;
             }
         }
 #endif
+
+        /// <summary>
+        /// Clears all the resources associated to the transaction.
+        /// </summary>
+        private void ReleaseTransaction()
+        {
+            foreach (var state in _collectionStates.Values)
+            {
+                // IndentityMap is cleared in ReleaseSession()
+                state._concurrent?.Clear();
+                state._saved?.Clear();
+                state._updated?.Clear();
+                state._tracked?.Clear();
+                state._deleted?.Clear();
+                state._maps?.Clear();
+            }
+
+            _commands.Clear();
+
+            if (_transaction != null)
+            {
+                _transaction.Dispose();
+                _transaction = null;
+            }
+        }
+
         private void ReleaseConnection()
         {
             ReleaseTransaction();
@@ -1077,7 +1051,7 @@ namespace YesSql
         /// </summary>
         internal bool HasWork()
         {
-            foreach (var state in CollectionStates.Values)
+            foreach (var state in _collectionStates.Values)
             {
                 if (
                     state.Saved.Count +
@@ -1092,7 +1066,7 @@ namespace YesSql
 
         private async Task ReduceAsync()
         {
-            foreach (var collectionState in CollectionStates)
+            foreach (var collectionState in _collectionStates)
             {
                 var state = collectionState.Value;
                 var collection = collectionState.Key;
@@ -1235,7 +1209,7 @@ namespace YesSql
 
         private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection)
         {
-            await DemandAsync();
+            await CreateConnectionAsync();
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
@@ -1276,7 +1250,12 @@ namespace YesSql
         /// </summary>
         private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collection)
         {
-            var cacheKey = t.FullName + ":" + collection;
+            _descriptors ??= new Dictionary<string, IEnumerable<IndexDescriptor>>();
+
+            var cacheKey = String.IsNullOrEmpty(collection) 
+                ? t.FullName
+                : String.Concat(t.FullName + ":" + collection)
+                ;
 
             if (!_descriptors.TryGetValue(cacheKey, out var typedDescriptors))
             {
@@ -1393,32 +1372,48 @@ namespace YesSql
         }
 
         /// <summary>
-        /// Initializes a new transaction if none has been yet
+        /// Initializes a new connection if none has been yet. Use this method when reads need to be done.
         /// </summary>
-        public async Task<DbTransaction> DemandAsync()
+        public async Task<DbConnection> CreateConnectionAsync()
+        {
+            CheckDisposed();
+
+            _connection ??= _store.Configuration.ConnectionFactory.CreateConnection();
+
+            if (_connection.State == ConnectionState.Closed)
+            {
+                await _connection.OpenAsync();
+            }
+
+            return _connection;
+        }
+
+        public DbTransaction CurrentTransaction => _transaction;
+
+        public Task<DbTransaction> BeginTransactionAsync()
+        {
+            return BeginTransactionAsync(Store.Configuration.IsolationLevel);
+        }
+
+        /// <summary>
+        /// Begins a new transaction if none has been yet. Use this method when writes need to be done.
+        /// </summary>
+        public async Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
         {
             CheckDisposed();
 
             if (_transaction == null)
             {
-                if (_connection == null)
-                {
-                    _connection = _store.Configuration.ConnectionFactory.CreateConnection() as DbConnection;
-
-                    if (_connection == null)
-                    {
-                        throw new InvalidOperationException("The connection couldn't be converted to DbConnection");
-                    }
-                }
-
-                if (_connection.State == ConnectionState.Closed)
-                {
-                    await _connection.OpenAsync();
-                }
+                await CreateConnectionAsync();
 
                 // In the case of shared connections (InMemory) this can throw as the transation
                 // might already be set by a concurrent thread on the same shared connection.
-                _transaction = _connection.BeginTransaction(_isolationLevel);
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                _transaction = await _connection.BeginTransactionAsync(isolationLevel);
+#else
+                _transaction = _connection.BeginTransaction(isolationLevel);
+#endif
+
             }
 
             return _transaction;

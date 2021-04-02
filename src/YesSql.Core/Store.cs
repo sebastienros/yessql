@@ -4,7 +4,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -13,7 +12,6 @@ using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
-using YesSql.Utils;
 
 namespace YesSql
 {
@@ -21,8 +19,6 @@ namespace YesSql
     {
         protected List<IIndexProvider> Indexes;
         protected List<Type> ScopedIndexes;
-
-        private ObjectPool<Session> _sessionPool;
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
@@ -95,7 +91,6 @@ namespace YesSql
             IndexCommand.ResetQueryCache();
             ValidateConfiguration();
 
-            _sessionPool = new ObjectPool<Session>(MakeSession, Configuration.SessionPoolSize);
             TypeNames = new TypeService();
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
@@ -249,28 +244,7 @@ namespace YesSql
 
         public ISession CreateSession()
         {
-            return CreateSession(Configuration.IsolationLevel);
-        }
-
-        public ISession CreateSession(IsolationLevel isolationLevel)
-        {
-            var session = _sessionPool.Allocate();
-            session.StartLease(isolationLevel);
-            return session;
-        }
-
-        /// <summary>
-        /// Called by the Session pool to make a new instance.
-        /// </summary>
-        /// <returns></returns>
-        private Session MakeSession()
-        {
-            return new Session(this, Configuration.IsolationLevel);
-        }
-
-        internal void ReleaseSession(Session session)
-        {
-            _sessionPool.Free(session);
+            return new Session(this);
         }
 
         public void Dispose()
@@ -388,11 +362,11 @@ namespace YesSql
         /// <param name="key">A key identifying the running work.</param>
         /// <param name="work">A function containing the logic to execute.</param>
         /// <returns>The result of the work.</returns>
-        internal async Task<T> ProduceAsync<T>(WorkerQueryKey key, Func<object[], Task<T>> work, params object[] args)
+        internal async Task<T> ProduceAsync<T, TState>(WorkerQueryKey key, Func<TState, Task<T>> work, TState state)
         {
             if (!Configuration.QueryGatingEnabled)
             {
-                return await work(args);
+                return await work(state);
             }
 
             object content = null;
@@ -415,7 +389,7 @@ namespace YesSql
                     try
                     {
                         // The current worker is processed
-                        content = await work(args);
+                        content = await work(state);
                     }
                     catch
                     {

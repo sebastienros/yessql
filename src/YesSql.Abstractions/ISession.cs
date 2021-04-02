@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
@@ -96,9 +97,24 @@ namespace YesSql
         Task CommitAsync();
 
         /// <summary>
-        /// Returns a <see cref="DbTransaction"/> that is used by this instance.
+        /// Creates or returns a <see cref="DbConnection"/>.
         /// </summary>
-        Task<DbTransaction> DemandAsync();
+        Task<DbConnection> CreateConnectionAsync();
+
+        /// <summary>
+        /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
+        /// </summary>
+        Task<DbTransaction> BeginTransactionAsync();
+
+        /// <summary>
+        /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
+        /// </summary>
+        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel);
+
+        /// <summary>
+        /// Returns the current <see cref="DbTransaction"/> if it exists.
+        /// </summary>
+        DbTransaction CurrentTransaction { get; }
 
         /// <summary>
         /// Registers index providers that are used only during the lifetime of this session.

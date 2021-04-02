@@ -135,7 +135,7 @@ namespace YesSql.Services
 
         static DefaultQuery()
         {
-            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(string) })] = (query, builder, dialect, expression) =>
+            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(string) })] = static (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Object);
@@ -146,7 +146,7 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(string) })] = (query, builder, dialect, expression) =>
+            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(string) })] = static (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Object);
@@ -158,7 +158,7 @@ namespace YesSql.Services
 
             };
 
-            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(string) })] = (query, builder, dialect, expression) =>
+            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(string) })] = static (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Object);
@@ -173,7 +173,7 @@ namespace YesSql.Services
             MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string) })] =
             MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
             MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) })] =
-                (query, builder, dialect, expression) =>
+                static (query, builder, dialect, expression) =>
             {
                 var generators = new List<Action<StringBuilder>>();
 
@@ -185,7 +185,7 @@ namespace YesSql.Services
                 dialect.Concat(builder, generators.ToArray());
             };
 
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsLike")] = (query, builder, dialect, expression) =>
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsLike")] = static (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Arguments[0]);
@@ -196,7 +196,7 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsNotLike")] = (query, builder, dialect, expression) =>
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsNotLike")] = static (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Arguments[0]);
@@ -207,7 +207,7 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("NotContains")] = (query, builder, dialect, expression) =>
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod("NotContains")] = static (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
                 query.ConvertFragment(builder, expression.Arguments[0]);
@@ -219,7 +219,7 @@ namespace YesSql.Services
             };
 
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn")] =
-                (query, builder, dialect, expression) =>
+                static (query, builder, dialect, expression) =>
                 {
                     // Could be simplified if int[] could be casted to IEnumerable<object>
                     var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
@@ -258,7 +258,7 @@ namespace YesSql.Services
                 };
 
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsNotIn")] =
-                (query, builder, dialect, expression) =>
+                static (query, builder, dialect, expression) =>
                 {
                     // Could be simplified if int[] could be casted to IEnumerable<object>
                     var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
@@ -297,25 +297,25 @@ namespace YesSql.Services
                 };
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsIn")] =
-                (query, builder, dialect, expression) =>
+                static (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, false, expression.Arguments[1], expression.Arguments[2]);
                 };
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotIn")] =
-                (query, builder, dialect, expression) =>
+                static (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, true, expression.Arguments[1], expression.Arguments[2]);
                 };
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsInAny")] =
-                (query, builder, dialect, expression) =>
+                static (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, false, expression.Arguments[1], null);
                 };
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsNotInAny")] =
-                (query, builder, dialect, expression) =>
+                static (query, builder, dialect, expression) =>
                 {
                     InFilter(query, builder, dialect, expression, true, expression.Arguments[1], null);
                 };
@@ -965,7 +965,8 @@ namespace YesSql.Services
             // Commit any pending changes before doing a query (auto-flush)
             await _session.FlushAsync();
 
-            var transaction = await _session.DemandAsync();
+            var connection = await _session.CreateConnectionAsync();
+            var transaction = _session.CurrentTransaction;
 
             _queryState.FlushFilters();
 
@@ -999,17 +1000,19 @@ namespace YesSql.Services
 
             try
             {
-                return await _session._store.ProduceAsync(key, (args) =>
+                return await _session._store.ProduceAsync(key, static (state) =>
                 {
-                    var localSession = (Session)args[0];
-                    var localSql = (string)args[1];
-                    var localParameters = (Dictionary<string, object>)args[2];
-                    var localTransaction = (DbTransaction)args[3];
 
-                    localSession._store.Configuration.Logger.LogDebug(localSql);
-                    return localTransaction.Connection.ExecuteScalarAsync<int>(localSql, localParameters, localTransaction);
-                }, 
-                _session, sql, parameters, transaction);
+                    var logger = state.Session._store.Configuration.Logger;
+
+                    if (logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger.LogDebug(state.Sql);
+                    }
+
+                    return state.Connection.ExecuteScalarAsync<int>(state.Sql, state.Parameters, state.Transaction);
+                },
+                new { Session = _session, Sql = sql, Parameters = parameters, Connection = connection, Transaction = transaction });
             }
             catch
             {
@@ -1081,7 +1084,8 @@ namespace YesSql.Services
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync();
 
-                var transaction = await _query._session.DemandAsync();
+                var connection = await _query._session.CreateConnectionAsync();
+                var transaction = _query._session.CurrentTransaction;
 
                 _query._queryState.FlushFilters();
 
@@ -1102,38 +1106,35 @@ namespace YesSql.Services
                         _query._queryState._sqlBuilder.Selector("*");
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        return (await _query._session._store.ProduceAsync(key, (args) =>
+                        return (await _query._session._store.ProduceAsync(key, static (state) =>
                         {
-                            var localQuery = (DefaultQuery)args[0];
-                            var localSql = (string)args[1];
-                            var localTransaction = (DbTransaction)args[2];
+                            var logger = state.Query._session._store.Configuration.Logger;
 
-                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
-                            return localTransaction.Connection.QueryAsync<T>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
-                        },
-                        _query,
-                        sql,
-                        transaction
-                        )).FirstOrDefault();
+                            if (logger.IsEnabled(LogLevel.Debug))
+                            {
+                                logger.LogDebug(state.Sql);
+                            }
+
+                            return state.Connection.QueryAsync<T>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
+
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction })).FirstOrDefault();
                     }
                     else
                     {
                         _query._queryState._sqlBuilder.Selector(_query._queryState._documentTable, "*");
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        var documents = (await _query._session._store.ProduceAsync(key, (args) =>
+                        var documents = (await _query._session._store.ProduceAsync(key, static (state) =>
                         {
-                            var localQuery = (DefaultQuery)args[0];
-                            var localSql = (string)args[1];
-                            var localTransaction = (DbTransaction)args[2];
+                            var logger = state.Query._session._store.Configuration.Logger;
 
-                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
-                            return localTransaction.Connection.QueryAsync<Document>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
-                        }, 
-                        _query,
-                        sql,
-                        transaction
-                        )).ToArray();
+                            if (logger.IsEnabled(LogLevel.Debug))
+                            {
+                                logger.LogDebug(state.Sql);
+                            }
+
+                            return state.Connection.QueryAsync<Document>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction })).ToArray();
 
                         if (documents.Length == 0)
                         {
@@ -1171,7 +1172,8 @@ namespace YesSql.Services
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync();
 
-                var transaction = await _query._session.DemandAsync();
+                var connection = await _query._session.CreateConnectionAsync();
+                var transaction = _query._session.CurrentTransaction;
 
                 _query._queryState.FlushFilters();
 
@@ -1197,19 +1199,17 @@ namespace YesSql.Services
 
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        return await _query._session._store.ProduceAsync(key, (args) =>
+                        return await _query._session._store.ProduceAsync(key, static (state) =>
                         {
-                            var localQuery = (DefaultQuery)args[0];
-                            var localSql = (string)args[1];
-                            var localTransaction = (DbTransaction)args[2];
+                            var logger = state.Query._session._store.Configuration.Logger;
 
-                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
-                            return localTransaction.Connection.QueryAsync<T>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
-                        },
-                        _query,
-                        sql,
-                        transaction
-                        );
+                            if (logger.IsEnabled(LogLevel.Debug))
+                            {
+                                logger.LogDebug(state.Sql);
+                            }
+
+                            return state.Connection.QueryAsync<T>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
                     }
                     else
                     {
@@ -1223,19 +1223,17 @@ namespace YesSql.Services
                         _query._queryState._sqlBuilder.Distinct();
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        var documents = await _query._session._store.ProduceAsync(key, (args) =>
+                        var documents = await _query._session._store.ProduceAsync(key, static (state) =>
                         {
-                            var localQuery = (DefaultQuery)args[0];
-                            var localSql = (string)args[1];
-                            var localTransaction = (DbTransaction)args[2];
+                            var logger = state.Query._session._store.Configuration.Logger;
 
-                            localQuery._session._store.Configuration.Logger.LogDebug(localSql);
-                            return localTransaction.Connection.QueryAsync<Document>(localSql, localQuery._queryState._sqlBuilder.Parameters, localTransaction);
-                        },
-                        _query,
-                        sql,
-                        transaction
-                        );
+                            if (logger.IsEnabled(LogLevel.Debug))
+                            {
+                                logger.LogDebug(state.Sql);
+                            }
+
+                            return state.Connection.QueryAsync<Document>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
 
                         return _query._session.Get<T>(documents.ToArray(), _query._collection);
                     }
