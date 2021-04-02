@@ -10,6 +10,8 @@ using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
+    // Docker command
+    // docker run --name postgresql -e POSTGRES_USER=root -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=yessql -d -p 5432:5432 postgres:11
     public class PostgreSqlTests : CoreTests
     {
         public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
@@ -28,28 +30,13 @@ namespace YesSql.Tests
                 .UseBlockIdGenerator()
                 ;
         }
-        protected override void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
-        {
-            base.OnCleanDatabase(builder, transaction);
-
-            try
-            {
-                builder.DropTable("Content");
-            }
-            catch { }
-
-            try
-            {
-                builder.DropTable("Collection1_Content");
-            }
-            catch { }
-        }
 
         [Fact(Skip = "Postgres locks on the table")]
         public override Task ShouldReadUncommittedRecords()
         {
             return base.ShouldReadUncommittedRecords();
         }
+
         [Fact]
         public async Task ShouldIndexPropertyKeys()
         {
