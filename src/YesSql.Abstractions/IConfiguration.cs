@@ -52,11 +52,6 @@ namespace YesSql
         string TablePrefix { get; set; }
 
         /// <summary>
-        /// Gets or sets the session pool size.
-        /// </summary>
-        int SessionPoolSize { get; set; }
-
-        /// <summary>
         /// Gets or sets the command page size.
         /// </summary>
         int CommandsPageSize { get; set; }
@@ -140,15 +135,6 @@ namespace YesSql
         public static IConfiguration SetContentSerializer(this IConfiguration configuration, IContentSerializer contentSerializer)
         {
             configuration.ContentSerializer = contentSerializer;
-            return configuration;
-        }
-
-        /// <summary>
-        /// Sets the session pool size.
-        /// </summary>
-        public static IConfiguration SetSessionPoolSize(this IConfiguration configuration, int size)
-        {
-            configuration.SessionPoolSize = size;
             return configuration;
         }
 

@@ -605,7 +605,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var dialect = _store.Configuration.SqlDialect;
                 var sql = dialect.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = " + dialect.GetSqlValue("Bill");
 
@@ -3353,7 +3353,8 @@ namespace YesSql.Tests
 
             var task1 = Task.Run(async () =>
             {
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session1 = _store.CreateSession())
                 {
                     Assert.Equal(0, await session1.QueryIndex<PersonByName>().CountAsync());
 
@@ -3376,7 +3377,8 @@ namespace YesSql.Tests
                     Assert.True(false, "session2IsDisposed timeout");
                 }
 
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session1 = _store.CreateSession())
                 {
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3389,7 +3391,8 @@ namespace YesSql.Tests
                     Assert.True(false, "session1IsDisposed timeout");
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session2 = _store.CreateSession())
                 {
                     Assert.Equal(1, await session2.QueryIndex<PersonByName>().CountAsync());
 
@@ -3406,7 +3409,8 @@ namespace YesSql.Tests
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadCommitted))
+                // IsolationLevel.ReadCommitted is the default
+                using (var session2 = _store.CreateSession())
                 {
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3445,9 +3449,9 @@ namespace YesSql.Tests
 
             var task1 = Task.Run(async () =>
             {
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session1 = _store.CreateSession())
                 {
-                    await session1.BeginTransactionAsync();
+                    await session1.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(0, await session1.QueryIndex<PersonByName>().CountAsync());
 
@@ -3469,9 +3473,9 @@ namespace YesSql.Tests
                     }
                 }
 
-                using (var session1 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session1 = _store.CreateSession())
                 {
-                    await session1.BeginTransactionAsync();
+                    await session1.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3484,9 +3488,9 @@ namespace YesSql.Tests
                     Assert.True(false, "session1IsFlushed timeout");
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session2 = _store.CreateSession())
                 {
-                    await session2.BeginTransactionAsync();
+                    await session2.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(1, await session2.QueryIndex<PersonByName>().CountAsync());
 
@@ -3503,9 +3507,9 @@ namespace YesSql.Tests
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
 
-                using (var session2 = _store.CreateSession(IsolationLevel.ReadUncommitted))
+                using (var session2 = _store.CreateSession())
                 {
-                    await session2.BeginTransactionAsync();
+                    await session2.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3778,32 +3782,6 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
                 Assert.Equal(0, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill").CountAsync());
                 Assert.Equal(1, await session.QueryIndex<PersonByName>().Where(x => x.SomeName == "Bill2").CountAsync());
-            }
-        }
-
-        [Fact]
-        public async Task PooledSessionsShouldCommit()
-        {
-            using (var session = _store.CreateSession())
-            {
-                session.Save(new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                });
-
-                Assert.Equal(1, await session.Query<Person>().CountAsync());
-            }
-
-            using (var session = _store.CreateSession())
-            {
-                session.Save(new Person
-                {
-                    Firstname = "Bill2",
-                    Lastname = "Gates"
-                });
-
-                Assert.Equal(2, await session.Query<Person>().CountAsync());
             }
         }
 
@@ -5217,7 +5195,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
@@ -5271,7 +5249,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
@@ -5331,7 +5309,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
@@ -5385,7 +5363,7 @@ namespace YesSql.Tests
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
-                var connection = await session.DemandAsync();
+                var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
                 await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);

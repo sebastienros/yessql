@@ -21,7 +21,7 @@ namespace YesSql.Tests
 
         public void Dispose()
         {
-            _tempFolder.Dispose();
+            // _tempFolder.Dispose();
         }
 
         [Fact]
