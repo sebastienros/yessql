@@ -27,6 +27,8 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: Password12!
           POSTGRES_DB: yessql
+        ports:
+        - 5432:5432
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
@@ -42,4 +44,4 @@ jobs:
       run: dotnet build --configuration Release
 
     - name: Test
-      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build
+      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework 5.0
