@@ -15,14 +15,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.*
+
     - name: Install dependencies
       run: dotnet restore
+
     - name: Test
-      run: dotnet test -c Release --framework net5.0 --filter "FullyQualifiedName~YesSql.Tests.SqliteTests"
+      run: dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release --framework net5.0
+
     - name: Pack with dotnet
       run: |
         arrTag=(${GITHUB_REF//\// })
@@ -30,5 +34,6 @@ jobs:
         VERSION="${VERSION//v}"
         echo "$VERSION"
         dotnet pack --output artifacts --configuration Release -p:Version=$VERSION
+
     - name: Push with dotnet
       run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

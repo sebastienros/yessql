@@ -29,4 +29,4 @@ jobs:
         dotnet-version: 5.0.*
         
     - name: Test
-      run: dotnet test -c Release --framework net5.0 --filter "FullyQualifiedName~YesSql.Tests.SqliteTests"
+      run: dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release --framework net5.0
