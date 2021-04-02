@@ -52,6 +52,8 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 session.Save(bill);
+
+                await session.SaveChangesAsync();
             }
 
             // second store, don't register the index

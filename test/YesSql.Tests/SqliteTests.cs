@@ -63,6 +63,8 @@ namespace YesSql.Tests
                     session1.Save(p1);
 
                     Assert.Equal(1, p1.Id);
+
+                    await session1.SaveChangesAsync();
                 }
 
                 var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());

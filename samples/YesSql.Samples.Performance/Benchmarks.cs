@@ -224,7 +224,7 @@ namespace YesSql.Samples.Performance
                 }
             }
 
-            await session.CommitAsync();
+            await session.SaveChangesAsync();
 
             session.Dispose();
         }
@@ -249,7 +249,7 @@ namespace YesSql.Samples.Performance
                 if (batch % batchSize == 0)
                 {
                     users.ForEach(u => session.Save(u));
-                    await session.CommitAsync();
+                    await session.SaveChangesAsync();
                     session.Dispose();
                     session = _store.CreateSession();
                     users = new List<User>();
@@ -257,7 +257,7 @@ namespace YesSql.Samples.Performance
             }
 
             users.ForEach(u => session.Save(u));
-            await session.CommitAsync();
+            await session.SaveChangesAsync();
             session.Dispose();
             session = _store.CreateSession();
         }

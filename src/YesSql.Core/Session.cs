@@ -19,7 +19,7 @@ namespace YesSql
         private DbConnection _connection;
         private DbTransaction _transaction;
 
-        internal readonly List<IIndexCommand> _commands = new List<IIndexCommand>();
+        internal List<IIndexCommand> _commands;
         private readonly Dictionary<string, SessionState> _collectionStates;
         private readonly SessionState _defaultState;
         private Dictionary<string, IEnumerable<IndexDescriptor>> _descriptors;
@@ -27,6 +27,7 @@ namespace YesSql
         private volatile bool _disposed;
         private bool _flushing;
         protected bool _cancel;
+        protected bool _save;
         protected List<IIndexProvider> _indexes;
 
         protected string _tablePrefix;
@@ -286,6 +287,8 @@ namespace YesSql
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
+            _commands ??= new List<IIndexCommand>();
+
             _commands.Add(new CreateDocumentCommand(doc, Store.Configuration.TableNameConvention, _tablePrefix, collection));
 
             state.IdentityMap.AddDocument(doc);
@@ -379,6 +382,8 @@ namespace YesSql
 
             oldDoc.Content = newContent;
 
+            _commands ??= new List<IIndexCommand>();
+
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
 
@@ -410,7 +415,7 @@ namespace YesSql
             }
             catch
             {
-                Cancel();
+                await CancelAsync();
 
                 throw;
             }            
@@ -460,6 +465,8 @@ namespace YesSql
                     // Update impacted indexes
                     await MapDeleted(doc, obj, collection);
 
+                    _commands ??= new List<IIndexCommand>();
+
                     // The command needs to come after any index deletion because of the database constraints
                     _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
                 }
@@ -504,7 +511,7 @@ namespace YesSql
             }
             catch
             {
-                Cancel();
+                await CancelAsync();
 
                 throw;
             }
@@ -632,24 +639,12 @@ namespace YesSql
             {
                 return; 
             }
+            
+            _disposed = true;
 
-            try
-            {
-                if (!_cancel && HasWork())
-                {
-                    // This should never go there, CommitAsync() should be called explicitely
-                    // and asynchronously before Dispose() is invoked
-                    FlushAsync().GetAwaiter().GetResult();
-                }
-            }
-            finally
-            {
-                _disposed = true;
+            CommitOrRollbackTransaction();
 
-                CommitTransaction();
-
-                GC.SuppressFinalize(this);
-            }
+            GC.SuppressFinalize(this);
         }
 
         public async Task FlushAsync()
@@ -720,14 +715,17 @@ namespace YesSql
 
                 BatchCommands();
 
-                foreach (var command in _commands)
+                if (_commands != null)
                 {
-                    await command.ExecuteAsync(_connection, _transaction, _dialect, _logger);
+                    foreach (var command in _commands)
+                    {
+                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger);
+                    }
                 }
             }
             catch
             {
-                Cancel();
+                await CancelAsync();
 
                 throw;
             }
@@ -753,14 +751,14 @@ namespace YesSql
                     state.Maps.Clear();
                 }
 
-                _commands.Clear();
+                _commands?.Clear();
                 _flushing = false;
             }
         }
 
         private void BatchCommands()
         {
-            if (_commands.Count == 0)
+            if (_commands != null && _commands.Count == 0)
             {
                 return;
             }
@@ -844,51 +842,52 @@ namespace YesSql
             _commands.AddRange(batches);
         }
 
-        public async Task CommitAsync()
+        public async Task SaveChangesAsync()
         {
             try
             {
                 if (!_cancel)
                 {
                     await FlushAsync();
+
+                    _save = true;
                 }
             }
             finally
             {
 #if SUPPORTS_ASYNC_TRANSACTIONS
-                await CommitTransactionAsync();
+                await CommitOrRollbackTransactionAsync();
 #else
-                CommitTransaction();
+                CommitOrRollbackTransaction();
 #endif
             }
         }
 
-        private void CommitTransaction()
+        private void CommitOrRollbackTransaction()
         {
             // This method is still used in Dispose() when SUPPORTS_ASYNC_TRANSACTIONS is defined
             try
             {
-                if (!_cancel)
-                {
-                    if (_transaction != null)
-                    {
-                        _transaction.Commit();
-                    }
-                }
-                else
+                if (_cancel || !_save)
                 {
                     if (_transaction != null)
                     {
                         _transaction.Rollback();
                     }
                 }
+                else
+                {
+                    if (_transaction != null)
+                    {
+                        _transaction.Commit();
+                    }
+                }                
             }
             finally
             {
                 ReleaseConnection();
             }
         }
-
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
         public async ValueTask DisposeAsync()
@@ -899,26 +898,14 @@ namespace YesSql
                 return;
             }
 
-            try
-            {
-                if (!_cancel && HasWork())
-                {
-                    // This should never go there, CommitAsync() should be called explicitely
-                    // and asynchronously before Dispose() is invoked
-                    await FlushAsync();
-                }
-            }
-            finally
-            {
-                _disposed = true;
+            _disposed = true;
 
-                await CommitTransactionAsync();
+            await CommitOrRollbackTransactionAsync();
 
-                GC.SuppressFinalize(this);
-            }
+            GC.SuppressFinalize(this);
         }
 
-        private async Task CommitTransactionAsync()
+        private async Task CommitOrRollbackTransactionAsync()
         {
             try
             {
@@ -959,7 +946,8 @@ namespace YesSql
                 state._maps?.Clear();
             }
 
-            _commands.Clear();
+            _commands?.Clear();
+            _commands = null;
 
             if (_transaction != null)
             {
@@ -981,31 +969,13 @@ namespace YesSql
         }
 
 #else
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
-            // Do nothing if Dispose() was already called
-            if (_disposed)
-            {
-                return;
-            }
+            Dispose();
 
-            try
-            {
-                if (!_cancel && HasWork())
-                {
-                    // This should never go there, CommitAsync() should be called explicitely
-                    // and asynchronously before Dispose() is invoked
-                    await FlushAsync();
-                }
-            }
-            finally
-            {
-                _disposed = true;
+            CommitOrRollbackTransaction();
 
-                CommitTransaction();
-
-                GC.SuppressFinalize(this);
-            }
+            return default;
         }
 #endif
 
@@ -1025,7 +995,7 @@ namespace YesSql
                 state._maps?.Clear();
             }
 
-            _commands.Clear();
+            _commands?.Clear();
 
             if (_transaction != null)
             {
@@ -1176,6 +1146,8 @@ namespace YesSql
                         var deletedDocumentIds = deletedMapsGroup.SelectMany(x => x.GetRemovedDocuments().Select(d => d.Id)).ToArray();
                         var addedDocumentIds = newMapsGroup.SelectMany(x => x.GetAddedDocuments().Select(d => d.Id)).ToArray();
 
+                        _commands ??= new List<IIndexCommand>();
+
                         if (dbIndex != null)
                         {
                             if (index == null)
@@ -1297,6 +1269,8 @@ namespace YesSql
                             continue;
                         }
 
+                        _commands ??= new List<IIndexCommand>();
+
                         index.AddDocument(document);
 
                         // if the mapped elements are not meant to be reduced,
@@ -1343,6 +1317,8 @@ namespace YesSql
                 {
                     continue;
                 }
+
+                _commands ??= new List<IIndexCommand>();
 
                 // If the mapped elements are not meant to be reduced, delete
                 if (descriptor.Reduce == null || descriptor.Delete == null)
@@ -1419,13 +1395,18 @@ namespace YesSql
             return _transaction;
         }
 
-        public void Cancel()
+        public Task CancelAsync()
         {
             CheckDisposed();
 
             _cancel = true;
 
+#if SUPPORTS_ASYNC_TRANSACTIONS
+            return ReleaseTransactionAsync();
+#else
             ReleaseTransaction();
+            return Task.CompletedTask;
+#endif
         }
 
         public IStore Store => _store;

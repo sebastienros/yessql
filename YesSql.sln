@@ -44,8 +44,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.Sqlite", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.PostgreSql", "src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj", "{ACC28167-D2C3-426A-9C45-C4906E09BA4E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Samples.Gating", "samples\YesSql.Samples.Gating\YesSql.Samples.Gating.csproj", "{E6178207-4220-4D29-A8B7-20AE390D70FF}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -266,22 +264,6 @@ Global
 		{ACC28167-D2C3-426A-9C45-C4906E09BA4E}.Release|x64.Build.0 = Release|Any CPU
 		{ACC28167-D2C3-426A-9C45-C4906E09BA4E}.Release|x86.ActiveCfg = Release|Any CPU
 		{ACC28167-D2C3-426A-9C45-C4906E09BA4E}.Release|x86.Build.0 = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|x64.Build.0 = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Debug|x86.Build.0 = Debug|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|x64.ActiveCfg = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|x64.Build.0 = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|x86.ActiveCfg = Release|Any CPU
-		{E6178207-4220-4D29-A8B7-20AE390D70FF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -300,7 +282,6 @@ Global
 		{C5627926-D605-4F27-8324-F85862D22B05} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{5668D506-DA4C-4910-A4A5-4A3C3DC4576B} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{ACC28167-D2C3-426A-9C45-C4906E09BA4E} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
-		{E6178207-4220-4D29-A8B7-20AE390D70FF} = {0882456B-4A70-4895-A3AE-39B9D30A1B31}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6AB2945-2138-42B9-8F82-FCCF4DFC8F55}

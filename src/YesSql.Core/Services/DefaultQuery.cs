@@ -1016,7 +1016,7 @@ namespace YesSql.Services
             }
             catch
             {
-                _session.Cancel();
+                await _session.CancelAsync();
 
                 throw;
             }
@@ -1146,7 +1146,7 @@ namespace YesSql.Services
                 }
                 catch
                 {
-                    _query._session.Cancel();
+                    await _query._session.CancelAsync();
                     throw;
                 }
             }
@@ -1240,7 +1240,7 @@ namespace YesSql.Services
                 }
                 catch
                 {
-                    _query._session.Cancel();
+                    await _query._session.CancelAsync();
 
                     throw;
                 }
