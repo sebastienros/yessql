@@ -642,9 +642,9 @@ namespace YesSql
             
             _disposed = true;
 
-            CommitOrRollbackTransaction();
-
             GC.SuppressFinalize(this);
+
+            CommitOrRollbackTransaction();
         }
 
         public async Task FlushAsync()
@@ -973,8 +973,6 @@ namespace YesSql
         {
             Dispose();
 
-            CommitOrRollbackTransaction();
-
             return default;
         }
 #endif
@@ -996,6 +994,7 @@ namespace YesSql
             }
 
             _commands?.Clear();
+            _commands = null;
 
             if (_transaction != null)
             {
