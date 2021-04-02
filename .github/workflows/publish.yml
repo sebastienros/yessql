@@ -83,5 +83,5 @@ jobs:
         echo "$VERSION"
         dotnet pack --output artifacts --configuration Release --no-restore --no-build -p:Version=$VERSION
 
-    #- name: Publish on NuGet
-    #  run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+    - name: Publish on NuGet
+      run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
