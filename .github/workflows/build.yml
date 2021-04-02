@@ -22,11 +22,20 @@ jobs:
         DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
     steps:
-
+    - uses: actions/checkout@v2
+    
+    #- name: Setup dotnet 2.1
+    #  uses: actions/setup-dotnet@v1
+    #  with:
+    #    dotnet-version: 2.1.*
+    
     - name: Setup dotnet 5.0
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.*
-        
+
+    - name: Build
+      run: dotnet build --configuration Release
+
     - name: Test
-      run: dotnet test .\test\YesSql.Tests\YesSql.Tests.csproj --filter "FullyQualifiedName~YesSql.Tests.SqliteTests" --configuration Release --framework net5.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net5.0
