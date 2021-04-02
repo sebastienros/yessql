@@ -18,12 +18,48 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-        DOTNET_NOLOGO: true
-        DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      POSTGRESQL_CONNECTION_STRING: Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;
+      MYSQL_CONNECTION_STRING: server=localhost;uid=root;pwd=Password12!;database=yessql;
+      SQLSERVER_2019_CONNECTION_STRING: Server=localhost;Database=tempdb;User Id=sa;Password=Password12!;
+
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: Password12!
+          POSTGRES_DB: yessql
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      mysql:
+        image: mysql:8
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: yessql
+          MYSQL_ROOT_PASSWORD: Password12!
+        options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 5
+        
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports:
+          - 1433:1433
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Password12!
 
     steps:
     - uses: actions/checkout@v2
     
+    - name: Setup dotnet 2.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 2.1.*
+
     - name: Setup dotnet 5.0
       uses: actions/setup-dotnet@v1
       with:
@@ -32,5 +68,17 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
 
-    - name: Test
+    - name: Test - Sqlite net5.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net5.0
+
+    - name: Test - Sqlite netcoreapp2.1
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework netcoreapp2.1
+
+    #- name: Test - PostgresQL
+    #  run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net5.0
+    
+    - name: Test - MySQL
+      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net5.0
+
+    - name: Test - SQL Server 2019
+      run: dotnet test --configuration release --filter yessql.tests.sqlserver2019tests --no-restore --no-build --framework net5.0
