@@ -58,6 +58,8 @@ namespace YesSql.Samples.Hi
             using (var session = store.CreateSession())
             {
                 session.Save(post);
+
+                await session.SaveChangesAsync();
             }
 
             // loading a single blog post

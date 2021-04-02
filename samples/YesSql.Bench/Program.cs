@@ -54,6 +54,7 @@ namespace Bench
 
                 session.Save(bill);
 
+                await session.SaveChangesAsync();
             }
 
             using (var session = store.CreateSession())

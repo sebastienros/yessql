@@ -59,6 +59,8 @@ namespace YesSql.Tests
                 session1.Save(p1);
 
                 Assert.Equal(1, p1.Id);
+
+                await session1.SaveChangesAsync();
             }
 
             var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator());
@@ -178,7 +180,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    Assert.Throws<SqlException>(() => session.Dispose());
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                 }
             }
         }
@@ -231,7 +233,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    Assert.Throws<SqlException>(() => session.Dispose());
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                 }
             }
         }
@@ -284,7 +286,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    Assert.Throws<SqlException>(() => session.Dispose());
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                 }
             }
         }
