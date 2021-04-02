@@ -6,6 +6,8 @@ namespace YesSql.Tests
 {
     public class TestLogger : ILogger
     {
+        private object _lockObj = new object();
+
         private readonly StringBuilder _builder;
 
         public TestLogger(StringBuilder builder = null)
@@ -30,7 +32,10 @@ namespace YesSql.Tests
 
         public void Log(LogLevel logLevel, string log)
         {
-            _builder.AppendLine(logLevel.ToString().ToUpper() + ": " + log);
+            lock (_lockObj)
+            {
+                _builder.AppendLine(logLevel.ToString().ToUpper() + ": " + log);
+            }
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
@@ -40,7 +45,10 @@ namespace YesSql.Tests
 
         public override string ToString()
         {
-            return _builder.ToString();
+            lock (_lockObj)
+            {
+                return _builder.ToString();
+            }
         }
     }
 
