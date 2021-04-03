@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		src\Directory.Build.props = src\Directory.Build.props
 		NuGet.config = NuGet.config
 		.github\workflows\publish.yml = .github\workflows\publish.yml
+		README.md = README.md
 		src\YesSqlKey.snk = src\YesSqlKey.snk
 	EndProjectSection
 EndProject
@@ -44,7 +45,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.Sqlite", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.PostgreSql", "src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj", "{ACC28167-D2C3-426A-9C45-C4906E09BA4E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql", "src\YesSql\YesSql.csproj", "{6BAC7887-02FB-4B6F-BB5C-D6DEF9646CC6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql", "src\YesSql\YesSql.csproj", "{6BAC7887-02FB-4B6F-BB5C-D6DEF9646CC6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
