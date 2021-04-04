@@ -626,25 +626,33 @@ namespace YesSql
             // Ensure the session gets disposed if the user cannot wrap the session in a using block.
             // For instance in OrchardCore the session is disposed from a middleware, so if an exception
             // is thrown in a middleware, it might not get triggered.
+            Dispose(false);
+        }
 
-            _cancel = true;
+        public void Dispose(bool disposing)
+        {
+            // Do nothing if Dispose() was already called
+            if (!_disposed)
+            {
+                try
+                {
+                    CommitOrRollbackTransaction();
+                }
+                catch
+                {
+                    _connection = null;
+                    _transaction = null;
+                }
+            }
 
-            Dispose();
+            _disposed = true;
         }
 
         public void Dispose()
         {
-            // Do nothing if Dispose() was already called
-            if (_disposed)
-            {
-                return; 
-            }
-            
-            _disposed = true;
+            Dispose(true);
 
             GC.SuppressFinalize(this);
-
-            CommitOrRollbackTransaction();
         }
 
         public async Task FlushAsync()
@@ -900,7 +908,15 @@ namespace YesSql
 
             _disposed = true;
 
-            await CommitOrRollbackTransactionAsync();
+            try
+            {
+                await CommitOrRollbackTransactionAsync();
+            }
+            catch
+            {
+                _transaction = null;
+                _connection = null;
+            }
 
             GC.SuppressFinalize(this);
         }
