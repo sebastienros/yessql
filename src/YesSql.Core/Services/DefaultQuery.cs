@@ -4,7 +4,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -366,7 +365,7 @@ namespace YesSql.Services
             }
         }
 
-        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, string collection)
+        public DefaultQuery(Session session, string tablePrefix, string collection)
         {
             _collection = collection;
             _session = session;
@@ -374,7 +373,7 @@ namespace YesSql.Services
             _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix), session.Store, collection);
         }
 
-        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
+        public DefaultQuery(Session session, QueryState queryState, object compiledQuery)
         {
             _queryState = queryState;
             _compiledQuery = compiledQuery;

@@ -582,7 +582,7 @@ namespace YesSql
 
         public IQuery Query(string collection = null)
         {
-            return new DefaultQuery(_connection, _transaction, this, _tablePrefix, collection);
+            return new DefaultQuery(this, _tablePrefix, collection);
         }
 
         public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class
@@ -598,7 +598,7 @@ namespace YesSql
 
             if (!_store.CompiledQueries.TryGetValue(discriminator, out var queryState))
             {
-                var localQuery = ((IQuery)new DefaultQuery(_connection, _transaction, this, _tablePrefix, collection)).For<T>(false);
+                var localQuery = ((IQuery)new DefaultQuery(this, _tablePrefix, collection)).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
                 queryState = defaultQuery._query._queryState;
 
@@ -609,7 +609,7 @@ namespace YesSql
 
             queryState = queryState.Clone();
 
-            IQuery newQuery = new DefaultQuery(_connection, _transaction, this, _tablePrefix, queryState, compiledQuery);
+            IQuery newQuery = new DefaultQuery(this, queryState, compiledQuery);
             return newQuery.For<T>(false);
         }
 
