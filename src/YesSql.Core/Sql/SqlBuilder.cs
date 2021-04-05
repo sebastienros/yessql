@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
+using YesSql.Utils;
 
 namespace YesSql.Sql
 {
@@ -24,7 +24,6 @@ namespace YesSql.Sql
         protected bool _distinct;
         protected string _skip;
         protected string _count;
-
 
         protected List<string> SelectSegments => _select = _select ?? new List<string>();
         protected List<string> FromSegments => _from = _from ?? new List<string>();
@@ -275,102 +274,106 @@ namespace YesSql.Sql
 
         public virtual string ToSqlString()
         {
-            if (String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
+            if (!String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
-                if (_skip != null || _count != null)
-                {
-                    _dialect.Page(this, _skip, _count);
-                }
+                return "";
+            }
 
-                var sb = new StringBuilder();
+            if (_skip != null || _count != null)
+            {
+                _dialect.Page(this, _skip, _count);
+            }
 
-                sb.Append("SELECT ");
+            var sb = new RentedStringBuilder(512);
 
-                if (_distinct)
-                {
-                    sb.Append("DISTINCT ");
+            sb.Append("SELECT ");
 
-                    if (_order != null)
-                    {
-                        _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
-                    }
-                }
-
-                foreach (var s in _select)
-                {
-                    sb.Append(s);
-                }
-
-                if (_from != null)
-                {
-                    sb.Append(" FROM ");
-
-                    foreach (var s in _from)
-                    {
-                        sb.Append(s);
-                    }
-                }
-
-                if (_join != null)
-                {
-                    foreach (var s in _join)
-                    {
-                        sb.Append(s);
-                    }
-                }
-
-                if (_where != null)
-                {
-                    sb.Append(" WHERE ");
-
-                    foreach (var s in _where)
-                    {
-                        sb.Append(s);
-                    }
-                }
-
-                if (_group != null)
-                {
-                    sb.Append(" GROUP BY ");
-
-                    foreach (var s in _group)
-                    {
-                        sb.Append(s);
-                    }
-                }
-
-                if (_having != null)
-                {
-                    sb.Append(" HAVING ");
-
-                    foreach (var s in _having)
-                    {
-                        sb.Append(s);
-                    }
-                }
+            if (_distinct)
+            {
+                sb.Append("DISTINCT ");
 
                 if (_order != null)
                 {
-                    sb.Append(" ORDER BY ");
-
-                    foreach (var s in _order)
-                    {
-                        sb.Append(s);
-                    }
+                    _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
                 }
-
-                if (_trail != null)
-                {
-                    foreach (var s in _trail)
-                    {
-                        sb.Append(s);
-                    }
-                }
-
-                return sb.ToString();
             }
 
-            return "";
+            foreach (var s in _select)
+            {
+                sb.Append(s);
+            }
+
+            if (_from != null)
+            {
+                sb.Append(" FROM ");
+
+                foreach (var s in _from)
+                {
+                    sb.Append(s);
+                }
+            }
+
+            if (_join != null)
+            {
+                foreach (var s in _join)
+                {
+                    sb.Append(s);
+                }
+            }
+
+            if (_where != null)
+            {
+                sb.Append(" WHERE ");
+
+                foreach (var s in _where)
+                {
+                    sb.Append(s);
+                }
+            }
+
+            if (_group != null)
+            {
+                sb.Append(" GROUP BY ");
+
+                foreach (var s in _group)
+                {
+                    sb.Append(s);
+                }
+            }
+
+            if (_having != null)
+            {
+                sb.Append(" HAVING ");
+
+                foreach (var s in _having)
+                {
+                    sb.Append(s);
+                }
+            }
+
+            if (_order != null)
+            {
+                sb.Append(" ORDER BY ");
+
+                foreach (var s in _order)
+                {
+                    sb.Append(s);
+                }
+            }
+
+            if (_trail != null)
+            {
+                foreach (var s in _trail)
+                {
+                    sb.Append(s);
+                }
+            }
+
+            var result = sb.ToString();
+
+            sb.Dispose();
+
+            return result;
         }
 
         public ISqlBuilder Clone()

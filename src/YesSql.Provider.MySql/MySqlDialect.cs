@@ -248,7 +248,7 @@ namespace YesSql.Provider.MySql
             return "`" + tableName + "`";
         }
 
-        public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)
+        public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {
             builder.Append("concat(");
 

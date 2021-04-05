@@ -1,25 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using YesSql.Utils;
 
 namespace YesSql.Services
 {
-    public abstract class PredicateNode
+    internal abstract class PredicateNode
     {
-        public abstract void Build(StringBuilder builder);
+        public abstract void Build(RentedStringBuilder builder);
 
         public abstract PredicateNode Clone();
     }
 
-    public abstract class CompositeNode : PredicateNode
+    internal abstract class CompositeNode : PredicateNode
     {
         public List<PredicateNode> Children = new List<PredicateNode>();
     }
 
-    public class AndNode : CompositeNode
+    internal class AndNode : CompositeNode
     {
-        public override void Build(StringBuilder builder)
+        public override void Build(RentedStringBuilder builder)
         {
             if (Children.Count > 0)
             {
@@ -56,9 +56,9 @@ namespace YesSql.Services
         }
     }
 
-    public class OrNode : CompositeNode
+    internal class OrNode : CompositeNode
     {
-        public override void Build(StringBuilder builder)
+        public override void Build(RentedStringBuilder builder)
         {
             if (Children.Count > 0)
             {
@@ -95,7 +95,7 @@ namespace YesSql.Services
         }
     }
 
-    public class FilterNode : CompositeNode
+    internal class FilterNode : CompositeNode
     {
         public FilterNode(string filter)
         {
@@ -104,7 +104,7 @@ namespace YesSql.Services
 
         public string Filter;
 
-        public override void Build(StringBuilder builder)
+        public override void Build(RentedStringBuilder builder)
         {
             if (String.IsNullOrEmpty(Filter))
             {

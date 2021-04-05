@@ -188,7 +188,7 @@ namespace YesSql
         /// <summary>
         /// Concatenates multiple <see cref="StringBuilder" />.
         /// </summary>
-        void Concat(StringBuilder builder, params Action<StringBuilder>[] generators);
+        void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators);
 
         /// <summary>
         /// Return the DEFAULT VALUES SQL statement.
