@@ -7,7 +7,6 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Indexes;
@@ -35,7 +34,6 @@ namespace YesSql.Services
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;
         public List<Action<object, ISqlBuilder>> _parameterBindings;
-        internal RentedStringBuilder _builder = new RentedStringBuilder(512);
         public string _collection;
         public IStore _store;
         internal CompositeNode _predicate; // the defaut root predicate is an AND expression
@@ -46,15 +44,15 @@ namespace YesSql.Services
         {
             if (_predicate != null)
             {
-                _builder.Clear();
-                _predicate.Build(_builder);
+                var builder = new RentedStringBuilder(Store.SmallBufferSize);
+                _predicate.Build(builder);
 
-                var filter = _builder.ToString();
-
-                if (!String.IsNullOrWhiteSpace(filter))
+                if (builder.Length > 0)
                 {
-                    _sqlBuilder.WhereAnd(filter);
+                    _sqlBuilder.WhereAnd(builder.ToString());
                 }
+
+                builder.Dispose();
 
                 _predicate = null;
             }
@@ -116,9 +114,6 @@ namespace YesSql.Services
             
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
-
-            clone._builder = new RentedStringBuilder(_builder.Length);
-            clone._builder.Append(_builder.AsSpan());
 
             return clone;
         }
@@ -339,7 +334,7 @@ namespace YesSql.Services
             query._queryState.AddBinding(tIndex);
 
             // Build inner query
-            var _builder = new RentedStringBuilder(512);
+            var _builder = new RentedStringBuilder(Store.MediumBufferSize);
 
             sqlBuilder.Select();
 
@@ -357,6 +352,8 @@ namespace YesSql.Services
                 sqlBuilder.WhereAnd(_builder.ToString());
             }
 
+            _builder.Dispose();
+
             query._queryState.RemoveBinding();
 
             // Insert query
@@ -370,8 +367,6 @@ namespace YesSql.Services
             {
                 builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString()));
             }
-
-            _builder.Dispose();
         }
 
         public DefaultQuery(Session session, string tablePrefix, string collection)
@@ -459,11 +454,12 @@ namespace YesSql.Services
                 _queryState._sqlBuilder.Selector(typeof(TIndex).Name, "DocumentId");
             }
 
-            _queryState._builder.Clear();
+            var builder = new RentedStringBuilder(Store.SmallBufferSize);
             // if Filter is called, the Document type is implicit so there is no need to filter on TIndex
-            ConvertPredicate(_queryState._builder, predicate.Body);
+            ConvertPredicate(builder, predicate.Body);
 
-            _queryState._currentPredicate.Children.Add(new FilterNode(_queryState._builder.ToString()));
+            _queryState._currentPredicate.Children.Add(new FilterNode(builder.ToString()));
+            builder.Dispose();
         }
 
         /// <summary>
@@ -932,23 +928,26 @@ namespace YesSql.Services
 
         private void OrderBy<T>(Expression<Func<T, object>> keySelector)
         {
-            _queryState._builder.Clear();
-            ConvertFragment(_queryState._builder, RemoveUnboxing(keySelector.Body));
-            _queryState._sqlBuilder.OrderBy(_queryState._builder.ToString());
+            var builder = new RentedStringBuilder(Store.SmallBufferSize);
+            ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
+            _queryState._sqlBuilder.OrderBy(builder.ToString());
+            builder.Dispose();
         }
 
         private void ThenBy<T>(Expression<Func<T, object>> keySelector)
         {
-            _queryState._builder.Clear();
-            ConvertFragment(_queryState._builder, RemoveUnboxing(keySelector.Body));
-            _queryState._sqlBuilder.ThenOrderBy(_queryState._builder.ToString());
+            var builder = new RentedStringBuilder(Store.SmallBufferSize);
+            ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
+            _queryState._sqlBuilder.ThenOrderBy(builder.ToString());
+            builder.Dispose();
         }
 
         private void OrderByDescending<T>(Expression<Func<T, object>> keySelector)
         {
-            _queryState._builder.Clear();
-            ConvertFragment(_queryState._builder, RemoveUnboxing(keySelector.Body));
-            _queryState._sqlBuilder.OrderByDescending(_queryState._builder.ToString());
+            var builder = new RentedStringBuilder(Store.SmallBufferSize);
+            ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
+            _queryState._sqlBuilder.OrderByDescending(builder.ToString());
+            builder.Dispose();
         }
 
         private void OrderByRandom()
@@ -958,9 +957,10 @@ namespace YesSql.Services
 
         private void ThenByDescending<T>(Expression<Func<T, object>> keySelector)
         {
-            _queryState._builder.Clear();
-            ConvertFragment(_queryState._builder, RemoveUnboxing(keySelector.Body));
-            _queryState._sqlBuilder.ThenOrderByDescending(_queryState._builder.ToString());
+            var builder = new RentedStringBuilder(Store.SmallBufferSize);
+            ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
+            _queryState._sqlBuilder.ThenOrderByDescending(builder.ToString());
+            builder.Dispose();
         }
 
         private void ThenByRandom()
@@ -1026,10 +1026,6 @@ namespace YesSql.Services
                 await _session.CancelAsync();
 
                 throw;
-            }
-            finally
-            {
-                _queryState._builder.Dispose();
             }
         }
 
@@ -1160,10 +1156,6 @@ namespace YesSql.Services
                     await _query._session.CancelAsync();
                     throw;
                 }
-                finally
-                {
-                    _query._queryState._builder.Dispose();
-                }
             }
 
             Task<IEnumerable<T>> IQuery<T>.ListAsync()
@@ -1258,10 +1250,6 @@ namespace YesSql.Services
                     await _query._session.CancelAsync();
 
                     throw;
-                }
-                finally
-                {
-                    _query._queryState._builder.Dispose();
                 }
             }
 

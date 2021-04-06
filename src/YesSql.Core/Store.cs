@@ -45,6 +45,10 @@ namespace YesSql
         internal ImmutableDictionary<long, QueryState> CompiledQueries =
             ImmutableDictionary<long, QueryState>.Empty;
 
+        internal const int SmallBufferSize = 128;
+        internal const int MediumBufferSize = 512;
+        internal const int LargeBufferSize = 1024;
+
         static Store()
         {
             SqlMapper.ResetTypeHandlers();

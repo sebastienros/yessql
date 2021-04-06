@@ -4529,7 +4529,7 @@ namespace YesSql.Tests
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine($"{gatedCounter} gated queries in {swGated.Elapsed}");
             Console.WriteLine($"{nonGatedCounter} non-gated in {swNonGated.Elapsed}");
-            Console.WriteLine($"Gated: {gatedCounter * 1000 / swGated.ElapsedMilliseconds:n0} tps; NonGated: {gatedCounter * 1000 / swNonGated.ElapsedMilliseconds:n0} tps");
+            Console.WriteLine($"Gated: {gatedCounter * 1000 / swGated.ElapsedMilliseconds:n0} tps; NonGated: {nonGatedCounter * 1000 / swNonGated.ElapsedMilliseconds:n0} tps");
             Console.ForegroundColor = previousColor;
         }
 
@@ -5957,6 +5957,46 @@ namespace YesSql.Tests
                 {   
                     session.Save(person);
                 }              
+            }
+        }
+
+        [Fact]
+        public async Task SameQueryShouldBeReusable()
+        {
+            // ListAsync() and FirstDefaultAsync() can be called after CountAsync()
+            // ListAsync() and FirstDefaultAsync() can't be called one after the other
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var queryIndex = session.QueryIndex<PersonByName>(x => x.SomeName == "Bill");
+
+                Assert.Equal(1, await queryIndex.CountAsync());
+                Assert.Single(await queryIndex.ListAsync());
+
+                Assert.Equal(1, await queryIndex.CountAsync());
+                Assert.NotNull(await queryIndex.FirstOrDefaultAsync());
             }
         }
     }

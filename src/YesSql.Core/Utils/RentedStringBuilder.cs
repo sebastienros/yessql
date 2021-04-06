@@ -64,6 +64,7 @@ namespace YesSql.Utils
             string s = _chars.AsSpan(0, _pos).ToString();
             return s;
         }
+
         public ReadOnlySpan<char> AsSpan() => _chars.AsSpan(0, _pos);
         public ReadOnlySpan<char> AsSpan(int start) => _chars.AsSpan(start, _pos - start);
         public ReadOnlySpan<char> AsSpan(int start, int length) => _chars.AsSpan(start, length);
@@ -218,12 +219,15 @@ namespace YesSql.Utils
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
-        {
+        {   
             char[] toReturn = _arrayToReturnToPool;
             if (toReturn != null)
             {
                 ArrayPool<char>.Shared.Return(toReturn);
             }
+
+            _pos = 0;
+            _chars = null;
         }
     }
 }
