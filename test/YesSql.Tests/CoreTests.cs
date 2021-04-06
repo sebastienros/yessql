@@ -5963,6 +5963,9 @@ namespace YesSql.Tests
         [Fact]
         public async Task SameQueryShouldBeReusable()
         {
+            // ListAsync() and FirstDefaultAsync() can be called after CountAsync()
+            // ListAsync() and FirstDefaultAsync() can't be called one after the other
+
             _store.RegisterIndexes<PersonIndexProvider>();
 
             using (var session = _store.CreateSession())
@@ -5990,8 +5993,10 @@ namespace YesSql.Tests
                 var queryIndex = session.QueryIndex<PersonByName>(x => x.SomeName == "Bill");
 
                 Assert.Equal(1, await queryIndex.CountAsync());
-                Assert.NotNull(await queryIndex.FirstOrDefaultAsync());
                 Assert.Single(await queryIndex.ListAsync());
+
+                Assert.Equal(1, await queryIndex.CountAsync());
+                Assert.NotNull(await queryIndex.FirstOrDefaultAsync());
             }
         }
     }

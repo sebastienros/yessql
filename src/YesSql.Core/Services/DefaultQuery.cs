@@ -352,6 +352,8 @@ namespace YesSql.Services
                 sqlBuilder.WhereAnd(_builder.ToString());
             }
 
+            _builder.Dispose();
+
             query._queryState.RemoveBinding();
 
             // Insert query
@@ -365,8 +367,6 @@ namespace YesSql.Services
             {
                 builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString()));
             }
-
-            _builder.Dispose();
         }
 
         public DefaultQuery(Session session, string tablePrefix, string collection)

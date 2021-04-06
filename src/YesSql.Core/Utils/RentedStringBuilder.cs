@@ -225,6 +225,9 @@ namespace YesSql.Utils
             {
                 ArrayPool<char>.Shared.Return(toReturn);
             }
+
+            _pos = 0;
+            _chars = null;
         }
     }
 }
