@@ -25,15 +25,15 @@ namespace YesSql.Sql
         protected string _skip;
         protected string _count;
 
-        protected List<string> SelectSegments => _select = _select ?? new List<string>();
-        protected List<string> FromSegments => _from = _from ?? new List<string>();
-        protected List<string> JoinSegments => _join = _join ?? new List<string>();
-        protected List<List<string>> OrSegments => _or = _or ?? new List<List<string>>();
-        protected List<string> WhereSegments => _where = _where ?? new List<string>();
-        protected List<string> GroupSegments => _group = _group ?? new List<string>();
-        protected List<string> HavingSegments => _having = _having ?? new List<string>();
-        protected List<string> OrderSegments => _order = _order ?? new List<string>();
-        protected List<string> TrailSegments => _trail = _trail ?? new List<string>();
+        protected List<string> SelectSegments => _select ??= new List<string>();
+        protected List<string> FromSegments => _from ??= new List<string>();
+        protected List<string> JoinSegments => _join ??= new List<string>();
+        protected List<List<string>> OrSegments => _or ??= new List<List<string>>();
+        protected List<string> WhereSegments => _where ??= new List<string>();
+        protected List<string> GroupSegments => _group ??= new List<string>();
+        protected List<string> HavingSegments => _having ??= new List<string>();
+        protected List<string> OrderSegments => _order ??= new List<string>();
+        protected List<string> TrailSegments => _trail ??= new List<string>();
 
         public Dictionary<string, object> Parameters { get; protected set; } = new Dictionary<string, object>();
 
@@ -284,7 +284,7 @@ namespace YesSql.Sql
                 _dialect.Page(this, _skip, _count);
             }
 
-            var sb = new RentedStringBuilder(512);
+            var sb = new RentedStringBuilder(Store.LargeBufferSize);
 
             sb.Append("SELECT ");
 
