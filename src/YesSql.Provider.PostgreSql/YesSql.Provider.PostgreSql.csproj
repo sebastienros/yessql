@@ -5,7 +5,6 @@
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
-        <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Npgsql" Version="5.0.4" />

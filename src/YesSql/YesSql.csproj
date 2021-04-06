@@ -7,7 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
     <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
-    <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
     <ProjectReference Include="..\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
     <ProjectReference Include="..\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
     <ProjectReference Include="..\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />

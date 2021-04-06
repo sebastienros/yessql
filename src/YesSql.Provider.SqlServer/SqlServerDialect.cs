@@ -4,6 +4,7 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using YesSql.Sql;
+using YesSql.Utils;
 
 namespace YesSql.Provider.SqlServer
 {
@@ -210,7 +211,7 @@ namespace YesSql.Provider.SqlServer
             return "[" + tableName + "]";
         }
 
-        public override void Concat(StringBuilder builder, params Action<StringBuilder>[] generators)
+        public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {
             builder.Append("(");
 

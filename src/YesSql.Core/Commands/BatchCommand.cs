@@ -56,7 +56,10 @@ namespace YesSql.Commands
 
             if (command.Length > DefaultBuilderCapacity)
             {
-                logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
+                if (logger.IsEnabled(LogLevel.Warning))
+                {
+                    logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
+                }
             }
 
             Command.Transaction = transaction;

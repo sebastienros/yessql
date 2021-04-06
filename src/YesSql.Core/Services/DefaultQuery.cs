@@ -4,7 +4,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -12,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Indexes;
+using YesSql.Utils;
 
 namespace YesSql.Services
 {
@@ -35,11 +35,11 @@ namespace YesSql.Services
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;
         public List<Action<object, ISqlBuilder>> _parameterBindings;
-        public StringBuilder _builder = new StringBuilder();
+        internal RentedStringBuilder _builder = new RentedStringBuilder(512);
         public string _collection;
         public IStore _store;
-        public CompositeNode _predicate; // the defaut root predicate is an AND expression
-        public CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
+        internal CompositeNode _predicate; // the defaut root predicate is an AND expression
+        internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
 
         public void FlushFilters()
@@ -116,7 +116,9 @@ namespace YesSql.Services
             
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
-            clone._builder = new StringBuilder(_builder.ToString());
+
+            clone._builder = new RentedStringBuilder(_builder.Length);
+            clone._builder.Append(_builder.AsSpan());
 
             return clone;
         }
@@ -130,8 +132,8 @@ namespace YesSql.Services
         private object _compiledQuery = null;
         private string _collection;
 
-        public static Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
-            new Dictionary<MethodInfo, Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression>>();
+        public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
+            new Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>>();
 
         static DefaultQuery()
         {
@@ -175,7 +177,7 @@ namespace YesSql.Services
             MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) })] =
                 static (query, builder, dialect, expression) =>
             {
-                var generators = new List<Action<StringBuilder>>();
+                var generators = new List<Action<IStringBuilder>>();
 
                 foreach (var argument in expression.Arguments)
                 {
@@ -243,7 +245,7 @@ namespace YesSql.Services
                     else
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
-                        var elements = new StringBuilder();
+                        var elements = new RentedStringBuilder(128);
                         for (var i = 0; i < values.Count; i++)
                         {
                             query.ConvertFragment(elements, Expression.Constant(values[i]));
@@ -254,6 +256,8 @@ namespace YesSql.Services
                         }
 
                         builder.Append(dialect.InOperator(elements.ToString()));
+
+                        elements.Dispose();
                     }
                 };
 
@@ -282,7 +286,7 @@ namespace YesSql.Services
                     else
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
-                        var elements = new StringBuilder();
+                        var elements = new RentedStringBuilder(128);
                         for (var i = 0; i < values.Count; i++)
                         {
                             query.ConvertFragment(elements, Expression.Constant(values[i]));
@@ -293,6 +297,8 @@ namespace YesSql.Services
                         }
 
                         builder.Append(dialect.NotInOperator(elements.ToString()));
+
+                        elements.Dispose();
                     }
                 };
 
@@ -321,7 +327,7 @@ namespace YesSql.Services
                 };
         }
 
-        private static void InFilter(DefaultQuery query, StringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate, Expression selector, Expression indexFilter)
+        private static void InFilter(DefaultQuery query, IStringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate, Expression selector, Expression indexFilter)
         {
             // type of the index
             var tIndex = ((LambdaExpression)((UnaryExpression)selector).Operand).Parameters[0].Type;
@@ -333,7 +339,7 @@ namespace YesSql.Services
             query._queryState.AddBinding(tIndex);
 
             // Build inner query
-            var _builder = new StringBuilder();
+            var _builder = new RentedStringBuilder(512);
 
             sqlBuilder.Select();
 
@@ -364,9 +370,11 @@ namespace YesSql.Services
             {
                 builder.Append(dialect.InSelectOperator(sqlBuilder.ToSqlString()));
             }
+
+            _builder.Dispose();
         }
 
-        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, string collection)
+        public DefaultQuery(Session session, string tablePrefix, string collection)
         {
             _collection = collection;
             _session = session;
@@ -374,7 +382,7 @@ namespace YesSql.Services
             _queryState = new QueryState(_dialect.CreateBuilder(tablePrefix), session.Store, collection);
         }
 
-        public DefaultQuery(DbConnection connection, DbTransaction transaction, Session session, string tablePrefix, QueryState queryState, object compiledQuery)
+        public DefaultQuery(Session session, QueryState queryState, object compiledQuery)
         {
             _queryState = queryState;
             _compiledQuery = compiledQuery;
@@ -605,7 +613,7 @@ namespace YesSql.Services
             throw new ArgumentException(nameof(expression));
         }
 
-        public void ConvertFragment(StringBuilder builder, Expression expression)
+        public void ConvertFragment(IStringBuilder builder, Expression expression)
         {
             if (!IsParameterBased(expression))
             {
@@ -719,7 +727,7 @@ namespace YesSql.Services
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)expression;
                     var methodInfo = methodCallExpression.Method;
-                    Action<DefaultQuery, StringBuilder, ISqlDialect, MethodCallExpression> action;
+                    Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression> action;
                     if (MethodMappings.TryGetValue(methodInfo, out action) 
                         || MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action))
                     {
@@ -739,7 +747,7 @@ namespace YesSql.Services
         /// Converts an expression that has to be a binary expression. Unary expressions
         /// are converted to a binary expression and evaluated.
         /// </summary>
-        public void ConvertPredicate(StringBuilder builder, Expression expression)
+        public void ConvertPredicate(IStringBuilder builder, Expression expression)
         {
             switch (expression.NodeType)
             {
@@ -838,7 +846,7 @@ namespace YesSql.Services
             }
         }
 
-        private void ConvertComparisonBinaryExpression(StringBuilder builder, BinaryExpression expression, string operation)
+        private void ConvertComparisonBinaryExpression(IStringBuilder builder, BinaryExpression expression, string operation)
         {
             if (operation == " = " || operation == " <> ")
             {
@@ -894,12 +902,12 @@ namespace YesSql.Services
             }
         }
 
-        private void ConvertConcatenateBinaryExpression(StringBuilder builder, BinaryExpression expression)
+        private void ConvertConcatenateBinaryExpression(IStringBuilder builder, BinaryExpression expression)
         {
-            _dialect.Concat(builder, b => ConvertFragment(b, expression.Left), b => ConvertFragment(b, expression.Right));
+            _dialect.Concat(builder, b => ConvertFragment((RentedStringBuilder)b, expression.Left), b => ConvertFragment((RentedStringBuilder)b, expression.Right));
         }
 
-        private void ConvertEqualityBinaryExpression(StringBuilder builder, BinaryExpression expression, string operation)
+        private void ConvertEqualityBinaryExpression(IStringBuilder builder, BinaryExpression expression, string operation)
         {
             builder.Append("(");
             ConvertPredicate(builder, expression.Left);
@@ -1002,7 +1010,6 @@ namespace YesSql.Services
             {
                 return await _session._store.ProduceAsync(key, static (state) =>
                 {
-
                     var logger = state.Session._store.Configuration.Logger;
 
                     if (logger.IsEnabled(LogLevel.Debug))
@@ -1019,6 +1026,10 @@ namespace YesSql.Services
                 await _session.CancelAsync();
 
                 throw;
+            }
+            finally
+            {
+                _queryState._builder.Dispose();
             }
         }
 
@@ -1149,6 +1160,10 @@ namespace YesSql.Services
                     await _query._session.CancelAsync();
                     throw;
                 }
+                finally
+                {
+                    _query._queryState._builder.Dispose();
+                }
             }
 
             Task<IEnumerable<T>> IQuery<T>.ListAsync()
@@ -1243,6 +1258,10 @@ namespace YesSql.Services
                     await _query._session.CancelAsync();
 
                     throw;
+                }
+                finally
+                {
+                    _query._queryState._builder.Dispose();
                 }
             }
 

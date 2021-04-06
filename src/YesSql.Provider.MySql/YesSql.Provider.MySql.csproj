@@ -9,6 +9,5 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
-        <ProjectReference Include="..\YesSql.Provider.Common\YesSql.Provider.Common.csproj" />
     </ItemGroup>
 </Project>
