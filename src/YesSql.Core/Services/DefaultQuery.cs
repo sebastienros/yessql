@@ -1291,11 +1291,11 @@ namespace YesSql.Services
                 return query;
             }
 
-            ValueTask<IQuery<T>> IQuery<T>.AnyAsync(params Func<IQuery<T>, ValueTask<IQuery<T>>>[] predicates)
+            async ValueTask<IQuery<T>> IQuery<T>.AnyAsync(params Func<IQuery<T>, ValueTask<IQuery<T>>>[] predicates)
             {
                 // Scope the currentPredicate so multiple calls will not act on the new predicate.
                 var currentPredicate = _query._queryState._currentPredicate;
-                var query = ComposeQueryAsync(predicates, new OrNode());
+                var query = await ComposeQueryAsync(predicates, new OrNode());
                 // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
                 _query._queryState._currentPredicate = currentPredicate;
 
@@ -1313,11 +1313,11 @@ namespace YesSql.Services
                 return query;
             }
 
-            ValueTask<IQuery<T>> IQuery<T>.AllAsync(params Func<IQuery<T>, ValueTask<IQuery<T>>>[] predicates)
+            async ValueTask<IQuery<T>> IQuery<T>.AllAsync(params Func<IQuery<T>, ValueTask<IQuery<T>>>[] predicates)
             {
                 // Scope the currentPredicate so multiple calls will not act on the new predicate.
                 var currentPredicate = _query._queryState._currentPredicate;
-                var query = ComposeQueryAsync(predicates, new AndNode());
+                var query = await ComposeQueryAsync(predicates, new AndNode());
                 // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
                 _query._queryState._currentPredicate = currentPredicate;
 
