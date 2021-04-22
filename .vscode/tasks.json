@@ -36,6 +36,12 @@
 			"args": [ "cd ${workspaceRoot}/samples/YesSql.Samples.Hi & dotnet run" ]
 		},
 		{
+			"taskName": "Dotnet Build Web Debug",
+			"args": [ "dotnet build ${workspaceRoot}/samples/YesSql.Samples.Web -c Debug" ],
+			"isBuildCommand": true,
+			"problemMatcher": "$msCompile"
+		}
+		{
 			"taskName": "Gulp Build",
 			"args": [ "gulp build" ],
 			"problemMatcher": "$gulp-tsc"
