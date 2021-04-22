@@ -8,6 +8,7 @@ using YesSql.Filters.Query;
 using YesSql.Samples.Web.Models;
 using YesSql.Samples.Web.ModelBinding;
 using YesSql.Samples.Web.ViewModels;
+using YesSql.Samples.Web.Services;
 
 namespace YesSql.Samples.Web.Controllers
 {
@@ -31,7 +32,7 @@ namespace YesSql.Samples.Web.Controllers
             {
                 var query = session.Query<BlogPost>();
 
-                await filterResult.ExecuteAsync(query, HttpContext.RequestServices);
+                await filterResult.ExecuteAsync(new WebQueryExecutionContext<BlogPost>(HttpContext.RequestServices, query));
 
                 currentSearchText = filterResult.ToString();
 

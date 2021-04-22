@@ -6040,7 +6040,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 // Normal YesSql query
                 Assert.Equal("Post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("Steve")).FirstOrDefaultAsync()).Title);
@@ -6088,7 +6088,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(search);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 // Normal YesSql query
                 Assert.Equal("Post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("Steve")).FirstOrDefaultAsync()).Title);
@@ -6139,7 +6139,7 @@ namespace YesSql.Tests
                     .Build();
 
                 var parsed = parser.Parse(filter);
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 var yesqlQuery = session.Query().For<Article>()
                     .Any(
@@ -6195,7 +6195,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .All(
@@ -6248,7 +6248,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .All(
@@ -6305,7 +6305,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .Any(
@@ -6373,7 +6373,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .Any(
@@ -6443,7 +6443,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .All(
@@ -6506,7 +6506,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);
+                await parsed.ExecuteAsync(filterQuery);
 
                 // Order queries can be placed anywhere inside the booleans and they still get processed fine.  
                 var yesSqlQuery = session.Query().For<Article>()

@@ -31,7 +31,7 @@ namespace YesSql.Samples.Web
 
             services.AddSingleton<IQueryParser<BlogPost>>(sp =>
                 new QueryEngineBuilder<BlogPost>()
-                    .WithNamedTerm("status", b => b
+                    .WithNamedTerm("status", builder => builder
                         .OneCondition((val, query) =>
                         {
                             if (Enum.TryParse<ContentsStatus>(val, true, out var e))
@@ -51,18 +51,18 @@ namespace YesSql.Samples.Web
 
                             return query;
                         })
-                        .MapTo<Filter>((val, m) =>
+                        .MapTo<Filter>((val, model) =>
                         {
                             if (Enum.TryParse<ContentsStatus>(val, true, out var e))
                             {
-                                m.SelectedFilter = e;
+                                model.SelectedFilter = e;
                             }
                         })
-                        .MapFrom<Filter>((m) =>
+                        .MapFrom<Filter>((model) =>
                         {
-                            if (m.SelectedFilter != ContentsStatus.Default)
+                            if (model.SelectedFilter != ContentsStatus.Default)
                             {
-                                return (true, m.SelectedFilter.ToString());
+                                return (true, model.SelectedFilter.ToString());
                             }
 
                             return (false, String.Empty);

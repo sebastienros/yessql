@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using YesSql.Filters.Abstractions.Nodes;
 using YesSql.Filters.Abstractions.Services;
 using YesSql.Filters.Query.Services;
-using YesSql;
 
 namespace YesSql.Filters.Query
 {
@@ -19,7 +18,7 @@ namespace YesSql.Filters.Query
 
         public void MapFrom<TModel>(TModel model)
         {
-            foreach (var option in _termOptions)
+            foreach (var option in TermOptions)
             {
                 if (option.Value.MapFrom is Action<QueryFilterResult<T>, string, TermOption, TModel> mappingMethod)
                 {
@@ -28,23 +27,25 @@ namespace YesSql.Filters.Query
             }
         }
 
-        public async ValueTask<IQuery<T>> ExecuteAsync(IQuery<T> query, IServiceProvider serviceProvider)
-        {
-            var context = new QueryExecutionContext<T>(query, serviceProvider);
+        /// <summary>
+        /// Applies term filters to an <see cref="IQuery{T}"/>
+        /// </summary>
 
+        public async ValueTask<IQuery<T>> ExecuteAsync(QueryExecutionContext<T> context)
+        {
             var visitor = new QueryFilterVisitor<T>();
 
             foreach (var term in _terms.Values)
             {
                 // TODO optimize value task.
-                context.CurrentTermOption = _termOptions[term.TermName];
+                context.CurrentTermOption = TermOptions[term.TermName];
 
                 var termQuery = visitor.Visit(term, context);
-                query = await termQuery.Invoke(query);
+                context.Item = await termQuery.Invoke(context.Item);
                 context.CurrentTermOption = null;
             }
 
-            return query;
+            return context.Item;
         }
     }
 }

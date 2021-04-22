@@ -5,6 +5,9 @@ using YesSql.Filters.Query.Services;
 
 namespace YesSql.Filters.Query
 {
+    /// <summary>
+    /// Builds a <see cref="QueryEngineBuilder{T}"/> for an <see cref="IQuery{T}"/>.
+    /// </summary>
     public class QueryEngineBuilder<T> where T : class
     {
         private Dictionary<string, TermEngineBuilder<T, QueryTermOption<T>>> _termBuilders = new Dictionary<string, TermEngineBuilder<T, QueryTermOption<T>>>();

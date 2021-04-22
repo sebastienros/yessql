@@ -15,6 +15,10 @@ namespace YesSql.Filters.Query
         {
         }
 
+        /// <summary>
+        /// Adds a mapping function which can be applied to a model.
+        /// <typeparam name="TModel">The type of model.</typeparam>
+        /// </summary>
         public QueryUnaryEngineBuilder<T> MapTo<TModel>(Action<string, TModel> map)
         {
             _termOption.MapTo = map;
@@ -22,6 +26,11 @@ namespace YesSql.Filters.Query
             return this;
         }
 
+        /// <summary>
+        /// Adds a mapping function where terms can be mapped from a model.
+        /// <typeparam name="TModel">The type of model.</typeparam>
+        /// <param name="map">Mapping to apply</param>
+        /// </summary>
         public QueryUnaryEngineBuilder<T> MapFrom<TModel>(Func<TModel, (bool, string)> map)
         {
             Func<string, string, TermNode> factory = (name, value) => new NamedTermNode(name, new UnaryNode(value));
@@ -29,6 +38,12 @@ namespace YesSql.Filters.Query
             return MapFrom(map, factory);
         }
 
+        /// <summary>
+        /// Adds a mapping function where terms can be mapped from a model.
+        /// <typeparam name="TModel">The type of model.</typeparam>
+        /// <param name="map">Mapping to apply</param>
+        /// <param name="factory">Factory to create a <see cref="TermNode" when adding a mapping</param>
+        /// </summary>
         public QueryUnaryEngineBuilder<T> MapFrom<TModel>(Func<TModel, (bool, string)> map, Func<string, string, TermNode> factory)
         {
             Action<QueryFilterResult<T>, string, TermOption, TModel> mapFrom = (QueryFilterResult<T> terms, string name, TermOption termOption, TModel model) =>
@@ -38,6 +53,10 @@ namespace YesSql.Filters.Query
                 {
                     var node = termOption.MapFromFactory(name, mapResult.value);
                     terms.TryAddOrReplace(node);
+                }                
+                else
+                {
+                    terms.TryRemove(name);
                 }
             };
 

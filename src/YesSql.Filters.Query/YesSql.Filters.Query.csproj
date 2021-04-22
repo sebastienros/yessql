@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <ItemGroup>
-      <ProjectReference Include="..\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj" />
-      <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
-    </ItemGroup>
-
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
         <LangVersion>9.0</LangVersion>
     </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj" />
+      <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
+    </ItemGroup>
 
 </Project>

@@ -8,6 +8,10 @@ namespace YesSql.Filters.Query
 {
     public static class QueryTermFilterBuilderExtensions
     {
+        /// <summary>
+        /// Adds a single condition to a <see cref="TermEngineBuilder{T}"/>.
+        /// <param name="matchQuery">The predicate to apply when the term is parsed.</param>
+        /// </summary>
         public static QueryUnaryEngineBuilder<T> OneCondition<T>(this TermEngineBuilder<T, QueryTermOption<T>> builder, Func<string, IQuery<T>, IQuery<T>> matchQuery) where T : class
         {
             Func<string, IQuery<T>, QueryExecutionContext<T>, ValueTask<IQuery<T>>> valueQuery = (q, val, ctx) => new ValueTask<IQuery<T>>(matchQuery(q, val));
@@ -15,6 +19,10 @@ namespace YesSql.Filters.Query
             return builder.OneCondition(valueQuery);
         }
 
+        /// <summary>
+        /// Adds a single condition to a <see cref="TermEngineBuilder{T}"/>
+        /// <param name="matchQuery">An async predicate to apply when the term is parsed.</param>
+        /// </summary>
         public static QueryUnaryEngineBuilder<T> OneCondition<T>(this TermEngineBuilder<T, QueryTermOption<T>> builder, Func<string, IQuery<T>, QueryExecutionContext<T>, ValueTask<IQuery<T>>> matchQuery) where T : class
         {
             var operatorBuilder = new QueryUnaryEngineBuilder<T>(builder.Name, matchQuery);
@@ -23,6 +31,11 @@ namespace YesSql.Filters.Query
             return operatorBuilder;
         }
 
+        /// <summary>
+        /// Adds a condition which supports many operations to a <see cref="TermEngineBuilder{T}"/>.
+        /// <param name="matchQuery">The predicate to apply when the term is parsed with an AND or OR operator.</param>
+        /// <param name="notMatchQuery">The predicate to apply when the term is parsed with a NOT operator.</param>
+        /// </summary>
         public static QueryBooleanEngineBuilder<T> ManyCondition<T>(
             this TermEngineBuilder<T, QueryTermOption<T>> builder,
             Func<string, IQuery<T>, IQuery<T>> matchQuery,
@@ -34,6 +47,11 @@ namespace YesSql.Filters.Query
             return builder.ManyCondition(valueMatch, valueNotMatch);
         }
 
+        /// <summary>
+        /// Adds a condition which supports many operations to a <see cref="TermEngineBuilder{T}"/>.
+        /// <param name="matchQuery">The predicate to apply when the term is parsed with an AND or OR operator.</param>
+        /// <param name="notMatchQuery">The predicate to apply when the term is parsed with a NOT operator.</param>
+        /// </summary>
         public static QueryBooleanEngineBuilder<T> ManyCondition<T>(
             this TermEngineBuilder<T, QueryTermOption<T>> builder,
             Func<string, IQuery<T>, QueryExecutionContext<T>, ValueTask<IQuery<T>>> matchQuery,

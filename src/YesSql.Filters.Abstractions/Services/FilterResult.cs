@@ -8,18 +8,17 @@ namespace YesSql.Filters.Abstractions.Services
 {
     public abstract class FilterResult<T, TTermOption> : IEnumerable<TermNode> where TTermOption : TermOption
     {
-        protected IReadOnlyDictionary<string, TTermOption> _termOptions;
 
         protected Dictionary<string, TermNode> _terms = new Dictionary<string, TermNode>();
 
         public FilterResult(IReadOnlyDictionary<string, TTermOption> termOptions)
         {
-            _termOptions = termOptions;
+            TermOptions = termOptions;
         }
 
         public FilterResult(List<TermNode> terms, IReadOnlyDictionary<string, TTermOption> termOptions)
         {
-            _termOptions = termOptions;
+            TermOptions = termOptions;
 
             foreach (var term in terms)
             {
@@ -27,11 +26,20 @@ namespace YesSql.Filters.Abstractions.Services
             }
         }
 
+        /// <summary>
+        /// The configured options for a <see cref="TermNode"/>
+        /// </summary>
+        public IReadOnlyDictionary<string, TTermOption> TermOptions { get; }
+
+        /// <summary>
+        /// Applies registered mappings to a model.
+        /// <typeparam name="TModel">The type to map to.</typeparam>
+        /// </summary>
         public void MapTo<TModel>(TModel model)
         {
             foreach (var term in _terms.Values)
             {
-                var option = _termOptions[term.TermName];
+                var option = TermOptions[term.TermName];
 
                 if (option.MapTo is Action<string, TModel> action &&
                     term is TermOperationNode operationNode &&
@@ -42,16 +50,25 @@ namespace YesSql.Filters.Abstractions.Services
             }
         }
 
+        /// <summary>
+        /// Returns a normalized query string, applying any inferred boolean logic and parenthesis
+        /// </summary>
         public string ToNormalizedString()
             => $"{String.Join(" ", _terms.Values.Select(s => s.ToNormalizedString()))}";
 
+        /// <summary>
+        /// Returns the filter terms.
+        /// </summary>
         public override string ToString()
             => $"{String.Join(" ", _terms.Values.Select(s => s.ToString()))}";
 
+        /// <summary>
+        /// Adds or replaces a <see cref="TermNode"/>
+        /// </summary>
         public bool TryAddOrReplace(TermNode term)
         {
             // Check the term options 
-            if (!_termOptions.TryGetValue(term.TermName, out var termOption))
+            if (!TermOptions.TryGetValue(term.TermName, out var termOption))
             {
                 return false;
             }
@@ -72,9 +89,6 @@ namespace YesSql.Filters.Abstractions.Services
                 }
                 else
                 {
-                    // TODO this isn't going to work when removing from list, 
-                    // i.e. search says tax:a tax:b but model says just tax:b
-                    // for that we need a Merge extension.
                     var newCompound = new AndTermNode(existingTerm as TermOperationNode, term as TermOperationNode);
                     _terms[term.TermName] = newCompound;
                     return true;
@@ -85,6 +99,12 @@ namespace YesSql.Filters.Abstractions.Services
 
             return true;
         }
+
+        /// <summary>
+        /// Removes a term from the query
+        /// </summary>
+        public bool TryRemove(string name)
+            => _terms.Remove(name);        
 
         public IEnumerator<TermNode> GetEnumerator()
             => _terms.Values.GetEnumerator();
