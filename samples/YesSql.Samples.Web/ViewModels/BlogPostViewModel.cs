@@ -22,7 +22,7 @@ namespace YesSql.Samples.Web.ViewModels
         public ContentsStatus SelectedFilter { get; set; }
 
         [ModelBinder(BinderType = typeof(QueryFilterEngineModelBinder<BlogPost>), Name = "SearchText")]
-        public QueryFilterResult<BlogPost> TermList { get; set; }
+        public QueryFilterResult<BlogPost> FilterResult { get; set; }
 
         [BindNever]
         public List<SelectListItem> Filters { get; set; } = new();

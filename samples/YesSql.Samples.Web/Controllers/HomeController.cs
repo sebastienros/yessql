@@ -21,7 +21,7 @@ namespace YesSql.Samples.Web.Controllers
         }
 
         [Route("/")]
-        public async Task<IActionResult> Index([ModelBinder(BinderType = typeof(QueryFilterEngineModelBinder<BlogPost>), Name = "q")] QueryFilterResult<BlogPost> termList)
+        public async Task<IActionResult> Index([ModelBinder(BinderType = typeof(QueryFilterEngineModelBinder<BlogPost>), Name = "q")] QueryFilterResult<BlogPost> filterResult)
         {
             IEnumerable<BlogPost> posts;
 
@@ -31,9 +31,9 @@ namespace YesSql.Samples.Web.Controllers
             {
                 var query = session.Query<BlogPost>();
 
-                await termList.ExecuteAsync(query, HttpContext.RequestServices);
+                await filterResult.ExecuteAsync(query, HttpContext.RequestServices);
 
-                currentSearchText = termList.ToString();
+                currentSearchText = filterResult.ToString();
 
                 posts = await query.ListAsync();
 
@@ -52,7 +52,7 @@ namespace YesSql.Samples.Web.Controllers
                     }
                 };
 
-                termList.MapTo(search);
+                filterResult.MapTo(search);
 
                 var vm = new BlogPostViewModel
                 {
@@ -74,9 +74,9 @@ namespace YesSql.Samples.Web.Controllers
                 return RedirectToAction("Index", new RouteValueDictionary { { "q", search.SearchText } });
             }
 
-            search.TermList.MapFrom(search);
+            search.FilterResult.MapFrom(search);
 
-            return RedirectToAction("Index", new RouteValueDictionary { { "q", search.TermList.ToString() } });  
+            return RedirectToAction("Index", new RouteValueDictionary { { "q", search.FilterResult.ToString() } });  
         }
     }
 }

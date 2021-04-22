@@ -131,8 +131,8 @@ namespace YesSql.Tests
                     connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
                     connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
-                catch 
-                { 
+                catch
+                {
                 }
             }
 
@@ -141,8 +141,8 @@ namespace YesSql.Tests
                 var indexName = typeof(IndexType).Name;
                 var indexTable = configuration.TableNameConvention.GetIndexTable(typeof(IndexType), collection);
 
-                try 
-                { 
+                try
+                {
                     connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
                 catch { }
@@ -153,7 +153,7 @@ namespace YesSql.Tests
                 var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
                 try
-                { 
+                {
                     connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
                 }
                 catch { }
@@ -318,9 +318,9 @@ namespace YesSql.Tests
                             //.Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
                             .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
                             .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
-                            //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
-                            //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
-                            //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
+                        //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
+                        //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
+                        //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
                         );
 
                     builder.CreateMapIndexTable<PersonByName>(column => column
@@ -343,7 +343,7 @@ namespace YesSql.Tests
                             .Column<string>(nameof(PersonsByNameCol.Name))
                             .Column<int>(nameof(PersonsByNameCol.Count)),
                             "Col1"
-                            );                                                        
+                            );
 
                     transaction.Commit();
                 }
@@ -1730,7 +1730,7 @@ namespace YesSql.Tests
                     .CountAsync()
                     );
             }
-        }              
+        }
 
         [Fact]
         public async Task ShouldDeletePreviousIndexes()
@@ -2500,7 +2500,7 @@ namespace YesSql.Tests
                 article.PublishedUtc = new DateTime(2011, 11, 3);
 
                 session.Save(article);
-                
+
                 await session.SaveChangesAsync();
             }
 
@@ -3117,7 +3117,7 @@ namespace YesSql.Tests
 
             _store.RegisterIndexes<ShapeIndexProvider<Circle>>();
             _store.RegisterIndexes<ShapeIndexProvider<Square>>();
-            
+
             using (var session = _store.CreateSession())
             {
                 session.Save(new Square { Size = 10 });
@@ -4035,7 +4035,7 @@ namespace YesSql.Tests
             {
                 Assert.Equal(2, (await session.QueryIndex<PersonsByNameCol>(x => x.Name == "Bill", "Col1").FirstOrDefaultAsync()).Count);
             }
-        }        
+        }
 
         [Fact]
         public async Task ShouldQueryInnerSelectWithCollection()
@@ -4077,7 +4077,7 @@ namespace YesSql.Tests
                 Assert.Equal(2, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
                 Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
 
-                Assert.Equal(2, await session.Query("Col1").For<Person>().With<PersonByNameCol>().Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());                
+                Assert.Equal(2, await session.Query("Col1").For<Person>().With<PersonByNameCol>().Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
 
             }
         }
@@ -4284,7 +4284,7 @@ namespace YesSql.Tests
 
                 var dialect = _store.Configuration.SqlDialect;
 
-                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " +  dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
+                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
                 publishedInTheFutureResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInTheFutureSql);
 
                 var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
@@ -5373,7 +5373,7 @@ namespace YesSql.Tests
                 session.Save(property);
             }
         }
-        
+
         [Fact]
         public async Task ShouldCommitInMultipleCollections()
         {
@@ -5955,9 +5955,9 @@ namespace YesSql.Tests
                 // This will produce a query that batches at 2099 parameters which will fail.
                 // When reduced to a maximum to 2098, i.e. stopping the batch before 2099, it will pass.
                 foreach (var person in persons)
-                {   
+                {
                     session.Save(person);
-                }              
+                }
             }
         }
 
@@ -6051,7 +6051,7 @@ namespace YesSql.Tests
                 Assert.Equal(1, await filterQuery.CountAsync());
             }
         }
-     
+
         [Theory]
         [InlineData("steve")]
         [InlineData("title:steve")]
@@ -6098,8 +6098,8 @@ namespace YesSql.Tests
                 Assert.Equal("Post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
                 Assert.Equal(1, await filterQuery.CountAsync());
             }
-        }          
-        
+        }
+
         [Fact]
         public async Task ShouldParseOrQuery()
         {
@@ -6153,7 +6153,7 @@ namespace YesSql.Tests
                 // Parsed query
                 Assert.Equal(2, await filterQuery.CountAsync());
             }
-        } 
+        }
 
         [Fact]
         public async Task ShouldParseAndQuery()
@@ -6170,7 +6170,7 @@ namespace YesSql.Tests
                 var stevesArticle = new Article
                 {
                     Title = "Post by steve about cats"
-                };  
+                };
 
                 session.Save(billsArticle);
                 session.Save(stevesArticle);
@@ -6209,9 +6209,9 @@ namespace YesSql.Tests
                 // Parsed query
                 Assert.Equal(1, await filterQuery.CountAsync());
             }
-        }  
+        }
 
-       [Fact]
+        [Fact]
         public async Task ShouldParseTwoNamedTermQuerys()
         {
             _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
@@ -6226,7 +6226,7 @@ namespace YesSql.Tests
                 var stevesArticle = new Article
                 {
                     Title = "Article by steve about cats"
-                };  
+                };
 
                 session.Save(billsArticle);
                 session.Save(stevesArticle);
@@ -6241,7 +6241,7 @@ namespace YesSql.Tests
 
                 var parser = new QueryEngineBuilder<Article>()
                     .WithNamedTerm("title", b => b
-                        .OneCondition((val ,query) => query.With<ArticleByPublishedDate>(x => x.Title.Contains(val)))
+                        .OneCondition((val, query) => query.With<ArticleByPublishedDate>(x => x.Title.Contains(val)))
                         .AllowMultiple()
                     )
                     .Build();
@@ -6264,7 +6264,7 @@ namespace YesSql.Tests
                 // Parsed query
                 Assert.Equal(2, await filterQuery.CountAsync());
             }
-        }          
+        }
 
         [Fact]
         public async Task ShouldParseComplexQuery()
@@ -6281,7 +6281,7 @@ namespace YesSql.Tests
                 var mountainArticle = new Article
                 {
                     Title = "On the mountain it snowed at the lake"
-                };                  
+                };
 
                 session.Save(beachLizardsArticle);
                 session.Save(mountainArticle);
@@ -6293,7 +6293,7 @@ namespace YesSql.Tests
             {
                 var filter = "title:(beach AND sand) OR (mountain AND lake)";
                 var filterQuery = session.Query<Article>();
- 
+
                 var parser = new QueryEngineBuilder<Article>()
                     .WithNamedTerm("title", b => b
                         .ManyCondition(
@@ -6305,7 +6305,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);               
+                await parsed.ExecuteAsync(filterQuery, null);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .Any(
@@ -6325,7 +6325,7 @@ namespace YesSql.Tests
                 // Parsed query
                 Assert.Equal(2, await filterQuery.CountAsync());
             }
-        }  
+        }
 
         [Fact]
         public async Task ShouldParseNotComplexQuery()
@@ -6342,12 +6342,12 @@ namespace YesSql.Tests
                 var sandcastlesArticle = new Article
                 {
                     Title = "On the beach in the sand we built sandcastles"
-                }; 
+                };
 
                 var mountainArticle = new Article
                 {
                     Title = "On the mountain it snowed at the lake"
-                };                  
+                };
 
                 session.Save(beachLizardsArticle);
                 session.Save(sandcastlesArticle);
@@ -6373,7 +6373,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);               
+                await parsed.ExecuteAsync(filterQuery, null);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .Any(
@@ -6396,7 +6396,7 @@ namespace YesSql.Tests
                 // Parsed query
                 Assert.Equal(2, await filterQuery.CountAsync());
             }
-        }  
+        }
 
         [Fact]
         public async Task ShouldParseNotBooleanQuery()
@@ -6418,7 +6418,7 @@ namespace YesSql.Tests
                 var paulsArticle = new Article
                 {
                     Title = "Blog by paul about chickens"
-                };                
+                };
 
                 session.Save(billsArticle);
                 session.Save(stevesArticle);
@@ -6429,7 +6429,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var filter = "title:NOT steve";          
+                var filter = "title:NOT steve";
                 var filterQuery = session.Query<Article>();
 
                 var parser = new QueryEngineBuilder<Article>()
@@ -6443,7 +6443,7 @@ namespace YesSql.Tests
 
                 var parsed = parser.Parse(filter);
 
-                await parsed.ExecuteAsync(filterQuery, null);  
+                await parsed.ExecuteAsync(filterQuery, null);
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .All(
@@ -6479,7 +6479,7 @@ namespace YesSql.Tests
                 var paulsArticle = new Article
                 {
                     Title = "Blog by paul about chickens"
-                };                
+                };
 
                 session.Save(billsArticle);
                 session.Save(stevesArticle);
@@ -6490,7 +6490,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var filter = "title:about NOT steve";          
+                var filter = "title:about NOT steve";
                 var filterQuery = session.Query<Article>();
 
                 var parser = new QueryEngineBuilder<Article>()
@@ -6526,7 +6526,7 @@ namespace YesSql.Tests
                 Assert.Equal(2, await filterQuery.CountAsync());
                 Assert.Equal("Blog by paul about chickens", (await filterQuery.FirstOrDefaultAsync()).Title);
             }
-        }   
+        }
         #endregion
     }
 }
