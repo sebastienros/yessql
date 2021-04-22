@@ -10,7 +10,6 @@ namespace YesSql.Tests.Filters
 {
     public class QueryEngineTests
     {
-
         [Fact]
         public void ShouldParseNamedTerm()
         {

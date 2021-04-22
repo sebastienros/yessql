@@ -6,7 +6,6 @@ using Parlot;
 using Parlot.Fluent;
 using static Parlot.Fluent.Parsers;
 
-
 namespace YesSql.Filters.Query.Services
 {
     public class QueryParser<T> : IQueryParser<T> where T : class
@@ -21,12 +20,12 @@ namespace YesSql.Filters.Query.Services
             var terms = OneOf(termParsers);
 
             _parser = ZeroOrMany(terms)
-                    .Then(static (context, terms) => 
+                    .Then(static (context, terms) =>
                     {
                         var ctx = (QueryParseContext<T>)context;
 
                         return new QueryFilterResult<T>(terms, ctx.TermOptions);
-                    });                    
+                    });
         }
 
         public QueryFilterResult<T> Parse(string text)

@@ -36,14 +36,14 @@ namespace YesSql.Samples.Web.ModelBinding
             if (string.IsNullOrEmpty(value))
             {
                 bindingContext.Result = ModelBindingResult.Success(Parse(String.Empty));
-                
+
                 return Task.CompletedTask;
             }
 
             var filterResult = Parse(value);
 
             bindingContext.Result = ModelBindingResult.Success(filterResult);
-            
+
             return Task.CompletedTask;
         }
     }

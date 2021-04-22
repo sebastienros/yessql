@@ -112,7 +112,6 @@ namespace YesSql.Filters.Abstractions.Nodes
     /// <summary>
     /// Marks a node as being produced by a group request, i.e. () were specified
     /// </summary>
-
     public class GroupNode : OperatorNode
     {
         public GroupNode(OperatorNode operation)
@@ -131,5 +130,4 @@ namespace YesSql.Filters.Abstractions.Nodes
         public override string ToString()
             => $"({Operation.ToString()})";
     }
-
 }

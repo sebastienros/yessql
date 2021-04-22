@@ -12,7 +12,6 @@ namespace YesSql.Filters.Query
         public QueryFilterResult(IReadOnlyDictionary<string, QueryTermOption<T>> termOptions) : base(termOptions)
         { }
 
-
         public QueryFilterResult(List<TermNode> terms, IReadOnlyDictionary<string, QueryTermOption<T>> termOptions) : base(terms, termOptions)
         { }
 
@@ -30,7 +29,6 @@ namespace YesSql.Filters.Query
         /// <summary>
         /// Applies term filters to an <see cref="IQuery{T}"/>
         /// </summary>
-
         public async ValueTask<IQuery<T>> ExecuteAsync(QueryExecutionContext<T> context)
         {
             var visitor = new QueryFilterVisitor<T>();

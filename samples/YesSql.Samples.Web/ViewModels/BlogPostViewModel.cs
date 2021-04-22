@@ -26,9 +26,8 @@ namespace YesSql.Samples.Web.ViewModels
 
         [BindNever]
         public List<SelectListItem> Filters { get; set; } = new();
-
-
     }
+
     public enum ContentsStatus
     {
         Default,

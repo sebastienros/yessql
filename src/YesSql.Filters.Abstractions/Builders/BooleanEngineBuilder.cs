@@ -106,7 +106,6 @@ namespace YesSql.Filters.Abstractions.Builders
                });
 
             _parser = OperatorNode;
-
         }
 
         public override (Parser<OperatorNode> Parser, TTermOption TermOption) Build()

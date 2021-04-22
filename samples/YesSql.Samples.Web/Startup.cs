@@ -15,7 +15,7 @@ namespace YesSql.Samples.Web
 {
     public class Startup
     {
-         public void ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             var filename = "yessql.db";
 
@@ -67,7 +67,7 @@ namespace YesSql.Samples.Web
 
                             return (false, String.Empty);
 
-                        })  
+                        })
                     )
                     .WithDefaultTerm("title", b => b
                         .ManyCondition(
@@ -109,7 +109,6 @@ namespace YesSql.Samples.Web
                     transaction.Commit();
                 }
             }
-
 
             using (var session = app.ApplicationServices.GetRequiredService<IStore>().CreateSession())
             {
