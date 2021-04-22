@@ -6012,12 +6012,14 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits"
+                    Title = "Article by bill about rabbits",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats"
+                    Title = "Post by steve about cats",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(billsArticle);
@@ -6063,12 +6065,14 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits"
+                    Title = "Article by bill about rabbits",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats"
+                    Title = "Post by steve about cats",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(billsArticle);
@@ -6109,12 +6113,14 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits"
+                    Title = "Article by bill about rabbits",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats"
+                    Title = "Post by steve about cats",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(billsArticle);
@@ -6164,12 +6170,14 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits"
+                    Title = "Article by bill about rabbits",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats"
+                    Title = "Post by steve about cats",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(billsArticle);
@@ -6220,12 +6228,14 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits"
+                    Title = "Article by bill about rabbits",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Article by steve about cats"
+                    Title = "Article by steve about cats",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(billsArticle);
@@ -6275,12 +6285,14 @@ namespace YesSql.Tests
             {
                 var beachLizardsArticle = new Article
                 {
-                    Title = "On the beach in the sand we found lizards"
+                    Title = "On the beach in the sand we found lizards",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var mountainArticle = new Article
                 {
-                    Title = "On the mountain it snowed at the lake"
+                    Title = "On the mountain it snowed at the lake",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(beachLizardsArticle);
@@ -6336,17 +6348,20 @@ namespace YesSql.Tests
             {
                 var beachLizardsArticle = new Article
                 {
-                    Title = "On the beach in the sand we found lizards"
+                    Title = "On the beach in the sand we found lizards",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var sandcastlesArticle = new Article
                 {
-                    Title = "On the beach in the sand we built sandcastles"
+                    Title = "On the beach in the sand we built sandcastles",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var mountainArticle = new Article
                 {
-                    Title = "On the mountain it snowed at the lake"
+                    Title = "On the mountain it snowed at the lake",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(beachLizardsArticle);
@@ -6407,17 +6422,20 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits"
+                    Title = "Article by bill about rabbits",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats"
+                    Title = "Post by steve about cats",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var paulsArticle = new Article
                 {
-                    Title = "Blog by paul about chickens"
+                    Title = "Blog by paul about chickens",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(billsArticle);
@@ -6468,17 +6486,20 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits"
+                    Title = "Article by bill about rabbits",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats"
+                    Title = "Post by steve about cats",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 var paulsArticle = new Article
                 {
-                    Title = "Blog by paul about chickens"
+                    Title = "Blog by paul about chickens",
+                    PublishedUtc = DateTime.UtcNow
                 };
 
                 session.Save(billsArticle);
