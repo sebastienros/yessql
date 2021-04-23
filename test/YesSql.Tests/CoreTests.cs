@@ -6012,13 +6012,13 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits",
+                    Title = "article by bill about rabbits",
                     PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats",
+                    Title = "post by steve about cats",
                     PublishedUtc = DateTime.UtcNow
                 };
 
@@ -6045,11 +6045,11 @@ namespace YesSql.Tests
                 await parsed.ExecuteAsync(filterQuery);
 
                 // Normal YesSql query
-                Assert.Equal("Post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("Steve")).FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("Steve")).CountAsync());
+                Assert.Equal("post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title);
+                Assert.Equal(1, await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync());
 
                 // Parsed query
-                Assert.Equal("Post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
+                Assert.Equal("post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
                 Assert.Equal(1, await filterQuery.CountAsync());
             }
         }
@@ -6065,13 +6065,13 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits",
+                    Title = "article by bill about rabbits",
                     PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats",
+                    Title = "post by steve about cats",
                     PublishedUtc = DateTime.UtcNow
                 };
 
@@ -6095,11 +6095,11 @@ namespace YesSql.Tests
                 await parsed.ExecuteAsync(filterQuery);
 
                 // Normal YesSql query
-                Assert.Equal("Post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("Steve")).FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("Steve")).CountAsync());
+                Assert.Equal("post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title);
+                Assert.Equal(1, await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync());
 
                 // Parsed query
-                Assert.Equal("Post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
+                Assert.Equal("post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
                 Assert.Equal(1, await filterQuery.CountAsync());
             }
         }
@@ -6113,13 +6113,13 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits",
+                    Title = "article by bill about rabbits",
                     PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats",
+                    Title = "post by steve about cats",
                     PublishedUtc = DateTime.UtcNow
                 };
 
@@ -6170,13 +6170,13 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits",
+                    Title = "article by bill about rabbits",
                     PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats",
+                    Title = "post by steve about cats",
                     PublishedUtc = DateTime.UtcNow
                 };
 
@@ -6228,13 +6228,13 @@ namespace YesSql.Tests
             {
                 var billsArticle = new Article
                 {
-                    Title = "Article by bill about rabbits",
+                    Title = "article by bill about rabbits",
                     PublishedUtc = DateTime.UtcNow
                 };
 
                 var stevesArticle = new Article
                 {
-                    Title = "Article by steve about cats",
+                    Title = "article by steve about cats",
                     PublishedUtc = DateTime.UtcNow
                 };
 
@@ -6262,10 +6262,10 @@ namespace YesSql.Tests
 
                 var yesSqlQuery = session.Query().For<Article>()
                     .All(
-                        x => x.With<ArticleByPublishedDate>(x => x.Title.Contains("Article"))
+                        x => x.With<ArticleByPublishedDate>(x => x.Title.Contains("article"))
                     )
                     .All(
-                        x => x.With<ArticleByPublishedDate>(x => x.Title.Contains("Article"))
+                        x => x.With<ArticleByPublishedDate>(x => x.Title.Contains("article"))
                     );
 
                 // Normal YesSql query
