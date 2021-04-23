@@ -6246,7 +6246,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var filter = "title:Article title:Article";
+                var filter = "title:article title:article";
                 var filterQuery = session.Query<Article>();
 
                 var parser = new QueryEngineBuilder<Article>()
