@@ -17,12 +17,12 @@ namespace YesSql.Filters.Abstractions.Builders
 
             var AndOperator = Terms.Text("AND")
                 .Or(
-                    Literals.Text("&&")
+                    Terms.Text("&&")
                 );
 
             var NotOperator = Terms.Text("NOT")
                 .Or(
-                    Literals.Text("!")
+                    Terms.Text("!")
                 );
 
             var OrTextOperators = Terms.Text("OR")
@@ -34,7 +34,7 @@ namespace YesSql.Filters.Abstractions.Builders
             var NotOrOperators = OneOf(AndOperator, NotOperator, OrTextOperators);
 
             // Default operator.
-            var OrOperator = Literals.WhiteSpace(failOnEmpty: true)
+            var OrOperator = Literals.WhiteSpace()
                 .Then<string>(static x => " ") // Normalize whitespace.
                 .AndSkip(Not(NotOrOperators))
                 .Or(
