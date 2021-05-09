@@ -25,3 +25,4 @@ project.lock.json
 .build/
 .testPublish/ 
 .idea
+yessql.db

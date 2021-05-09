@@ -13,6 +13,7 @@ namespace YesSql.Samples.Web.Models
         public string Content { get; set; }
 
         public DateTime PublishedUtc { get; set; }
+        public bool Published { get; set; }
 
         public string[] Tags { get; set; }
     }

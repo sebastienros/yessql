@@ -1,7 +1,36 @@
 ﻿@using YesSql.Samples.Web.Models
+@using YesSql.Samples.Web.ViewModels
+@using System.Collections.Generic
 
-@model BlogPost
+@model BlogPostViewModel
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+</head>
 
-<h2>@Model.Title</h2>
-<i>By: @Model.Author - Posted: @@ @Model.PublishedUtc</i>
-<p>@Model.Content</p>
+<body class="m-5">
+    @foreach (var blogPost in Model.BlogPosts)
+    {
+        <div class="card">
+            <div class="card-body">
+                <h2>@blogPost.Title</h2>
+                <i>By: @blogPost.Author - Posted: @@ @blogPost.PublishedUtc</i>
+                <p>@blogPost.Content</p>
+            </div>
+        </div>
+    }
+
+    <form asp-action="IndexPost" method="post">
+        <input type="search" asp-for="Search.OriginalSearchText" type="hidden"></input>
+
+        <div class="w-100 form-group my-3">
+            <input class="form-control" type="search" asp-for="Search.SearchText"></input>
+        </div>
+
+
+        <div class="w-50 form-group my-3">
+            <select class="form-control" asp-for="Search.SelectedFilter" asp-items="Model.Search.Filters"></select>
+        </div>
+
+        <button class="btn btn-primary d-block my-3" type="submit">Search</button>
+    </form>
+</body>
