@@ -1954,6 +1954,40 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldClearOrders()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer"
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.Query<Person, PersonByName>().OrderByDescending(x => x.SomeName);
+                query.OrderByDescending(x => x.SomeName);
+
+                Assert.Equal("Steve", (await query.FirstOrDefaultAsync()).Firstname);
+            }
+        }
+        
+        [Fact]
         public async Task ShouldJoinReduceIndex()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
