@@ -19,19 +19,29 @@ namespace YesSql.Samples.Web.ViewModels
         public string Author { get; set; }
         public string SearchText { get; set; }
         public string OriginalSearchText { get; set; }
-        public ContentsStatus SelectedFilter { get; set; }
+        public BlogPostStatus SelectedStatus { get; set; }
+        public BlogPostSort SelectedSort { get; set; }
 
-        [ModelBinder(BinderType = typeof(QueryFilterEngineModelBinder<BlogPost>), Name = "SearchText")]
+        [ModelBinder(BinderType = typeof(QueryFilterEngineModelBinder<BlogPost>), Name = nameof(SearchText))]
         public QueryFilterResult<BlogPost> FilterResult { get; set; }
 
         [BindNever]
-        public List<SelectListItem> Filters { get; set; } = new();
+        public List<SelectListItem> Statuses { get; set; } = new();
+
+        [BindNever]
+        public List<SelectListItem> Sorts { get; set; } = new();
     }
 
-    public enum ContentsStatus
+    public enum BlogPostStatus
     {
         Default,
         Draft,
         Published
+    }
+
+    public enum BlogPostSort
+    {
+        Newest,
+        Oldest,
     }
 }

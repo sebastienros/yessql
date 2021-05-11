@@ -9,7 +9,7 @@ namespace YesSql.Filters.Abstractions.Services
     public abstract class FilterResult<T, TTermOption> : IEnumerable<TermNode> where TTermOption : TermOption
     {
 
-        protected Dictionary<string, TermNode> _terms = new Dictionary<string, TermNode>();
+        protected Dictionary<string, TermNode> _terms = new Dictionary<string, TermNode>(StringComparer.OrdinalIgnoreCase);
 
         public FilterResult(IReadOnlyDictionary<string, TTermOption> termOptions)
         {

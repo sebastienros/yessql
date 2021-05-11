@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using YesSql.Filters.Abstractions.Builders;
@@ -24,7 +25,7 @@ namespace YesSql.Filters.Query
             var builders = _termBuilders.Values.Select(x => x.Build());
 
             var parsers = builders.Select(x => x.Parser).ToArray();
-            var termOptions = builders.Select(x => x.TermOption).ToDictionary(k => k.Name, v => v);
+            var termOptions = builders.Select(x => x.TermOption).ToDictionary(k => k.Name, v => v, StringComparer.OrdinalIgnoreCase);
 
             return new QueryParser<T>(parsers, termOptions);
         }

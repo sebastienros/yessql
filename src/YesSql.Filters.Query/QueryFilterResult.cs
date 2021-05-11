@@ -36,14 +36,34 @@ namespace YesSql.Filters.Query
             foreach (var term in _terms.Values)
             {
                 // TODO optimize value task.
-                context.CurrentTermOption = TermOptions[term.TermName];
-
-                var termQuery = visitor.Visit(term, context);
-                context.Item = await termQuery.Invoke(context.Item);
-                context.CurrentTermOption = null;
+                await VisitTerm(TermOptions, context, visitor, term);
             }
 
+            // Execute always run terms. These are not added to the terms list.
+            foreach (var termOption in TermOptions)
+            {
+                if (!termOption.Value.AlwaysRun)
+                {
+                    continue;
+                }
+
+                if (!_terms.ContainsKey(termOption.Key))
+                {
+                    var alwaysRunNode = new NamedTermNode(termOption.Key, new UnaryNode(String.Empty));
+                    await VisitTerm(TermOptions, context, visitor, alwaysRunNode);
+                }
+            }
+            
             return context.Item;
+        }
+
+        private async static Task VisitTerm(IReadOnlyDictionary<string, QueryTermOption<T>> termOptions, QueryExecutionContext<T> context, QueryFilterVisitor<T> visitor, TermNode term)
+        {
+            context.CurrentTermOption = termOptions[term.TermName];
+
+            var termQuery = visitor.Visit(term, context);
+            context.Item = await termQuery.Invoke(context.Item);
+            context.CurrentTermOption = null;
         }
     }
 }

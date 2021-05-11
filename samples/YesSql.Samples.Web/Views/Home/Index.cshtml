@@ -8,6 +8,36 @@
 </head>
 
 <body class="m-5">
+
+    <form asp-action="IndexPost" method="post">
+        <input type="search" asp-for="Search.OriginalSearchText" type="hidden"></input>
+        
+
+        <div class="form-group row mb-3">
+            <label asp-for="Search.SearchText" class="col-2 align-self-center">Search</label>
+            <div class="col-10">
+                <input class="form-control" type="search" asp-for="Search.SearchText"></input>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label asp-for="Search.SelectedStatus" class="col-2 align-self-center">Status</label>
+            <div class="col-10">
+                <select class="form-control" asp-for="Search.SelectedStatus" asp-items="Model.Search.Statuses"></select>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label asp-for="Search.SelectedSort" class="col-2 align-self-center">Sort</label>
+            <div class="col-10">
+                <select class="form-control" asp-for="Search.SelectedSort" asp-items="Model.Search.Sorts"></select>
+            </div>     
+
+        </div>
+   
+        <button class="btn btn-primary d-flex ms-auto mb-3" type="submit">Search</button>   
+    </form>
+
     @foreach (var blogPost in Model.BlogPosts)
     {
         <div class="card">
@@ -19,18 +49,5 @@
         </div>
     }
 
-    <form asp-action="IndexPost" method="post">
-        <input type="search" asp-for="Search.OriginalSearchText" type="hidden"></input>
 
-        <div class="w-100 form-group my-3">
-            <input class="form-control" type="search" asp-for="Search.SearchText"></input>
-        </div>
-
-
-        <div class="w-50 form-group my-3">
-            <select class="form-control" asp-for="Search.SelectedFilter" asp-items="Model.Search.Filters"></select>
-        </div>
-
-        <button class="btn btn-primary d-block my-3" type="submit">Search</button>
-    </form>
 </body>

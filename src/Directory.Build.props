@@ -4,7 +4,7 @@
         <Copyright>Sebastien Ros</Copyright>
         <Authors>Sebastien Ros</Authors>
         <TargetFrameworks>net451;netstandard1.5;netstandard2.0</TargetFrameworks>
-        <VersionSuffix>beta</VersionSuffix>
+        <VersionSuffix>alpha</VersionSuffix>
         <VersionSuffix Condition="'$(VersionSuffix)'!='' AND '$(BuildNumber)' != ''">$(VersionSuffix)-$(BuildNumber)</VersionSuffix>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <DebugType>portable</DebugType>
