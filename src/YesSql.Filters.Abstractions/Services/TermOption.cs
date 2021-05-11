@@ -20,7 +20,7 @@ namespace YesSql.Filters.Abstractions.Services
         /// <summary>
         /// Whether this term filter should always run, even when not specified.
         /// </summary>
-        public bool AlwaysRun { get; set; } = false;
+        public bool AlwaysRun { get; set; }
 
         public Delegate MapTo { get; set; }
         public Delegate MapFrom { get; set; }
