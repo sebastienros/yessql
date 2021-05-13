@@ -49,7 +49,7 @@ namespace YesSql.Sql.Schema
         {
             // This is the highest value the current dialects can support.
             // The resulting column type is dialect dependant.
-            return WithLength(4194304);
+            return WithLength(int.MaxValue);
         }
     }
 }
