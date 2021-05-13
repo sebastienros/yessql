@@ -26,6 +26,13 @@ namespace YesSql.Filters.Abstractions.Builders
 
             return this;
         }
+        
+        public UnaryEngineBuilder<T, TTermOption> AlwaysRun()
+        {
+            _termOption.AlwaysRun = true;
+
+            return this;
+        }
 
         public override (Parser<OperatorNode> Parser, TTermOption TermOption) Build()
             => (_parser, _termOption);

@@ -34,14 +34,14 @@ namespace YesSql.Samples.Web
                     .WithNamedTerm("status", builder => builder
                         .OneCondition((val, query) =>
                         {
-                            if (Enum.TryParse<ContentsStatus>(val, true, out var e))
+                            if (Enum.TryParse<BlogPostStatus>(val, true, out var e))
                             {
                                 switch (e)
                                 {
-                                    case ContentsStatus.Published:
+                                    case BlogPostStatus.Published:
                                         query.With<BlogPostIndex>(x => x.Published);
                                         break;
-                                    case ContentsStatus.Draft:
+                                    case BlogPostStatus.Draft:
                                         query.With<BlogPostIndex>(x => !x.Published);
                                         break;
                                     default:
@@ -53,21 +53,65 @@ namespace YesSql.Samples.Web
                         })
                         .MapTo<Filter>((val, model) =>
                         {
-                            if (Enum.TryParse<ContentsStatus>(val, true, out var e))
+                            if (Enum.TryParse<BlogPostStatus>(val, true, out var e))
                             {
-                                model.SelectedFilter = e;
+                                model.SelectedStatus = e;
                             }
                         })
                         .MapFrom<Filter>((model) =>
                         {
-                            if (model.SelectedFilter != ContentsStatus.Default)
+                            if (model.SelectedStatus != BlogPostStatus.Default)
                             {
-                                return (true, model.SelectedFilter.ToString());
+                                return (true, model.SelectedStatus.ToString());
                             }
 
                             return (false, String.Empty);
 
                         })
+                    )
+                    .WithNamedTerm("sort", b => b
+                        .OneCondition((val, query) =>
+                        {
+                            if (Enum.TryParse<BlogPostSort>(val, true, out var e))
+                            {
+                                switch (e)
+                                {
+                                    case BlogPostSort.Newest:
+                                        query.With<BlogPostIndex>().OrderByDescending(x => x.PublishedUtc);
+                                        break;
+                                    case BlogPostSort.Oldest:
+                                        query.With<BlogPostIndex>().OrderBy(x => x.PublishedUtc);
+                                        break;
+                                    default:
+                                        query.With<BlogPostIndex>().OrderByDescending(x => x.PublishedUtc);
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                query.With<BlogPostIndex>().OrderByDescending(x => x.PublishedUtc);
+                            }
+
+                            return query;          
+                        })
+                        .MapTo<Filter>((val, model) =>
+                        {
+                            if (Enum.TryParse<BlogPostSort>(val, true, out var e))
+                            {
+                                model.SelectedSort = e;
+                            }
+                        })
+                        .MapFrom<Filter>((model) =>
+                        {
+                            if (model.SelectedSort != BlogPostSort.Newest)
+                            {
+                                return (true, model.SelectedSort.ToString());
+                            }
+
+                            return (false, String.Empty);
+
+                        })
+                        .AlwaysRun()
                     )
                     .WithDefaultTerm("title", b => b
                         .ManyCondition(

@@ -17,6 +17,11 @@ namespace YesSql.Filters.Abstractions.Services
         /// </summary>
         public bool Single { get; set; } = true;
 
+        /// <summary>
+        /// Whether this term filter should always run, even when not specified.
+        /// </summary>
+        public bool AlwaysRun { get; set; }
+
         public Delegate MapTo { get; set; }
         public Delegate MapFrom { get; set; }
         public Func<string, string, TermNode> MapFromFactory { get; set; }

@@ -44,16 +44,24 @@ namespace YesSql.Samples.Web.Controllers
                 var search = new Filter
                 {
                     SearchText = currentSearchText,
-                    OriginalSearchText = currentSearchText,
-                    Filters = new List<SelectListItem>()
-                    {
-                        new SelectListItem("Select...", ""),
-                        new SelectListItem("Published", ContentsStatus.Published.ToString()),
-                        new SelectListItem("Draft", ContentsStatus.Draft.ToString())
-                    }
+                    OriginalSearchText = currentSearchText
                 };
 
                 filterResult.MapTo(search);
+
+
+                search.Statuses = new List<SelectListItem>()
+                {
+                    new SelectListItem("Select...", "", search.SelectedStatus == BlogPostStatus.Default),
+                    new SelectListItem("Published", BlogPostStatus.Published.ToString(), search.SelectedStatus == BlogPostStatus.Published),
+                    new SelectListItem("Draft", BlogPostStatus.Draft.ToString(), search.SelectedStatus == BlogPostStatus.Draft)
+                };
+
+                search.Sorts = new List<SelectListItem>()
+                {
+                    new SelectListItem("Newest", BlogPostSort.Newest.ToString(), search.SelectedSort == BlogPostSort.Newest),
+                    new SelectListItem("Oldest", BlogPostSort.Oldest.ToString(), search.SelectedSort == BlogPostSort.Oldest)
+                };                
 
                 var vm = new BlogPostViewModel
                 {
