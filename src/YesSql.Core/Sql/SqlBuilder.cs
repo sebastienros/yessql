@@ -219,17 +219,20 @@ namespace YesSql.Sql
 
         public virtual void OrderBy(string orderBy)
         {
+            OrderSegments.Clear();
             OrderSegments.Add(orderBy);
         }
 
         public virtual void OrderByDescending(string orderBy)
         {
+            OrderSegments.Clear();
             OrderSegments.Add(orderBy);
             OrderSegments.Add(" DESC");
         }
 
         public virtual void OrderByRandom()
         {
+            OrderSegments.Clear();
             OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
