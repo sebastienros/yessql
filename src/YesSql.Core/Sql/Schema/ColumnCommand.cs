@@ -47,7 +47,7 @@ namespace YesSql.Sql.Schema
 
         public IColumnCommand Unlimited()
         {
-            return WithLength(10000);
+            return WithLength(int.MaxValue);
         }
     }
 }

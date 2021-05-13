@@ -125,15 +125,15 @@ namespace YesSql.Provider.MySql
                     if (dbType == DbType.String)
                     {
                         // Mysql uses up to 4 bytes per Unicode char depends on Encoding, so 65536/4 and 16MB/4 make sense
-                        return length.Value > 16384 ?
-                            length.Value > 4194304 ? "LONGTEXT" : "MEDIUMTEXT" : "TEXT";
+                        return length.Value >= 16384 ?
+                            length.Value >= 4194304 ? "LONGTEXT" : "MEDIUMTEXT" : "TEXT";
                     }
 
                     if (dbType == DbType.AnsiString)
                     {
                         // Mysql uses up to 4 bytes per Unicode char depends on Encoding, so 65536/4 and 16MB/4 make sense
-                        return length.Value > 16384 ?
-                            length.Value > 4194304 ? "LONGTEXT" : "MEDIUMTEXT" : "TEXT";
+                        return length.Value >= 16384 ?
+                            length.Value >= 4194304 ? "LONGTEXT" : "MEDIUMTEXT" : "TEXT";
                     }
                 }
                 else
