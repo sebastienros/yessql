@@ -47,8 +47,6 @@ namespace YesSql.Sql.Schema
 
         public IColumnCommand Unlimited()
         {
-            // This is the highest value the current dialects can support.
-            // The resulting column type is dialect dependant.
             return WithLength(int.MaxValue);
         }
     }
