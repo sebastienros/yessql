@@ -397,8 +397,18 @@ namespace YesSql.Services
 
         private void Bind(Type tIndex)
         {
-            if (_queryState.GetBindings().Contains(tIndex))
+            var bindings = _queryState.GetBindings();
+            var bindingIndex = bindings.IndexOf(tIndex);
+            if (bindingIndex != -1)
             {
+                // When a binding is reused it should be last to be correctly applied to a filter predicate.
+                if (bindingIndex != bindings.Count -1)
+                {
+                    var binding = bindings[bindingIndex];
+                    bindings.RemoveAt(bindingIndex);
+                    bindings.Insert(bindings.Count, binding);
+                }
+
                 return;
             }
 
