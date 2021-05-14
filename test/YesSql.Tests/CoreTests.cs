@@ -2040,6 +2040,49 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task JoinOrderShouldNotMatter()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Age = 1
+                };
+
+                var steve = new Person
+                {
+                    Firstname = "Steve",
+                    Age = 2
+                };
+
+                var paul = new Person
+                {
+                    Firstname = "Scott",
+                    Age = 2
+                };
+
+                session.Save(bill);
+                session.Save(steve);
+                session.Save(paul);
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal("Steve", (await session.Query().For<Person>()
+                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
+                    .With<PersonByAge>(x => x.Age == 2)
+                    .With<PersonByName>(x => x.SomeName.EndsWith("e"))
+                    .FirstOrDefaultAsync()).Firstname);
+            }
+        }
+
+        [Fact]
         public async Task LoadingDocumentShouldNotDuplicateIndex()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
