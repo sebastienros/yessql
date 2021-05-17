@@ -71,7 +71,7 @@ namespace YesSql.Filters.Abstractions.Nodes
             => $"({Left.ToNormalizedString()} OR {Right.ToNormalizedString()})";
 
         public override string ToString()
-            => $"{Left.ToString()} {Value} {Right.ToString()}";
+            => String.IsNullOrWhiteSpace(Value) ? $"{Left.ToString()} {Right.ToString()}" : $"{Left.ToString()} {Value} {Right.ToString()}";
     }
 
     public class AndNode : OperatorNode
