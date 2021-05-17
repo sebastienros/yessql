@@ -30,7 +30,7 @@ namespace YesSql.Services
 
         public string _bindingName = "a1";
         public Dictionary<string, List<Type>> _bindings = new Dictionary<string, List<Type>>();
-        public readonly string _documentTable;
+        public string _documentTable;
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;
         public List<Action<object, ISqlBuilder>> _parameterBindings;
@@ -56,6 +56,11 @@ namespace YesSql.Services
 
                 _predicate = null;
             }
+        }
+        public void SetCurrentCollection(string collection)
+        {
+            _collection = collection;
+            _documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(collection);
         }
 
         public string GetTableAlias(string tableName)
@@ -1039,8 +1044,13 @@ namespace YesSql.Services
             }
         }
 
-        IQuery<T> IQuery.For<T>(bool filterType)
+        IQuery<T> IQuery.For<T>(bool filterType, string collection)
         {
+            if (collection != null)
+            {
+                _collection = collection;
+                _queryState.SetCurrentCollection(collection);
+            }
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(Document));
 
@@ -1056,8 +1066,13 @@ namespace YesSql.Services
             return new Query<T>(this);
         }
 
-        IQueryIndex<TIndex> IQuery.ForIndex<TIndex>()
+        IQueryIndex<TIndex> IQuery.ForIndex<TIndex>(string collection)
         {
+            if (collection != null)
+            {
+                _collection = collection;
+                _queryState.SetCurrentCollection(collection);
+            }
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(TIndex));
             _queryState._sqlBuilder.Select();
