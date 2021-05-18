@@ -262,6 +262,26 @@ namespace YesSql.Tests.Filters
             Assert.Equal("name:steve name:bill", parser.Parse("name:steve name:bill").ToNormalizedString());
         }
 
+        [Theory]
+        [InlineData("extrachar:age-asc")]
+        [InlineData("extrachar:age-desc")]
+        [InlineData("extrachar:2020-01-01..2020-10-10")]
+        [InlineData("extrachar:>ten")]
+        [InlineData("extrachar:<100")]
+        [InlineData("extrachar:<=100")]
+        [InlineData("extrachar:100*")]
+        [InlineData("extrachar:100+")]
+        public void ShouldIncludeExtraChars(string search)
+        {
+            var parser = new QueryEngineBuilder<Person>()
+                .WithNamedTerm("extrachar", b => b.OneCondition(PersonOneConditionQuery()))
+                .Build();
+
+            var result = parser.Parse(search);
+
+            Assert.Equal(search, result.ToString());
+        } 
+
         private static Func<string, IQuery<Person>, IQuery<Person>> PersonOneConditionQuery()
         {
             return (val, query) => query.With<PersonByName>(x => x.SomeName.Contains(val));
