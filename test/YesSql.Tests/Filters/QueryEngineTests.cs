@@ -236,6 +236,19 @@ namespace YesSql.Tests.Filters
             Assert.Equal(normalized, result.ToNormalizedString());
         }
 
+        [Theory]
+        [InlineData("title:bill steve")]
+        public void ShouldNotIncludeExtraWhitespace(string search)
+        {
+            var parser = new QueryEngineBuilder<Article>()
+                .WithNamedTerm("title", b => b.ManyCondition(ArticleManyMatch(), ArticleManyNotMatch()))
+                .Build();
+
+            var result = parser.Parse(search);
+
+            Assert.Equal(search, result.ToString());
+        }        
+
         [Fact]
         public void ShouldIgnoreMultipleNamedTerms()
         {
