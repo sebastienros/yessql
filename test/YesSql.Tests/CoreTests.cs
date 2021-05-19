@@ -4408,7 +4408,7 @@ namespace YesSql.Tests
                 result = await connection.QueryFirstOrDefaultAsync<string>(sql);
             }
             //we are getting rid of unnecessary JSON formatting
-            Assert.Equal(expected, result.Replace(": ", ":").Replace(", ", ","));
+            Assert.Equal(expected, result.Replace(": ", ":").Replace(" :", ":").Replace(", ", ",").Replace("{ ", "{").Replace(" }", "}"));
         }
 
         [Fact]
