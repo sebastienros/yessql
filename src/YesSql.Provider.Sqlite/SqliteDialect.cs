@@ -91,6 +91,9 @@ namespace YesSql.Provider.Sqlite
             Methods.Add("month", new TemplateFunction("cast(strftime('%m', {0}) as int)"));
             Methods.Add("year", new TemplateFunction("cast(strftime('%Y', {0}) as int)"));
             Methods.Add("now", new TemplateFunction("DATETIME('now')"));
+
+            Methods.Add("JSON_VALUE", new TemplateFunction("json_extract({0}, {1})"));
+            Methods.Add("JSON_MODIFY", new TemplateFunction("json_set({0}, {1}, {2})"));
         }
 
         public override string Name => "Sqlite";

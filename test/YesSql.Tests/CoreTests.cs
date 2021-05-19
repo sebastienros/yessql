@@ -4372,6 +4372,45 @@ namespace YesSql.Tests
             Assert.Equal(10, publishedInThePastResult);
         }
 
+        [Theory]
+        [InlineData("JSON_VALUE", "'{ \"a\" : 1, \"b\" : 2 }'", "'$.b'", "2")]
+        [InlineData("JSON_VALUE", "'{ \"a\" : { \"b\" : { \"c\" : 3 } } }'", "'$.a.b.c'", "3")]
+        [InlineData("JSON_VALUE", "'{ \"a\" : { \"b\" : [{ \"c\" : 1 }, { \"c\" : 2 }, { \"c\" : 3 }] } }'", "'$.a.b[2].c'", "3")]
+        public async Task SqlJsonValueFunction(string method, string json, string jsonPathExpression, string expected)
+        {
+            string result;
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+                var dialect = _store.Configuration.SqlDialect;
+                var sql = "SELECT " + dialect.RenderMethod(method, json, jsonPathExpression);
+                result = await connection.QueryFirstOrDefaultAsync<string>(sql);
+            }
+
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("JSON_MODIFY", "'{\"a\":1,\"b\":2}'", "'$.b'", "3", "{\"a\":1,\"b\":3}")]
+        [InlineData("JSON_MODIFY", "'{ \"a\" : { \"b\" : { \"c\" : 3 } } }'", "'$.a.b.c'", "4", "{\"a\":{\"b\":{\"c\":4}}}")]
+        [InlineData("JSON_MODIFY", "'{ \"a\" : { \"b\" : [{ \"c\" : 1 }, { \"c\" : 2 }, { \"c\" : 3 }] } }'", "'$.a.b[2].c'", "5", "{\"a\":{\"b\":[{\"c\":1},{\"c\":2},{\"c\":5}]}}")]
+        public async Task SqlJsonModifyFunction(string method, string json, string jsonPathExpression, string newValue, string expected)
+        {
+            string result;
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                var dialect = _store.Configuration.SqlDialect;
+                var sql = "SELECT " + dialect.RenderMethod(method, json, jsonPathExpression, newValue);
+                result = await connection.QueryFirstOrDefaultAsync<string>(sql);
+            }
+            //we are getting rid of unnecessary JSON formatting
+            Assert.Equal(expected, result.Replace(": ", ":").Replace(", ", ","));
+        }
+
         [Fact]
         public virtual async Task CanUseStaticMethodsInLinqQueries()
         {
