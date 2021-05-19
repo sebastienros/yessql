@@ -91,7 +91,7 @@ namespace YesSql
         /// </summary>
         /// <remarks>
         /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync"/>
-        /// must per called before disposing the <see cref="ISession"/>
+        /// must be called before disposing the <see cref="ISession"/>
         /// </remarks>
         Task SaveChangesAsync();
 
