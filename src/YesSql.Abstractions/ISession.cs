@@ -87,12 +87,11 @@ namespace YesSql
         Task FlushAsync();
 
         /// <summary>
-        /// Flushes any changes, commits the transaction, and disposes it.
+        /// Flushes any changes, commits the transaction, and disposes the transaction.
         /// </summary>
         /// <remarks>
-        /// Sessions are automatically committed when disposed, however calling <see cref="SaveChangesAsync"/>
-        /// is recommended before the session is disposed to prevent it from being called on a non-async
-        /// code path.
+        /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync"/>
+        /// must per called before disposing the <see cref="ISession"/>
         /// </remarks>
         Task SaveChangesAsync();
 
