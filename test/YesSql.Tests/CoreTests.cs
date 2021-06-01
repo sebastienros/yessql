@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,6 +17,7 @@ using YesSql.Services;
 using YesSql.Sql;
 using YesSql.Tests.Commands;
 using YesSql.Tests.CompiledQueries;
+using YesSql.Tests.Filters;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
@@ -6625,6 +6627,86 @@ namespace YesSql.Tests
                 Assert.Equal("Blog by paul about chickens", (await filterQuery.FirstOrDefaultAsync()).Title);
             }
         }
+
+        [Fact]
+        public async Task ShouldParseDateComplexQuery()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var beachLizardsArticle = new Article
+                {
+                    Title = "On the beach in the sand we found lizards",
+                    PublishedUtc = DateTime.UtcNow.AddDays(-2)
+                };
+
+                var sandcastlesArticle = new Article
+                {
+                    Title = "On the beach in the sand we built sandcastles",
+                    PublishedUtc = DateTime.UtcNow.AddDays(-2)
+                };
+
+                var mountainArticle = new Article
+                {
+                    Title = "On the mountain it snowed at the lake",
+                    PublishedUtc = DateTime.UtcNow
+                };
+
+                session.Save(beachLizardsArticle);
+                session.Save(sandcastlesArticle);
+                session.Save(mountainArticle);
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                // var filter = "title:article title:article";
+                // var filterQuery = session.Query<Article>();
+
+                // var parser = new QueryEngineBuilder<Article>()
+                //     .WithNamedTerm("title", b => b
+                //         .OneCondition((val, query) => query.With<ArticleByPublishedDate>(x => x.Title.Contains(val)))
+                //         .AllowMultiple()
+                //     )
+                //     .Build();
+
+                // var parsed = parser.Parse(filter);
+
+                // await parsed.ExecuteAsync(filterQuery);
+
+                var expression = new UnaryExpressionNode(new NowNode { Operator = ">"});
+
+                var param = Expression.Parameter(typeof(ArticleByPublishedDate));
+                var field = Expression.Property(param, "PublishedDateTime");
+
+                var constant  = Expression.Constant(DateTime.UtcNow.AddDays(-1), typeof(DateTime));
+
+                var body  = Expression.GreaterThanOrEqual(field, constant);
+
+
+
+                var lamba = Expression.Lambda<Func<ArticleByPublishedDate, bool>>(body, param);
+
+                var yesSqlQuery2 = session.Query().For<Article>()
+                    .With<ArticleByPublishedDate>(lamba);
+
+                // Normal YesSql query
+                Assert.Equal(1, await yesSqlQuery2.CountAsync());
+
+                var yesSqlQuery = session.Query().For<Article>()
+                    .With<ArticleByPublishedDate>(x => x.PublishedDateTime > DateTime.UtcNow.AddDays(-1));
+
+                // Normal YesSql query
+                Assert.Equal(1, await yesSqlQuery.CountAsync());
+
+
+
+            }
+        }
+
+
         #endregion
     }
 }
