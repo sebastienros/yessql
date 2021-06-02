@@ -6662,35 +6662,26 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                // var filter = "title:article title:article";
-                // var filterQuery = session.Query<Article>();
 
-                // var parser = new QueryEngineBuilder<Article>()
-                //     .WithNamedTerm("title", b => b
-                //         .OneCondition((val, query) => query.With<ArticleByPublishedDate>(x => x.Title.Contains(val)))
-                //         .AllowMultiple()
-                //     )
-                //     .Build();
-
-                // var parsed = parser.Parse(filter);
-
-                // await parsed.ExecuteAsync(filterQuery);
-
-                var expression = new UnaryExpressionNode(new NowNode { Operator = ">"});
+                var expression = new UnaryExpressionNode(new NowNode(-1) { Operator = ">"});
 
                 var param = Expression.Parameter(typeof(ArticleByPublishedDate));
-                var field = Expression.Property(param, "PublishedDateTime");
+                MemberExpression field = Expression.Property(param, "PublishedDateTime");
 
-                var constant  = Expression.Constant(DateTime.UtcNow.AddDays(-1), typeof(DateTime));
+                // var constant  = Expression.Constant(DateTime.UtcNow.AddDays(-1), typeof(DateTime));
 
-                var body  = Expression.GreaterThanOrEqual(field, constant);
+                // Expression body  = Expression.GreaterThanOrEqual(field, constant);
 
+                // var lamba = Expression.Lambda<Func<ArticleByPublishedDate, bool>>(body, param);
 
+                var context = new BuildExpressionContext(DateTime.UtcNow, param, field, typeof(Func<ArticleByPublishedDate, bool>));
 
-                var lamba = Expression.Lambda<Func<ArticleByPublishedDate, bool>>(body, param);
+                var builtLambda = expression.BuildExpression(context);
+
+                var casted = (Expression<Func<ArticleByPublishedDate, bool>>)builtLambda;
 
                 var yesSqlQuery2 = session.Query().For<Article>()
-                    .With<ArticleByPublishedDate>(lamba);
+                    .With<ArticleByPublishedDate>(casted);
 
                 // Normal YesSql query
                 Assert.Equal(1, await yesSqlQuery2.CountAsync());
@@ -6700,11 +6691,77 @@ namespace YesSql.Tests
 
                 // Normal YesSql query
                 Assert.Equal(1, await yesSqlQuery.CountAsync());
-
-
-
             }
         }
+
+
+        [Fact]
+        public async Task ShouldParseDateComplexQueryBinary()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var beachLizardsArticle = new Article
+                {
+                    Title = "On the beach in the sand we found lizards",
+                    PublishedUtc = DateTime.UtcNow.AddDays(-2)
+                };
+
+                var sandcastlesArticle = new Article
+                {
+                    Title = "On the beach in the sand we built sandcastles",
+                    PublishedUtc = DateTime.UtcNow.AddDays(-2)
+                };
+
+                var mountainArticle = new Article
+                {
+                    Title = "On the mountain it snowed at the lake",
+                    PublishedUtc = DateTime.UtcNow
+                };
+
+                session.Save(beachLizardsArticle);
+                session.Save(sandcastlesArticle);
+                session.Save(mountainArticle);
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+
+                // var expression = new UnaryExpressionNode(new NowNode { Operator = ">", Arithmetic = -1});
+
+                var expression = new BinaryExpressionNode(new DateNode(DateTime.UtcNow.AddDays(-1)), new DateNode(DateTime.UtcNow));
+
+                var param = Expression.Parameter(typeof(ArticleByPublishedDate));
+                MemberExpression field = Expression.Property(param, "PublishedDateTime");
+
+                // var constant  = Expression.Constant(DateTime.UtcNow.AddDays(-1), typeof(DateTime));
+
+                // Expression body  = Expression.GreaterThanOrEqual(field, constant);
+
+                // var lamba = Expression.Lambda<Func<ArticleByPublishedDate, bool>>(body, param);
+
+                var context = new BuildExpressionContext(DateTime.UtcNow, param, field, typeof(Func<ArticleByPublishedDate, bool>));
+
+                var builtLambda = expression.BuildExpression(context);
+
+                var casted = (Expression<Func<ArticleByPublishedDate, bool>>)builtLambda;
+
+                var yesSqlQuery2 = session.Query().For<Article>()
+                    .With<ArticleByPublishedDate>(casted);
+
+                // Normal YesSql query
+                Assert.Equal(1, await yesSqlQuery2.CountAsync());
+
+                var yesSqlQuery = session.Query().For<Article>()
+                    .With<ArticleByPublishedDate>(x => x.PublishedDateTime > DateTime.UtcNow.AddDays(-1));
+
+                // Normal YesSql query
+                Assert.Equal(1, await yesSqlQuery.CountAsync());
+            }
+        }        
 
 
         #endregion
