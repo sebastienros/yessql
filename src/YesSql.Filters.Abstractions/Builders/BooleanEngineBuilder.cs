@@ -43,14 +43,14 @@ namespace YesSql.Filters.Abstractions.Builders
 
             var GroupNode = Between(Terms.Char('('), OperatorNode, Terms.Char(')'))
                 .Then<OperatorNode>(static node => new GroupNode(node));
-            
+
             var Breaks = OneOf(Terms.Pattern(static x => x == ':' || x == '(' || x == ')'), Literals.WhiteSpace());
 
             var SingleNode = Terms.String() // A term name is never enclosed in strings.
                 .Or(
                     // This must be aborted when it is consuming the next term.
                     SkipWhiteSpace(AnyCharBefore(Breaks).AndSkip(Not(Literals.Char(':'))))
-                )                    
+                )
                     .Then<OperatorNode>(static (node) => new UnaryNode(node.ToString()));
 
             var Primary = SingleNode.Or(GroupNode);
