@@ -57,15 +57,15 @@ namespace YesSql.Tests.Filters
 
     public class DateNode : OperatorNode
     {
-        public DateNode(DateTime dateTime)
+        public DateNode(DateTimeOffset dateTime)
         {
             DateTime = dateTime;
         }
 
-        public DateTime DateTime { get; }
+        public DateTimeOffset DateTime { get; }
 
         public override Expression BuildExpression(BuildExpressionContext context)
-            => BuildOperation(context, Expression.Constant(DateTime, typeof(DateTime)));
+            => BuildOperation(context, Expression.Constant(DateTime.UtcDateTime, typeof(DateTime)));
 
         public override string ToString()
             => $"{(String.IsNullOrEmpty(Operator) ? String.Empty : Operator)}{DateTime.ToString("o")}";
@@ -131,11 +131,11 @@ namespace YesSql.Tests.Filters
             => $"{Left.ToString()}..{Right.ToString()}";
     }
 
-    public static class DateParser
+    public static class DateTimeParser
     {
         public static Parser<ExpressionNode> Parser;
 
-        static DateParser()
+        static DateTimeParser()
         {
             var operators = OneOf(Literals.Text(">"), Literals.Text(">="), Literals.Text("<"), Literals.Text("<="));
 
@@ -153,18 +153,20 @@ namespace YesSql.Tests.Filters
                     return new NowNode();
                 });
 
-            var dateParser = Terms.Pattern(x => Character.IsHexDigit(x) || x == '-' || x == ':' || x == '+')
+            var dateParser = AnyCharBefore(range)
                 .Then<OperatorNode>((context, x) =>
                 {
-                    if (DateTimeOffset.TryParse(x.ToString(), out var dt))
+                    if (DateTimeOffset.TryParse(x.ToString(), out var dateTimeOffset))
                     {
-                        return new DateNode(dt.UtcDateTime);
+                        return new DateNode(dateTimeOffset);
                     }
 
                     throw new ParseException("Could not parse date", context.Scanner.Cursor.Position);
                 });
 
-            var rangeParser = OneOf(nowparser, dateParser)
+            var valueParser = OneOf(nowparser, dateParser);
+
+            var rangeParser = valueParser
                 .And(ZeroOrOne(range.SkipAnd(OneOf(nowparser, dateParser))))
                 .Then<ExpressionNode>(x =>
                 {
@@ -179,7 +181,7 @@ namespace YesSql.Tests.Filters
                     }
                 });
 
-            Parser = operators.And(nowparser.Or(dateParser))
+            Parser = operators.And(valueParser)
                     .Then<ExpressionNode>(x =>
                     {
                         x.Item2.Operator = x.Item1;
@@ -197,13 +199,14 @@ namespace YesSql.Tests.Filters
         [InlineData("@now-2..@now-1", "@now-2..@now-1")]
         [InlineData("@now+2", "@now2")]
         [InlineData(">@now", ">@now")]
-        [InlineData("2019-10-12", "2019-10-11T23:00:00.0000000Z")]
-        [InlineData("2019-10-12..2019-10-12", "2019-10-11T23:00:00.0000000Z..2019-10-11T23:00:00.0000000Z")]
-        [InlineData(">2019-10-12", ">2019-10-11T23:00:00.0000000Z")]
-        [InlineData("2017-01-01T01:00:00+07:00..2017-02-01T01:00:00+07:00", "2017-01-01T00:00:00.0000000Z..2017-02-01T01:00:00+07:00")]
+        [InlineData("2019-10-12", "2019-10-12T00:00:00.0000000+01:00")]
+        [InlineData("2019-10-12..2019-10-12", "2019-10-12T00:00:00.0000000+01:00..2019-10-12T00:00:00.0000000+01:00")]
+        [InlineData(">2019-10-12", ">2019-10-12T00:00:00.0000000+01:00")]
+        [InlineData("2017-01-01T01:00:00+07:00", "2017-01-01T01:00:00.0000000+07:00")]
+        [InlineData("2017-01-01T01:00:00+07:00..2017-01-01T01:00:00+07:00", "2017-01-01T01:00:00.0000000+07:00..2017-01-01T01:00:00.0000000+07:00")]
         public void DateParserTests(string text, string expected)
         {
-            var result = DateParser.Parser.Parse(text);
+            var result = DateTimeParser.Parser.Parse(text);
             Assert.Equal(expected, result.ToString());
         }
     }
