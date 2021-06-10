@@ -6,7 +6,7 @@
         <LangVersion>9.0</LangVersion>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Dapper.StrongName" Version="2.0.78" />
+        <PackageReference Include="Dapper.StrongName" Version="2.0.90" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
     </ItemGroup>
