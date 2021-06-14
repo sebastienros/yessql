@@ -781,7 +781,7 @@ namespace YesSql
             // holds the queries, parameters and actions returned by an IIndexCommand, until we know we can
             // add it to a batch if it fits the limits (page size and parameters boundaries)
             var localDbCommand = _connection.CreateCommand();
-            var localQueries = new List<string>();
+            var localQueries = new List<string>(); 
             var localActions = new List<Action<DbDataReader>>();
 
             var batch = new BatchCommand(_connection.CreateCommand());

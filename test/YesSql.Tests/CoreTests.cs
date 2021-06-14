@@ -4155,6 +4155,8 @@ namespace YesSql.Tests
                 Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
 
                 Assert.Equal(2, await session.Query("Col1").For<Person>().With<PersonByNameCol>().Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
+                Assert.Equal(2, await session.Query().For<Person>(collection:"Col1").With<PersonByNameCol>().Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
+                Assert.Equal(2, await session.Query("Col2").For<Person>(collection: "Col1").With<PersonByNameCol>().Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
 
             }
         }
