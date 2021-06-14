@@ -22,7 +22,7 @@ namespace YesSql.Tests.Filters
         }
 
         [Fact]
-        public void ShouldParseTermWithChars()
+        public void ShouldParseTermWithLocalizedChars()
         {
             var parser = new QueryEngineBuilder<Person>()
                 .WithNamedTerm("name", b => b.OneCondition(PersonOneConditionQuery()))
