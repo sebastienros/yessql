@@ -46,12 +46,18 @@ namespace YesSql.Filters.Abstractions.Builders
 
             var Breaks = OneOf(Terms.Pattern(static x => x == ':' || x == '(' || x == ')'), Literals.WhiteSpace());
 
-            var SingleNode = Terms.String() // A term name is never enclosed in strings.
-                .Or(
-                    // This must be aborted when it is consuming the next term.
-                    SkipWhiteSpace(AnyCharBefore(Breaks).AndSkip(Not(Literals.Char(':'))))
-                )
-                    .Then<OperatorNode>(static (node) => new UnaryNode(node.ToString()));
+            // A term name is never enclosed in strings.
+            var DoubleQuotedNode = Terms.String(StringLiteralQuotes.Double)
+                .Then<OperatorNode>(static (node) => new UnaryNode(node.ToString(), OperateNodeQuotes.Double));
+
+            var SingleQuotedNode = Terms.String(StringLiteralQuotes.Single)
+                .Then<OperatorNode>(static (node) => new UnaryNode(node.ToString(), OperateNodeQuotes.Single));
+
+            // This must be aborted when it is consuming the next term.
+            var UnquotedNode = SkipWhiteSpace(AnyCharBefore(Breaks).AndSkip(Not(Literals.Char(':'))))
+                .Then<OperatorNode>(static (node) => new UnaryNode(node.ToString(), OperateNodeQuotes.None));
+
+            var SingleNode = OneOf(DoubleQuotedNode, SingleQuotedNode, UnquotedNode);
 
             var Primary = SingleNode.Or(GroupNode);
 
@@ -61,7 +67,7 @@ namespace YesSql.Filters.Abstractions.Builders
                     // mutate with the neg query.
                     var unaryNode = node.Item2 as UnaryNode;
 
-                    return new NotUnaryNode(node.Item1, new UnaryNode(unaryNode.Value, false));
+                    return new NotUnaryNode(node.Item1, new UnaryNode(unaryNode.Value, unaryNode.Quotes, false));
                 })
                 .Or(Primary);
 
@@ -83,7 +89,7 @@ namespace YesSql.Filters.Abstractions.Builders
                .Then<OperatorNode>(static (node) =>
                {
                    static NotNode CreateNotNode(OperatorNode result, (string, OperatorNode) op)
-                       => new NotNode(result, new UnaryNode(((UnaryNode)op.Item2).Value, false), op.Item1);
+                       => new NotNode(result, new UnaryNode(((UnaryNode)op.Item2).Value, ((UnaryNode)op.Item2).Quotes, false), op.Item1);
 
                    static OrNode CreateOrNode(OperatorNode result, (string, OperatorNode) op)
                        => new OrNode(result, op.Item2, op.Item1);

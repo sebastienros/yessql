@@ -1,49 +1,84 @@
 {
-	"version": "0.1.0",
+	"version": "2.0.0",
   	"linux": { "command": "sh", "args": ["-c"] },
   	"osx": { "command": "sh", "args": ["-c"] },
-  	"windows": { "command": "cmd", "args": ["/C"] },
-	"isShellCommand": true,
-	"showOutput": "always",
-	"suppressTaskName": true,
+	"windows": {
+		"command": "cmd",
+		"args": [
+			"/C"
+		]
+	},
 	"tasks": [
 		{
-			"taskName": "Dotnet Restore",
-			"args": [ "dotnet restore" ]
+			"label": "Dotnet Restore",
+			"type": "shell",
+			"args": [
+				"dotnet restore"
+			],
+			"problemMatcher": []
 		},
 		{
-			"taskName": "Dotnet Force Restore",
-			"args": [ "dotnet restore --no-cache" ]
+			"label": "Dotnet Force Restore",
+			"type": "shell",
+			"args": [
+				"dotnet restore --no-cache"
+			],
+			"problemMatcher": []
 		},
 		{
-			"taskName": "Dotnet Rebuild Debug",
-			"args": [ "dotnet build ${workspaceRoot}/samples/YesSql.Samples.Hi --no-incremental -c Debug" ],
+			"label": "Dotnet Rebuild Debug",
+			"type": "shell",
+			"args": [
+				"dotnet build ${workspaceRoot}/samples/YesSql.Samples.Hi --no-incremental -c Debug"
+			],
 			"problemMatcher": "$msCompile"
 		},
 		{
-			"taskName": "Dotnet Build Debug",
-			"args": [ "dotnet build ${workspaceRoot}/samples/YesSql.Samples.Hi -c Debug" ],
-			"isBuildCommand": true,
+			"label": "Dotnet Build Debug",
+			"type": "shell",
+			"args": [
+				"dotnet build ${workspaceRoot}/samples/YesSql.Samples.Hi -c Debug"
+			],
+			"problemMatcher": "$msCompile",
+			"group": {
+				"_id": "build",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "Dotnet Build Release",
+			"type": "shell",
+			"args": [
+				"dotnet build ${workspaceRoot}/samples/YesSql.Samples.Hi -c Release"
+			],
 			"problemMatcher": "$msCompile"
 		},
 		{
-			"taskName": "Dotnet Build Release",
-			"args": [ "dotnet build ${workspaceRoot}/samples/YesSql.Samples.Hi -c Release" ],
-			"problemMatcher": "$msCompile"
+			"label": "Dotnet Run",
+			"type": "shell",
+			"args": [
+				"cd ${workspaceRoot}/samples/YesSql.Samples.Hi & dotnet run"
+			],
+			"problemMatcher": []
 		},
 		{
-			"taskName": "Dotnet Run",
-			"args": [ "cd ${workspaceRoot}/samples/YesSql.Samples.Hi & dotnet run" ]
+			"label": "Dotnet Build Web Debug",
+			"type": "shell",
+			"args": [
+				"dotnet build ${workspaceRoot}/samples/YesSql.Samples.Web -c Debug"
+			],
+			"problemMatcher": "$msCompile",
+			"group": {
+				"_id": "build",
+				"isDefault": false
+			}
 		},
 		{
-			"taskName": "Dotnet Build Web Debug",
-			"args": [ "dotnet build ${workspaceRoot}/samples/YesSql.Samples.Web -c Debug" ],
-			"isBuildCommand": true,
-			"problemMatcher": "$msCompile"
-		},
-		{
-			"taskName": "Gulp Build",
-			"args": [ "gulp build" ],
+			"label": "Gulp Build",
+			"type": "shell",
+			"args": [
+				"gulp build"
+			],
 			"problemMatcher": "$gulp-tsc"
 		}
 	]

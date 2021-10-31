@@ -7,13 +7,13 @@ namespace YesSql.Filters.Abstractions.Builders
 {
     public abstract class UnaryEngineBuilder<T, TTermOption> : OperatorEngineBuilder<T, TTermOption> where TTermOption : TermOption
     {
+        private static readonly Parser<OperatorNode> _parser = OneOf(
+                Terms.String(StringLiteralQuotes.Double).Then<OperatorNode>(static (node) => new UnaryNode(node.ToString(), OperateNodeQuotes.Double)),
+                Terms.String(StringLiteralQuotes.Single).Then<OperatorNode>(static (node) => new UnaryNode(node.ToString(), OperateNodeQuotes.Single)),
+                Terms.NonWhiteSpace().Then<OperatorNode>(static (node) => new UnaryNode(node.ToString(), OperateNodeQuotes.None))
+            );
+
         protected TTermOption _termOption;
-        private static Parser<OperatorNode> _parser
-            => Terms.String()
-                .Or(
-                    Terms.NonWhiteSpace()
-                )
-                    .Then<OperatorNode>(static (node) => new UnaryNode(node.ToString()));
 
         public UnaryEngineBuilder(TTermOption termOption)
         {
@@ -26,7 +26,7 @@ namespace YesSql.Filters.Abstractions.Builders
 
             return this;
         }
-        
+
         public UnaryEngineBuilder<T, TTermOption> AlwaysRun()
         {
             _termOption.AlwaysRun = true;
