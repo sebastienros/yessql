@@ -33,7 +33,7 @@ namespace YesSql.Filters.Query
         /// </summary>
         public QueryUnaryEngineBuilder<T> MapFrom<TModel>(Func<TModel, (bool, string)> map)
         {
-            Func<string, string, TermNode> factory = (name, value) => new NamedTermNode(name, new UnaryNode(value));
+            Func<string, string, TermNode> factory = (name, value) => new NamedTermNode(name, new UnaryNode(value, OperateNodeQuotes.None));
 
             return MapFrom(map, factory);
         }
