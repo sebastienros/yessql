@@ -68,11 +68,21 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
 
-    - name: Test - Sqlite net5.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net5.0
+    - name: Test - Sqlite NOT POOLED NOT SHARED net5.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteNonPooledNonSharedTests --no-restore --no-build --framework net5.0
+      continue-on-error: true
 
-    - name: Test - Sqlite net5.0
+    - name: Test - Sqlite POOLED NOT SHARED net5.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqlitePooledNonSharedTests --no-restore --no-build --framework net5.0
+      continue-on-error: true
+
+    - name: Test - Sqlite NOT POOLED SHARED net5.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net5.0
+      continue-on-error: true
+
+    - name: Test - Sqlite POOLED SHARED net5.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqlitePooledTests --no-restore --no-build --framework net5.0
+      continue-on-error: true
 
     #- name: Test - Sqlite netcoreapp2.1
     #  run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework netcoreapp2.1

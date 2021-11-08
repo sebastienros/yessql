@@ -51,17 +51,15 @@ namespace YesSql.Tests
                 {
                     if (_configuration == null)
                     {
-                        var configuration = CreateConfiguration();
+                        _configuration = CreateConfiguration();
 
-                        CleanDatabase(configuration, false);
+                        CleanDatabase(_configuration, false);
 
-                        _store = await StoreFactory.CreateAndInitializeAsync(configuration);
+                        _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                         await _store.InitializeCollectionAsync("Col1");
                         _store.TypeNames[typeof(Person)] = "People";
 
-                        CreateTables(configuration);
-
-                        _configuration = configuration;
+                        CreateTables(_configuration);
                     }
                 }
                 finally
