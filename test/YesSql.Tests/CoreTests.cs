@@ -23,6 +23,8 @@ namespace YesSql.Tests
 {
     public abstract class CoreTests : IAsyncLifetime
     {
+        private static SemaphoreSlim _synLock = new SemaphoreSlim(1);
+
         protected virtual string TablePrefix => "tp";
 
         protected virtual string DecimalColumnDefinitionFormatString => "DECIMAL({0},{1})";
@@ -44,15 +46,28 @@ namespace YesSql.Tests
             // Create the tables only once
             if (_configuration == null)
             {
-                _configuration = CreateConfiguration();
+                await _synLock.WaitAsync();
+                try
+                {
+                    if (_configuration == null)
+                    {
+                        var configuration = CreateConfiguration();
 
-                CleanDatabase(_configuration, false);
+                        CleanDatabase(configuration, false);
 
-                _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
-                await _store.InitializeCollectionAsync("Col1");
-                _store.TypeNames[typeof(Person)] = "People";
+                        _store = await StoreFactory.CreateAndInitializeAsync(configuration);
+                        await _store.InitializeCollectionAsync("Col1");
+                        _store.TypeNames[typeof(Person)] = "People";
 
-                CreateTables(_configuration);
+                        CreateTables(configuration);
+
+                        _configuration = configuration;
+                    }
+                }
+                finally
+                {
+                    _synLock.Release();
+                }
             }
             else
             {

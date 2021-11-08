@@ -55,10 +55,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
-    - name: Setup dotnet 2.1
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 2.1.*
+    #- name: Setup dotnet 2.1
+    #  uses: actions/setup-dotnet@v1
+    #  with:
+    #    dotnet-version: 2.1.*
 
     - name: Setup dotnet 5.0
       uses: actions/setup-dotnet@v1
@@ -71,14 +71,17 @@ jobs:
     - name: Test - Sqlite net5.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net5.0
 
-    - name: Test - Sqlite netcoreapp2.1
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework netcoreapp2.1
+    - name: Test - Sqlite net5.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqlitePooledTests --no-restore --no-build --framework net5.0
 
-    - name: Test - PostgresQL
-      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net5.0
+    #- name: Test - Sqlite netcoreapp2.1
+    #  run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework netcoreapp2.1
+
+    #- name: Test - PostgresQL
+    #  run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net5.0
     
-    - name: Test - MySQL
-      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net5.0
+    #- name: Test - MySQL
+    #  run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net5.0
 
-    - name: Test - SQL Server 2019
-      run: dotnet test --configuration release --filter yessql.tests.sqlserver2019tests --no-restore --no-build --framework net5.0
+    #- name: Test - SQL Server 2019
+    #  run: dotnet test --configuration release --filter yessql.tests.sqlserver2019tests --no-restore --no-build --framework net5.0

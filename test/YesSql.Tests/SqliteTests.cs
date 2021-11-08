@@ -1,5 +1,3 @@
-using System.Data.Common;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -26,7 +24,7 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             _tempFolder = new TemporaryFolder();
-            var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
+            var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared;Pooling=False";
 
             return new Configuration()
                 .UseSqLite(connectionString)
