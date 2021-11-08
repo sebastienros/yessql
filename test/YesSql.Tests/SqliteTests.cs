@@ -41,6 +41,12 @@ namespace YesSql.Tests
             return base.ShouldReadCommittedRecords();
         }
 
+        [Fact(Skip = "Breaks other tests if can't finish during delay")]
+        public override Task ShouldGateQuery()
+        {
+            return base.ShouldGateQuery();
+        }
+
         [Fact(Skip = "Sqlite doesn't support concurrent writers")]
         public override Task ShouldReadUncommittedRecords()
         {
