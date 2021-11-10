@@ -1,8 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
-    <PropertyGroup>
-        <TargetFrameworks>netstandard2.0</TargetFrameworks>
-        <VersionPrefix>1.0.0</VersionPrefix>
-    </PropertyGroup>
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>

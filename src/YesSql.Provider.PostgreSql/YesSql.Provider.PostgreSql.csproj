@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
-    <PropertyGroup>
-        <TargetFrameworks>netstandard2.0</TargetFrameworks>
-        <VersionPrefix>1.0.0</VersionPrefix>
-    </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Npgsql" Version="5.0.10" />
+        <PackageReference Include="Npgsql" Version="6.0.0" />
     </ItemGroup>
 </Project>

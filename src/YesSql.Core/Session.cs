@@ -598,13 +598,18 @@ namespace YesSql
 
             if (!_store.CompiledQueries.TryGetValue(discriminator, out var queryState))
             {
-                var localQuery = ((IQuery)new DefaultQuery(this, _tablePrefix, collection)).For<T>(false);
-                var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
-                queryState = defaultQuery._query._queryState;
+                lock (_store.CompiledQueries)
+                {
+                    if (!_store.CompiledQueries.TryGetValue(discriminator, out queryState))
+                    {
 
-                // Don't use Add as two thread could concurrently reach this point.
-                // We don't mind losing some values as the next call will restore it if it's not cached.
-                _store.CompiledQueries = _store.CompiledQueries.SetItem(discriminator, queryState);
+                        var localQuery = ((IQuery)new DefaultQuery(this, _tablePrefix, collection)).For<T>(false);
+                        var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
+                        queryState = defaultQuery._query._queryState;
+
+                        _store.CompiledQueries[discriminator] = queryState;
+                    }
+                } 
             }
 
             queryState = queryState.Clone();
@@ -1213,20 +1218,24 @@ namespace YesSql
         {
             if (!_store.GroupMethods.TryGetValue(descriptor.Type, out var result))
             {
-                // IIndex i => i
-                var instance = Expression.Parameter(typeof(IIndex), "i");
-                // i => ((TIndex)i)
-                var convertInstance = Expression.Convert(instance, descriptor.GroupKey.DeclaringType);
-                // i => ((TIndex)i).{Property}
-                var property = Expression.Property(convertInstance, descriptor.GroupKey);
-                // i => (object)(((TIndex)i).{Property})
-                var convert = Expression.Convert(property, typeof(object));
+                lock (_store.GroupMethods)
+                {
+                    if (!_store.GroupMethods.TryGetValue(descriptor.Type, out result))
+                    {
+                        // IIndex i => i
+                        var instance = Expression.Parameter(typeof(IIndex), "i");
+                        // i => ((TIndex)i)
+                        var convertInstance = Expression.Convert(instance, descriptor.GroupKey.DeclaringType);
+                        // i => ((TIndex)i).{Property}
+                        var property = Expression.Property(convertInstance, descriptor.GroupKey);
+                        // i => (object)(((TIndex)i).{Property})
+                        var convert = Expression.Convert(property, typeof(object));
 
-                result = Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
+                        result = Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
 
-                // Don't use Add as two thread could concurrently reach this point.
-                // We don't mind losing some values as the next call will restore it if it's not cached.
-                _store.GroupMethods = _store.GroupMethods.SetItem(descriptor.Type, result);
+                        _store.GroupMethods[descriptor.Type] = result;
+                    }
+                }
             }
 
             return result;

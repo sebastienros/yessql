@@ -3,8 +3,7 @@
     <PropertyGroup>
         <Copyright>Sebastien Ros</Copyright>
         <Authors>Sebastien Ros</Authors>
-        <VersionSuffix>beta</VersionSuffix>
-        <VersionSuffix Condition="'$(VersionSuffix)'!='' AND '$(BuildNumber)' != ''">$(VersionSuffix)-$(BuildNumber)</VersionSuffix>
+        <TargetFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <DebugType>portable</DebugType>
         <PackageProjectUrl>https://github.com/sebastienros/yessql</PackageProjectUrl>
@@ -20,6 +19,11 @@
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../YesSqlKey.snk</AssemblyOriginatorKeyFile>
         <IsPackable>true</IsPackable>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <LangVersion>latest</LangVersion>
+        <RootNamespace>YesSql</RootNamespace>
+        <NoWarn>$(NoWarn);1591</NoWarn>
         
         <!-- Sourcelink -->
         <PublishRepositoryUrl>true</PublishRepositoryUrl>

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -24,26 +23,19 @@ namespace YesSql
         public ISqlDialect Dialect { get; private set; }
         public ITypeService TypeNames { get; private set; }
 
-        internal ImmutableDictionary<Type, Func<IIndex, object>> GroupMethods =
-            ImmutableDictionary<Type, Func<IIndex, object>>.Empty;
+        internal Dictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
-        internal ImmutableDictionary<string, IEnumerable<IndexDescriptor>> Descriptors =
-            ImmutableDictionary<string, IEnumerable<IndexDescriptor>>.Empty;
+        internal Dictionary<string, IEnumerable<IndexDescriptor>> Descriptors = new();
 
-        internal ImmutableDictionary<Type, IAccessor<int>> IdAccessors =
-            ImmutableDictionary<Type, IAccessor<int>>.Empty;
+        internal Dictionary<Type, IAccessor<int>> IdAccessors = new();
 
-        internal ImmutableDictionary<Type, IAccessor<int>> VersionAccessors =
-            ImmutableDictionary<Type, IAccessor<int>>.Empty;
+        internal Dictionary<Type, IAccessor<int>> VersionAccessors = new();
 
-        internal ImmutableDictionary<Type, Func<IDescriptor>> DescriptorActivators =
-            ImmutableDictionary<Type, Func<IDescriptor>>.Empty;
+        internal Dictionary<Type, Func<IDescriptor>> DescriptorActivators = new();
 
-        internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers =
-            new ConcurrentDictionary<WorkerQueryKey, Task<object>>();
+        internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers = new();
 
-        internal ImmutableDictionary<long, QueryState> CompiledQueries =
-            ImmutableDictionary<long, QueryState>.Empty;
+        internal Dictionary<long, QueryState> CompiledQueries = new();
 
         internal const int SmallBufferSize = 128;
         internal const int MediumBufferSize = 512;
@@ -259,9 +251,15 @@ namespace YesSql
         {
             if (!IdAccessors.TryGetValue(tContainer, out var result))
             {
-                result = Configuration.IdentifierAccessorFactory.CreateAccessor<int>(tContainer);
+                lock (IdAccessors)
+                {
+                    if (!IdAccessors.TryGetValue(tContainer, out result))
+                    {
+                        result = Configuration.IdentifierAccessorFactory.CreateAccessor<int>(tContainer);
 
-                IdAccessors = IdAccessors.SetItem(tContainer, result);
+                        IdAccessors[tContainer] = result;
+                    }
+                }
             }
 
             return result;
@@ -271,9 +269,15 @@ namespace YesSql
         {
             if (!VersionAccessors.TryGetValue(tContainer, out var result))
             {
-                result = Configuration.VersionAccessorFactory.CreateAccessor<int>(tContainer);
+                lock (VersionAccessors)
+                {
+                    if (!VersionAccessors.TryGetValue(tContainer, out result))
+                    {
+                        result = Configuration.VersionAccessorFactory.CreateAccessor<int>(tContainer);
 
-                VersionAccessors = VersionAccessors.SetItem(tContainer, result);
+                        VersionAccessors[tContainer] = result;
+                    }
+                }
             }
 
             return result;
@@ -296,11 +300,15 @@ namespace YesSql
 
             if (!Descriptors.TryGetValue(cacheKey, out var result))
             {
-                result = CreateDescriptors(target, collection, Indexes);
+                lock (Descriptors)
+                {
+                    if (!Descriptors.TryGetValue(cacheKey, out result))
+                    {
+                        result = CreateDescriptors(target, collection, Indexes);
 
-                // Don't use Add as two thread could concurrently reach this point.
-                // We don't mind losing some values as the next call will restore it if it's not cached.
-                Descriptors = Descriptors.SetItem(cacheKey, result);
+                        Descriptors[cacheKey] = result;
+                    }
+                }
             }
 
             return result;
@@ -310,9 +318,15 @@ namespace YesSql
         {
             if (!DescriptorActivators.TryGetValue(target, out var activator))
             {
-                activator = MakeDescriptorActivator(target);
+                lock (DescriptorActivators)
+                {
+                    if (!DescriptorActivators.TryGetValue(target, out activator))
+                    {
+                        activator = MakeDescriptorActivator(target);
 
-                DescriptorActivators = DescriptorActivators.SetItem(target, activator);
+                        DescriptorActivators[target] = activator;
+                    }
+                }
             }
 
             var context = activator();

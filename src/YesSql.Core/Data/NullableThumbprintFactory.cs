@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Threading;
 
 namespace YesSql.Data
@@ -12,19 +11,18 @@ namespace YesSql.Data
     /// </summary>
     internal class NullableThumbprintFactory
     {
-        private static ImmutableDictionary<Type, NullableThumbprintBuilder> _discriminatorFactories = ImmutableDictionary<Type, NullableThumbprintBuilder>.Empty;
+        private static Dictionary<Type, NullableThumbprintBuilder> _discriminatorFactories = new();
 
         internal static NullableThumbprintBuilder GetNullableThumbprintBuilder(Type type)
         {
             if (!_discriminatorFactories.TryGetValue(type, out var nullDiscriminatorBuilder))
             {
-                // double lock to prevent too much reflection when the type is built
                 lock (_discriminatorFactories)
                 {
                     if (!_discriminatorFactories.TryGetValue(type, out nullDiscriminatorBuilder))
                     {
                         nullDiscriminatorBuilder = new NullableThumbprintBuilder(type);
-                        _discriminatorFactories = _discriminatorFactories.SetItem(type, nullDiscriminatorBuilder);
+                        _discriminatorFactories[type] = nullDiscriminatorBuilder;
                     }
                 }
             }
