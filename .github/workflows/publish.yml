@@ -47,11 +47,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
-    - name: Setup dotnet 2.1
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 2.1.*
-
     - name: Setup .NET 6.0
       uses: actions/setup-dotnet@v1
       with:
@@ -60,19 +55,16 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
 
-    - name: Test - Sqlite net6.0
+    - name: Test - Sqlite .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net6.0
 
-    - name: Test - Sqlite netcoreapp2.1
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework netcoreapp2.1
-
-    - name: Test - PostgresQL
+    - name: Test - PostgresQL .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net6.0
     
-    - name: Test - MySQL
+    - name: Test - MySQL .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net6.0
 
-    - name: Test - SQL Server 2019
+    - name: Test - SQL Server 2019 .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net6.0
 
     - name: Pack

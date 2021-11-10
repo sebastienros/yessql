@@ -17,7 +17,7 @@ namespace YesSql.Provider.PostgreSql
             {DbType.Time, "time"},
             {DbType.DateTime, "timestamp" },
             {DbType.DateTime2, "timestamp" },
-            {DbType.DateTimeOffset, "timestamp" },
+            {DbType.DateTimeOffset, "timestamptz" },
             {DbType.Boolean, "boolean"},
             {DbType.Byte, "int2"},
             {DbType.SByte, "int2"},
@@ -58,7 +58,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double), DbType.Double },
                 { typeof(decimal), DbType.Decimal },
                 { typeof(DateTime), DbType.DateTime },
-                { typeof(DateTimeOffset), DbType.DateTime }, // stored as UTC datetime
+                { typeof(DateTimeOffset), DbType.DateTimeOffset },
                 { typeof(Guid), DbType.Guid },
                 { typeof(TimeSpan), DbType.Int64 }, // stored as ticks
 
@@ -77,7 +77,7 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(double?), DbType.Double },
                 { typeof(decimal?), DbType.Decimal },
                 { typeof(DateTime?), DbType.DateTime },
-                { typeof(DateTimeOffset?), DbType.DateTime },
+                { typeof(DateTimeOffset?), DbType.DateTimeOffset },
                 { typeof(Guid?), DbType.Guid },
                 { typeof(TimeSpan?), DbType.Int64 }
             };
@@ -86,6 +86,13 @@ namespace YesSql.Provider.PostgreSql
         public PostgreSqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+
+            // DateTimes needs to be stored as Utc in timesstamp fields since npgsql 6.0.
+            // Can represents a Date & Time without TZ. Utc is forced by keeps the original date and time values.
+            AddTypeHandler<DateTime, DateTime>(x => x.Kind != DateTimeKind.Utc ? new DateTime(x.Ticks, DateTimeKind.Utc) : x);
+
+            // DateTimeOffset are stored as Utc DateTimes in timesstamptz fields
+            // Represents a moment in time
             AddTypeHandler<DateTimeOffset, DateTime>(x => x.UtcDateTime);
 
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
