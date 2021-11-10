@@ -19,7 +19,6 @@
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../YesSqlKey.snk</AssemblyOriginatorKeyFile>
         <IsPackable>true</IsPackable>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <LangVersion>latest</LangVersion>
         <RootNamespace>YesSql</RootNamespace>
