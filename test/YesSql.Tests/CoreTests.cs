@@ -65,7 +65,7 @@ namespace YesSql.Tests
             ClearTables(_configuration);
         }
 
-        public Task DisposeAsync()
+        public virtual Task DisposeAsync()
         {
             return Task.CompletedTask;
         }
@@ -74,47 +74,43 @@ namespace YesSql.Tests
         protected virtual void CleanDatabase(IConfiguration configuration, bool throwOnError)
         {
             // Remove existing tables
-            using (var connection = configuration.ConnectionFactory.CreateConnection())
-            {
-                connection.Open();
+            using var connection = configuration.ConnectionFactory.CreateConnection();
+            connection.Open();
 
-                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(configuration, transaction, throwOnError);
+            using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+            var builder = new SchemaBuilder(configuration, transaction, throwOnError);
 
-                    builder.DropReduceIndexTable<ArticlesByDay>();
-                    builder.DropReduceIndexTable<AttachmentByDay>();
-                    builder.DropMapIndexTable<ArticleByPublishedDate>();
-                    builder.DropMapIndexTable<PersonByName>();
-                    builder.DropMapIndexTable<CarIndex>();
-                    builder.DropMapIndexTable<PersonByNameCol>();
-                    builder.DropMapIndexTable<PersonIdentity>();
-                    builder.DropMapIndexTable<EmailByAttachment>();
-                    builder.DropMapIndexTable<TypesIndex>();
+            builder.DropReduceIndexTable<ArticlesByDay>();
+            builder.DropReduceIndexTable<AttachmentByDay>();
+            builder.DropMapIndexTable<ArticleByPublishedDate>();
+            builder.DropMapIndexTable<PersonByName>();
+            builder.DropMapIndexTable<CarIndex>();
+            builder.DropMapIndexTable<PersonByNameCol>();
+            builder.DropMapIndexTable<PersonIdentity>();
+            builder.DropMapIndexTable<EmailByAttachment>();
+            builder.DropMapIndexTable<TypesIndex>();
 
-                    builder.DropMapIndexTable<ShapeIndex>();
-                    builder.DropMapIndexTable<PersonByAge>();
-                    builder.DropMapIndexTable<PersonByNullableAge>();
-                    builder.DropMapIndexTable<Binary>();
-                    builder.DropMapIndexTable<PublishedArticle>();
-                    builder.DropMapIndexTable<PropertyIndex>();
-                    builder.DropReduceIndexTable<UserByRoleNameIndex>();
+            builder.DropMapIndexTable<ShapeIndex>();
+            builder.DropMapIndexTable<PersonByAge>();
+            builder.DropMapIndexTable<PersonByNullableAge>();
+            builder.DropMapIndexTable<Binary>();
+            builder.DropMapIndexTable<PublishedArticle>();
+            builder.DropMapIndexTable<PropertyIndex>();
+            builder.DropReduceIndexTable<UserByRoleNameIndex>();
 
-                    builder.DropMapIndexTable<PersonByName>("Col1");
-                    builder.DropMapIndexTable<PersonByNameCol>("Col1");
-                    builder.DropMapIndexTable<PersonByBothNamesCol>("Col1");
-                    builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
+            builder.DropMapIndexTable<PersonByName>("Col1");
+            builder.DropMapIndexTable<PersonByNameCol>("Col1");
+            builder.DropMapIndexTable<PersonByBothNamesCol>("Col1");
+            builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
 
-                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Col1"));
-                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
+            builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Col1"));
+            builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
 
-                    builder.DropTable(DbBlockIdGenerator.TableName);
+            builder.DropTable(DbBlockIdGenerator.TableName);
 
-                    OnCleanDatabase(builder, transaction);
+            OnCleanDatabase(builder, transaction);
 
-                    transaction.Commit();
-                }
-            }
+            transaction.Commit();
         }
 
         protected virtual void ClearTables(IConfiguration configuration)
@@ -209,145 +205,141 @@ namespace YesSql.Tests
 
         public void CreateTables(IConfiguration configuration)
         {
-            using (var connection = configuration.ConnectionFactory.CreateConnection())
-            {
-                connection.Open();
+            using var connection = configuration.ConnectionFactory.CreateConnection();
+            connection.Open();
 
-                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(configuration, transaction);
+            using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+            var builder = new SchemaBuilder(configuration, transaction);
 
-                    builder.CreateReduceIndexTable<ArticlesByDay>(column => column
-                            .Column<int>(nameof(ArticlesByDay.Count))
-                            .Column<int>(nameof(ArticlesByDay.DayOfYear))
-                        );
-                    builder.CreateReduceIndexTable<AttachmentByDay>(column => column
-                            .Column<int>(nameof(AttachmentByDay.Count))
-                            .Column<int>(nameof(AttachmentByDay.Date))
-                        );
+            builder.CreateReduceIndexTable<ArticlesByDay>(column => column
+                    .Column<int>(nameof(ArticlesByDay.Count))
+                    .Column<int>(nameof(ArticlesByDay.DayOfYear))
+                );
+            builder.CreateReduceIndexTable<AttachmentByDay>(column => column
+                    .Column<int>(nameof(AttachmentByDay.Count))
+                    .Column<int>(nameof(AttachmentByDay.Date))
+                );
 
-                    builder.CreateReduceIndexTable<UserByRoleNameIndex>(column => column
-                            .Column<int>(nameof(UserByRoleNameIndex.Count))
-                            .Column<string>(nameof(UserByRoleNameIndex.RoleName))
-                        );
+            builder.CreateReduceIndexTable<UserByRoleNameIndex>(column => column
+                    .Column<int>(nameof(UserByRoleNameIndex.Count))
+                    .Column<string>(nameof(UserByRoleNameIndex.RoleName))
+                );
 
-                    builder.CreateMapIndexTable<ArticleByPublishedDate>(column => column
-                            .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                            .Column<string>(nameof(ArticleByPublishedDate.Title))
-                        );
+            builder.CreateMapIndexTable<ArticleByPublishedDate>(column => column
+                    .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
+                    .Column<string>(nameof(ArticleByPublishedDate.Title))
+                );
 
-                    builder.CreateMapIndexTable<PersonByName>(column => column
-                            .Column<string>(nameof(PersonByName.SomeName))
-                        );
+            builder.CreateMapIndexTable<PersonByName>(column => column
+                    .Column<string>(nameof(PersonByName.SomeName))
+                );
 
-                    builder.CreateMapIndexTable<CarIndex>(column => column
-                            .Column<string>(nameof(CarIndex.Name))
-                            .Column<Categories>(nameof(CarIndex.Category))
-                        );
+            builder.CreateMapIndexTable<CarIndex>(column => column
+                    .Column<string>(nameof(CarIndex.Name))
+                    .Column<Categories>(nameof(CarIndex.Category))
+                );
 
-                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
-                            .Column<string>(nameof(PersonByNameCol.Name))
-                            );
-
-                    builder.CreateMapIndexTable<PersonIdentity>(column => column
-                            .Column<string>(nameof(PersonIdentity.Identity))
-                        );
-
-                    builder.CreateMapIndexTable<PersonByAge>(column => column
-                            .Column<int>(nameof(PersonByAge.Age))
-                            .Column<bool>(nameof(PersonByAge.Adult))
-                            .Column<string>(nameof(PersonByAge.Name))
-                        );
-
-                    builder.CreateMapIndexTable<ShapeIndex>(column => column
-                            .Column<string>(nameof(ShapeIndex.Name))
-                        );
-
-                    builder.CreateMapIndexTable<PersonByNullableAge>(column => column
-                            .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
-                        );
-
-                    builder.CreateMapIndexTable<PublishedArticle>(column => { });
-
-                    builder.CreateMapIndexTable<EmailByAttachment>(column => column
-                            .Column<DateTime>(nameof(EmailByAttachment.Date))
-                            .Column<string>(nameof(EmailByAttachment.AttachmentName))
-                        );
-
-                    builder.CreateMapIndexTable<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+            builder.CreateMapIndexTable<PersonByNameCol>(column => column
+                    .Column<string>(nameof(PersonByNameCol.Name))
                     );
 
-                    builder.CreateMapIndexTable<Binary>(column => column
-                            .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
-                            .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
-                            .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
-                            .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
-                        );
+            builder.CreateMapIndexTable<PersonIdentity>(column => column
+                    .Column<string>(nameof(PersonIdentity.Identity))
+                );
 
-                    builder.CreateMapIndexTable<TypesIndex>(column => column
-                            .Column<bool>(nameof(TypesIndex.ValueBool))
-                            //.Column<char>(nameof(TypesIndex.ValueChar))
-                            .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
-                            .Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
-                            .Column<decimal>(nameof(TypesIndex.ValueDecimal))
-                            .Column<double>(nameof(TypesIndex.ValueDouble))
-                            .Column<float>(nameof(TypesIndex.ValueFloat))
-                            .Column<Guid>(nameof(TypesIndex.ValueGuid))
-                            .Column<int>(nameof(TypesIndex.ValueInt))
-                            .Column<long>(nameof(TypesIndex.ValueLong))
-                            //.Column<sbyte>(nameof(TypesIndex.ValueSByte))
-                            .Column<short>(nameof(TypesIndex.ValueShort))
-                            .Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
-                            //.Column<uint>(nameof(TypesIndex.ValueUInt))
-                            //.Column<ulong>(nameof(TypesIndex.ValueULong))
-                            //.Column<ushort>(nameof(TypesIndex.ValueUShort))
-                            .Column<bool?>(nameof(TypesIndex.NullableBool), c => c.Nullable())
-                            //.Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
-                            .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
-                            .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
-                            .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
-                            .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
-                            .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
-                            .Column<Guid?>(nameof(TypesIndex.NullableGuid), c => c.Nullable())
-                            .Column<int?>(nameof(TypesIndex.NullableInt), c => c.Nullable())
-                            .Column<long?>(nameof(TypesIndex.NullableLong), c => c.Nullable())
-                            //.Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
-                            .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
-                            .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
-                        //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
-                        //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
-                        //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
-                        );
+            builder.CreateMapIndexTable<PersonByAge>(column => column
+                    .Column<int>(nameof(PersonByAge.Age))
+                    .Column<bool>(nameof(PersonByAge.Adult))
+                    .Column<string>(nameof(PersonByAge.Name))
+                );
 
-                    builder.CreateMapIndexTable<PersonByName>(column => column
-                            .Column<string>(nameof(PersonByName.SomeName)),
-                            "Col1"
-                            );
+            builder.CreateMapIndexTable<ShapeIndex>(column => column
+                    .Column<string>(nameof(ShapeIndex.Name))
+                );
 
-                    builder.CreateMapIndexTable<PersonByNameCol>(column => column
-                            .Column<string>(nameof(PersonByNameCol.Name)),
-                            "Col1"
-                            );
+            builder.CreateMapIndexTable<PersonByNullableAge>(column => column
+                    .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
+                );
 
-                    builder.CreateMapIndexTable<PersonByBothNamesCol>(column => column
-                            .Column<string>(nameof(PersonByBothNamesCol.Firstname))
-                            .Column<string>(nameof(PersonByBothNamesCol.Lastname)),
-                            "Col1"
-                            );
+            builder.CreateMapIndexTable<PublishedArticle>(column => { });
 
-                    builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
-                            .Column<string>(nameof(PersonsByNameCol.Name))
-                            .Column<int>(nameof(PersonsByNameCol.Count)),
-                            "Col1"
-                            );
+            builder.CreateMapIndexTable<EmailByAttachment>(column => column
+                    .Column<DateTime>(nameof(EmailByAttachment.Date))
+                    .Column<string>(nameof(EmailByAttachment.AttachmentName))
+                );
 
-                    transaction.Commit();
-                }
-            }
+            builder.CreateMapIndexTable<PropertyIndex>(column => column
+                .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
+                .Column<bool>(nameof(PropertyIndex.ForRent))
+                .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+            );
+
+            builder.CreateMapIndexTable<Binary>(column => column
+                    .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
+                    .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
+                    .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
+                    .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
+                );
+
+            builder.CreateMapIndexTable<TypesIndex>(column => column
+                    .Column<bool>(nameof(TypesIndex.ValueBool))
+                    //.Column<char>(nameof(TypesIndex.ValueChar))
+                    .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
+                    .Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
+                    .Column<decimal>(nameof(TypesIndex.ValueDecimal))
+                    .Column<double>(nameof(TypesIndex.ValueDouble))
+                    .Column<float>(nameof(TypesIndex.ValueFloat))
+                    .Column<Guid>(nameof(TypesIndex.ValueGuid))
+                    .Column<int>(nameof(TypesIndex.ValueInt))
+                    .Column<long>(nameof(TypesIndex.ValueLong))
+                    //.Column<sbyte>(nameof(TypesIndex.ValueSByte))
+                    .Column<short>(nameof(TypesIndex.ValueShort))
+                    .Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
+                    //.Column<uint>(nameof(TypesIndex.ValueUInt))
+                    //.Column<ulong>(nameof(TypesIndex.ValueULong))
+                    //.Column<ushort>(nameof(TypesIndex.ValueUShort))
+                    .Column<bool?>(nameof(TypesIndex.NullableBool), c => c.Nullable())
+                    //.Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
+                    .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
+                    .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
+                    .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
+                    .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
+                    .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
+                    .Column<Guid?>(nameof(TypesIndex.NullableGuid), c => c.Nullable())
+                    .Column<int?>(nameof(TypesIndex.NullableInt), c => c.Nullable())
+                    .Column<long?>(nameof(TypesIndex.NullableLong), c => c.Nullable())
+                    //.Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
+                    .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
+                    .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
+                //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
+                //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
+                //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
+                );
+
+            builder.CreateMapIndexTable<PersonByName>(column => column
+                    .Column<string>(nameof(PersonByName.SomeName)),
+                    "Col1"
+                    );
+
+            builder.CreateMapIndexTable<PersonByNameCol>(column => column
+                    .Column<string>(nameof(PersonByNameCol.Name)),
+                    "Col1"
+                    );
+
+            builder.CreateMapIndexTable<PersonByBothNamesCol>(column => column
+                    .Column<string>(nameof(PersonByBothNamesCol.Firstname))
+                    .Column<string>(nameof(PersonByBothNamesCol.Lastname)),
+                    "Col1"
+                    );
+
+            builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
+                    .Column<string>(nameof(PersonsByNameCol.Name))
+                    .Column<int>(nameof(PersonsByNameCol.Count)),
+                    "Col1"
+                    );
+
+            transaction.Commit();
         }
 
         [Fact]
@@ -4500,9 +4492,11 @@ namespace YesSql.Tests
 
             var swGated = new Stopwatch();
             var swNonGated = new Stopwatch();
+            var gatedCounter = 0;
+            var nonGatedCounter = 0;
 
             var concurrency = 16;
-            var MaxTransactions = int.MaxValue;
+            var MaxTransactions = 50000;
 
             var counter = 0;
             var stopping = false;
@@ -4522,21 +4516,22 @@ namespace YesSql.Tests
                 }
             })).ToList();
 
-            tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
-
-            await Task.WhenAny(tasks);
+            await Task.Delay(TimeSpan.FromSeconds(3));
 
             // Flushing tasks
             stopping = true;
+
             await Task.WhenAll(tasks);
+
             stopping = false;
             counter = 0;
 
             // Gated queries
 
+            swGated.Restart();
+
             tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
-                swGated.Start();
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
                     using (var session = _store.CreateSession())
@@ -4546,24 +4541,17 @@ namespace YesSql.Tests
                         await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                     }
                 }
+
+                gatedCounter = counter;
                 swGated.Stop();
             })).ToList();
 
-            await Task.WhenAny(tasks.Append(Task.Delay(TimeSpan.FromSeconds(3))));
-
-            var gatedCounter = counter;
+            await Task.Delay(TimeSpan.FromSeconds(3));
 
             // Flushing tasks
             stopping = true;
 
-            var delay = Task.Delay(TimeSpan.FromSeconds(10));
-
             await Task.WhenAll(tasks);
-
-            if (delay.IsCompleted)
-            {
-                Assert.True(false, "Gated threads didn't finish in time");
-            }
 
             stopping = false;
             counter = 0;
@@ -4572,9 +4560,10 @@ namespace YesSql.Tests
 
             _store.Configuration.DisableQueryGating();
 
+            swNonGated.Restart();
+
             tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
-                swNonGated.Start();
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
                     using (var session = _store.CreateSession())
@@ -4584,24 +4573,17 @@ namespace YesSql.Tests
                         await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                     }
                 }
+
+                nonGatedCounter = counter;
                 swNonGated.Stop();
             })).ToList();
 
-            await Task.WhenAny(tasks.Append(Task.Delay(TimeSpan.FromSeconds(3))));
-
-            var nonGatedCounter = counter;
-
-            delay = Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(3));
 
             // Flushing tasks
             stopping = true;
-            await Task.WhenAny(tasks.Append(delay));
-            stopping = false;
 
-            if (delay.IsCompleted)
-            {
-                Assert.True(false, "Non-gated threads didn't finish in time");
-            }
+            await Task.WhenAll(tasks);
 
             var previousColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -5936,11 +5918,12 @@ namespace YesSql.Tests
             {
                 // Ensure that query builing is also converting constants
                 var index = await session.QueryIndex<TypesIndex>(x =>
-                x.ValueBool == false
-                && x.ValueDateTime == new DateTime(2021, 1, 20)
-                && x.ValueDateTimeOffset == new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0))
-                && x.ValueTimeSpan == new TimeSpan(1, 2, 3, 4, 5)
-                && x.ValueGuid == Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e")).FirstOrDefaultAsync();
+                    x.ValueBool == false
+                    && x.ValueDateTime == new DateTime(2021, 1, 20)
+                    && x.ValueDateTimeOffset == new DateTimeOffset(new DateTime(2021, 1, 20), new TimeSpan(1, 2, 0))
+                    && x.ValueTimeSpan == new TimeSpan(1, 2, 3, 4, 5)
+                    && x.ValueGuid == Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e")
+                ).FirstOrDefaultAsync();
 
                 Assert.Equal(valueDateTime, index.ValueDateTime);
                 Assert.Equal(valueGuid, index.ValueGuid);

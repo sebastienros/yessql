@@ -40,7 +40,10 @@
 				"dotnet build ${workspaceRoot}/samples/YesSql.Samples.Hi -c Debug"
 			],
 			"problemMatcher": "$msCompile",
-			"group": "build"
+			"group": {
+				"_id": "build",
+				"isDefault": false
+			}
 		},
 		{
 			"label": "Dotnet Build Release",
@@ -65,7 +68,10 @@
 				"dotnet build ${workspaceRoot}/samples/YesSql.Samples.Web -c Debug"
 			],
 			"problemMatcher": "$msCompile",
-			"group": "build"
+			"group": {
+				"_id": "build",
+				"isDefault": false
+			}
 		},
 		{
 			"label": "Gulp Build",

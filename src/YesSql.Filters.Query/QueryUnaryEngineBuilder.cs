@@ -33,7 +33,7 @@ namespace YesSql.Filters.Query
         /// </summary>
         public QueryUnaryEngineBuilder<T> MapFrom<TModel>(Func<TModel, (bool, string)> map)
         {
-            Func<string, string, TermNode> factory = (name, value) => new NamedTermNode(name, new UnaryNode(value));
+            static TermNode factory(string name, string value) => new NamedTermNode(name, new UnaryNode(value, OperateNodeQuotes.None));
 
             return MapFrom(map, factory);
         }
@@ -42,16 +42,16 @@ namespace YesSql.Filters.Query
         /// Adds a mapping function where terms can be mapped from a model.
         /// <typeparam name="TModel">The type of model.</typeparam>
         /// <param name="map">Mapping to apply</param>
-        /// <param name="factory">Factory to create a <see cref="TermNode" when adding a mapping</param>
+        /// <param name="factory">Factory to create a <see cref="TermNode" /> when adding a mapping</param>
         /// </summary>
         public QueryUnaryEngineBuilder<T> MapFrom<TModel>(Func<TModel, (bool, string)> map, Func<string, string, TermNode> factory)
         {
             Action<QueryFilterResult<T>, string, TermOption, TModel> mapFrom = (QueryFilterResult<T> terms, string name, TermOption termOption, TModel model) =>
             {
-                (bool shouldMap, string value) mapResult = map(model);
-                if (mapResult.shouldMap)
+                (var shouldMap, var value) = map(model);
+                if (shouldMap)
                 {
-                    var node = termOption.MapFromFactory(name, mapResult.value);
+                    var node = termOption.MapFromFactory(name, value);
                     terms.TryAddOrReplace(node);
                 }                
                 else

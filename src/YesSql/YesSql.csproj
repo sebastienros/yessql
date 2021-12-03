@@ -1,16 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
-    <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
-    <ProjectReference Include="..\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
-    <ProjectReference Include="..\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
-    <ProjectReference Include="..\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
-    <ProjectReference Include="..\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
-  </ItemGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
+        <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
+        <ProjectReference Include="..\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
+        <ProjectReference Include="..\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
+        <ProjectReference Include="..\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
+        <ProjectReference Include="..\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
+    </ItemGroup>
 
 </Project>

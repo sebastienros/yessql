@@ -7,6 +7,9 @@ using YesSql.Sql;
 
 namespace YesSql.Provider
 {
+    /// <summary>
+    /// Used to create custom dialects.
+    /// </summary>
     public abstract class BaseDialect : ISqlDialect
     {
         public readonly Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
