@@ -101,7 +101,7 @@ namespace YesSql.Commands
             {
                 var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
-                var columnList = dialect.QuoteForTableName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
+                var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
 
                 parameter = command.CreateParameter();
                 parameter.ParameterName = $"Id_{index}";
