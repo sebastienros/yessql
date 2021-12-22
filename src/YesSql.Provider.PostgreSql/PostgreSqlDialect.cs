@@ -9,6 +9,8 @@ namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {
+        public const string DefaultSchema = "public";
+
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "uuid"},
@@ -114,8 +116,6 @@ namespace YesSql.Provider.PostgreSql
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
         public string Schema { get; set; }
-        
-        public const string DefaultSchema = "public";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
@@ -221,10 +221,17 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + columnName + QuoteString;
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, bool IncludeSchema = false)
         {
-            var schema = Schema ?? DefaultSchema;
-            return QuoteString + schema + QuoteString + "." + QuoteString + tableName + QuoteString;
+            var result = QuoteString + tableName + QuoteString;
+
+            if (IncludeSchema)
+            {
+                var schema = Schema ?? DefaultSchema;
+                result = QuoteString + schema + QuoteString + "." + result;
+            }
+
+            return result;
         }
 
         public override string CascadeConstraintsString => " cascade ";

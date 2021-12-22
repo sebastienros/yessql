@@ -123,7 +123,7 @@ namespace YesSql
         /// <summary>
         /// Returns the quoted table name.
         /// </summary>
-        string QuoteForTableName(string v);
+        string QuoteForTableName(string v, bool schema = false);
 
         /// <summary>
         /// Gets the DROP TABLE SQL statement.

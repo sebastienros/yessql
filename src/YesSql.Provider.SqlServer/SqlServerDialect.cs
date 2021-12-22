@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.Text;
 using YesSql.Sql;
-using YesSql.Utils;
 
 namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
+        public const string DefaultSchema = "dbo";
+
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "UNIQUEIDENTIFIER"},
@@ -102,15 +102,10 @@ namespace YesSql.Provider.SqlServer
         public override string Name => "SqlServer";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
         public override string IdentityLastId => "SCOPE_IDENTITY()";
-
         public override string RandomOrderByClause => "newid()";
-
         public override byte DefaultDecimalPrecision => 19;
-
         public override byte DefaultDecimalScale => 5;
-
         public string Schema { get; set; }
-        public const string DefaultSchema = "dbo";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
@@ -209,10 +204,17 @@ namespace YesSql.Provider.SqlServer
             return "[" + columnName + "]";
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, bool IncludeSchema = false)
         {
-            var schema = Schema ?? DefaultSchema;
-            return "[" + schema + "].[" + tableName + "]";
+            var result = "[" + tableName + "]";
+
+            if (IncludeSchema)
+            {
+                var schema = Schema ?? DefaultSchema;
+                result = "[" + schema + "]." + result;
+            }
+
+            return result;
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
