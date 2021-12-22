@@ -109,6 +109,8 @@ namespace YesSql.Provider.SqlServer
 
         public override byte DefaultDecimalScale => 5;
 
+        public string DefaultSchema => "dbo";
+
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
@@ -208,7 +210,7 @@ namespace YesSql.Provider.SqlServer
 
         public override string QuoteForTableName(string tableName)
         {
-            return "[" + tableName + "]";
+            return "[" + DefaultSchema + "." + tableName + "]";
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)

@@ -113,6 +113,7 @@ namespace YesSql.Provider.PostgreSql
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
+        public string DefaultSchema => "dbo";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
@@ -220,7 +221,7 @@ namespace YesSql.Provider.PostgreSql
 
         public override string QuoteForTableName(string tableName)
         {
-            return QuoteString + tableName + QuoteString;
+            return QuoteString + DefaultSchema + "." + tableName + QuoteString;
         }
 
         public override string CascadeConstraintsString => " cascade ";
