@@ -84,8 +84,13 @@ namespace YesSql.Provider.SqlServer
             };
         }
 
-        public SqlServerDialect()
+        public SqlServerDialect(string schema)
         {
+            if (!String.IsNullOrWhiteSpace(schema))
+            { 
+                Schema = schema;
+            }
+
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
 
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));

@@ -6,17 +6,21 @@ namespace YesSql.Provider.PostgreSql
 {
     public static class PostgreSqlDbProviderOptionsExtensions
     {
+        private const string DefaultSchema = "public";
+
         public static IConfiguration UsePostgreSql(
             this IConfiguration configuration,
-            string connectionString)
+            string connectionString,
+            string schema = DefaultSchema)
         {
-            return UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            return UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
         }
 
         public static IConfiguration UsePostgreSql(
             this IConfiguration configuration,
             string connectionString,
-            IsolationLevel isolationLevel)
+            IsolationLevel isolationLevel,
+            string schema = DefaultSchema)
         {
             if (configuration == null)
             {
@@ -28,7 +32,7 @@ namespace YesSql.Provider.PostgreSql
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration.SqlDialect = new PostgreSqlDialect();
+            configuration.SqlDialect = new PostgreSqlDialect(schema);
             configuration.CommandInterpreter = new PostgreSqlCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<NpgsqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;

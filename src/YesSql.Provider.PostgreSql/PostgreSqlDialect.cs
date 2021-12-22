@@ -85,8 +85,13 @@ namespace YesSql.Provider.PostgreSql
             };
         }
 
-        public PostgreSqlDialect()
+        public PostgreSqlDialect(string schema)
         {
+            if (!String.IsNullOrWhiteSpace(schema))
+            {
+                Schema = schema;
+            }
+
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
 
             // DateTimes needs to be stored as Utc in timesstamp fields since npgsql 6.0.
