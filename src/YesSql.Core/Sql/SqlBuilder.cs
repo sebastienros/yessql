@@ -48,12 +48,12 @@ namespace YesSql.Sql
         public void Table(string table, string alias = null)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            FromSegments.Add(_dialect.QuoteForColumnName(_tablePrefix + table));
 
             if (!String.IsNullOrEmpty(alias))
             {
                 FromSegments.Add(" AS ");
-                FromSegments.Add(_dialect.QuoteForTableName(alias));
+                FromSegments.Add(_dialect.QuoteForColumnName(alias));
             }
         }
 
@@ -93,14 +93,14 @@ namespace YesSql.Sql
             }
             
             JoinSegments.Add(" INNER JOIN ");
-            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            JoinSegments.Add(_dialect.QuoteForColumnName(_tablePrefix + table));
             if (!String.IsNullOrEmpty(alias))
             {
-                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
+                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForColumnName(alias) });
             }
             JoinSegments.AddRange(new[] {
-                " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
+                " ON ", _dialect.QuoteForColumnName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
+                " = ", _dialect.QuoteForColumnName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
                 }
             );            
         }
@@ -160,7 +160,7 @@ namespace YesSql.Sql
                 table = _tablePrefix + table;
             }
 
-            return _dialect.QuoteForTableName(table) + "." + column;
+            return _dialect.QuoteForColumnName(table) + "." + column;
         }
 
         public virtual void AndAlso(string where)
