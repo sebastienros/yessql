@@ -211,7 +211,7 @@ namespace YesSql.Provider.SqlServer
 
         public override string QuoteForTableName(string tableName)
         {
-            return "[" + DefaultSchema + "." + tableName + "]";
+            return "[" + Schema ?? DefaultSchema + "].[" + tableName + "]";
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
