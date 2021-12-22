@@ -99,8 +99,8 @@ namespace YesSql.Sql
                 JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
             }
             JoinSegments.AddRange(new[] {
-                " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForTableName(onColumn),
-                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForTableName(toColumn)
+                " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
+                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
                 }
             );            
         }
