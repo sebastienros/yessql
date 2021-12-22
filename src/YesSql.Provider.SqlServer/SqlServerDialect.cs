@@ -109,7 +109,8 @@ namespace YesSql.Provider.SqlServer
 
         public override byte DefaultDecimalScale => 5;
 
-        public string DefaultSchema => "dbo";
+        public string Schema { get; set; }
+        public const string DefaultSchema = "dbo";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
