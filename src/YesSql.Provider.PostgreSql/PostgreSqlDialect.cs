@@ -9,7 +9,7 @@ namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {
-        public const string DefaultSchema = "public";
+        private const string DefaultSchema = "public";
 
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {

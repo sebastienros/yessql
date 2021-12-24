@@ -8,7 +8,7 @@ namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
-        public const string DefaultSchema = "dbo";
+        private const string DefaultSchema = "dbo";
 
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
