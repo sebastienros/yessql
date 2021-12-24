@@ -155,10 +155,7 @@ namespace YesSql.Provider.Sqlite
         }
 
         // SQLite doesn't have this feature
-        public override string SchemaNamePrefix()
-        {
-            return String.Empty;
-        }
+        public override string SchemaNameQuotedPrefix() => String.Empty;
 
         public override bool SupportsIfExistsBeforeTableName => true;
     }

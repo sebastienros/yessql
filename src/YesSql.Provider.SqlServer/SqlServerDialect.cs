@@ -214,7 +214,7 @@ namespace YesSql.Provider.SqlServer
             return "[" + tableName + "]";
         }
 
-        public override string SchemaNamePrefix()
+        public override string SchemaNameQuotedPrefix()
         {
             var schema = Schema ?? DefaultSchema;
             return "[" + schema + "].";

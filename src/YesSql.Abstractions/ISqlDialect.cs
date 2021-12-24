@@ -133,7 +133,7 @@ namespace YesSql
         /// <summary>
         /// Returns the quoted schema name prefix if applicable.
         /// </summary>
-        string SchemaNamePrefix();
+        string SchemaNameQuotedPrefix();
 
         /// <summary>
         /// Gets the DROP TABLE SQL statement.

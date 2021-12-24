@@ -249,10 +249,7 @@ namespace YesSql.Provider.MySql
         }
 
         // MySQL doesn't have this feature
-        public override string SchemaNamePrefix()
-        {
-            return String.Empty;
-        }
+        public override string SchemaNameQuotedPrefix() => String.Empty;
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {

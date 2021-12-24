@@ -231,7 +231,7 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + tableName + QuoteString;
         }
 
-        public override string SchemaNamePrefix()
+        public override string SchemaNameQuotedPrefix()
         {
             var schema = Schema ?? DefaultSchema;
             return QuoteString + schema + QuoteString + ".";
