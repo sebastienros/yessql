@@ -76,6 +76,11 @@ namespace YesSql
         bool PrefixIndex { get; }
 
         /// <summary>
+        /// Returns the database schema if applicable.
+        /// </summary>
+        string Schema { get; }
+
+        /// <summary>
         /// Gets whether the identity columns requires the data type.
         /// </summary>
         bool HasDataTypeInIdentityColumn { get; }
@@ -123,7 +128,12 @@ namespace YesSql
         /// <summary>
         /// Returns the quoted table name.
         /// </summary>
-        string QuoteForTableName(string v, bool schema = false);
+        string QuoteForTableName(string v);
+
+        /// <summary>
+        /// Returns the quoted schema name prefix if applicable.
+        /// </summary>
+        string SchemaNamePrefix();
 
         /// <summary>
         /// Gets the DROP TABLE SQL statement.

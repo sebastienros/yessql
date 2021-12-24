@@ -48,7 +48,7 @@ namespace YesSql.Sql
         public void Table(string table, string alias = null)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, true));
+            FromSegments.Add(_dialect.SchemaNamePrefix() + _dialect.QuoteForTableName(_tablePrefix + table));
 
             if (!String.IsNullOrEmpty(alias))
             {

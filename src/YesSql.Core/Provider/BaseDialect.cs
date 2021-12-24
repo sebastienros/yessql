@@ -182,7 +182,8 @@ namespace YesSql.Provider
         }
         public abstract string GetDropIndexString(string indexName, string tableName);
         public abstract string QuoteForColumnName(string columnName);
-        public abstract string QuoteForTableName(string tableName, bool IncludeSchema = false);
+        public abstract string QuoteForTableName(string tableName);
+        public abstract string SchemaNamePrefix();
 
         public virtual string QuoteString => "\"";
         public virtual string DoubleQuoteString => "\"\"";
@@ -192,6 +193,8 @@ namespace YesSql.Provider
         public virtual string DefaultValuesInsert => "DEFAULT VALUES";
 
         public virtual bool PrefixIndex => false;
+
+        public virtual string Schema => String.Empty;
 
         public abstract byte DefaultDecimalPrecision { get; }
 

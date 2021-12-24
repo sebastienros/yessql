@@ -243,9 +243,14 @@ namespace YesSql.Provider.MySql
             return "`" + columnName + "`";
         }
 
-        public override string QuoteForTableName(string tableName, bool IncludeSchema = false)
+        public override string QuoteForTableName(string tableName)
         {
             return "`" + tableName + "`";
+        }
+
+        public override string SchemaNamePrefix()
+        {
+            return null;
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)

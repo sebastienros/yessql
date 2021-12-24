@@ -110,7 +110,7 @@ namespace YesSql.Provider.SqlServer
         public override string RandomOrderByClause => "newid()";
         public override byte DefaultDecimalPrecision => 19;
         public override byte DefaultDecimalScale => 5;
-        public string Schema { get; set; }
+        public override string Schema { get; }
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
@@ -209,17 +209,15 @@ namespace YesSql.Provider.SqlServer
             return "[" + columnName + "]";
         }
 
-        public override string QuoteForTableName(string tableName, bool IncludeSchema = false)
+        public override string QuoteForTableName(string tableName)
         {
-            var result = "[" + tableName + "]";
+            return "[" + tableName + "]";
+        }
 
-            if (IncludeSchema)
-            {
-                var schema = Schema ?? DefaultSchema;
-                result = "[" + schema + "]." + result;
-            }
-
-            return result;
+        public override string SchemaNamePrefix()
+        {
+            var schema = Schema ?? DefaultSchema;
+            return "[" + schema + "].";
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)

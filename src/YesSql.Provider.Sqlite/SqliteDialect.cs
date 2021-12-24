@@ -149,9 +149,14 @@ namespace YesSql.Provider.Sqlite
             return "[" + columnName + "]";
         }
 
-        public override string QuoteForTableName(string tableName, bool IncludeSchema = false)
+        public override string QuoteForTableName(string tableName)
         {
             return "[" + tableName + "]";
+        }
+
+        public override string SchemaNamePrefix()
+        {
+            return null;
         }
 
         public override bool SupportsIfExistsBeforeTableName => true;
