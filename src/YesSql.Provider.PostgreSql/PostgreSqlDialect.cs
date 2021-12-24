@@ -231,10 +231,11 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + tableName + QuoteString;
         }
 
+        // PostgreSQL schema is generally not quoted but it works too if quoted.
         public override string SchemaNameQuotedPrefix()
         {
             var schema = Schema ?? DefaultSchema;
-            return QuoteString + schema + QuoteString + ".";
+            return schema + ".";
         }
 
         public override string CascadeConstraintsString => " cascade ";
