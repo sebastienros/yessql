@@ -133,7 +133,7 @@ namespace YesSql.Commands
                     }
                 }
 
-                InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
+                InsertsList[key] = result = $"insert into {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
             }
 
             return result;            

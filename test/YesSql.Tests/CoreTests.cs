@@ -5112,10 +5112,11 @@ namespace YesSql.Tests
                             .Column<string>(column1)
                         );
 
-                    var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
+                    var sqlInsert = String.Format("INSERT INTO {3}{0} ({1}) VALUES({2})",
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.GetSqlValue(value)
+                        _store.Configuration.SqlDialect.GetSqlValue(value),
+                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
                         );
 
                     connection.Execute(sqlInsert, transaction: transaction);

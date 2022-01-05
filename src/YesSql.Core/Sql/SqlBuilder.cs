@@ -93,14 +93,14 @@ namespace YesSql.Sql
             }
             
             JoinSegments.Add(" INNER JOIN ");
-            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            JoinSegments.Add(_dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + table));
             if (!String.IsNullOrEmpty(alias))
             {
                 JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
             }
             JoinSegments.AddRange(new[] {
                 " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
+                " = ", _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
                 }
             );            
         }
@@ -158,9 +158,12 @@ namespace YesSql.Sql
             if (!isAlias)
             {
                 table = _tablePrefix + table;
+                return _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(table) + "." + column;
             }
-
-            return _dialect.QuoteForTableName(table) + "." + column;
+            else
+            {
+                return _dialect.QuoteForTableName(table) + "." + column;
+            }
         }
 
         public virtual void AndAlso(string where)

@@ -105,7 +105,6 @@ namespace YesSql.Sql
         {
             var builder = new StringBuilder();
             
-            builder.Append(_dialect.SchemaNameQuotedPrefix());
             builder.Append(_dialect.GetDropTableString(command.Name));
             yield return builder.ToString();
         }
@@ -223,7 +222,7 @@ namespace YesSql.Sql
 
         public virtual void Run(StringBuilder builder, IAddIndexCommand command)
         {
-            builder.AppendFormat("create index {3}{1} on {0} ({2}) ",
+            builder.AppendFormat("create index {1} on {3}{0} ({2}) ",
                 _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.IndexName),
                 String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray()),
@@ -255,7 +254,7 @@ namespace YesSql.Sql
 
             builder.Append(_dialect.GetAddForeignKeyConstraintString(command.Name,
                 command.SrcColumns.Select(x => _dialect.QuoteForColumnName(x)).ToArray(),
-                _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(command.DestTable),
+                _dialect.QuoteForTableName(command.DestTable),
                 command.DestColumns.Select(x => _dialect.QuoteForColumnName(x)).ToArray(),
                 false));
 

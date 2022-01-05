@@ -143,6 +143,7 @@ namespace YesSql.Provider
                 .Append(String.Join(", ", srcColumns))
 #endif
                 .Append(") references ")
+                .Append(SchemaNameQuotedPrefix())
                 .Append(destTable);
 
             if (!primaryKey)
@@ -171,6 +172,7 @@ namespace YesSql.Provider
                 sb.Append("if exists ");
             }
 
+            sb.Append(SchemaNameQuotedPrefix());
             sb.Append(QuoteForTableName(name)).Append(CascadeConstraintsString);
 
             if (SupportsIfExistsAfterTableName)
