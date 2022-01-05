@@ -25,7 +25,7 @@ namespace YesSql.Commands
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
+            var updateCmd = $"update {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
                 + $"set {dialect.QuoteForColumnName("Content")} = @Content, {dialect.QuoteForColumnName("Version")} = @Version where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id "
                 + (_checkVersion > -1
@@ -64,7 +64,7 @@ namespace YesSql.Commands
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
+            var updateCmd = $"update {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
                 + $"set {dialect.QuoteForColumnName("Content")} = @Content_{index}, {dialect.QuoteForColumnName("Version")} = @Version_{index} where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id_{index};"
                 ;

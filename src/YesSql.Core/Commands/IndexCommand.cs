@@ -158,7 +158,7 @@ namespace YesSql.Commands
                     }
                 }
 
-                UpdatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
+                UpdatesList[key] = result = $"update {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
             }
 
             return result;

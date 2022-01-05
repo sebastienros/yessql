@@ -4314,7 +4314,7 @@ namespace YesSql.Tests
                 await connection.OpenAsync();
 
                 var dialect = _store.Configuration.SqlDialect;
-                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
+                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
 
@@ -4353,10 +4353,10 @@ namespace YesSql.Tests
 
                 var dialect = _store.Configuration.SqlDialect;
 
-                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
+                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
                 publishedInTheFutureResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInTheFutureSql);
 
-                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
+                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
                 publishedInThePastResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInThePastSql);
             }
 
@@ -5126,9 +5126,10 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                    var sqlSelect = String.Format("SELECT {0} FROM {2}{1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -5151,9 +5152,10 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                    var sqlSelect = String.Format("SELECT {0} FROM {2}{1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column2),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -6155,13 +6157,19 @@ namespace YesSql.Tests
 
                 await parsed.ExecuteAsync(filterQuery);
 
+                var assert1 = (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title;
+                var assert2 = await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync();
+
                 // Normal YesSql query
-                Assert.Equal("post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync());
+                Assert.Equal("post by steve about cats", assert1);
+                Assert.Equal(1, assert2);
+
+                var assert3 = (await filterQuery.FirstOrDefaultAsync()).Title;
+                var assert4 = await filterQuery.CountAsync();
 
                 // Parsed query
-                Assert.Equal("post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await filterQuery.CountAsync());
+                Assert.Equal("post by steve about cats", assert3);
+                Assert.Equal(1, assert4);
             }
         }
 

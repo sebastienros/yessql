@@ -79,7 +79,7 @@ namespace YesSql.Sql
             // Don't prefix if alias is used
             if (alias != onTable)
             {
-                onTable = _tablePrefix + onTable;
+                onTable = _dialect.SchemaNameQuotedPrefix() + _tablePrefix + onTable;
             }
 
             if (toTable != toAlias)
@@ -91,18 +91,20 @@ namespace YesSql.Sql
             {
                 toTable = toAlias;
             }
-            
+
             JoinSegments.Add(" INNER JOIN ");
             JoinSegments.Add(_dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + table));
+
             if (!String.IsNullOrEmpty(alias))
             {
                 JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
             }
+
             JoinSegments.AddRange(new[] {
                 " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
+                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
                 }
-            );            
+            );
         }
 
         public void Select()
