@@ -20,7 +20,7 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UseSqlServer(ConnectionString, "test")
+                .UseSqlServer(ConnectionString, "Fett")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
