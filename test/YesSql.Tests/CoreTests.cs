@@ -45,10 +45,10 @@ namespace YesSql.Tests
             if (_configuration == null)
             {
                 _configuration = CreateConfiguration();
-
-                CleanDatabase(_configuration, false);
-
+                
                 CreateDatabaseSchema(_configuration);
+                
+                CleanDatabase(_configuration, false);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");
