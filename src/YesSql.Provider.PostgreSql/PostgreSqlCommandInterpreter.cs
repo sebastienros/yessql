@@ -15,9 +15,10 @@ namespace YesSql.Provider.PostgreSql
 
         public override void Run(StringBuilder builder, IAlterColumnCommand command)
         {
-            builder.AppendFormat("alter table {0} modify column {1} ",
+            builder.AppendFormat("alter table {2}{0} modify column {1} ",
                             _dialect.QuoteForTableName(command.Name),
-                            _dialect.QuoteForColumnName(command.ColumnName));
+                            _dialect.QuoteForColumnName(command.ColumnName),
+                            _dialect.SchemaNameQuotedPrefix());
             var initLength = builder.Length;
 
             var dbType = _dialect.ToDbType(command.DbType);

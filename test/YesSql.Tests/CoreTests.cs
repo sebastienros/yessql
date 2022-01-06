@@ -129,8 +129,8 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
                 catch
                 {
@@ -144,7 +144,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
                 catch { }
             }
@@ -155,7 +155,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
                 }
                 catch { }
             }
@@ -215,8 +215,10 @@ namespace YesSql.Tests
 
             try
             {
-                // Here "root" should be changed by your own PostgreSQL admin user name
-                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION root;");
+                // Here "root" should be changed by your own PostgreSQL owner user name
+                // for SQL Server
+                // See https://docs.microsoft.com/en-us/sql/t-sql/statements/create-schema-transact-sql?view=sql-server-ver15
+                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION postgres;");
             }
             catch { }
         }
