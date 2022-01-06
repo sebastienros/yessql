@@ -1,4 +1,5 @@
 using Dapper;
+using Npgsql;
 using System;
 using System.Threading.Tasks;
 using Xunit;
@@ -37,10 +38,8 @@ namespace YesSql.Tests
 
             try
             {
-                // Here "root" should be changed by your own PostgreSQL owner user name
-                // for SQL Server
-                // See https://docs.microsoft.com/en-us/sql/t-sql/statements/create-schema-transact-sql?view=sql-server-ver15
-                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION root;");
+                var builder = new NpgsqlConnectionStringBuilder(ConnectionString);
+                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { builder.Username };");
             }
             catch { }
         }
@@ -133,6 +132,6 @@ namespace YesSql.Tests
                     transaction.Commit();
                 }
             }
-        }        
+        }
     }
 }

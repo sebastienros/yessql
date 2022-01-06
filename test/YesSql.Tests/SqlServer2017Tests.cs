@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Data.SqlClient;
 using System;
 using Xunit.Abstractions;
 using YesSql.Provider.SqlServer;
@@ -7,8 +8,8 @@ namespace YesSql.Tests
 {
     public class SqlServer2017Tests : SqlServerTests
     {
-        public override string ConnectionString 
-            =>  Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING") 
+        public override string ConnectionString
+            => Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING")
                 ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
                 ;
 
@@ -32,8 +33,8 @@ namespace YesSql.Tests
 
             try
             {
-                // See https://docs.microsoft.com/en-us/sql/t-sql/statements/create-schema-transact-sql?view=sql-server-ver15
-                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION dbo;");
+                var builder = new SqlConnectionStringBuilder(ConnectionString);
+                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { builder.UserID };");
             }
             catch { }
         }
