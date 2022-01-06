@@ -23,7 +23,7 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UseSqlServer(ConnectionStringBuilder.ConnectionString)
+                .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
@@ -32,7 +32,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSeedExistingIds()
         {
-            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
+            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett").SetTablePrefix("Store1").UseBlockIdGenerator();
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
@@ -62,7 +62,7 @@ namespace YesSql.Tests
                 await session1.SaveChangesAsync();
             }
 
-            var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator());
+            var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett").SetTablePrefix("Store1").UseBlockIdGenerator());
 
             using (var session2 = store2.CreateSession())
             {
@@ -80,7 +80,7 @@ namespace YesSql.Tests
         [InlineData("Collection1")]
         public async Task ShouldGenerateIdsWithConcurrentStores(string collection)
         {
-            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
+            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett").SetTablePrefix("Store1").UseBlockIdGenerator();
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {

@@ -26,7 +26,7 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UsePostgreSql(ConnectionStringBuilder.ConnectionString, "Boba")
+                .UsePostgreSql(ConnectionStringBuilder.ConnectionString, "BabyYoda")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
