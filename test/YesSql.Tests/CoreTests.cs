@@ -218,7 +218,7 @@ namespace YesSql.Tests
                 // Here "root" should be changed by your own PostgreSQL owner user name
                 // for SQL Server
                 // See https://docs.microsoft.com/en-us/sql/t-sql/statements/create-schema-transact-sql?view=sql-server-ver15
-                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION postgres;");
+                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION root;");
             }
             catch { }
         }
