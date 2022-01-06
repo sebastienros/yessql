@@ -248,9 +248,6 @@ namespace YesSql.Provider.MySql
             return "`" + tableName + "`";
         }
 
-        // MySQL doesn't have this feature
-        public override string SchemaNameQuotedPrefix() => String.Empty;
-
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {
             builder.Append("concat(");

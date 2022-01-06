@@ -6,12 +6,10 @@ namespace YesSql.Provider.PostgreSql
 {
     public static class PostgreSqlDbProviderOptionsExtensions
     {
-        private const string DefaultSchema = "public";
-
         public static IConfiguration UsePostgreSql(
             this IConfiguration configuration,
             string connectionString,
-            string schema = DefaultSchema)
+            string schema = null)
         {
             return UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
         }
@@ -20,7 +18,7 @@ namespace YesSql.Provider.PostgreSql
             this IConfiguration configuration,
             string connectionString,
             IsolationLevel isolationLevel,
-            string schema = DefaultSchema)
+            string schema = null)
         {
             if (configuration == null)
             {

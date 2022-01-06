@@ -6,12 +6,10 @@ namespace YesSql.Provider.SqlServer
 {
     public static class SqlServerDbProviderOptionsExtensions
     {
-        private const string DefaultSchema = "dbo";
-
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
             string connectionString,
-            string schema = DefaultSchema)
+            string schema = null)
         {
             return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
         }
@@ -20,7 +18,7 @@ namespace YesSql.Provider.SqlServer
             this IConfiguration configuration,
             string connectionString,
             IsolationLevel isolationLevel,
-            string schema = DefaultSchema)
+            string schema = null)
         {
             if (configuration == null)
             {
