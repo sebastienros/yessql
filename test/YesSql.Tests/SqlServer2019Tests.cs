@@ -33,7 +33,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { ConnectionStringBuilder.UserID };");
+                    connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { configuration.SqlDialect.DefaultSchema };");
                 }
                 catch { }
             }
