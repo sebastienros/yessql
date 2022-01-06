@@ -85,7 +85,7 @@ namespace YesSql.Provider.PostgreSql
             };
         }
 
-        public PostgreSqlDialect(string schema)
+        public PostgreSqlDialect(string schema = null)
         {
             if (!String.IsNullOrWhiteSpace(schema))
             {

@@ -84,7 +84,7 @@ namespace YesSql.Provider.SqlServer
             };
         }
 
-        public SqlServerDialect(string schema)
+        public SqlServerDialect(string schema = null)
         {
             if (!String.IsNullOrWhiteSpace(schema))
             { 
