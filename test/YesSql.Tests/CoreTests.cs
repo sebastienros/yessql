@@ -48,10 +48,15 @@ namespace YesSql.Tests
 
                 CleanDatabase(_configuration, false);
 
+                if (!String.IsNullOrWhiteSpace(_configuration.SqlDialect.Schema))
+                {
+                    CreateDatabaseSchema(_configuration);
+                }
+
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");
                 _store.TypeNames[typeof(Person)] = "People";
-
+                
                 CreateTables(_configuration);
             }
             else
@@ -201,6 +206,19 @@ namespace YesSql.Tests
         protected virtual void OnClearTables(DbConnection connection)
         {
 
+        }
+
+        public void CreateDatabaseSchema(IConfiguration configuration)
+        {
+            using var connection = configuration.ConnectionFactory.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                // Here "root" should be changed by your own PostgreSQL admin user name
+                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION root;");
+            }
+            catch { }
         }
 
         public void CreateTables(IConfiguration configuration)
@@ -1978,7 +1996,7 @@ namespace YesSql.Tests
                 Assert.Equal("Steve", (await query.FirstOrDefaultAsync()).Firstname);
             }
         }
-        
+
         [Fact]
         public async Task ShouldJoinReduceIndex()
         {
