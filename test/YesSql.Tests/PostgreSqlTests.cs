@@ -1,3 +1,4 @@
+using Dapper;
 using System;
 using System.Threading.Tasks;
 using Xunit;
@@ -28,6 +29,20 @@ namespace YesSql.Tests
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
+        }
+        protected override void CreateDatabaseSchema(IConfiguration configuration)
+        {
+            using var connection = configuration.ConnectionFactory.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                // Here "root" should be changed by your own PostgreSQL owner user name
+                // for SQL Server
+                // See https://docs.microsoft.com/en-us/sql/t-sql/statements/create-schema-transact-sql?view=sql-server-ver15
+                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION postgres;");
+            }
+            catch { }
         }
 
         [Fact(Skip = "Postgres locks on the table")]
