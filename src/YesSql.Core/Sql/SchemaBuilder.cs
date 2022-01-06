@@ -36,7 +36,7 @@ namespace YesSql.Sql
             foreach (var statement in statements)
             {
                 _logger.LogTrace(statement);
-                var test = Connection.Execute(statement, null, Transaction);
+                Connection.Execute(statement, null, Transaction);
             }
         }
 
@@ -205,11 +205,10 @@ namespace YesSql.Sql
                 table(alterTable);
                 Execute(_commandInterpreter.CreateSql(alterTable));
             }
-            catch(Exception ex)
+            catch
             {
                 if (ThrowOnError)
                 {
-                    _logger.LogError(ex.Message);
                     throw;
                 }
             }
