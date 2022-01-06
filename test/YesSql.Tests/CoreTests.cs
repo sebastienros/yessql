@@ -48,10 +48,7 @@ namespace YesSql.Tests
 
                 CleanDatabase(_configuration, false);
 
-                if (!String.IsNullOrWhiteSpace(_configuration.SqlDialect.Schema))
-                {
-                    CreateDatabaseSchema(_configuration);
-                }
+                CreateDatabaseSchema(_configuration);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");

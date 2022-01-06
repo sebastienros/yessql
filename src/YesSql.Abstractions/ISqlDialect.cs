@@ -76,6 +76,11 @@ namespace YesSql
         bool PrefixIndex { get; }
 
         /// <summary>
+        /// Return the default database schema name.
+        /// </summary>
+        string DefaultSchema { get; }
+
+        /// <summary>
         /// Returns the database schema if applicable.
         /// </summary>
         string Schema { get; }
@@ -204,11 +209,6 @@ namespace YesSql
         /// Return the DEFAULT VALUES SQL statement.
         /// </summary>
         string DefaultValuesInsert { get; }
-
-        /// <summary>
-        /// Return the default database schema name.
-        /// </summary>
-        string DefaultSchema { get; }
 
         /// <summary>
         /// Adds the pagination SQL statements.
