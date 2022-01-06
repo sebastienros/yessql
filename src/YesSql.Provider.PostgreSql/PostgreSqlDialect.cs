@@ -9,8 +9,6 @@ namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlDialect : BaseDialect
     {
-        private const string DefaultSchema = "public";
-
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "uuid"},
@@ -121,6 +119,7 @@ namespace YesSql.Provider.PostgreSql
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
         public override string Schema { get; }
+        public override string DefaultSchema => "public";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {

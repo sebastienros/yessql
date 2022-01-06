@@ -8,10 +8,7 @@ namespace YesSql.Tests
 {
     public class SqlServer2017Tests : SqlServerTests
     {
-        public override string ConnectionString
-            => Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING")
-                ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
-                ;
+        public override SqlConnectionStringBuilder ConnectionStringBuilder => new(Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING") ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 
         public SqlServer2017Tests(ITestOutputHelper output) : base(output)
         {
@@ -20,7 +17,7 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UseSqlServer(ConnectionString, "BabyYoda")
+                .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BabyYoda")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
@@ -28,15 +25,17 @@ namespace YesSql.Tests
 
         protected override void CreateDatabaseSchema(IConfiguration configuration)
         {
-            using var connection = configuration.ConnectionFactory.CreateConnection();
-            connection.Open();
-
-            try
+            if (ConnectionStringBuilder.UserID != configuration.SqlDialect.DefaultSchema)
             {
-                var builder = new SqlConnectionStringBuilder(ConnectionString);
-                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { builder.UserID };");
+                using var connection = configuration.ConnectionFactory.CreateConnection();
+                connection.Open();
+
+                try
+                {
+                    connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { ConnectionStringBuilder.UserID };");
+                }
+                catch { }
             }
-            catch { }
         }
     }
 }

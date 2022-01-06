@@ -1,6 +1,5 @@
 using Microsoft.Data.SqlClient;
 using System;
-using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,8 +14,8 @@ namespace YesSql.Tests
 {
     public abstract class SqlServerTests : CoreTests
     {
-        public abstract string ConnectionString { get; }
-        
+        public abstract SqlConnectionStringBuilder ConnectionStringBuilder { get; }
+
         public SqlServerTests(ITestOutputHelper output) : base(output)
         {
         }
@@ -24,7 +23,7 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UseSqlServer(ConnectionString)
+                .UseSqlServer(ConnectionStringBuilder.ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
@@ -33,7 +32,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSeedExistingIds()
         {
-            var configuration = new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
+            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
@@ -63,7 +62,7 @@ namespace YesSql.Tests
                 await session1.SaveChangesAsync();
             }
 
-            var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator());
+            var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator());
 
             using (var session2 = store2.CreateSession())
             {
@@ -81,7 +80,7 @@ namespace YesSql.Tests
         [InlineData("Collection1")]
         public async Task ShouldGenerateIdsWithConcurrentStores(string collection)
         {
-            var configuration = new Configuration().UseSqlServer(ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
+            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString).SetTablePrefix("Store1").UseBlockIdGenerator();
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
@@ -360,7 +359,7 @@ namespace YesSql.Tests
 
                     builder
                         .AlterTable(nameof(PropertyIndex), table => table
-                            .CreateIndex("IDX_Property", "Name","Location"));
+                            .CreateIndex("IDX_Property", "Name", "Location"));
 
                     transaction.Commit();
                 }

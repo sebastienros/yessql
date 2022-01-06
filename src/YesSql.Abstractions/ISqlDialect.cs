@@ -206,6 +206,11 @@ namespace YesSql
         string DefaultValuesInsert { get; }
 
         /// <summary>
+        /// Return the default database schema name.
+        /// </summary>
+        string DefaultSchema { get; }
+
+        /// <summary>
         /// Adds the pagination SQL statements.
         /// </summary>
         void Page(ISqlBuilder sqlBuilder, string offset, string limit);

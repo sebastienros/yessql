@@ -15,7 +15,7 @@ namespace YesSql.Tests
     // docker run --name postgresql -e POSTGRES_USER=root -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=yessql -d -p 5432:5432 postgres:11
     public class PostgreSqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
+        public static NpgsqlConnectionStringBuilder ConnectionStringBuilder => new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;");
 
         protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
 
@@ -26,22 +26,24 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UsePostgreSql(ConnectionString, "Boba")
+                .UsePostgreSql(ConnectionStringBuilder.ConnectionString, "Boba")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;
         }
         protected override void CreateDatabaseSchema(IConfiguration configuration)
         {
-            using var connection = configuration.ConnectionFactory.CreateConnection();
-            connection.Open();
-
-            try
+            if (ConnectionStringBuilder.Username != configuration.SqlDialect.DefaultSchema)
             {
-                var builder = new NpgsqlConnectionStringBuilder(ConnectionString);
-                connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { builder.Username };");
+                using var connection = configuration.ConnectionFactory.CreateConnection();
+                connection.Open();
+
+                try
+                {
+                    connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { ConnectionStringBuilder.Username };");
+                }
+                catch { }
             }
-            catch { }
         }
 
         [Fact(Skip = "Postgres locks on the table")]

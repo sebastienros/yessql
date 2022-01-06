@@ -198,6 +198,8 @@ namespace YesSql.Provider
 
         public virtual string Schema => null;
 
+        public virtual string DefaultSchema => null;
+
         public abstract byte DefaultDecimalPrecision { get; }
 
         public abstract byte DefaultDecimalScale { get; }

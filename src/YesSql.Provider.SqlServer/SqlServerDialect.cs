@@ -8,8 +8,6 @@ namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
-        private const string DefaultSchema = "dbo";
-
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
             {DbType.Guid, "UNIQUEIDENTIFIER"},
@@ -111,6 +109,7 @@ namespace YesSql.Provider.SqlServer
         public override byte DefaultDecimalPrecision => 19;
         public override byte DefaultDecimalScale => 5;
         public override string Schema { get; }
+        public override string DefaultSchema => "dbo";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
