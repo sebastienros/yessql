@@ -230,6 +230,11 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + tableName + QuoteString;
         }
 
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return QuoteString + aliasName + QuoteString;
+        }
+
         // PostgreSQL schema is generally not quoted but it works too if quoted.
         public override string SchemaNameQuotedPrefix()
         {

@@ -136,6 +136,11 @@ namespace YesSql
         string QuoteForTableName(string v);
 
         /// <summary>
+        /// Returns the quoted alias name.
+        /// </summary>
+        string QuoteForAliasName(string alias);
+
+        /// <summary>
         /// Returns the quoted schema name prefix if applicable.
         /// </summary>
         string SchemaNameQuotedPrefix();

@@ -154,6 +154,11 @@ namespace YesSql.Provider.Sqlite
             return "[" + tableName + "]";
         }
 
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return aliasName;
+        }
+
         public override bool SupportsIfExistsBeforeTableName => true;
     }
 }

@@ -248,6 +248,11 @@ namespace YesSql.Provider.MySql
             return "`" + tableName + "`";
         }
 
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return aliasName;
+        }
+
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {
             builder.Append("concat(");

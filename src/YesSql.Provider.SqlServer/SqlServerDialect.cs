@@ -213,6 +213,11 @@ namespace YesSql.Provider.SqlServer
             return "[" + tableName + "]";
         }
 
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return aliasName;
+        }
+
         public override string SchemaNameQuotedPrefix()
         {
             var schema = Schema ?? DefaultSchema;

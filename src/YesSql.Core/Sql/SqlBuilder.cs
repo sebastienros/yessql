@@ -83,7 +83,7 @@ namespace YesSql.Sql
             }
             else
             {
-                onTable = _dialect.QuoteForTableName(onTable);
+                onTable = _dialect.QuoteForAliasName(onTable);
             }
 
             if (toTable != toAlias)
@@ -97,7 +97,7 @@ namespace YesSql.Sql
 
             if (!String.IsNullOrEmpty(toAlias))
             {
-                toTable = _dialect.QuoteForTableName(toAlias);
+                toTable = _dialect.QuoteForAliasName(toAlias);
             }
 
             JoinSegments.Add(" INNER JOIN ");
@@ -105,7 +105,7 @@ namespace YesSql.Sql
 
             if (!String.IsNullOrEmpty(alias))
             {
-                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
+                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForAliasName(alias) });
             }
 
             JoinSegments.AddRange(new[] {
