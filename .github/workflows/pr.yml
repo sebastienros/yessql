@@ -1,7 +1,8 @@
-name: Build
+name: PR Check
 
 on:
-  push:
+
+  pull_request:
     branches: [ main ]
     paths-ignore:
     - 'doc/**'
@@ -84,9 +85,3 @@ jobs:
 
     - name: Test - SQL Server 2019 .NET 6.0
       run: dotnet test --configuration release --filter yessql.tests.sqlserver2019tests --no-restore --no-build --framework net6.0
-
-    - name: Pack with dotnet
-      run: dotnet pack --output artifacts --configuration Release --no-restore --no-build -p:PackageVersion=$GITHUB_RUN_ID
-
-    - name: Push with dotnet on MyGet
-      run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.MYGET_API_KEY }} --skip-duplicate --source https://www.myget.org/F/yessql/api/v2/package
