@@ -5,6 +5,7 @@ A .NET document database interface for relational databases, because in SQL we (
 
 [![Build](https://github.com/sebastienros/yessql/actions/workflows/build.yml/badge.svg)](https://github.com/sebastienros/yessql/actions/workflows/build.yml)
 [![NuGet](https://img.shields.io/nuget/v/YesSql.svg)](https://www.nuget.org/packages/YesSql)
+[![MyGet](https://img.shields.io/myget/yessql/vpre/yessql.svg?label=MyGet)](https://www.myget.org/feed/yessql/package/nuget/yessql)
 
 How does it work ?
 -------------------
@@ -42,3 +43,11 @@ So YesSql might be an answer for the developers who face those restrictions. If 
 The documentation is here: https://github.com/sebastienros/yessql/wiki
 
 You can also take a look at the [sample apps](https://github.com/sebastienros/yessql/tree/master/samples) in the source code.
+
+Development
+-------------------
+
+- Development and pull-requests are done based on the `main` branch.
+- Every build and pull-request are tested againts Sqlite, ProstresQL, SQL Server and MySql.
+- The latest NuGet release is tagged and available in the [releases](https://github.com/sebastienros/yessql/releases) page.
+- The `main` branch is also published on [MyGet](https://www.myget.org/feed/yessql/package/nuget/yessql) automatically.
