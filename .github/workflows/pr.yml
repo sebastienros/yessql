@@ -5,8 +5,7 @@ on:
   pull_request:
     branches: [ main ]
     paths-ignore:
-    - 'doc/**'
-    - 'readme.md'
+    - '**.md'
 
 jobs:
   build:
