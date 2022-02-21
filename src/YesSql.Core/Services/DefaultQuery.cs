@@ -182,6 +182,42 @@ namespace YesSql.Services
                 dialect.Concat(builder, generators.ToArray());
             };
 
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Min))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("MIN(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Max))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("MAX(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Count))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("COUNT(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Average))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("AVG(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Sum))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("SUM(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsLike")] = static (query, builder, dialect, expression) =>
             {
                 builder.Append("(");
@@ -936,7 +972,7 @@ namespace YesSql.Services
             return e;
         }
 
-        private void OrderBy<T>(Expression<Func<T, object>> keySelector, )
+        private void OrderBy<T>(Expression<Func<T, object>> keySelector)
         {
             var builder = new RentedStringBuilder(Store.SmallBufferSize);
             ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
@@ -1640,6 +1676,31 @@ namespace YesSql.Services
 
     public static class DefaultQueryExtensions
     {
+        public static object Min(this object source)
+        {
+            return source;
+        }
+
+        public static object Max(this object source)
+        {
+            return source;
+        }
+
+        public static object Sum(this object source)
+        {
+            return source;
+        }
+
+        public static object Count(this object source)
+        {
+            return source;
+        }
+
+        public static object Average(this object source)
+        {
+            return source;
+        }
+
         public static bool IsIn(this object source, IEnumerable values)
         {
             return false;
