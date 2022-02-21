@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using YesSql.Utils;
 
 namespace YesSql.Sql
@@ -217,6 +218,12 @@ namespace YesSql.Sql
             _order = null;
         }
 
+        public void ClearGroupBy()
+        {
+            _group = null;
+            _having = null;
+        }
+
         public virtual void OrderBy(string orderBy)
         {
             OrderSegments.Clear();
@@ -295,9 +302,14 @@ namespace YesSql.Sql
             {
                 sb.Append("DISTINCT ");
 
+                // Some databases require the ORDER BY clauses to be part of the SELECT clause when DISTINCT is used
+
                 if (_order != null)
                 {
-                    _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
+                    // _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
+                    sb.Append("ON(");
+                    sb.Append(OrderSegments.First());
+                    sb.Append(") ");
                 }
             }
 
@@ -337,6 +349,13 @@ namespace YesSql.Sql
             if (_group != null)
             {
                 sb.Append(" GROUP BY ");
+
+                // Some databases require the ORDER BY clauses to be part of the GROUP BY
+
+                if (_order != null)
+                {
+                    _select = _dialect.GetDistinctOrderBySelectString(_group, _order);
+                }
 
                 foreach (var s in _group)
                 {

@@ -246,5 +246,24 @@ namespace YesSql.Provider.SqlServer
         public override bool SupportsIfExistsBeforeTableName => true;
 
         public override int MaxParametersPerCommand => 2098;
+
+        public override List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
+        {
+            // Most databases (PostgreSql and SqlServer) requires all ordered fields to be part of the select when DISTINCT is used
+
+            foreach (var o in orderBy)
+            {
+                var trimmed = o.Trim();
+
+                // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
+                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && !select.Contains(o))
+                {
+                    select.Add(",");
+                    select.Add(o);
+                }
+            }
+
+            return select;
+        }
     }
 }

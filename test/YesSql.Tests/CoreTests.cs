@@ -5010,8 +5010,12 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldReturnSingleDocument()
+        public async Task ShouldReturnDistinctDocuments()
         {
+            // The INNER JOIN with the index returns 2 record for the same document.
+            // Here we ensure that a GROUP BY is issued to resolve this.
+            // DISTINCT queries would require applying it on all fields that need to be read inclyding the JSON payload
+
             _store.RegisterIndexes<EmailByAttachmentProvider>();
 
             using (var session = _store.CreateSession())
@@ -5034,10 +5038,54 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                // Get all emails that have '.doc' attachments
                 var result = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).ListAsync();
 
                 Assert.Single(result);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldReturnNonUniqueResultsWithDistinctOption()
+        {
+            // Query a page of documents, but collisions in the results should trigger database round-trips to fill the page
+            _store.RegisterIndexes<EmailByAttachmentProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                // Creates 30 emails with 3 attachments each
+
+                for (int i = 0; i < 30; i++)
+                {
+                    var email = new Email()
+                    {
+                        Date = DateTime.Now,
+                        Attachments = new List<Attachment>()
+                        {
+                            new Attachment("resume.doc"),
+                            new Attachment("letter.doc"),
+                            new Attachment("photo.jpg")
+                        }
+                    };
+
+                    session.Save(email);
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var result1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).OrderBy(x => x.Id).Take(10).ListAsync();
+                var count1= await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).OrderBy(x => x.Id).CountAsync();
+                var uniqueDocuments1 = result1.Select(x => x.Id).Distinct();
+
+                Assert.Equal(10, uniqueDocuments1.Count());
+                Assert.Equal(30, count1);
+
+                var result2 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).OrderBy(x => x.Id).Skip(20).Take(40).ListAsync();
+                var uniqueDocuments2 = result2.Select(x => x.Id).Distinct();
+
+                Assert.Equal(10, uniqueDocuments2.Count());
             }
         }
 

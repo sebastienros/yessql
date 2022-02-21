@@ -15,6 +15,7 @@ namespace YesSql
         void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null, string toAlias = null);
         bool HasJoin { get; }
         bool HasOrder { get; }
+        void ClearGroupBy();
         void ClearOrder();
         void OrderBy(string orderBy);
         void OrderByDescending(string orderBy);

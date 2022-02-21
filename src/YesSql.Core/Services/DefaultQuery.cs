@@ -936,7 +936,7 @@ namespace YesSql.Services
             return e;
         }
 
-        private void OrderBy<T>(Expression<Func<T, object>> keySelector)
+        private void OrderBy<T>(Expression<Func<T, object>> keySelector, )
         {
             var builder = new RentedStringBuilder(Store.SmallBufferSize);
             ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
@@ -1001,6 +1001,7 @@ namespace YesSql.Services
 
             // Clear paging and order when counting 
             localBuilder.ClearOrder();
+            localBuilder.ClearGroupBy();
             localBuilder.Skip(null);
             localBuilder.Take(null);
 
@@ -1237,7 +1238,11 @@ namespace YesSql.Services
                         }
 
                         _query._queryState._sqlBuilder.Selector(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "*"));
-                        _query._queryState._sqlBuilder.Distinct();
+
+                        // Group by document id to remove duplicate records if the index has multiple matches for a single document
+                        // This could potentially be opt-in by exposing GroupBy(field) in the interface, or a boolean to deduplicate results
+                        _query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
+
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                         var documents = await _query._session._store.ProduceAsync(key, static (state) =>
