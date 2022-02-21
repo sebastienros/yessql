@@ -350,13 +350,6 @@ namespace YesSql.Sql
             {
                 sb.Append(" GROUP BY ");
 
-                // Some databases require the ORDER BY clauses to be part of the GROUP BY
-
-                if (_order != null)
-                {
-                    _select = _dialect.GetDistinctOrderBySelectString(_group, _order);
-                }
-
                 foreach (var s in _group)
                 {
                     sb.Append(s);
