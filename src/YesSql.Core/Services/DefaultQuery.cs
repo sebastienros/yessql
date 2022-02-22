@@ -980,6 +980,14 @@ namespace YesSql.Services
             builder.Dispose();
         }
 
+        private void GroupBy<T>(Expression<Func<T, object>> keySelector)
+        {
+            var builder = new RentedStringBuilder(Store.SmallBufferSize);
+            ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
+            _queryState._sqlBuilder.GroupBy(builder.ToString());
+            builder.Dispose();
+        }
+
         private void ThenBy<T>(Expression<Func<T, object>> keySelector)
         {
             var builder = new RentedStringBuilder(Store.SmallBufferSize);
@@ -1277,7 +1285,7 @@ namespace YesSql.Services
 
                         // Group by document id to remove duplicate records if the index has multiple matches for a single document
                         // This could potentially be opt-in by exposing GroupBy(field) in the interface, or a boolean to deduplicate results
-                        _query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
+                        //_query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
 
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
@@ -1599,6 +1607,13 @@ namespace YesSql.Services
             {
                 _query.Bind<TIndex>();
                 _query.Filter<TIndex>(predicate);
+                return this;
+            }
+
+            IQuery<T, TIndex> IQuery<T, TIndex>.GroupByDocument()
+            {
+                _query.Bind<TIndex>();
+                _query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
                 return this;
             }
 

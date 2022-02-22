@@ -5038,7 +5038,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var result = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).ListAsync();
+                var result = await session.Query<Email, EmailByAttachment>().GroupByDocument().Where(e => e.AttachmentName.EndsWith(".doc")).ListAsync();
 
                 Assert.Single(result);
             }
@@ -5075,14 +5075,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var result1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).OrderBy(x => x.Id.Max()).Take(10).ListAsync();
+                var result1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).GroupByDocument().OrderBy(x => x.Id.Max()).Take(10).ListAsync();
                 var count1= await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).CountAsync();
                 var uniqueDocuments1 = result1.Select(x => x.Id).Distinct();
 
                 Assert.Equal(10, uniqueDocuments1.Count());
                 Assert.Equal(30, count1);
 
-                var result2 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).OrderBy(x => x.Id.Max()).Skip(20).Take(40).ListAsync();
+                var result2 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).GroupByDocument().OrderBy(x => x.Id.Max()).Skip(20).Take(40).ListAsync();
                 var uniqueDocuments2 = result2.Select(x => x.Id).Distinct();
 
                 Assert.Equal(10, uniqueDocuments2.Count());

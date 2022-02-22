@@ -221,12 +221,17 @@ namespace YesSql
         /// Adds a named parameter to the query.
         /// </summary>
         IQuery<T, TIndex> WithParameter(string name, object value);
-        
+
         /// <summary>
         /// Adds a named parameter to the query.
         /// </summary>
         IQuery<T, TIndex> Where(Expression<Func<TIndex, bool>> predicate);
-        
+
+        /// <summary>
+        /// Adds a Group By clause to the query for fold documents when an index returns multiple records.
+        /// </summary>
+        IQuery<T, TIndex> GroupByDocument();
+
         /// <summary>
         /// Sets an OrderBy clause using a custom lambda expression.
         /// </summary>
