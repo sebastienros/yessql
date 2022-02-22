@@ -1612,6 +1612,9 @@ namespace YesSql.Services
 
             IQuery<T, TIndex> IQuery<T, TIndex>.GroupByDocument()
             {
+                // Ideally GroupByDocument() would be inferred automatically when the index is a MultiMapIndex (MapIndex that can return multiple indexes per document).
+                // It would also imply a new IQuery type that requires aggregates on orders. Or this could be checked at runtime.
+
                 _query.Bind<TIndex>();
                 _query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
                 return this;

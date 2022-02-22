@@ -5076,7 +5076,8 @@ namespace YesSql.Tests
             using (var session = _store.CreateSession())
             {
                 var result1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).GroupByDocument().OrderBy(x => x.Id.Max()).Take(10).ListAsync();
-                var count1= await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).CountAsync();
+                // .GroupByDocument() is optional in Count() since it will be removed automatically
+                var count1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).GroupByDocument().CountAsync();
                 var uniqueDocuments1 = result1.Select(x => x.Id).Distinct();
 
                 Assert.Equal(10, uniqueDocuments1.Count());
