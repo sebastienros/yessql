@@ -12,14 +12,17 @@ namespace YesSql
         /// Adds a filter on the document type
         /// </summary>
         /// <param name="filterType">If <c>false</c> the document type won't be filtered.</param>
+        /// <param name="collection">The name of the collection to load the object.</param>
         /// <typeparam name="T">The type of document to return</typeparam>
-        IQuery<T> For<T>(bool filterType = true) where T : class;
+        IQuery<T> For<T>(bool filterType = true, string collection = null) where T : class;
 
         /// <summary>
         /// Defines what type of index should be returned
         /// </summary>
+        /// <param name="collection">The name of the collection to load the object.</param>
         /// <typeparam name="T">The type of index to return</typeparam>
-        IQueryIndex<T> ForIndex<T>() where T : class, IIndex;
+
+        IQueryIndex<T> ForIndex<T>(string collection = null) where T : class, IIndex;
 
         /// <summary>
         /// Returns documents from any type
