@@ -196,6 +196,11 @@ namespace YesSql.Provider.SqlServer
             }
         }
 
+        public override string GetDropTableString(string name)
+        {
+            return string.Format("if object_id('{0}','U') is not null drop table {0} ", QuoteForTableName(name));
+        }
+
         public override string GetDropIndexString(string indexName, string tableName)
         {
             return "drop index if exists " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName);
