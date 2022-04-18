@@ -12,12 +12,12 @@ namespace YesSql.Commands
     public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName
     {
         private readonly IStore _store;
-        public int DocumentId { get; }
+        public long DocumentId { get; }
         public Type IndexType { get; }
         public string Collection { get; }
         public int ExecutionOrder { get; } = 1;
 
-        public DeleteMapIndexCommand(Type indexType, int documentId, IStore store, string collection)
+        public DeleteMapIndexCommand(Type indexType, long documentId, IStore store, string collection)
         {
             IndexType = indexType;
             DocumentId = documentId;

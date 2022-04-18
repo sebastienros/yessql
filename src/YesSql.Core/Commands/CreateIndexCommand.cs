@@ -11,13 +11,13 @@ namespace YesSql.Commands
 {
     public sealed class CreateIndexCommand : IndexCommand
     {
-        private readonly int[] _addedDocumentIds;
+        private readonly long[] _addedDocumentIds;
 
         public override int ExecutionOrder { get; } = 2;
 
         public CreateIndexCommand(
             IIndex index,
-            IEnumerable<int> addedDocumentIds,
+            IEnumerable<long> addedDocumentIds,
             IStore store,
             string collection) : base(index, store, collection)
         {

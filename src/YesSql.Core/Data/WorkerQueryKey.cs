@@ -9,11 +9,11 @@ namespace YesSql.Data
     public readonly struct WorkerQueryKey : IEquatable<WorkerQueryKey>
     {
         private readonly string _prefix;
-        private readonly int[] _ids;
+        private readonly long[] _ids;
         private readonly Dictionary<string, object> _parameters;
         private readonly int _hashcode;
 
-        public WorkerQueryKey(string prefix, int[] ids)
+        public WorkerQueryKey(string prefix, long[] ids)
         {
             if (prefix == null)
             {
@@ -101,7 +101,7 @@ namespace YesSql.Data
             {
                 foreach (var id in _ids)
                 {
-                    combinedHash = ((combinedHash << 5) + combinedHash) ^ id;
+                    combinedHash = ((combinedHash << 5) + combinedHash) ^ id.ToString().GetHashCode();
                 }
 
                 return combinedHash;
@@ -158,7 +158,7 @@ namespace YesSql.Data
             return true;
         }
 
-        private static bool SameIds(int[] values1, int[] values2)
+        private static bool SameIds(long[] values1, long[] values2)
         {
             // If one is not null both need to be non-null
             if (!(values1 != null && values2 != null))

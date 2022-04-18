@@ -147,7 +147,7 @@ namespace YesSql
             state.Saved.Add(entity);
         }
 
-        public bool Import(object entity, int id = 0, int version = 0, string collection = null)
+        public bool Import(object entity, long id = 0, int version = 0, string collection = null)
         {
             CheckDisposed();
 
@@ -387,7 +387,7 @@ namespace YesSql
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
 
-        private async Task<Document> GetDocumentByIdAsync(int id, string collection)
+        private async Task<Document> GetDocumentByIdAsync(long id, string collection)
         {
             await CreateConnectionAsync();
 
@@ -473,7 +473,7 @@ namespace YesSql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(int[] ids, string collection = null) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class
         {
             if (ids == null || !ids.Any())
             {
@@ -541,7 +541,7 @@ namespace YesSql
                 {
                     T item;
 
-                    IAccessor<int> accessor;
+                    IAccessor<long> accessor;
                     // If the document type doesn't match the requested one, check it's a base type
                     if (!String.Equals(typeName, d.Type, StringComparison.Ordinal))
                     {
@@ -1303,11 +1303,11 @@ namespace YesSql
                         {
                             if (index.Id == 0)
                             {
-                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), Store, collection));
+                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<long>(), Store, collection));
                             }
                             else
                             {
-                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), Store, collection));
+                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<long>(), Enumerable.Empty<long>(), Store, collection));
                             }
                         }
                         else

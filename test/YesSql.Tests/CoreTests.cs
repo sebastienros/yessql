@@ -3242,7 +3242,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetTypeById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3271,7 +3271,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldReturnNullWithWrongTypeById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3299,7 +3299,7 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldGetDocumentById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3327,7 +3327,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetObjectById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3356,7 +3356,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetDynamicById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3388,7 +3388,7 @@ namespace YesSql.Tests
         [Theory]
         public async Task ShouldReturnObjectsByIdsInCorrectOrder(int numberOfItems)
         {
-            var circleIds = new List<int>();
+            var circleIds = new List<long>();
 
             using (var session = _store.CreateSession())
             {
@@ -4688,7 +4688,7 @@ namespace YesSql.Tests
             {
                 var results = await session.Query<Person, PersonByName>().OrderByRandom().ListAsync();
 
-                var idArray = Enumerable.Range(1, 100).ToArray();
+                var idArray = Enumerable.Range(1, 100).Select(x => Convert.ToInt64(x)).ToArray();
                 Assert.NotEqual(idArray, results.Select(x => x.Id));
             }
         }
@@ -4714,7 +4714,7 @@ namespace YesSql.Tests
 
                 var first50Persons = results.Take(50);
                 Assert.All(first50Persons, person => Assert.Equal("D", person.Firstname));
-                var idArray = Enumerable.Range(1, 50).ToArray();
+                var idArray = Enumerable.Range(1, 50).Select(x => Convert.ToInt64(x)).ToArray();
                 Assert.NotEqual(idArray, first50Persons.Select(x => x.Id));
             }
         }
@@ -4889,8 +4889,8 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldCreateMoreObjectThanIdBlock()
         {
-            var lastId = 0;
-            var firstId = 0;
+            var lastId = 0L;
+            var firstId = 0L;
 
             using (var session = _store.CreateSession())
             {

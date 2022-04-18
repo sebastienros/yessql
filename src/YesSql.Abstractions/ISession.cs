@@ -39,7 +39,7 @@ namespace YesSql
         /// <returns>
         /// <c>true</c> if the object was imported, <c>false</c> otherwise.
         /// </returns>
-        bool Import(object item, int id, int version, string collection = null);
+        bool Import(object item, long id, int version, string collection = null);
 
         /// <summary>
         /// Removes an item from the identity map.
@@ -55,7 +55,7 @@ namespace YesSql
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        Task<IEnumerable<T>> GetAsync<T>(int[] ids, string collection = null) where T : class;
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class;
 
         /// <summary>
         /// Creates a new <see cref="IQuery"/> object.
@@ -135,7 +135,7 @@ namespace YesSql
         /// Loads an object by its id.
         /// </summary>
         /// <returns>The object or <c>null</c>.</returns>
-        public async static Task<T> GetAsync<T>(this ISession session, int id, string collection = null) where T : class
+        public async static Task<T> GetAsync<T>(this ISession session, long id, string collection = null) where T : class
         {
             return (await session.GetAsync<T>(new[] { id }, collection)).FirstOrDefault();
         }

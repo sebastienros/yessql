@@ -27,7 +27,7 @@ namespace YesSql
 
         internal Dictionary<string, IEnumerable<IndexDescriptor>> Descriptors = new();
 
-        internal Dictionary<Type, IAccessor<int>> IdAccessors = new();
+        internal Dictionary<Type, IAccessor<long>> IdAccessors = new();
 
         internal Dictionary<Type, IAccessor<int>> VersionAccessors = new();
 
@@ -247,7 +247,7 @@ namespace YesSql
         {
         }
 
-        public IAccessor<int> GetIdAccessor(Type tContainer)
+        public IAccessor<long> GetIdAccessor(Type tContainer)
         {
             if (!IdAccessors.TryGetValue(tContainer, out var result))
             {
@@ -255,7 +255,7 @@ namespace YesSql
                 {
                     if (!IdAccessors.TryGetValue(tContainer, out result))
                     {
-                        result = Configuration.IdentifierAccessorFactory.CreateAccessor<int>(tContainer);
+                        result = Configuration.IdentifierAccessorFactory.CreateAccessor<long>(tContainer);
 
                         IdAccessors[tContainer] = result;
                     }
@@ -349,9 +349,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(string collection)
+        public long GetNextId(string collection)
         {
-            return (int)Configuration.IdGenerator.GetNextId(collection);
+            return Configuration.IdGenerator.GetNextId(collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)

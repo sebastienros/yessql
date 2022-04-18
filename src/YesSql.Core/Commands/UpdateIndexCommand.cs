@@ -12,15 +12,15 @@ namespace YesSql.Commands
 {
     public sealed class UpdateIndexCommand : IndexCommand
     {
-        private readonly int[] _addedDocumentIds;
-        private readonly int[] _deletedDocumentIds;
+        private readonly long[] _addedDocumentIds;
+        private readonly long[] _deletedDocumentIds;
 
         public override int ExecutionOrder { get; } = 3;
 
         public UpdateIndexCommand(
             IIndex index,
-            IEnumerable<int> addedDocumentIds,
-            IEnumerable<int> deletedDocumentIds,
+            IEnumerable<long> addedDocumentIds,
+            IEnumerable<long> deletedDocumentIds,
             IStore _store,
             string collection) : base(index, _store, collection)
         {

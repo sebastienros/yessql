@@ -9,8 +9,8 @@ namespace YesSql.Tests
         [Fact]
         public void KeysWithDifferentPrefixShouldNotBeEqual()
         {
-            var key1 = new WorkerQueryKey("prefix1", new[] { 1 });
-            var key2 = new WorkerQueryKey("prefix2", new[] { 1 });
+            var key1 = new WorkerQueryKey("prefix1", new[] { 1L });
+            var key2 = new WorkerQueryKey("prefix2", new[] { 1L });
 
             Assert.False(key1.Equals(key2));
         }
@@ -18,8 +18,8 @@ namespace YesSql.Tests
         [Fact]
         public void KeysWithSamePrefixShouldBeEqual()
         {
-            var key1 = new WorkerQueryKey("prefix1", new[] { 1 });
-            var key2 = new WorkerQueryKey("prefix1", new[] { 1 });
+            var key1 = new WorkerQueryKey("prefix1", new[] { 1L });
+            var key2 = new WorkerQueryKey("prefix1", new[] { 1L });
 
             Assert.True(key1.Equals(key2));
 
@@ -35,8 +35,8 @@ namespace YesSql.Tests
         [Fact]
         public void KeysWithDifferentIdsShouldNotBeEqual()
         {
-            var key1 = new WorkerQueryKey("prefix1", new[] { 1 });
-            var key2 = new WorkerQueryKey("prefix1", new[] { 2 });
+            var key1 = new WorkerQueryKey("prefix1", new[] { 1L });
+            var key2 = new WorkerQueryKey("prefix1", new[] { 2L });
 
             Assert.False(key1.Equals(key2));
         }
