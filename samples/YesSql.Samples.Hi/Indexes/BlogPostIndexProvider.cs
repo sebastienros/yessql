@@ -11,19 +11,19 @@ namespace YesSql.Samples.Hi.Indexes
         {
             // for each BlogPost, create a BlogPostByAuthor index
             context.For<BlogPostByAuthor>()
-                .Map(x =>
-                   new BlogPostByAuthor { Author = x.Author }
+                .Map(blogPost =>
+                   new BlogPostByAuthor { Author = blogPost.Author }
                 );
 
             // for each BlogPost, aggregate in an exiting BlogPostByDay
             context.For<BlogPostByDay, string>()
-                .Map(x =>
+                .Map(blogPost =>
                    new BlogPostByDay
                    {
-                       Day = x.PublishedUtc.ToString("yyyyMMdd"),
+                       Day = blogPost.PublishedUtc.ToString("yyyyMMdd"),
                        Count = 1
                    })
-                .Group(x => x.Day)
+                .Group(blogPost => blogPost.Day)
                 .Reduce(group =>
                    new BlogPostByDay
                    {
@@ -41,7 +41,7 @@ namespace YesSql.Samples.Hi.Indexes
 
             // for each BlogPost, create a BlogPostByTag index
             context.For<BlogPostByTag>()
-                .Map(x => x.Tags.Select(y => new BlogPostByTag { Tag = y }));
+                .Map(blogPost => blogPost.Tags.Select(tag => new BlogPostByTag { Tag = tag }));
         }
     }
 }
