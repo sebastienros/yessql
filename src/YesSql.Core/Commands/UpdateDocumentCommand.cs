@@ -72,7 +72,7 @@ namespace YesSql.Commands
             queries.Add(updateCmd);
 
             batchCommand
-                .AddParameter("Id_" + index, Document.Id, DbType.Int32)
+                .AddParameter("Id_" + index, Document.Id, DbType.Int64)
                 .AddParameter("Content_" + index, Document.Content, DbType.String)
                 .AddParameter("Version_" + index, Document.Version, DbType.Int64);
 

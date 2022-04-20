@@ -93,7 +93,7 @@ namespace YesSql.Commands
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"Id{index}";
             parameter.Value = Index.Id;
-            parameter.DbType = System.Data.DbType.Int32;
+            parameter.DbType = System.Data.DbType.Int64;
             command.Parameters.Add(parameter);
 
             // Update the documents list
@@ -106,7 +106,7 @@ namespace YesSql.Commands
                 parameter = command.CreateParameter();
                 parameter.ParameterName = $"Id_{index}";
                 parameter.Value = Index.Id;
-                parameter.DbType = System.Data.DbType.Int32;
+                parameter.DbType = System.Data.DbType.Int64;
                 command.Parameters.Add(parameter);
 
                 for (var i = 0; i < _addedDocumentIds.Length; i++)
@@ -117,7 +117,7 @@ namespace YesSql.Commands
                     parameter = command.CreateParameter();
                     parameter.ParameterName = $"AddedId_{index}_{i}";
                     parameter.Value = _addedDocumentIds[i];
-                    parameter.DbType = System.Data.DbType.Int32;
+                    parameter.DbType = System.Data.DbType.Int64;
                     command.Parameters.Add(parameter);
                 }
 
@@ -129,7 +129,7 @@ namespace YesSql.Commands
                     parameter = command.CreateParameter();
                     parameter.ParameterName = $"RemovedId_{index}_{i}";
                     parameter.Value = _deletedDocumentIds[i];
-                    parameter.DbType = System.Data.DbType.Int32;
+                    parameter.DbType = System.Data.DbType.Int64;
                     command.Parameters.Add(parameter);
                 }
             }

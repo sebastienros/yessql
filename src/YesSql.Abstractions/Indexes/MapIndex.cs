@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace YesSql.Indexes
 {
@@ -6,7 +6,7 @@ namespace YesSql.Indexes
     {
         private Document Document { get; set; }
 
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         void IIndex.AddDocument(Document document)
         {

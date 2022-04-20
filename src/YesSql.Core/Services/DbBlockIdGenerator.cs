@@ -67,7 +67,7 @@ namespace YesSql.Services
 
                         localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
                             .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                            .Column<ulong>("nextval")
+                            .Column<long>("nextval")
                             );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS

@@ -202,7 +202,7 @@ namespace YesSql
                             // The table doesn't exist, create it
                             builder
                                 .CreateTable(documentTable, table => table
-                                .Column<int>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
+                                .Column<long>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
                                 .Column<string>(nameof(Document.Type), column => column.NotNull())
                                 .Column<string>(nameof(Document.Content), column => column.Unlimited())
                                 .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))

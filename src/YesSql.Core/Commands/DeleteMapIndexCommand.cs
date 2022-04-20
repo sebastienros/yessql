@@ -43,7 +43,7 @@ namespace YesSql.Commands
 
             queries.Add(sql);
 
-            command.AddParameter($"Id_{index}", DocumentId, DbType.Int32);
+            command.AddParameter($"Id_{index}", DocumentId, DbType.Int64);
 
             return true;
         }

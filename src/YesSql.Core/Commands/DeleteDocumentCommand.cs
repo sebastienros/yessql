@@ -37,7 +37,7 @@ namespace YesSql.Commands
 
             var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = @Id_{index};";
             queries.Add(deleteCmd);
-            command.AddParameter($"Id_{index}", Document.Id, DbType.Int32);
+            command.AddParameter($"Id_{index}", Document.Id, DbType.Int64);
 
             return true;
         }

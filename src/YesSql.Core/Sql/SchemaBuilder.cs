@@ -58,7 +58,7 @@ namespace YesSql.Sql
 
                 createTable
                     .Column<int>("Id", column => column.Identity().NotNull())
-                    .Column<int>("DocumentId")
+                    .Column<long>("DocumentId")
                     ;
 
                 table(createTable);
@@ -93,7 +93,7 @@ namespace YesSql.Sql
                 // NB: Identity() implies PrimaryKey()
 
                 createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
+                    .Column<long>("Id", column => column.Identity().NotNull())
                     ;
 
                 table(createTable);
@@ -103,7 +103,7 @@ namespace YesSql.Sql
 
                 CreateTable(bridgeTableName, bridge => bridge
                     .Column<int>(indexName + "Id", column => column.NotNull())
-                    .Column<int>("DocumentId", column => column.NotNull())
+                    .Column<long>("DocumentId", column => column.NotNull())
                 );
 
                 CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { indexName + "Id" }, indexTable, new[] { "Id" });
