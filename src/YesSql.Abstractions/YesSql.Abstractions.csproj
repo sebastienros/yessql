@@ -1,10 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
-        <PackageReference Include="System.Memory" Version="4.5.0" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
+        <PackageReference Include="System.Memory" Version="4.5.4" />
     </ItemGroup>
     <ItemGroup>
         <!-- Latest minimum LTS version. We don't want to force a higher version to applications -->
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="Microsoft.SourceLink.GitHub" />
     </ItemGroup>
 </Project>

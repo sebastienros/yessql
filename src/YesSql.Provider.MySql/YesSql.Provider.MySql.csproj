@@ -1,9 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-        <PackageReference Include="MySqlConnector" Version="2.1.0" />
+        <PackageReference Include="MySqlConnector" Version="2.1.8" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="Microsoft.SourceLink.GitHub" />
     </ItemGroup>
 </Project>
