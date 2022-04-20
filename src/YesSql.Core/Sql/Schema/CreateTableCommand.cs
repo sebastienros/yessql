@@ -17,8 +17,6 @@ namespace YesSql.Sql.Schema
 
             column?.Invoke(command);
 
-            Console.WriteLine($"{Name}: {columnName} - {dbType.Name}");
-
             TableCommands.Add(command);
             return this;
         }
