@@ -57,7 +57,7 @@ namespace YesSql.Sql
                 // NB: Identity() implies PrimaryKey()
 
                 createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
+                    .Column<long>("Id", column => column.Identity().NotNull())
                     .Column<long>("DocumentId")
                     ;
 
@@ -102,7 +102,7 @@ namespace YesSql.Sql
                 var bridgeTableName = indexTable + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
-                    .Column<int>(indexName + "Id", column => column.NotNull())
+                    .Column<long>(indexName + "Id", column => column.NotNull())
                     .Column<long>("DocumentId", column => column.NotNull())
                 );
 

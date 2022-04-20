@@ -107,7 +107,7 @@ namespace YesSql.Provider
         public abstract string IdentitySelectString { get; }
         public abstract string IdentityLastId { get; }
         
-        public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
+        public virtual string IdentityColumnString => "[bigint] IDENTITY(1,1) primary key";
 
         public virtual string NullColumnString => String.Empty;
 
