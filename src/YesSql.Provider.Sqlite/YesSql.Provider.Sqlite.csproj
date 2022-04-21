@@ -7,6 +7,6 @@
         <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.12" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' != 'netcoreapp3.1'">
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.0" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.4" />
     </ItemGroup>
 </Project>
