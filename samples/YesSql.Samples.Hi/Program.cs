@@ -1,7 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
-using YesSql.Provider.Sqlite;
+using YesSql.Provider.SqlServer;
 using YesSql.Samples.Hi.Indexes;
 using YesSql.Samples.Hi.Models;
 using YesSql.Sql;
@@ -10,18 +9,16 @@ namespace YesSql.Samples.Hi
 {
     internal class Program
     {
-        public static async Task Main(string[] args)
+        static void Main(string[] args)
         {
-            var filename = "yessql.db";
+            MainAsync(args).GetAwaiter().GetResult();
+        }
 
-            if (File.Exists(filename))
-            {
-                File.Delete(filename);
-            }
-
-            var configuration = new Configuration()
-                .UseSqLite($"Data Source={filename};Cache=Shared");
-            var store = await StoreFactory.CreateAndInitializeAsync(configuration);
+        static async Task MainAsync(string[] args)
+        {
+            var store = await StoreFactory.CreateAndInitializeAsync(
+                new Configuration()
+                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True"));
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -68,10 +65,10 @@ namespace YesSql.Samples.Hi
             var post3 = new BlogPost
             {
                 Title = "Other blog title",
-                Author = "Lucian",
-                Content = "This is the content.",
+                Author = "Scott",
+                Content = "This is also content.",
                 PublishedUtc = DateTime.UtcNow,
-                Tags = new[] { "Other", "YesSql", "Test", "Blog" }
+                Tags = new[] { "YesSql", "Test", "Blog", "Content" }
             };
 
             // saving the post to the database

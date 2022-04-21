@@ -11,7 +11,7 @@
 
     <form asp-action="IndexPost" method="post">
         <input type="search" asp-for="Search.OriginalSearchText" type="hidden"></input>
-        
+
 
         <div class="form-group row mb-3">
             <label asp-for="Search.SearchText" class="col-2 align-self-center">Search</label>
@@ -31,11 +31,17 @@
             <label asp-for="Search.SelectedSort" class="col-2 align-self-center">Sort</label>
             <div class="col-10">
                 <select class="form-control" asp-for="Search.SelectedSort" asp-items="Model.Search.Sorts"></select>
-            </div>     
-
+            </div>
         </div>
-   
-        <button class="btn btn-primary d-flex ms-auto mb-3" type="submit">Search</button>   
+
+        <div class="form-group row mb-3">
+            <label asp-for="Search.SelectedTag" class="col-2 align-self-center">Tag</label>
+            <div class="col-10">
+                <select class="form-control" asp-for="Search.SelectedTag" asp-items="Model.Search.Tags"></select>
+            </div>
+        </div>
+
+        <button class="btn btn-primary d-flex ms-auto mb-3" type="submit">Search</button>
     </form>
 
     @foreach (var blogPost in Model.BlogPosts)
@@ -45,6 +51,14 @@
                 <h2>@blogPost.Title</h2>
                 <i>By: @blogPost.Author - Posted: @@ @blogPost.PublishedUtc</i>
                 <p>@blogPost.Content</p>
+                <p>
+                    @foreach (var tag in blogPost.Tags)
+                    {
+                        <span style="padding: 5px; margin-right: 10px; background: #99FF99; border: 1px solid #73AD21; border-radius: 5px;">
+                            #@tag
+                        </span>
+                    }
+                </p>
             </div>
         </div>
     }

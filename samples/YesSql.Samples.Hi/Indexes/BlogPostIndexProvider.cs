@@ -39,7 +39,7 @@ namespace YesSql.Samples.Hi.Indexes
                    }
             );
 
-            // for each BlogPost, create a BlogPostByTag index
+            // for each BlogPost, create BlogPostByTag index
             context.For<BlogPostByTag>()
                 .Map(blogPost => blogPost.Tags.Select(tag => new BlogPostByTag { Tag = tag }));
         }

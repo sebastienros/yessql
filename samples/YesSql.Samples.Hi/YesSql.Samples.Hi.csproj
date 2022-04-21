@@ -18,6 +18,5 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
-    <ProjectReference Include="..\..\src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
   </ItemGroup>
 </Project>
