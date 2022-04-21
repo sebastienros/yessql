@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-        <PackageReference Include="MySqlConnector" Version="2.1.8" />
+        <PackageReference Include="MySqlConnector" Version="2.1.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
