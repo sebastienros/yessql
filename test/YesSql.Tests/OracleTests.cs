@@ -21,7 +21,7 @@ namespace YesSql.Tests
         private const string OracleDifferentLengthTableName = "OracleDifferentLength";
         private const string DropIndexTestTableName = "DropIndexTest";
 
-        public static string ConnectionString => Environment.GetEnvironmentVariable("ORACLE_CONNECTION_STRING") ?? @"Data Source = (DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = localhost)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = orcl.isd.dp.ua)));User Id=yessql_test;Password=admin123;";
+        public static string ConnectionString => Environment.GetEnvironmentVariable("ORACLE_CONNECTION_STRING") ?? @"Data Source = (DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = localhost)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = orcl)));User Id=yessql_test;Password=password;";
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
