@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace YesSql.Sql.Schema
 {
@@ -13,7 +13,7 @@ namespace YesSql.Sql.Schema
         }
 
         public string Sql { get; private set; }
-        public List<string> Providers { get { return _providers; } }
+        public List<string> Providers => _providers;
 
         public ISqlStatementCommand ForProvider(string dataProvider)
         {

@@ -27,7 +27,7 @@ namespace YesSql.Commands
 
         public Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger )
         {
-            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = @Id;";
+            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = " + dialect.QuoteForParameter("Id") + dialect.StatementEnd;
             
             if (logger.IsEnabled(LogLevel.Trace))
             {
@@ -39,7 +39,7 @@ namespace YesSql.Commands
 
         public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
         {
-            var sql = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = @Id_{index};";
+            var sql = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection))} where {dialect.QuoteForColumnName("DocumentId")} = {dialect.QuoteForParameter("Id")}_{index}"+ dialect.BatchStatementEnd;
 
             queries.Add(sql);
 

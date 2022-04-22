@@ -160,7 +160,7 @@ namespace YesSql.Sql
                 var indexName = indexType.Name;
                 var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
 
-                if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
+                if (string.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
                     DropForeignKey(indexTable, "FK_" + (collection ?? "") + indexName);
                 }

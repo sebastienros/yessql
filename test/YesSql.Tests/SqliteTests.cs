@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,23 +35,11 @@ namespace YesSql.Tests
                 ;
         }
 
-        public override Task DisposeAsync()
-        {
-            //SqliteConnection.ClearAllPools();
-            return Task.CompletedTask;
-        }
-
         [Fact(Skip = "ReadCommitted is not supported by Sqlite")]
         public override Task ShouldReadCommittedRecords()
         {
             return base.ShouldReadCommittedRecords();
         }
-
-        //[Fact(Skip = "Breaks other tests if can't finish during delay")]
-        //public override Task ShouldGateQuery()
-        //{
-        //    return base.ShouldGateQuery();
-        //}
 
         [Fact(Skip = "Sqlite doesn't support concurrent writers")]
         public override Task ShouldReadUncommittedRecords()

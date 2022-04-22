@@ -1,4 +1,4 @@
-﻿namespace YesSql.Sql.Schema
+namespace YesSql.Sql.Schema
 {
     public class AddColumnCommand : CreateColumnCommand, IAddColumnCommand
     {

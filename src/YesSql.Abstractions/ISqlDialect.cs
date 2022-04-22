@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Text;
+using System.Threading.Tasks;
+using YesSql.Indexes;
 
 namespace YesSql
 {
@@ -209,5 +212,19 @@ namespace YesSql
         /// Create a <see cref="ISqlBuilder" /> instance.
         /// </summary>
         ISqlBuilder CreateBuilder(string tablePrefix);
+
+        string QuoteForParameter(string parameterName);
+        string ParameterNamePrefix { get; }
+        string StatementEnd { get; }
+        string BatchStatementEnd { get; }
+        string NullString { get; }
+        bool IsSpecialDistinctRequired { get; }
+        string GetParameterName(string parameterName);
+        IDbCommand ConfigureCommand(IDbCommand command);
+        Task<int> InsertReturningReduceIndexAsync(DbConnection connection, IIndex index, string insertSql, DbTransaction transaction);
+        void PrepareReturningMapIndexCommand(DbCommand command);
+        object GetDynamicParameters(DbConnection connection, object parameters, string tableName);
+        object GetSafeIndexParameters(IIndex index);
+        string AliasKeyword { get; }
     }
 }

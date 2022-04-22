@@ -1,10 +1,10 @@
-using Dapper;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
+using Dapper;
+using Microsoft.Extensions.Logging;
 
 namespace YesSql.Commands
 {
@@ -26,28 +26,27 @@ namespace YesSql.Commands
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
-                + $"set {dialect.QuoteForColumnName("Content")} = @Content, {dialect.QuoteForColumnName("Version")} = @Version where "
-                + $"{dialect.QuoteForColumnName("Id")} = @Id "
+                + $"set {dialect.QuoteForColumnName("Content")} = {dialect.QuoteForParameter("Content")}, " +
+                $"{dialect.QuoteForColumnName("Version")} = {dialect.QuoteForParameter("Version")} where "
+                + $"{dialect.QuoteForColumnName("Id")} = {dialect.QuoteForParameter("Id")} "
                 + (_checkVersion > -1
                     ? Document.Version == 1 // When the Document.Version is 0 + 1 the Version column maybe null.
-                        ? $" and ({dialect.QuoteForColumnName("Version")} IS NULL OR {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)}) ;"
-                        : $" and {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)} ;"
-                    : ";")
-                ;
+                        ? $" and ({dialect.QuoteForColumnName("Version")} IS NULL OR {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)}){dialect.StatementEnd}"
+                        : $" and {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)}{dialect.StatementEnd}"
+                    : dialect.StatementEnd);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(updateCmd);
             }
 
-            var updatedCount = await connection.ExecuteAsync(updateCmd, Document, transaction);
+            var parameters = dialect.GetDynamicParameters(connection, Document, _store.Configuration.TablePrefix + documentTable);
+            var updatedCount = await connection.ExecuteAsync(updateCmd, parameters, transaction);
 
             if (_checkVersion > -1 && updatedCount != 1)
             {
                 throw new ConcurrencyException();
             }
-
-            return;
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
@@ -65,16 +64,16 @@ namespace YesSql.Commands
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
-                + $"set {dialect.QuoteForColumnName("Content")} = @Content_{index}, {dialect.QuoteForColumnName("Version")} = @Version_{index} where "
-                + $"{dialect.QuoteForColumnName("Id")} = @Id_{index};"
-                ;
+                + $"set {dialect.QuoteForColumnName("Content")} = {dialect.QuoteForParameter("Content")}_{index}," +
+                $" {dialect.QuoteForColumnName("Version")} = {dialect.QuoteForParameter("Version")}_{index} where "
+                + $"{dialect.QuoteForColumnName("Id")} = {dialect.QuoteForParameter("Id")}_{index}{dialect.BatchStatementEnd}";
 
             queries.Add(updateCmd);
 
             batchCommand
                 .AddParameter("Id_" + index, Document.Id, DbType.Int32)
                 .AddParameter("Content_" + index, Document.Content, DbType.String)
-                .AddParameter("Version_" + index, Document.Version, DbType.Int64);
+                .AddParameter(dialect.GetParameterName("Version") + "_" + index, Document.Version, DbType.Int64);
 
             return true;
         }

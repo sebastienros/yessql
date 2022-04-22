@@ -41,19 +41,18 @@ namespace YesSql.Commands
             {
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
-                command.CommandText = sql;
+                command.CommandText = sql; //"update " + dialect.QuoteForTableName(_store.Configuration.TablePrefix  + type.Name) + " set " + dialect.QuoteForColumnName("DocumentId") + " =" + dialect.QuoteForParameter("mapid") + " where " + dialect.QuoteForColumnName("Id") + " = " + dialect.QuoteForParameter("Id");
                 GetProperties(command, Index, "", dialect);
                 command.AddParameter($"DocumentId", Index.GetAddedDocuments().Single().Id);
+                dialect.PrepareReturningMapIndexCommand(command);
                 Index.Id = Convert.ToInt32(await command.ExecuteScalarAsync());
             }
             else
             {
-                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
-
-                var reduceIndex = Index as ReduceIndex;
+                Index.Id = await dialect.InsertReturningReduceIndexAsync(connection, Index, sql, transaction);
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
-                var bridgeSql = "insert into " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) + " (" + columnList + ") values (@Id, @DocumentId);";
+                var bridgeSql = "insert into " + dialect.QuoteForTableName(_store.Configuration.TablePrefix  + bridgeTableName) + " (" + columnList + ") values (" + dialect.QuoteForParameter("Id") + ", " + dialect.QuoteForParameter("DocumentId") + ")" + dialect.StatementEnd;
 
                 if (logger.IsEnabled(LogLevel.Trace))
                 {
@@ -107,11 +106,9 @@ namespace YesSql.Commands
             }
             else
             {
-                var reduceIndex = Index as ReduceIndex;
-                
                 var bridgeTableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
-                queries.Add($"insert into {dialect.QuoteForTableName(bridgeTableName)} ({columnList}) values ({dialect.IdentityLastId}, @DocumentId_{index});");
+                queries.Add($"insert into {dialect.QuoteForTableName(bridgeTableName)} ({columnList}) values ({dialect.IdentityLastId}, {dialect.QuoteForParameter("DocumentId")}_{index})"+ dialect.BatchStatementEnd);
                 batchCommand.AddParameter($"DocumentId_{index}", _addedDocumentIds[0]);
             }
 

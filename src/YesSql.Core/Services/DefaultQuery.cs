@@ -1,5 +1,3 @@
-using Dapper;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +6,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using Dapper;
+using Microsoft.Extensions.Logging;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Utils;
@@ -100,18 +100,19 @@ namespace YesSql.Services
 
         public QueryState Clone()
         {
-            var clone = new QueryState(_sqlBuilder.Clone(), _store, _collection);
-
-            clone._bindingName = _bindingName;
-            clone._bindings = new Dictionary<string, List<Type>>();
+            var clone = new QueryState(_sqlBuilder.Clone(), _store, _collection)
+            {
+                _bindingName = _bindingName,
+                _bindings = new Dictionary<string, List<Type>>()
+            };
             foreach (var binding in _bindings)
             {
                 clone._bindings.Add(binding.Key, new List<Type>(binding.Value));
             }
 
-            clone._currentPredicate = (CompositeNode) _predicate.Clone();
+            clone._currentPredicate = (CompositeNode)_predicate.Clone();
             clone._predicate = clone._currentPredicate;
-            
+
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
 
@@ -124,8 +125,8 @@ namespace YesSql.Services
         internal QueryState _queryState;
         private readonly Session _session;
         private readonly ISqlDialect _dialect;
-        private object _compiledQuery = null;
-        private string _collection;
+        private readonly object _compiledQuery = null;
+        private readonly string _collection;
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
             new Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>>();
@@ -222,7 +223,7 @@ namespace YesSql.Services
                     var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
                     var values = new List<object>();
 
-                    foreach(var o in objects)
+                    foreach (var o in objects)
                     {
                         values.Add(o);
                     }
@@ -234,7 +235,7 @@ namespace YesSql.Services
                     else if (values.Count == 1)
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
-                        builder.Append(" = " );
+                        builder.Append(" = ");
                         query.ConvertFragment(builder, Expression.Constant(values[0]));
                     }
                     else
@@ -402,7 +403,7 @@ namespace YesSql.Services
             if (bindingIndex != -1)
             {
                 // When a binding is reused it should be last to be correctly applied to a filter predicate.
-                if (bindingIndex != bindings.Count -1)
+                if (bindingIndex != bindings.Count - 1)
                 {
                     var binding = bindings[bindingIndex];
                     bindings.RemoveAt(bindingIndex);
@@ -528,7 +529,7 @@ namespace YesSql.Services
 
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
-                        var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                        var _parameterName = _dialect.QuoteForParameter("p" + _queryState._sqlBuilder.Parameters.Count);
 
                         _queryState._parameterBindings.Add((o, sqlBuilder) =>
                         {
@@ -562,7 +563,7 @@ namespace YesSql.Services
 
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
-                        var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                        var _parameterName = _dialect.QuoteForParameter("p"  + _queryState._sqlBuilder.Parameters.Count);
 
                         _queryState._parameterBindings.Add((o, sqlBuilder) =>
                         {
@@ -644,16 +645,16 @@ namespace YesSql.Services
                         var binaryExpression = (BinaryExpression)expression;
                         if (binaryExpression.Left is ConstantExpression left && binaryExpression.Right is ConstantExpression right)
                         {
-                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                            _queryState._lastParameterName = _dialect.QuoteForParameter("p" + _queryState._sqlBuilder.Parameters.Count);
                             _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(left.Value));
                             builder.Append(_queryState._lastParameterName);
-                            
+
                             builder.Append(GetBinaryOperator(expression));
 
-                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                            _queryState._lastParameterName = _dialect.QuoteForParameter("p" + _queryState._sqlBuilder.Parameters.Count);
                             _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(right.Value));
                             builder.Append(_queryState._lastParameterName);
-                        
+
                             return;
                         }
 
@@ -722,10 +723,10 @@ namespace YesSql.Services
                         var boundTable = _queryState.GetTypeAlias(bound);
                         builder.Append(_queryState._sqlBuilder.FormatColumn(boundTable, memberExpression.Member.Name, true));
                     }
-                    
+
                     break;
                 case ExpressionType.Constant:
-                    _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                    _queryState._lastParameterName = _dialect.QuoteForParameter("p" + _queryState._sqlBuilder.Parameters.Count);
                     var value = ((ConstantExpression)expression).Value;
                     _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(value));
                     builder.Append(_queryState._lastParameterName);
@@ -734,7 +735,7 @@ namespace YesSql.Services
                     var methodCallExpression = (MethodCallExpression)expression;
                     var methodInfo = methodCallExpression.Method;
                     Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression> action;
-                    if (MethodMappings.TryGetValue(methodInfo, out action) 
+                    if (MethodMappings.TryGetValue(methodInfo, out action)
                         || MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action))
                     {
                         action(this, builder, _dialect, methodCallExpression);
@@ -1049,8 +1050,8 @@ namespace YesSql.Services
 
             if (filterType)
             {
-                _queryState._sqlBuilder.WhereAnd(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type") + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
-                _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
+                _queryState._sqlBuilder.WhereAnd(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type") + " = " + _dialect.QuoteForParameter("Type")); // TODO: investigate, this makes the query 3 times slower on sqlite
+                _queryState._sqlBuilder.Parameters[_dialect.QuoteForParameter("Type")] = _session.Store.TypeNames[typeof(T)];
             }
 
             return new Query<T>(this);
@@ -1176,7 +1177,7 @@ namespace YesSql.Services
             async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach(var item in await ListImpl())
+                foreach (var item in await ListImpl())
                 {
                     yield return item;
                 }
@@ -1237,7 +1238,10 @@ namespace YesSql.Services
                         }
 
                         _query._queryState._sqlBuilder.Selector(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "*"));
-                        _query._queryState._sqlBuilder.Distinct();
+                        if (!_query._dialect.IsSpecialDistinctRequired)//We cannot specify a LOB column in a SELECT... DISTINCT statement or in a join.
+                        {
+                            _query._queryState._sqlBuilder.Distinct();
+                        }
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                         var documents = await _query._session._store.ProduceAsync(key, static (state) =>
@@ -1252,6 +1256,10 @@ namespace YesSql.Services
                             return state.Connection.QueryAsync<Document>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
 
+                        if (_query._dialect.IsSpecialDistinctRequired)//We cannot specify a LOB column in a SELECT... DISTINCT  statement or in a join.
+                        {
+                            return _query._session.Get<T>(documents.Distinct().ToArray(), _query._collection);
+                        }
                         return _query._session.Get<T>(documents.ToArray(), _query._collection);
                     }
                 }
@@ -1368,7 +1376,7 @@ namespace YesSql.Services
                 }
 
                 return new Query<T>(_query);
-            }            
+            }
 
             IQuery<T, TIndex> IQuery<T>.With<TIndex>()
             {
@@ -1400,7 +1408,7 @@ namespace YesSql.Services
             }
         }
 
-        class QueryIndex<T> : Query<T>, IQueryIndex<T> where T : class, IIndex
+        private class QueryIndex<T> : Query<T>, IQueryIndex<T> where T : class, IIndex
         {
             public QueryIndex(DefaultQuery query) : base(query)
             { }
@@ -1521,7 +1529,7 @@ namespace YesSql.Services
             }
         }
 
-        class Query<T, TIndex> : Query<T>, IQuery<T, TIndex>
+        private class Query<T, TIndex> : Query<T>, IQuery<T, TIndex>
             where T : class
             where TIndex : IIndex
         {

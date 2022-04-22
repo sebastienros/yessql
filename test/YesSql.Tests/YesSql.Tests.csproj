@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFrameworks>netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
         <LangVersion>latest</LangVersion>
@@ -33,6 +33,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
+        <ProjectReference Include="..\..\src\YesSql.Provider.Oracle\YesSql.Provider.Oracle.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />

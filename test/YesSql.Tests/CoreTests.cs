@@ -34,7 +34,7 @@ namespace YesSql.Tests
         protected abstract IConfiguration CreateConfiguration();
 
 
-        public CoreTests(ITestOutputHelper output)
+        protected CoreTests(ITestOutputHelper output)
         {
             _output = output;
         }
@@ -65,7 +65,7 @@ namespace YesSql.Tests
             ClearTables(_configuration);
         }
 
-        public virtual Task DisposeAsync()
+        public Task DisposeAsync()
         {
             return Task.CompletedTask;
         }
@@ -84,6 +84,9 @@ namespace YesSql.Tests
             builder.DropReduceIndexTable<AttachmentByDay>();
             builder.DropMapIndexTable<ArticleByPublishedDate>();
             builder.DropMapIndexTable<PersonByName>();
+            builder.DropMapIndexTable<FileInfoIndex>();
+            builder.DropMapIndexTable<CustomerById>();
+            builder.DropMapIndexTable<CustomerByCreationDate>();
             builder.DropMapIndexTable<CarIndex>();
             builder.DropMapIndexTable<PersonByNameCol>();
             builder.DropMapIndexTable<PersonIdentity>();
@@ -212,61 +215,82 @@ namespace YesSql.Tests
             var builder = new SchemaBuilder(configuration, transaction);
 
             builder.CreateReduceIndexTable<ArticlesByDay>(column => column
-                    .Column<int>(nameof(ArticlesByDay.Count))
-                    .Column<int>(nameof(ArticlesByDay.DayOfYear))
-                );
+                .Column<int>(nameof(ArticlesByDay.Count))
+                .Column<int>(nameof(ArticlesByDay.DayOfYear))
+            );
             builder.CreateReduceIndexTable<AttachmentByDay>(column => column
-                    .Column<int>(nameof(AttachmentByDay.Count))
-                    .Column<int>(nameof(AttachmentByDay.Date))
-                );
+                .Column<int>(nameof(AttachmentByDay.Count))
+                .Column<int>(nameof(AttachmentByDay.Date))
+            );
 
             builder.CreateReduceIndexTable<UserByRoleNameIndex>(column => column
-                    .Column<int>(nameof(UserByRoleNameIndex.Count))
-                    .Column<string>(nameof(UserByRoleNameIndex.RoleName))
-                );
+                .Column<int>(nameof(UserByRoleNameIndex.Count))
+                .Column<string>(nameof(UserByRoleNameIndex.RoleName))
+            );
 
             builder.CreateMapIndexTable<ArticleByPublishedDate>(column => column
-                    .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                    .Column<string>(nameof(ArticleByPublishedDate.Title))
-                );
+                .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
+                .Column<string>(nameof(ArticleByPublishedDate.Title))
+            );
 
             builder.CreateMapIndexTable<PersonByName>(column => column
-                    .Column<string>(nameof(PersonByName.SomeName))
-                );
+                .Column<string>(nameof(PersonByName.SomeName))
+            );
+
+            builder.CreateMapIndexTable<FileInfoIndex>(column => column
+                .Column<string>(nameof(FileInfoIndex.FileId))
+                .Column<int>(nameof(FileInfoIndex.Revision))
+            );
+
+            builder.CreateMapIndexTable<CustomerById>(column => column
+                .Column<long>(nameof(CustomerById.CustomerId))
+                .Column<long?>(nameof(CustomerById.OrderId))
+                .Column<bool>(nameof(CustomerById.Active))
+                .Column<int>(nameof(CustomerById.Version))
+            );
+
+            builder.CreateMapIndexTable<CustomerByCreationDate>(column => column
+                .Column<long>(nameof(CustomerByCreationDate.CustomerId))
+                .Column<long?>(nameof(CustomerByCreationDate.OrderId))
+                .Column<bool>(nameof(CustomerByCreationDate.Active))
+                .Column<int>(nameof(CustomerByCreationDate.Version))
+            );
+            builder.AlterIndexTable<CustomerByCreationDate>(table => table
+                .AddColumn<DateTime>(nameof(CustomerByCreationDate.CreationDate)));
 
             builder.CreateMapIndexTable<CarIndex>(column => column
-                    .Column<string>(nameof(CarIndex.Name))
-                    .Column<Categories>(nameof(CarIndex.Category))
-                );
+                .Column<string>(nameof(CarIndex.Name))
+                .Column<Categories>(nameof(CarIndex.Category))
+            );
 
             builder.CreateMapIndexTable<PersonByNameCol>(column => column
-                    .Column<string>(nameof(PersonByNameCol.Name))
-                    );
+                .Column<string>(nameof(PersonByNameCol.Name))
+            );
 
             builder.CreateMapIndexTable<PersonIdentity>(column => column
-                    .Column<string>(nameof(PersonIdentity.Identity))
-                );
+                .Column<string>(nameof(PersonIdentity.Identity))
+            );
 
             builder.CreateMapIndexTable<PersonByAge>(column => column
-                    .Column<int>(nameof(PersonByAge.Age))
-                    .Column<bool>(nameof(PersonByAge.Adult))
-                    .Column<string>(nameof(PersonByAge.Name))
-                );
+                .Column<int>(nameof(PersonByAge.Age))
+                .Column<bool>(nameof(PersonByAge.Adult))
+                .Column<string>(nameof(PersonByAge.Name))
+            );
 
             builder.CreateMapIndexTable<ShapeIndex>(column => column
-                    .Column<string>(nameof(ShapeIndex.Name))
-                );
+                .Column<string>(nameof(ShapeIndex.Name))
+            );
 
             builder.CreateMapIndexTable<PersonByNullableAge>(column => column
-                    .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
-                );
+                .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
+            );
 
             builder.CreateMapIndexTable<PublishedArticle>(column => { });
 
             builder.CreateMapIndexTable<EmailByAttachment>(column => column
-                    .Column<DateTime>(nameof(EmailByAttachment.Date))
-                    .Column<string>(nameof(EmailByAttachment.AttachmentName))
-                );
+                .Column<DateTime>(nameof(EmailByAttachment.Date))
+                .Column<string>(nameof(EmailByAttachment.AttachmentName))
+            );
 
             builder.CreateMapIndexTable<PropertyIndex>(column => column
                 .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
@@ -276,11 +300,11 @@ namespace YesSql.Tests
             );
 
             builder.CreateMapIndexTable<Binary>(column => column
-                    .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
-                    .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
-                    .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
-                    .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
-                );
+                .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
+                .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
+                .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
+                .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
+            );
 
             builder.CreateMapIndexTable<TypesIndex>(column => column
                     .Column<bool>(nameof(TypesIndex.ValueBool))
@@ -315,29 +339,29 @@ namespace YesSql.Tests
                 //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
                 //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
                 //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
-                );
+            );
 
             builder.CreateMapIndexTable<PersonByName>(column => column
                     .Column<string>(nameof(PersonByName.SomeName)),
-                    "Col1"
-                    );
+                "Col1"
+            );
 
             builder.CreateMapIndexTable<PersonByNameCol>(column => column
                     .Column<string>(nameof(PersonByNameCol.Name)),
-                    "Col1"
-                    );
+                "Col1"
+            );
 
             builder.CreateMapIndexTable<PersonByBothNamesCol>(column => column
                     .Column<string>(nameof(PersonByBothNamesCol.Firstname))
                     .Column<string>(nameof(PersonByBothNamesCol.Lastname)),
-                    "Col1"
-                    );
+                "Col1"
+            );
 
             builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
                     .Column<string>(nameof(PersonsByNameCol.Name))
                     .Column<int>(nameof(PersonsByNameCol.Count)),
-                    "Col1"
-                    );
+                "Col1"
+            );
 
             transaction.Commit();
         }
@@ -345,11 +369,9 @@ namespace YesSql.Tests
         [Fact]
         public void ShouldCreateDatabase()
         {
-            using (var session = _store.CreateSession())
-            {
-                var doc = new Product();
-                session.Save(doc);
-            }
+            using var session = _store.CreateSession();
+            var doc = new Product();
+            session.Save(doc);
         }
 
         [Fact]
@@ -456,25 +478,23 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSaveAnonymousObject()
         {
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var bill = new
             {
-                var bill = new
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                var steve = new
-                {
-                    Firstname = "Steve",
-                    Lastname = "Balmer"
-                };
+            var steve = new
+            {
+                Firstname = "Steve",
+                Lastname = "Balmer"
+            };
 
-                session.Save(bill);
-                session.Save(steve);
+            session.Save(bill);
+            session.Save(steve);
 
-                await session.SaveChangesAsync();
-            }
+            await session.SaveChangesAsync();
         }
 
         [Fact]
@@ -515,11 +535,9 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryNonExistentResult()
         {
-            using (var session = _store.CreateSession())
-            {
-                var person = await session.Query<Person>().FirstOrDefaultAsync();
-                Assert.Null(person);
-            }
+            using var session = _store.CreateSession();
+            var person = await session.Query<Person>().FirstOrDefaultAsync();
+            Assert.Null(person);
         }
 
         [Fact]
@@ -551,6 +569,7 @@ namespace YesSql.Tests
         public async Task ShouldQueryIndexWithParameter()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
+            var dialect = _store.Configuration.SqlDialect;
 
             using (var session = _store.CreateSession())
             {
@@ -561,10 +580,10 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.QueryIndex<PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+                var person = await session.QueryIndex<PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + $" = {dialect.QuoteForParameter("Name")}").WithParameter("Name", "Bill").FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
-                Assert.Equal("Bill", (string)person.SomeName);
+                Assert.Equal("Bill", person.SomeName);
             }
         }
 
@@ -754,6 +773,7 @@ namespace YesSql.Tests
         public async Task ShouldQueryDocumentWithParameter()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
+            var dialect = _store.Configuration.SqlDialect;
 
             using (var session = _store.CreateSession())
             {
@@ -765,10 +785,10 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var person = await session.Query<Person, PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " = @Name").WithParameter("Name", "Bill").FirstOrDefaultAsync();
+                var person = await session.Query<Person, PersonByName>().Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + $" = {dialect.QuoteForParameter("Name")}").WithParameter("Name", "Bill").FirstOrDefaultAsync();
 
                 Assert.NotNull(person);
-                Assert.Equal("Bill", (string)person.Firstname);
+                Assert.Equal("Bill", person.Firstname);
             }
         }
 
@@ -844,60 +864,54 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldAssignIdWhenSaved()
         {
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                Assert.True(bill.Id == 0);
-                session.Save(bill);
-                Assert.True(bill.Id != 0);
+            Assert.True(bill.Id == 0);
+            session.Save(bill);
+            Assert.True(bill.Id != 0);
 
-                await session.SaveChangesAsync();
-            }
+            await session.SaveChangesAsync();
         }
 
         [Fact]
         public async Task ShouldAutoFlushOnGet()
         {
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                session.Save(bill);
-                var newBill = await session.GetAsync<Person>(bill.Id);
+            session.Save(bill);
+            var newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.Same(newBill, bill);
+            Assert.Same(newBill, bill);
 
-                await session.SaveChangesAsync();
-            }
+            await session.SaveChangesAsync();
         }
 
         [Fact]
         public async Task ShouldKeepTrackedOnAutoFlush()
         {
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                session.Save(bill);
-                var newBill = await session.GetAsync<Person>(bill.Id);
+            session.Save(bill);
+            var newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.Same(newBill, bill);
+            Assert.Same(newBill, bill);
 
-                await session.SaveChangesAsync();
-            }
+            await session.SaveChangesAsync();
         }
 
         [Fact]
@@ -926,25 +940,23 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldKeepIdentityMapOnCommitAsync()
         {
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                session.Save(bill);
-                var newBill = await session.GetAsync<Person>(bill.Id);
+            session.Save(bill);
+            var newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.Equal(bill, newBill);
+            Assert.Equal(bill, newBill);
 
-                await session.SaveChangesAsync();
+            await session.SaveChangesAsync();
 
-                newBill = await session.GetAsync<Person>(bill.Id);
+            newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.Equal(bill, newBill);
-            }
+            Assert.Equal(bill, newBill);
         }
 
         [Fact]
@@ -1207,10 +1219,8 @@ namespace YesSql.Tests
             {
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
-                    using (var session = _store.CreateSession())
-                    {
-                        Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).CountAsync());
-                    }
+                    using var session = _store.CreateSession();
+                    Assert.Equal(2, await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).CountAsync());
                 }
             })).ToList();
 
@@ -1978,7 +1988,7 @@ namespace YesSql.Tests
                 Assert.Equal("Steve", (await query.FirstOrDefaultAsync()).Firstname);
             }
         }
-        
+
         [Fact]
         public async Task ShouldJoinReduceIndex()
         {
@@ -2674,17 +2684,15 @@ namespace YesSql.Tests
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
-            using (var session = _store.CreateSession())
-            {
-                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
-                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+            using var session = _store.CreateSession();
+            var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+            var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
 
-                session.Save(d1);
-                session.Save(d2);
+            session.Save(d1);
+            session.Save(d2);
 
-                var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
-                Assert.Equal(2, await articles.CountAsync());
-            }
+            var articles = session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305);
+            Assert.Equal(2, await articles.CountAsync());
         }
 
         [Fact]
@@ -2692,22 +2700,20 @@ namespace YesSql.Tests
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
-            using (var session = _store.CreateSession())
-            {
-                var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
-                var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+            using var session = _store.CreateSession();
+            var d1 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
+            var d2 = new Article { PublishedUtc = new DateTime(2011, 11, 1) };
 
-                session.Save(d1);
-                session.Save(d2);
+            session.Save(d1);
+            session.Save(d2);
 
-                var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).ListAsync();
+            var articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 305).ListAsync();
 
-                d1.PublishedUtc = new DateTime(2011, 11, 2);
+            d1.PublishedUtc = new DateTime(2011, 11, 2);
 
-                articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306).ListAsync();
+            articles = await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == 306).ListAsync();
 
-                Assert.Single(articles);
-            }
+            Assert.Single(articles);
         }
 
         [Fact]
@@ -2844,7 +2850,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
 
@@ -2860,7 +2866,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(-1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(-1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
 
@@ -2876,7 +2882,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
         }
@@ -3107,18 +3113,16 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSaveBigDocuments()
         {
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = new String('x', 10000),
-                };
+                Firstname = new string('x', 10000),
+            };
 
 
-                session.Save(bill);
+            session.Save(bill);
 
-                await session.SaveChangesAsync();
-            }
+            await session.SaveChangesAsync();
         }
 
         [Fact]
@@ -4507,16 +4511,19 @@ namespace YesSql.Tests
             {
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
-                    using (var session = _store.CreateSession())
-                    {
-                        await session.Query().For<Person>().With<PersonByName>().ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
-                    }
+                    using var session = _store.CreateSession();
+                    await session.Query().For<Person>().With<PersonByName>().ListAsync();
+                    await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
+                    await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                 }
             })).ToList();
 
+
             await Task.Delay(TimeSpan.FromSeconds(3));
+            
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(3)));
+
+            await Task.WhenAny(tasks);
 
             // Flushing tasks
             stopping = true;
@@ -4529,21 +4536,19 @@ namespace YesSql.Tests
             // Gated queries
 
             swGated.Restart();
-
             tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
+                swGated.Start();
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
-                    using (var session = _store.CreateSession())
-                    {
-                        await session.Query().For<Person>().With<PersonByName>().ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
-                    }
+                    using var session = _store.CreateSession();
+                    await session.Query().For<Person>().With<PersonByName>().ListAsync();
+                    await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
+                    await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                 }
-
                 gatedCounter = counter;
                 swGated.Stop();
+
             })).ToList();
 
             await Task.Delay(TimeSpan.FromSeconds(3));
@@ -4564,17 +4569,14 @@ namespace YesSql.Tests
 
             tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
             {
+                swNonGated.Start();
                 while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
                 {
-                    using (var session = _store.CreateSession())
-                    {
-                        await session.Query().For<Person>().With<PersonByName>().ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
-                        await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
-                    }
+                    using var session = _store.CreateSession();
+                    await session.Query().For<Person>().With<PersonByName>().ListAsync();
+                    await session.Query().For<Person>().With<PersonByName>(x => x.SomeName == "Steve").ListAsync();
+                    await session.Query().For<Person>().With<PersonByName>().Where(x => x.SomeName == "Steve").ListAsync();
                 }
-
-                nonGatedCounter = counter;
                 swNonGated.Stop();
             })).ToList();
 
@@ -4638,7 +4640,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldOrderCaseInsensitively()
+        public virtual async Task ShouldOrderCaseInsensitively()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
 
@@ -4955,26 +4957,25 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldNotDuplicateCommandsWhenCommitFails()
         {
-
-            using (var session = (Session)_store.CreateSession())
+            using var session = (Session)_store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                session.Save(bill);
+            session.Save(bill);
 
-                // Create a command that will throw an exception
-                // Use an order of 4 so it will be at the end of the list
-                session._commands = new List<IIndexCommand>();
-                session._commands.Add(new FailingCommand(new Document()));
+            // Create a command that will throw an exception
+            // Use an order of 4 so it will be at the end of the list
+            session._commands = new List<IIndexCommand>
+            {
+                new FailingCommand(new Document())
+            };
 
-                await Assert.ThrowsAnyAsync<Exception>(async () => await session.SaveChangesAsync());
+            await Assert.ThrowsAnyAsync<Exception>(async () => await session.SaveChangesAsync());
 
-                Assert.Null(session._commands);
-            }
+            Assert.Null(session._commands);
         }
 
         [Fact]
@@ -5082,86 +5083,80 @@ namespace YesSql.Tests
             var column2 = "Column2";
             var value = "Value";
 
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            connection.Open();
+
+            try
             {
-                connection.Open();
+                using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                try
-                {
-                    using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                    {
+                builder.DropTable(table);
 
-                        var builder = new SchemaBuilder(_store.Configuration, transaction);
+                transaction.Commit();
+            }
+            catch
+            {
+                // Do nothing if the table can't be dropped
+            }
 
-                        builder.DropTable(table);
+            using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+            {
 
-                        transaction.Commit();
-                    }
-                }
-                catch
-                {
-                    // Do nothing if the table can't be dropped
-                }
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
+                builder.CreateTable(table, column => column
+                    .Column<string>(column1)
+                );
 
-                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+                var sqlInsert = string.Format("INSERT INTO {0} ({1}) VALUES({2})",
+                    _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                    _store.Configuration.SqlDialect.QuoteForColumnName(column1),
+                    _store.Configuration.SqlDialect.GetSqlValue(value)
+                );
 
-                    builder.CreateTable(table, column => column
-                            .Column<string>(column1)
-                        );
+                connection.Execute(sqlInsert, transaction: transaction);
 
-                    var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
-                        _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.GetSqlValue(value)
-                        );
+                transaction.Commit();
+            }
 
-                    connection.Execute(sqlInsert, transaction: transaction);
+            using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+            {
+                var sqlSelect = string.Format("SELECT {0} FROM {1}",
+                    _store.Configuration.SqlDialect.QuoteForColumnName(column1),
+                    _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                );
 
-                    transaction.Commit();
-                }
+                var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
-                        _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
-                        );
+                Assert.Equal(value, result.Column1);
 
-                    var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
+                transaction.Commit();
+            }
 
-                    Assert.Equal(value, result.Column1);
+            using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+            {
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    transaction.Commit();
-                }
+                builder.AlterTable(table, column => column
+                    .RenameColumn(column1, column2)
+                );
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+                transaction.Commit();
+            }
 
-                    builder.AlterTable(table, column => column
-                            .RenameColumn(column1, column2)
-                        );
+            using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+            {
+                var sqlSelect = string.Format("SELECT {0} FROM {1}",
+                    _store.Configuration.SqlDialect.QuoteForColumnName(column2),
+                    _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                );
 
-                    transaction.Commit();
-                }
+                var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
-                        _store.Configuration.SqlDialect.QuoteForColumnName(column2),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
-                        );
+                Assert.Equal(value, result.Column2);
 
-                    var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
-
-                    Assert.Equal(value, result.Column2);
-
-                    transaction.Commit();
-                }
-
+                transaction.Commit();
             }
         }
 
@@ -5215,26 +5210,24 @@ namespace YesSql.Tests
 
                 await Assert.ThrowsAsync<ConcurrencyException>(async () =>
                 {
-                    using (var session = _store.CreateSession())
+                    using var session = _store.CreateSession();
+                    var person = await session.Query<Person>().FirstOrDefaultAsync();
+                    Assert.NotNull(person);
+
+                    task2Loaded.Set();
+
+                    // Wait for the other thread to save the person before updating it
+                    if (!task1Saved.WaitOne(5000))
                     {
-                        var person = await session.Query<Person>().FirstOrDefaultAsync();
-                        Assert.NotNull(person);
-
-                        task2Loaded.Set();
-
-                        // Wait for the other thread to save the person before updating it
-                        if (!task1Saved.WaitOne(5000))
-                        {
-                            Assert.True(false, "task1Saved timeout");
-                            await session.CancelAsync();
-                        }
-
-                        person.Lastname = "Doors";
-                        session.Save(person, true);
-                        Assert.NotNull(person);
-
-                        await session.SaveChangesAsync();
+                        Assert.True(false, "task1Saved timeout");
+                        await session.CancelAsync();
                     }
+
+                    person.Lastname = "Doors";
+                    session.Save(person, true);
+                    Assert.NotNull(person);
+
+                    await session.SaveChangesAsync();
                 });
             });
 
@@ -5339,28 +5332,26 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldDetachEntity()
         {
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                session.Save(bill);
+            session.Save(bill);
 
-                var newBill = await session.GetAsync<Person>(bill.Id);
+            var newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.Equal(bill, newBill);
+            Assert.Equal(bill, newBill);
 
-                session.Detach(bill);
+            session.Detach(bill);
 
-                newBill = await session.GetAsync<Person>(bill.Id);
+            newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.NotEqual(bill, newBill);
+            Assert.NotEqual(bill, newBill);
 
-                await session.SaveChangesAsync();
-            }
+            await session.SaveChangesAsync();
         }
 
         [Fact]
@@ -5686,18 +5677,16 @@ namespace YesSql.Tests
             // User A submits the changes
             await Assert.ThrowsAsync<ConcurrencyException>(async () =>
             {
-                using (var session = _store.CreateSession())
-                {
-                    var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.NotNull(person);
+                using var session = _store.CreateSession();
+                var person = await session.Query<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
 
-                    person.Version = viewModel.Version;
-                    person.Firstname = viewModel.Firstname;
+                person.Version = viewModel.Version;
+                person.Firstname = viewModel.Firstname;
 
-                    session.Save(person);
+                session.Save(person);
 
-                    await session.SaveChangesAsync();
-                }
+                await session.SaveChangesAsync();
             });
 
             // Changes should not have been persisted
@@ -5714,9 +5703,9 @@ namespace YesSql.Tests
         [ClassData(typeof(DecimalPrecisionAndScaleDataGenerator))]
         public void SqlDecimalPrecisionAndScale(byte? precision, byte? scale)
         {
-            string expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? _store.Configuration.SqlDialect.DefaultDecimalPrecision, scale ?? _store.Configuration.SqlDialect.DefaultDecimalScale);
+            var expected = string.Format(DecimalColumnDefinitionFormatString, precision ?? _store.Configuration.SqlDialect.DefaultDecimalPrecision, scale ?? _store.Configuration.SqlDialect.DefaultDecimalScale);
 
-            string result = _store.Configuration.SqlDialect.GetTypeName(DbType.Decimal, null, precision, scale);
+            var result = _store.Configuration.SqlDialect.GetTypeName(DbType.Decimal, null, precision, scale);
 
             Assert.Equal(expected, result);
         }
@@ -5754,7 +5743,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task AllDataTypesShouldBeStored()
+        public virtual async Task AllDataTypesShouldBeStored()
         {
             var dummy = new Person();
 
@@ -5774,13 +5763,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var index = new TypesIndex();
-
-                index.ValueDateTime = valueDateTime;
-                index.ValueGuid = valueGuid;
-                index.ValueBool = valueBool;
-                index.ValueDateTimeOffset = valueDateTimeOffset;
-                index.ValueTimeSpan = valueTimeSpan;
+                var index = new TypesIndex
+                {
+                    ValueDateTime = valueDateTime,
+                    ValueGuid = valueGuid,
+                    ValueBool = valueBool,
+                    ValueDateTimeOffset = valueDateTimeOffset,
+                    ValueTimeSpan = valueTimeSpan
+                };
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -5812,7 +5802,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task AllDataTypesShouldBeQueryableWithProperties()
+        public virtual async Task AllDataTypesShouldBeQueryableWithProperties()
         {
             var dummy = new Person();
 
@@ -5832,13 +5822,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var index = new TypesIndex();
-
-                index.ValueDateTime = valueDateTime;
-                index.ValueGuid = valueGuid;
-                index.ValueBool = valueBool;
-                index.ValueDateTimeOffset = valueDateTimeOffset;
-                index.ValueTimeSpan = valueTimeSpan;
+                var index = new TypesIndex
+                {
+                    ValueDateTime = valueDateTime,
+                    ValueGuid = valueGuid,
+                    ValueBool = valueBool,
+                    ValueDateTimeOffset = valueDateTimeOffset,
+                    ValueTimeSpan = valueTimeSpan
+                };
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -5876,7 +5867,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task AllDataTypesShouldBeQueryableWithConstants()
+        public virtual async Task AllDataTypesShouldBeQueryableWithConstants()
         {
             var dummy = new Person();
 
@@ -5896,13 +5887,14 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var index = new TypesIndex();
-
-                index.ValueDateTime = valueDateTime;
-                index.ValueGuid = valueGuid;
-                index.ValueBool = valueBool;
-                index.ValueDateTimeOffset = valueDateTimeOffset;
-                index.ValueTimeSpan = valueTimeSpan;
+                var index = new TypesIndex
+                {
+                    ValueDateTime = valueDateTime,
+                    ValueGuid = valueGuid,
+                    ValueBool = valueBool,
+                    ValueDateTimeOffset = valueDateTimeOffset,
+                    ValueTimeSpan = valueTimeSpan
+                };
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -5918,12 +5910,11 @@ namespace YesSql.Tests
             {
                 // Ensure that query builing is also converting constants
                 var index = await session.QueryIndex<TypesIndex>(x =>
-                    x.ValueBool == false
-                    && x.ValueDateTime == new DateTime(2021, 1, 20)
-                    && x.ValueDateTimeOffset == new DateTimeOffset(new DateTime(2021, 1, 20), new TimeSpan(1, 2, 0))
-                    && x.ValueTimeSpan == new TimeSpan(1, 2, 3, 4, 5)
-                    && x.ValueGuid == Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e")
-                ).FirstOrDefaultAsync();
+                x.ValueBool == false
+                && x.ValueDateTime == new DateTime(2021, 1, 20)
+                && x.ValueDateTimeOffset == new DateTimeOffset(valueDateTime, new TimeSpan(1, 2, 0))
+                && x.ValueTimeSpan == new TimeSpan(1, 2, 3, 4, 5)
+                && x.ValueGuid == Guid.Parse("cf0ef7ac-b6fe-4e24-aeda-a2b45bb5654e")).FirstOrDefaultAsync();
 
                 Assert.Equal(valueDateTime, index.ValueDateTime);
                 Assert.Equal(valueGuid, index.ValueGuid);
@@ -6058,6 +6049,146 @@ namespace YesSql.Tests
 
                 Assert.Equal(1, await queryIndex.CountAsync());
                 Assert.NotNull(await queryIndex.FirstOrDefaultAsync());
+            }
+        }
+        [Fact]
+        public virtual async Task ShouldUseSeveralIndexesAsync()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Age = 50
+                };
+
+                var elon = new Person
+                {
+                    Firstname = "Elon",
+                    Lastname = "Musk",
+                    Age = 12
+                };
+
+                var isaac = new Person
+                {
+                    Firstname = "Isaac",
+                    Lastname = "Newton",
+                    Age = 376
+                };
+
+                session.Save(bill);
+                session.Save(elon);
+                session.Save(isaac);
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.Query<Person, PersonByAge>().Where(x => x.Adult == true);
+
+                Assert.Empty(await query.Where(i => i.Name.IsIn<PersonByName>(select => select.SomeName, index => index.SomeName == "Elon")).ListAsync());
+
+                query = session.Query<Person, PersonByAge>().Where(x => x.Adult == true);
+                Assert.Single(await query.Where(i => i.Name.IsIn<PersonByName>(select => select.SomeName, index => index.SomeName == "Isaac")).ListAsync());
+            }
+
+        }
+        [Fact]
+        public async Task ShouldOrderThenOnValueType()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                        Age = i
+                    };
+
+                    session.Save(person);
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(100, await session.QueryIndex<PersonByAge>().CountAsync());
+                var orderBy = await session.QueryIndex<PersonByAge>().OrderBy(x => x.Age).ThenBy(x => x.Name).FirstOrDefaultAsync();
+                Assert.Equal(0, orderBy.Age);
+                Assert.Equal("Bill0", orderBy.Name);
+                var orderByDesc = await session.QueryIndex<PersonByAge>().OrderByDescending(x => x.Age).ThenByDescending(x => x.Name).FirstOrDefaultAsync();
+                Assert.Equal(99, orderByDesc.Age);
+                Assert.Equal("Bill99", orderByDesc.Name);
+            }
+        }
+        [Fact]
+        public virtual async Task ShouldUseUintIndexInfo()
+        {
+            _store.RegisterIndexes<FileIndexProvider>();
+
+            using var session = _store.CreateSession();
+            var newRecord = new FileInfo
+            {
+                ContentType = "application/pdf",
+                FileId = "122222-987819-0199811",
+                Revision = 1,//uint
+                SerializedUserGroups = "[]"
+            };
+            session.Save(newRecord);
+            await session.SaveChangesAsync();
+        }
+
+        [Fact]
+        public virtual async Task ShouldUseLongIndexInfoAsync()
+        {
+            _store.RegisterIndexes<CustomerByIdProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var newRecord = new Customer
+                {
+                    Name = "Customer1",
+                    CustomerId = 1126777363783373,
+                    OrderId = 738939272898111,
+                    Version = 0,
+                    Active = false
+                };
+                session.Save(newRecord);
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var document = await session.Query<Customer, CustomerById>(x => x.CustomerId == 1126777363783373).FirstOrDefaultAsync();
+                Assert.Equal("Customer1", document.Name);
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var newRecord = new Customer
+                {
+                    Name = "Customer2",
+                    CustomerId = 879847847981724,
+                    OrderId = null,
+                    Version = 1,
+                    Active = true
+                };
+                session.Save(newRecord);
+                await session.SaveChangesAsync();
+            }
+            using (var session = _store.CreateSession())
+            {
+                var document = await session.Query<Customer, CustomerById>(x => x.OrderId == null).FirstOrDefaultAsync();
+                Assert.Equal("Customer2", document.Name);
             }
         }
 

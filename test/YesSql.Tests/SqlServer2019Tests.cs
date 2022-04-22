@@ -9,7 +9,7 @@ namespace YesSql.Tests
 
         public override string ConnectionString 
             =>  Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING") 
-                ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
+                ?? @"Data Source=.\SQLEXPRESS;Initial Catalog=orchard_core_test;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"
                 ;
 
         public SqlServer2019Tests(ITestOutputHelper output) : base(output)

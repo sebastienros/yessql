@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29123.88
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32414.318
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{0882456B-4A70-4895-A3AE-39B9D30A1B31}"
 EndProject
@@ -45,9 +45,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.PostgreSql"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql", "src\YesSql\YesSql.csproj", "{6BAC7887-02FB-4B6F-BB5C-D6DEF9646CC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Filters.Abstractions", "src\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj", "{348B307C-66F0-4DBE-BA96-5D9DFAB5588E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Filters.Abstractions", "src\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj", "{348B307C-66F0-4DBE-BA96-5D9DFAB5588E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Filters.Query", "src\YesSql.Filters.Query\YesSql.Filters.Query.csproj", "{86C3967F-B817-4119-B354-B6EB1AC1F237}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Filters.Query", "src\YesSql.Filters.Query\YesSql.Filters.Query.csproj", "{86C3967F-B817-4119-B354-B6EB1AC1F237}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.Oracle", "src\YesSql.Provider.Oracle\YesSql.Provider.Oracle.csproj", "{97F56727-60FC-406D-9EF8-3456A78CFB9D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -301,6 +303,22 @@ Global
 		{86C3967F-B817-4119-B354-B6EB1AC1F237}.Release|x64.Build.0 = Release|Any CPU
 		{86C3967F-B817-4119-B354-B6EB1AC1F237}.Release|x86.ActiveCfg = Release|Any CPU
 		{86C3967F-B817-4119-B354-B6EB1AC1F237}.Release|x86.Build.0 = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|x64.Build.0 = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Debug|x86.Build.0 = Debug|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|x64.ActiveCfg = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|x64.Build.0 = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|x86.ActiveCfg = Release|Any CPU
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -321,6 +339,7 @@ Global
 		{6BAC7887-02FB-4B6F-BB5C-D6DEF9646CC6} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{348B307C-66F0-4DBE-BA96-5D9DFAB5588E} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 		{86C3967F-B817-4119-B354-B6EB1AC1F237} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
+		{97F56727-60FC-406D-9EF8-3456A78CFB9D} = {0C294EC4-E6EF-4839-AD34-335C1A5112F9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6AB2945-2138-42B9-8F82-FCCF4DFC8F55}

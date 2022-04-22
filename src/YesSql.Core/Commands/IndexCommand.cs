@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using YesSql.Indexes;
 using YesSql.Serialization;
 
@@ -28,7 +28,7 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, IStore store, string collection)
+        protected IndexCommand(IIndex index, IStore store, string collection)
         {
             Index = index;
             _store = store;
@@ -58,9 +58,9 @@ namespace YesSql.Commands
                 var value = accessor.Get(item);
 
                 var parameter = command.CreateParameter();
-                parameter.ParameterName = property.Name + suffix;
-                parameter.Value = dialect.TryConvert(value) ?? DBNull.Value;
+                parameter.ParameterName = dialect.GetParameterName(property.Name) + suffix;
                 parameter.DbType = dialect.ToDbType(property.PropertyType);
+                parameter.Value = dialect.TryConvert(value) ?? DBNull.Value;
                 command.Parameters.Add(parameter);
             }
         }
@@ -105,7 +105,7 @@ namespace YesSql.Commands
                     for (var i = 0; i < allProperties.Count(); i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbParameterList.Append("@").Append(property.Name).Append(ParameterSuffix);
+                        sbParameterList.Append(dialect.QuoteForParameter(property.Name)).Append(ParameterSuffix);
                         if (i < allProperties.Count() - 1)
                         {
                             sbParameterList.Append(", ");
@@ -116,7 +116,7 @@ namespace YesSql.Commands
                     {
                         // We can set the document id 
                         sbColumnList.Append(", ").Append(dialect.QuoteForColumnName("DocumentId"));
-                        sbParameterList.Append(", @DocumentId").Append(ParameterSuffix);
+                        sbParameterList.Append(", ").Append(dialect.QuoteForParameter("DocumentId")).Append(ParameterSuffix);
                     }
 
                     values = $"({sbColumnList}) values ({sbParameterList})";
@@ -125,7 +125,7 @@ namespace YesSql.Commands
                 {
                     if (typeof(MapIndex).IsAssignableFrom(type))
                     {
-                        values = $"({dialect.QuoteForColumnName("DocumentId")}) values (@DocumentId{ParameterSuffix})";
+                        values = $"({dialect.QuoteForColumnName("DocumentId")}) values ({dialect.QuoteForParameter("DocumentId")}{ParameterSuffix})";
                     }
                     else
                     {
@@ -133,10 +133,10 @@ namespace YesSql.Commands
                     }
                 }
 
-                InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
+                InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")}{dialect.StatementEnd}";
             }
 
-            return result;            
+            return result;
         }
 
         protected string Updates(Type type, ISqlDialect dialect)
@@ -151,14 +151,14 @@ namespace YesSql.Commands
                 for (var i = 0; i < allProperties.Length; i++)
                 {
                     var property = allProperties[i];
-                    values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name + ParameterSuffix);
+                    values.Append(dialect.QuoteForColumnName(property.Name) + " = " + dialect.QuoteForParameter(property.Name) + ParameterSuffix);
                     if (i < allProperties.Length - 1)
                     {
                         values.Append(", ");
                     }
                 }
 
-                UpdatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
+                UpdatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} set {values} where {dialect.QuoteForColumnName("Id")} = {dialect.QuoteForParameter("Id")}{ParameterSuffix}{dialect.StatementEnd}";
             }
 
             return result;
@@ -170,8 +170,7 @@ namespace YesSql.Commands
                 pi.Name != nameof(IIndex.Id) &&
                 // don't read DocumentId when on a MapIndex as it might be used to 
                 // read the DocumentId directly from an Index query
-                pi.Name != "DocumentId"
-                ;
+                pi.Name != "DocumentId";
         }
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
