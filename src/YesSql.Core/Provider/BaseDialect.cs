@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Globalization;
 using System.Text;
+using System.Threading.Tasks;
+using Dapper;
+using YesSql.Indexes;
 using YesSql.Sql;
 
 namespace YesSql.Provider
@@ -75,7 +79,7 @@ namespace YesSql.Provider
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {
-            if (values.StartsWith("@") && !values.Contains(","))
+            if (values.StartsWith(ParameterNamePrefix) && !values.Contains(","))
             {
                 return " IN " + values;
             }
@@ -106,7 +110,7 @@ namespace YesSql.Provider
 
         public abstract string IdentitySelectString { get; }
         public abstract string IdentityLastId { get; }
-        
+
         public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
 
         public virtual string NullColumnString => String.Empty;
@@ -309,5 +313,48 @@ namespace YesSql.Provider
 
             handlers.Add(i => handler((T)i));
         }
+
+        public virtual string QuoteForParameter(string parameterName)
+        {
+            return ParameterNamePrefix + parameterName;
+        }
+
+        public virtual string GetParameterName(string parameterName)
+        {
+            return parameterName;
+        }
+        public virtual string ParameterNamePrefix => "@";
+        public virtual string StatementEnd => ";";
+        public virtual string BatchStatementEnd => ";";
+
+        public virtual string NullString => String.Empty;
+
+        public virtual bool IsSpecialDistinctRequired => false;
+
+        public virtual IDbCommand ConfigureCommand(IDbCommand command)
+        {
+            return command;
+        }
+
+        public virtual Task<int> InsertReturningReduceIndexAsync(DbConnection connection, IIndex index, string sql, DbTransaction transaction)
+        {
+            return connection.ExecuteScalarAsync<int>(sql, index, transaction);
+        }
+
+        public virtual void PrepareReturningMapIndexCommand(DbCommand command)
+        {
+            //not used, maybe should be removed
+        }
+        public virtual object GetDynamicParameters(DbConnection connection, object parameters, string tableName)
+        {
+            return new DynamicParameters(parameters);
+        }
+
+        public virtual object GetSafeIndexParameters(IIndex index)
+        {
+            return new DynamicParameters(index);
+        }
+
+        public virtual string AliasKeyword => "AS";
     }
 }

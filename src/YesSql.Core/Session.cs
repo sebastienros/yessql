@@ -393,7 +393,7 @@ namespace YesSql
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
-            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
+            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = "+_dialect.QuoteForParameter("Id");
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
 
             try
@@ -489,7 +489,7 @@ namespace YesSql
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
-            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
+            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator(_dialect.QuoteForParameter("Ids"));
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             try
@@ -609,7 +609,7 @@ namespace YesSql
 
                         _store.CompiledQueries[discriminator] = queryState;
                     }
-                } 
+                }
             }
 
             queryState = queryState.Clone();
@@ -778,6 +778,7 @@ namespace YesSql
 
             if (!_dialect.SupportsBatching || _store.Configuration.CommandsPageSize == 0)
             {
+                _commands = _commands.OrderBy(x => x.ExecutionOrder).ToList();
                 return;
             }
 
@@ -1204,7 +1205,7 @@ namespace YesSql
             await CreateConnectionAsync();
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
-            var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
+            var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = "+_dialect.QuoteForParameter("currentKey");
 
             var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);
             return index.FirstOrDefault() as ReduceIndex;

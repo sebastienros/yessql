@@ -50,7 +50,7 @@ namespace YesSql.Indexes
         private Func<object, bool> _filter;
 
         public PropertyInfo GroupProperty { get; set; }
-        public Type IndexType { get { return typeof(TIndex); } }
+        public Type IndexType => typeof(TIndex);
 
         public Func<object, bool> Filter => _filter;
 
@@ -62,13 +62,13 @@ namespace YesSql.Indexes
 
         public IMapFor<T, TIndex> When(Func<T, bool> predicate)
         {
-            _filter = x => predicate((T) x);
+            _filter = x => predicate((T)x);
             return this;
         }
 
         public IGroupFor<TIndex> Map(Func<T, TIndex> map)
         {
-            _map = x => Task.FromResult((IEnumerable<TIndex>) new[] { map(x) });
+            _map = x => Task.FromResult((IEnumerable<TIndex>)new[] { map(x) });
             return this;
         }
 
@@ -166,10 +166,7 @@ namespace YesSql.Indexes
             _enumerable = enumerable;
         }
 
-        public TKey Key
-        {
-            get { return (TKey)_key; }
-        }
+        public TKey Key => (TKey)_key;
 
         public IEnumerator<TIndex> GetEnumerator()
         {

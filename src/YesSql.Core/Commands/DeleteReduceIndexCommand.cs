@@ -23,8 +23,8 @@ namespace YesSql.Commands
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
             var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
-            var bridgeSql = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName)} where {dialect.QuoteForColumnName(name + "Id")} = @Id_{index};";
-            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} where { dialect.QuoteForColumnName("Id")} = @Id_{index};";
+            var bridgeSql = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName)} where {dialect.QuoteForColumnName(name + "Id")} = {dialect.QuoteForParameter("Id")}_{index}"+ dialect.BatchStatementEnd;
+            var command = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} where { dialect.QuoteForColumnName("Id")} = {dialect.QuoteForParameter("Id")}_{index}"+ dialect.BatchStatementEnd;
             queries.Add(bridgeSql);
             queries.Add(command);
             batchCommand.AddParameter("Id_" + index, Index.Id);
@@ -39,13 +39,13 @@ namespace YesSql.Commands
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
             var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
-            var bridgeSql = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = @Id;";
+            var bridgeSql = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName) +" where " + dialect.QuoteForColumnName(name + "Id") + " = " + dialect.QuoteForParameter("Id") + dialect.StatementEnd;;
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(bridgeSql);
             }
             await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
-            var command = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection)) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
+            var command = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection)) + " where " + dialect.QuoteForColumnName("Id") + " = " + dialect.QuoteForParameter("Id") + dialect.StatementEnd;;
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(command);

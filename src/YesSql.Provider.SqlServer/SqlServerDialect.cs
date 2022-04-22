@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Text;
+using Dapper;
 using YesSql.Sql;
 using YesSql.Utils;
 
@@ -52,7 +53,7 @@ namespace YesSql.Provider.SqlServer
                 { typeof(short), DbType.Int16 },
                 { typeof(ushort), DbType.UInt16 }, // not supported
                 { typeof(int), DbType.Int32 },
-                { typeof(uint), DbType.UInt32 },
+                { typeof(uint), DbType.Int32 },
                 { typeof(long), DbType.Int64 },
                 { typeof(ulong), DbType.UInt64 },
                 { typeof(float), DbType.Single },
@@ -71,7 +72,7 @@ namespace YesSql.Provider.SqlServer
                 { typeof(short?), DbType.Int16 },
                 { typeof(ushort?), DbType.UInt16 },
                 { typeof(int?), DbType.Int32 },
-                { typeof(uint?), DbType.UInt32 },
+                { typeof(uint?), DbType.Int32 },
                 { typeof(long?), DbType.Int64 },
                 { typeof(ulong?), DbType.UInt64 },
                 { typeof(float?), DbType.Single },
@@ -92,6 +93,7 @@ namespace YesSql.Provider.SqlServer
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));
             Methods.Add("hour", new TemplateFunction("datepart(hour, {0})"));
             Methods.Add("now", new TemplateFunction("getUtcDate()"));
+            SqlMapper.AddTypeMap(typeof(uint), DbType.Int32);// Fixed System.ArgumentException : No mapping exists from DbType UInt32 to a known SqlDbType.
 
             // These are not necessary since SQL Server 2008 
             //Methods.Add("day", new TemplateFunction("datepart(day, {0})"));

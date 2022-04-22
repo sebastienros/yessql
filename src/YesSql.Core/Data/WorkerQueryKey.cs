@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace YesSql.Data
 {
@@ -15,19 +16,9 @@ namespace YesSql.Data
 
         public WorkerQueryKey(string prefix, int[] ids)
         {
-            if (prefix == null)
-            {
-                throw new ArgumentNullException(nameof(prefix));
-            }
-
-            if (ids == null)
-            {
-                throw new ArgumentNullException(nameof(ids));
-            }
-
-            _prefix = prefix;
+            _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
             _parameters = null;
-            _ids = ids;
+            _ids = ids ?? throw new ArgumentNullException(nameof(ids));
             _hashcode = 0;
             _hashcode = BuildHashCode();
         }
@@ -59,12 +50,12 @@ namespace YesSql.Data
             {
                 return false;
             }
-            
+
             if (_parameters != null || other._parameters != null)
             {
                 return SameParameters(_parameters, other._parameters);
             }
-            
+
             if (_ids != null || other._ids != null)
             {
                 return SameIds(_ids, other._ids);
@@ -99,12 +90,7 @@ namespace YesSql.Data
 
             if (_ids != null)
             {
-                foreach (var id in _ids)
-                {
-                    combinedHash = ((combinedHash << 5) + combinedHash) ^ id;
-                }
-
-                return combinedHash;
+                return _ids.Aggregate(combinedHash, (current, id) => ((current << 5) + current) ^ id);
             }
 
             return default;

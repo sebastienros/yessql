@@ -1,7 +1,8 @@
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using YesSql.Sql;
 
 namespace YesSql.Services
@@ -43,9 +44,13 @@ namespace YesSql.Services
             _tablePrefix = store.Configuration.TablePrefix;
             _store = store;
 
-            SelectCommand = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForTableName("dimension") + " = @dimension;";
-            UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
-            InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
+            SelectCommand = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName) +
+                            " WHERE " + _dialect.QuoteForTableName("dimension") + " = " + _dialect.QuoteForParameter("dimension") + _dialect.StatementEnd;
+            UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + " = " + _dialect.QuoteForParameter("new") +
+                            " WHERE " + _dialect.QuoteForColumnName("nextval") + " = " + _dialect.QuoteForParameter("previous") +
+                            " AND " + _dialect.QuoteForColumnName("dimension") + " = " + _dialect.QuoteForParameter("dimension") + _dialect.StatementEnd;
+            InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", "
+                            + _dialect.QuoteForColumnName("nextval") + ") VALUES(" + _dialect.QuoteForParameter("dimension") + ", " + _dialect.QuoteForParameter("nextval") + ")" + _dialect.StatementEnd;
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
             await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
@@ -86,7 +91,7 @@ namespace YesSql.Services
 
         public long GetNextId(string collection)
         {
-            collection ??= "";
+            collection = string.IsNullOrEmpty(collection) ? _dialect.NullString : collection;
 
             lock (_synLock)
             {
@@ -126,11 +131,12 @@ namespace YesSql.Services
                     try
                     {
                         var selectCommand = connection.CreateCommand();
+                        selectCommand = (DbCommand)_dialect.ConfigureCommand(selectCommand);
                         selectCommand.CommandText = SelectCommand;
 
                         var selectDimension = selectCommand.CreateParameter();
                         selectDimension.Value = range.Collection;
-                        selectDimension.ParameterName = "@dimension";
+                        selectDimension.ParameterName = _dialect.QuoteForParameter("dimension");
                         selectCommand.Parameters.Add(selectDimension);
 
                         selectCommand.Transaction = transaction;
@@ -142,21 +148,22 @@ namespace YesSql.Services
                         nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
                         var updateCommand = connection.CreateCommand();
+                        updateCommand = (DbCommand)_dialect.ConfigureCommand(updateCommand);
                         updateCommand.CommandText = UpdateCommand;
 
                         var updateDimension = updateCommand.CreateParameter();
                         updateDimension.Value = range.Collection;
-                        updateDimension.ParameterName = "@dimension";
+                        updateDimension.ParameterName = _dialect.QuoteForParameter("dimension");
                         updateCommand.Parameters.Add(updateDimension);
 
                         var newValue = updateCommand.CreateParameter();
                         newValue.Value = nextval + _blockSize;
-                        newValue.ParameterName = "@new";
+                        newValue.ParameterName = _dialect.QuoteForParameter("new");
                         updateCommand.Parameters.Add(newValue);
 
                         var previousValue = updateCommand.CreateParameter();
                         previousValue.Value = nextval;
-                        previousValue.ParameterName = "@previous";
+                        previousValue.ParameterName = _dialect.QuoteForParameter("previous");
                         updateCommand.Parameters.Add(previousValue);
 
                         updateCommand.Transaction = transaction;
@@ -188,6 +195,10 @@ namespace YesSql.Services
 
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
         {
+            if (String.IsNullOrEmpty(collection))
+            {
+                collection = _dialect.NullString;
+            }
             if (_ranges.ContainsKey(collection))
             {
                 return;
@@ -215,7 +226,7 @@ namespace YesSql.Services
 
                     var selectDimension = selectCommand.CreateParameter();
                     selectDimension.Value = collection;
-                    selectDimension.ParameterName = "@dimension";
+                    selectDimension.ParameterName = _dialect.QuoteForParameter("dimension");
                     selectCommand.Parameters.Add(selectDimension);
 
                     selectCommand.Transaction = transaction;
@@ -255,12 +266,12 @@ namespace YesSql.Services
 
                             var dimensionParameter = command.CreateParameter();
                             dimensionParameter.Value = collection;
-                            dimensionParameter.ParameterName = "@dimension";
+                            dimensionParameter.ParameterName = _dialect.QuoteForParameter("dimension");
                             command.Parameters.Add(dimensionParameter);
 
                             var nextValParameter = command.CreateParameter();
                             nextValParameter.Value = 1;
-                            nextValParameter.ParameterName = "@nextval";
+                            nextValParameter.ParameterName = _dialect.QuoteForParameter("nextval");
                             command.Parameters.Add(nextValParameter);
 
                             if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
@@ -283,7 +294,7 @@ namespace YesSql.Services
                 }
 
                 _ranges[collection] = new Range(collection);
-            }                
+            }
         }
 
         private class Range
