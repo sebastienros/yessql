@@ -1,9 +1,11 @@
 using System.Threading.Tasks;
 using YesSql.Indexes;
+using YesSql.Services;
 using YesSql.Tests.Models;
 
 namespace YesSql.Tests.Indexes
 {
+    [TableName("PersonByNames")]
     public class PersonByName : MapIndex
     {
         public string SomeName { get; set; }

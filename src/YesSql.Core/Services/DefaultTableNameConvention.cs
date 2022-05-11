@@ -1,16 +1,26 @@
 using System;
+using System.Linq;
 
 namespace YesSql.Services
 {
     public class DefaultTableNameConvention : ITableNameConvention
     {
         public const string DocumentTable = "Document";
-        
+
         public string GetIndexTable(Type type, string collection = null)
         {
+            var tableName = type.Name;
+
+            var attribute = type.GetCustomAttributes(false).Cast<TableNameAttribute>().FirstOrDefault();
+
+            if (attribute != null && !String.IsNullOrEmpty(attribute.Name))
+            {
+                tableName = attribute.Name;
+            }
+
             if (String.IsNullOrEmpty(collection))
             {
-                return type.Name;
+                return tableName;
             }
 
             return collection + "_" + type.Name;
@@ -24,7 +34,6 @@ namespace YesSql.Services
             }
 
             return collection + "_" + DocumentTable;
-
         }
     }
 }
