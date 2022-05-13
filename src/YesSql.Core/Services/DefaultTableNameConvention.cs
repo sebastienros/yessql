@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Reflection;
 
 namespace YesSql.Services
 {
@@ -11,7 +11,7 @@ namespace YesSql.Services
         {
             var tableName = type.Name;
 
-            var attribute = type.GetCustomAttributes(false).Cast<TableNameAttribute>().FirstOrDefault();
+            var attribute = type.GetCustomAttribute<TableNameAttribute>();
 
             if (attribute != null && !String.IsNullOrEmpty(attribute.Name))
             {
