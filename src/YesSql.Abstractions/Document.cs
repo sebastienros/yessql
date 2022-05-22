@@ -1,3 +1,5 @@
+using System;
+
 namespace YesSql
 {
     /// <summary>
@@ -27,5 +29,10 @@ namespace YesSql
         /// This property is used to track updates, and optionally detect concurrency violations.
         /// </remarks>
         public long Version { get; set; }
+
+        /// <summary>
+        /// Last updated datetime
+        /// </summary>
+        public DateTime UpdatedTime { get; set; } = DateTime.UtcNow;
     }
 }

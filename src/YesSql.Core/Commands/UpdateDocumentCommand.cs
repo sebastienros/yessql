@@ -26,7 +26,7 @@ namespace YesSql.Commands
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
-                + $"set {dialect.QuoteForColumnName("Content")} = @Content, {dialect.QuoteForColumnName("Version")} = @Version where "
+                + $"set {dialect.QuoteForColumnName("Content")} = @Content, {dialect.QuoteForColumnName("Version")} = @Version, {dialect.QuoteForColumnName("UpdatedTime")} = @UpdatedTime where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id "
                 + (_checkVersion > -1
                     ? Document.Version == 1 // When the Document.Version is 0 + 1 the Version column maybe null.
@@ -40,6 +40,7 @@ namespace YesSql.Commands
                 logger.LogTrace(updateCmd);
             }
 
+            Document.UpdatedTime = DateTime.UtcNow;
             var updatedCount = await connection.ExecuteAsync(updateCmd, Document, transaction);
 
             if (_checkVersion > -1 && updatedCount != 1)
@@ -65,16 +66,18 @@ namespace YesSql.Commands
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
-                + $"set {dialect.QuoteForColumnName("Content")} = @Content_{index}, {dialect.QuoteForColumnName("Version")} = @Version_{index} where "
+                + $"set {dialect.QuoteForColumnName("Content")} = @Content_{index}, {dialect.QuoteForColumnName("Version")} = @Version_{index}, {dialect.QuoteForColumnName("UpdatedTime")} = @UpdatedTime_{index} where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id_{index};"
                 ;
 
             queries.Add(updateCmd);
 
+            Document.UpdatedTime = DateTime.UtcNow;
             batchCommand
                 .AddParameter("Id_" + index, Document.Id, DbType.Int64)
                 .AddParameter("Content_" + index, Document.Content, DbType.String)
-                .AddParameter("Version_" + index, Document.Version, DbType.Int64);
+                .AddParameter("Version_" + index, Document.Version, DbType.Int64)
+                .AddParameter("UpdatedTime_" + index, Document.UpdatedTime, DbType.DateTime);
 
             return true;
         }

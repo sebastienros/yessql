@@ -206,9 +206,13 @@ namespace YesSql
                                 .Column<string>(nameof(Document.Type), column => column.NotNull())
                                 .Column<string>(nameof(Document.Content), column => column.Unlimited())
                                 .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
+                                .Column<DateTime>(nameof(Document.UpdatedTime), column => column.NotNull())
                             )
                             .AlterTable(documentTable, table => table
                                 .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                            )
+                            .AlterTable(documentTable, table => table
+                                .CreateIndex("IX_" + documentTable + "_UpdatedTime", "UpdatedTime")
                             );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS

@@ -1440,7 +1440,7 @@ namespace YesSql
         private struct IdString
         {
 #pragma warning disable 0649
-            public int Id;
+            public long Id;
             public string Content;
 #pragma warning restore 0649
         }
