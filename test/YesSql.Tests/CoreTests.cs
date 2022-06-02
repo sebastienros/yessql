@@ -2987,7 +2987,7 @@ namespace YesSql.Tests
                         using (var session = _store.CreateSession())
                         {
                             var currentBill = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).FirstOrDefaultAsync();
-                            currentBill.Nationalities.Remove(n);
+                            currentBill.Nationalities = currentBill.Nationalities.Where(nationality => nationality != n).ToList();
                             session.Save(currentBill, checkConcurrency: true);
                             try
                             {
@@ -3080,7 +3080,7 @@ namespace YesSql.Tests
                         using (var session = _store.CreateSession())
                         {
                             var currentSteve = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Steve")).FirstOrDefaultAsync();
-                            currentSteve.Nationalities.Remove(n);
+                            currentSteve.Nationalities = currentSteve.Nationalities.Where(nationality => nationality != n).ToList();
                             session.Save(currentSteve, checkConcurrency: true);
                             try
                             {
