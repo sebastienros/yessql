@@ -2953,6 +2953,237 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public virtual async Task ShouldUpdateConcurrentDocumentsWithQueryGating()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            Person bill;
+            using (var session = _store.CreateSession())
+            {
+                bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates",
+                    Nationalities = new List<string>() { "nat1", "nat2", "nat3", "nat4", "nat5", "nat6", "nat7", "nat8", "nat9", "nat10", "nat11", "nat12", "nat13", "nat14", "nat15", "nat16"}
+                };
+
+                session.Save(bill, checkConcurrency: true);
+                try
+                {
+                    await session.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+                    await session.CancelAsync();
+                    throw;
+                }
+            }
+            var billNationalities = new List<string>(bill.Nationalities);
+            List<Task> deleteNationalities = new List<Task>();
+            foreach (var n in billNationalities)
+            {
+                deleteNationalities.Add(new Task(() => RetryActionIfConcurrencyExceptionAsync(
+                    async () => {
+                        using (var session = _store.CreateSession())
+                        {
+                            var currentBill = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).FirstOrDefaultAsync();
+                            currentBill.Nationalities.Remove(n);
+                            session.Save(currentBill, checkConcurrency: true);
+                            try
+                            {
+                                await session.SaveChangesAsync();
+                            }
+                            catch (ConcurrencyException)
+                            {
+                                if (currentBill != null)
+                                {
+                                    session.Detach(currentBill);
+                                }
+                                throw;
+                            }
+                            catch (Exception e)
+                            {
+                                await session.CancelAsync();
+                                throw;
+                            }
+                        }
+                    }
+                ).Wait()));
+            }
+
+            foreach (var task in deleteNationalities)
+            {
+                task.Start();
+            }
+            await Task.WhenAll(deleteNationalities);
+
+            var concurrency = 20;
+            var MaxTransactions = 2;
+
+            var counter = 0;
+            var stopping = false;
+
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        var newBill = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).FirstOrDefaultAsync();
+                        Assert.True(!newBill.Nationalities.Any());
+                    }
+                }
+            })).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(5)));
+
+            await Task.WhenAny(tasks);
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
+        }
+
+        [Fact]
+        public virtual async Task ShouldUpdateConcurrentDocumentsWithoutQueryGating()
+        {
+            _store.Configuration.DisableQueryGating();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            Person steve;
+            using (var session = _store.CreateSession())
+            {
+                steve = new Person
+                {
+                    Firstname = "Steve",
+                    Lastname = "Balmer",
+                    Nationalities = new List<string>() { "nat1", "nat2", "nat3", "nat4", "nat5", "nat6", "nat7", "nat8", "nat9", "nat10", "nat11", "nat12", "nat13", "nat14", "nat15", "nat16" }
+                };
+
+                session.Save(steve, checkConcurrency: true);
+                try
+                {
+                    await session.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+                    await session.CancelAsync();
+                    throw;
+                }
+            }
+            var steveNationalities = new List<string>(steve.Nationalities);
+            List<Task> deleteNationalities = new List<Task>();
+            foreach (var n in steveNationalities)
+            {
+                deleteNationalities.Add(new Task(() => RetryActionIfConcurrencyExceptionAsync(
+                    async () => {
+                        using (var session = _store.CreateSession())
+                        {
+                            var currentSteve = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Steve")).FirstOrDefaultAsync();
+                            currentSteve.Nationalities.Remove(n);
+                            session.Save(currentSteve, checkConcurrency: true);
+                            try
+                            {
+                                await session.SaveChangesAsync();
+                            }
+                            catch (ConcurrencyException)
+                            {
+                                if (currentSteve != null)
+                                {
+                                    session.Detach(currentSteve);
+                                }
+                                throw;
+                            }
+                            catch (Exception e)
+                            {
+                                await session.CancelAsync();
+                                throw;
+                            }
+                        }
+                    }
+                ).Wait()));
+            }
+
+            foreach (var task in deleteNationalities)
+            {
+                task.Start();
+            }
+            await Task.WhenAll(deleteNationalities);
+
+            var concurrency = 20;
+            var MaxTransactions = 2;
+
+            var counter = 0;
+            var stopping = false;
+
+            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            {
+                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
+                {
+                    using (var session = _store.CreateSession())
+                    {
+                        var newSteve = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Steve")).FirstOrDefaultAsync();
+                        Assert.True(!newSteve.Nationalities.Any());
+                    }
+                }
+            })).ToList();
+
+            tasks.Add(Task.Delay(TimeSpan.FromSeconds(5)));
+
+            await Task.WhenAny(tasks);
+
+            // Flushing tasks
+            stopping = true;
+            await Task.WhenAll(tasks);
+        }
+
+        static int seed = Environment.TickCount;
+        static readonly ThreadLocal<Random> random =
+            new ThreadLocal<Random>(() => new Random(Interlocked.Increment(ref seed)));
+        internal static Random Random => random.Value;
+        private Task RetryActionIfConcurrencyExceptionAsync(Func<Task> asyncAction, int averageMillisecondsDelay = 10, int maxRetries = 100, CancellationToken? token = null)
+        {
+            return RetryActionIfConcurrencyExceptionAsync<bool>(async () => { await asyncAction(); return true; }, averageMillisecondsDelay, maxRetries, token);
+        }
+        private async Task<T> RetryActionIfConcurrencyExceptionAsync<T>(Func<Task<T>> asyncAction, int averageMillisecondsDelay = 10, int maxRetries = 100, CancellationToken? token = null)
+        {
+            var concurrentActionWasExecuted = false;
+            var attempts = 0;
+            T result = default(T);
+            while (!concurrentActionWasExecuted)
+            {
+                try
+                {
+                    attempts++;
+                    result = await asyncAction();
+                    concurrentActionWasExecuted = true;
+                }
+                catch (ConcurrencyException e)
+                {
+                    if (attempts > maxRetries)
+                    {
+                        throw;
+                    }
+                    if (token.HasValue && token.Value.IsCancellationRequested)
+                    {
+                        return result;
+                    }
+
+                    var randomDelay = Random.Next((int)(averageMillisecondsDelay * 0.8), (int)(averageMillisecondsDelay * 1.2));
+                    if (token.HasValue)
+                    {
+                        await Task.Delay(randomDelay, token.Value).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Task.Delay(randomDelay).ConfigureAwait(false);
+                    }
+                }
+            }
+            return result;
+        }
+
+        [Fact]
         public virtual async Task ShouldReturnCachedResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
