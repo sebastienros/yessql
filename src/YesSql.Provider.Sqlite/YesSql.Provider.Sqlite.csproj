@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>
@@ -7,6 +7,6 @@
         <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.12" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' != 'netcoreapp3.1'">
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.6" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.7" />
     </ItemGroup>
 </Project>
