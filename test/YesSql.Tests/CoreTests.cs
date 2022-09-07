@@ -3020,8 +3020,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var result = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).ListAsync();
-                var newBill = result.FirstOrDefault();
+                var newBill = await session.GetAsync<Person>(bill.Id);
                 Assert.Equal(0, newBill.Nationalities.Count);
             }
         }
@@ -3094,9 +3093,8 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var result = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Steve")).ListAsync();
-                var newBill = result.FirstOrDefault();
-                Assert.Equal(0, newBill.Nationalities.Count);
+                var newSteve = await session.GetAsync<Person>(steve.Id);
+                Assert.Equal(0, newSteve.Nationalities.Count);
             }
         }
 
