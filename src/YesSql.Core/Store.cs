@@ -388,6 +388,7 @@ namespace YesSql
             }
 
             object content = null;
+            object clonedContent = null;
 
             while (content == null)
             {
@@ -408,6 +409,10 @@ namespace YesSql
                     {
                         // The current worker is processed
                         content = await work(state);
+                        if (!(content is int))
+                        {
+                            clonedContent = Configuration.ContentSerializer.Deserialize(Configuration.ContentSerializer.Serialize(content), content.GetType());
+                        }
                     }
                     catch
                     {
@@ -423,7 +428,7 @@ namespace YesSql
                         Workers.TryRemove(key, out result);
 
                         // Notify all other awaiters to return the result
-                        tcs.TrySetResult(content);
+                        tcs.TrySetResult(clonedContent);
                     }
                 }
                 else
@@ -431,6 +436,10 @@ namespace YesSql
                     // Another worker is already running, wait for it to finish and reuse the results.
                     // This value can be null if the worker failed, in this case the loop will run again.
                     content = await result;
+                    if (!(content is int))
+                    {
+                        content = Configuration.ContentSerializer.Deserialize(Configuration.ContentSerializer.Serialize(content), content.GetType());
+                    }
                 }
             }
 

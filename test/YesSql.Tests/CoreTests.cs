@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Xunit;
 using Xunit.Abstractions;
 using YesSql.Commands;
@@ -2964,7 +2965,7 @@ namespace YesSql.Tests
                 {
                     Firstname = "Bill",
                     Lastname = "Gates",
-                    Nationalities = new List<string>() { "nat1", "nat2", "nat3", "nat4", "nat5", "nat6", "nat7", "nat8", "nat9", "nat10", "nat11", "nat12", "nat13", "nat14", "nat15", "nat16"}
+                    Nationalities = new List<string>() { "nat1", "nat2", "nat3", "nat4", "nat5", "nat6", "nat7", "nat8", "nat9", "nat10", "nat11", "nat12", "nat13", "nat14", "nat15", "nat16" }
                 };
 
                 session.Save(bill, checkConcurrency: true);
@@ -2986,8 +2987,8 @@ namespace YesSql.Tests
                     async () => {
                         using (var session = _store.CreateSession())
                         {
-                            var currentBill = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).FirstOrDefaultAsync();
-                            currentBill.Nationalities = currentBill.Nationalities.Where(nationality => nationality != n).ToList();
+                            var currentBill = await session.GetAsync<Person>(bill.Id);
+                            currentBill.Nationalities = currentBill.Nationalities.Where(nationality => nationality.CompareTo(n) != 0).ToList();
                             session.Save(currentBill, checkConcurrency: true);
                             try
                             {
@@ -3017,31 +3018,12 @@ namespace YesSql.Tests
             }
             await Task.WhenAll(deleteNationalities);
 
-            var concurrency = 20;
-            var MaxTransactions = 2;
-
-            var counter = 0;
-            var stopping = false;
-
-            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            using (var session = _store.CreateSession())
             {
-                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
-                {
-                    using (var session = _store.CreateSession())
-                    {
-                        var newBill = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).FirstOrDefaultAsync();
-                        Assert.True(!newBill.Nationalities.Any());
-                    }
-                }
-            })).ToList();
-
-            tasks.Add(Task.Delay(TimeSpan.FromSeconds(5)));
-
-            await Task.WhenAny(tasks);
-
-            // Flushing tasks
-            stopping = true;
-            await Task.WhenAll(tasks);
+                var result = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).ListAsync();
+                var newBill = result.FirstOrDefault();
+                Assert.Equal(0, newBill.Nationalities.Count);
+            }
         }
 
         [Fact]
@@ -3079,8 +3061,8 @@ namespace YesSql.Tests
                     async () => {
                         using (var session = _store.CreateSession())
                         {
-                            var currentSteve = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Steve")).FirstOrDefaultAsync();
-                            currentSteve.Nationalities = currentSteve.Nationalities.Where(nationality => nationality != n).ToList();
+                            var currentSteve = await session.GetAsync<Person>(steve.Id);
+                            currentSteve.Nationalities = currentSteve.Nationalities.Where(nationality => nationality.CompareTo(n) != 0).ToList();
                             session.Save(currentSteve, checkConcurrency: true);
                             try
                             {
@@ -3110,31 +3092,12 @@ namespace YesSql.Tests
             }
             await Task.WhenAll(deleteNationalities);
 
-            var concurrency = 20;
-            var MaxTransactions = 2;
-
-            var counter = 0;
-            var stopping = false;
-
-            var tasks = Enumerable.Range(1, concurrency).Select(i => Task.Run(async () =>
+            using (var session = _store.CreateSession())
             {
-                while (!stopping && Interlocked.Add(ref counter, 1) < MaxTransactions)
-                {
-                    using (var session = _store.CreateSession())
-                    {
-                        var newSteve = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Steve")).FirstOrDefaultAsync();
-                        Assert.True(!newSteve.Nationalities.Any());
-                    }
-                }
-            })).ToList();
-
-            tasks.Add(Task.Delay(TimeSpan.FromSeconds(5)));
-
-            await Task.WhenAny(tasks);
-
-            // Flushing tasks
-            stopping = true;
-            await Task.WhenAll(tasks);
+                var result = await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Steve")).ListAsync();
+                var newBill = result.FirstOrDefault();
+                Assert.Equal(0, newBill.Nationalities.Count);
+            }
         }
 
         static int seed = Environment.TickCount;
