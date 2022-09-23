@@ -63,7 +63,7 @@ namespace YesSql.Services
                 {
                     var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
-                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(configuration.TablePrefix + tableName);
+                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(configuration.TablePrefix + tableName, configuration.Schema);
 
                     var selectCommand = transaction.Connection.CreateCommand();
                     selectCommand.CommandText = sql;

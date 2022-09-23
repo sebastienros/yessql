@@ -45,15 +45,15 @@ namespace YesSql.Sql
 
         public string Clause { get { return _clause; } }
 
-        public void Table(string table, string alias = null)
+        public void Table(string table, string alias, string schema)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + table));
+            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
 
             if (!String.IsNullOrEmpty(alias))
             {
                 FromSegments.Add(" AS ");
-                FromSegments.Add(_dialect.QuoteForTableName(alias));
+                FromSegments.Add(_dialect.QuoteForAliasName(alias));
             }
         }
 
@@ -74,12 +74,12 @@ namespace YesSql.Sql
             _count = take;
         }
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null, string toAlias = null)
+        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string schema, string toColumn, string alias = null, string toAlias = null)
         {
             // Don't prefix if alias is used
             if (alias != onTable)
             {
-                onTable = _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(onTable);
+                onTable = _dialect.QuoteForTableName(onTable, schema);
             }
             else
             {
@@ -88,7 +88,7 @@ namespace YesSql.Sql
 
             if (toTable != toAlias)
             {
-                toTable = _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + toTable);
+                toTable = _dialect.QuoteForTableName(_tablePrefix + toTable, schema);
             }
             else
             {
@@ -101,7 +101,7 @@ namespace YesSql.Sql
             }
 
             JoinSegments.Add(" INNER JOIN ");
-            JoinSegments.Add(_dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + table));
+            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
 
             if (!String.IsNullOrEmpty(alias))
             {
@@ -126,9 +126,9 @@ namespace YesSql.Sql
             SelectSegments.Add(selector);
         }
 
-        public void Selector(string table, string column)
+        public void Selector(string table, string column, string schema)
         {
-            Selector(FormatColumn(table, column));
+            Selector(FormatColumn(table, column, schema));
         }
 
         public void AddSelector(string select)
@@ -158,7 +158,7 @@ namespace YesSql.Sql
             _distinct = true;
         }
 
-        public virtual string FormatColumn(string table, string column, bool isAlias = false)
+        public virtual string FormatColumn(string table, string column, string schema, bool isAlias = false)
         {
             if (column != "*")
             {
@@ -168,11 +168,11 @@ namespace YesSql.Sql
             if (!isAlias)
             {
                 table = _tablePrefix + table;
-                return _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(table) + "." + column;
+                return _dialect.QuoteForTableName(table, schema) + "." + column;
             }
             else
             {
-                return _dialect.QuoteForTableName(table) + "." + column;
+                return _dialect.QuoteForAliasName(table) + "." + column;
             }
         }
 

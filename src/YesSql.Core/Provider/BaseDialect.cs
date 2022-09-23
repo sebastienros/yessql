@@ -12,7 +12,7 @@ namespace YesSql.Provider
     /// </summary>
     public abstract class BaseDialect : ISqlDialect
     {
-        public readonly Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, ISqlFunction> Methods = new(StringComparer.OrdinalIgnoreCase);
 
         protected static Dictionary<Type, DbType> _propertyTypes;
 
@@ -125,7 +125,7 @@ namespace YesSql.Provider
         public virtual string FormatKeyName(string name) => name;
         public virtual string FormatIndexName(string name) => name;
 
-        public virtual string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)
+        public virtual string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destQuotedTable, string[] destColumns, bool primaryKey)
         {
             var res = new StringBuilder(200);
 
@@ -143,8 +143,7 @@ namespace YesSql.Provider
                 .Append(String.Join(", ", srcColumns))
 #endif
                 .Append(") references ")
-                .Append(SchemaNameQuotedPrefix())
-                .Append(destTable);
+                .Append(destQuotedTable);
 
             if (!primaryKey)
             {
@@ -164,7 +163,7 @@ namespace YesSql.Provider
         public virtual bool SupportsIfExistsBeforeTableName => false;
         public virtual string CascadeConstraintsString => String.Empty;
         public virtual bool SupportsIfExistsAfterTableName => false;
-        public virtual string GetDropTableString(string name)
+        public virtual string GetDropTableString(string tableName, string schema)
         {
             var sb = new StringBuilder("drop table ");
             if (SupportsIfExistsBeforeTableName)
@@ -172,8 +171,7 @@ namespace YesSql.Provider
                 sb.Append("if exists ");
             }
 
-            sb.Append(SchemaNameQuotedPrefix());
-            sb.Append(QuoteForTableName(name)).Append(CascadeConstraintsString);
+            sb.Append(QuoteForTableName(tableName, schema)).Append(CascadeConstraintsString);
 
             if (SupportsIfExistsAfterTableName)
             {
@@ -182,11 +180,10 @@ namespace YesSql.Provider
 
             return sb.ToString();
         }
-        public abstract string GetDropIndexString(string indexName, string tableName);
+        public abstract string GetDropIndexString(string indexName, string tableName, string schema);
         public abstract string QuoteForColumnName(string columnName);
-        public abstract string QuoteForTableName(string tableName);
+        public abstract string QuoteForTableName(string tableName, string schema);
         public abstract string QuoteForAliasName(string aliasName);
-        public virtual string SchemaNameQuotedPrefix() => null;
 
         public virtual string QuoteString => "\"";
         public virtual string DoubleQuoteString => "\"\"";
@@ -196,8 +193,6 @@ namespace YesSql.Provider
         public virtual string DefaultValuesInsert => "DEFAULT VALUES";
 
         public virtual bool PrefixIndex => false;
-
-        public virtual string Schema => null;
 
         public virtual string DefaultSchema => null;
 

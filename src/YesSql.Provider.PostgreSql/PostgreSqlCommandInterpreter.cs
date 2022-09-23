@@ -9,16 +9,16 @@ namespace YesSql.Provider.PostgreSql
 {
     public class PostgreSqlCommandInterpreter : BaseCommandInterpreter
     {
-        public PostgreSqlCommandInterpreter(ISqlDialect dialect) : base(dialect)
+        public PostgreSqlCommandInterpreter(IConfiguration configuration) : base(configuration)
         {
         }
 
         public override void Run(StringBuilder builder, IAlterColumnCommand command)
         {
-            builder.AppendFormat("alter table {2}{0} modify column {1} ",
-                            _dialect.QuoteForTableName(command.Name),
-                            _dialect.QuoteForColumnName(command.ColumnName),
-                            _dialect.SchemaNameQuotedPrefix());
+            builder.AppendFormat("alter table {0} modify column {1} ",
+                            _dialect.QuoteForTableName(command.Name, _configuration.Schema),
+                            _dialect.QuoteForColumnName(command.ColumnName)
+                            );
             var initLength = builder.Length;
 
             var dbType = _dialect.ToDbType(command.DbType);
@@ -40,7 +40,7 @@ namespace YesSql.Provider.PostgreSql
             var builder2 = new StringBuilder();
 
             builder2.AppendFormat("alter table {0} alter column {1} ",
-                            _dialect.QuoteForTableName(command.Name),
+                            _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength2 = builder2.Length;
 

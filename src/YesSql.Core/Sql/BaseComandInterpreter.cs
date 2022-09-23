@@ -10,11 +10,13 @@ namespace YesSql.Sql
     public abstract class BaseCommandInterpreter : ICommandInterpreter
     {
         protected readonly ISqlDialect _dialect;
+        protected readonly IConfiguration _configuration;
         private const char Space = ' ';
 
-        public BaseCommandInterpreter(ISqlDialect dialect)
+        public BaseCommandInterpreter(IConfiguration configuration)
         {
-            _dialect = dialect;
+            _dialect = configuration.SqlDialect;
+            _configuration = configuration;
         }
 
         public IEnumerable<string> CreateSql(IEnumerable<ISchemaCommand> commands)
@@ -64,8 +66,7 @@ namespace YesSql.Sql
 
             builder.Append(_dialect.CreateTableString)
                 .Append(' ')
-                .Append(_dialect.SchemaNameQuotedPrefix())
-                .Append(_dialect.QuoteForTableName(command.Name))
+                .Append(_dialect.QuoteForTableName(command.Name, _configuration.Schema))
                 .Append(" (");
 
             var appendComma = false;
@@ -105,7 +106,7 @@ namespace YesSql.Sql
         {
             var builder = new StringBuilder();
             
-            builder.Append(_dialect.GetDropTableString(command.Name));
+            builder.Append(_dialect.GetDropTableString(command.Name, _configuration.Schema));
             yield return builder.ToString();
         }
 
@@ -167,26 +168,26 @@ namespace YesSql.Sql
 
         public virtual void Run(StringBuilder builder, IAddColumnCommand command)
         {
-            builder.AppendFormat("alter table {1}{0} add ",
-                _dialect.QuoteForTableName(command.Name),
-                _dialect.SchemaNameQuotedPrefix());
+            builder.AppendFormat("alter table {0} add ",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema)
+                );
             Run(builder, (CreateColumnCommand)command);
         }
 
         public virtual void Run(StringBuilder builder, IDropColumnCommand command)
         {
-            builder.AppendFormat("alter table {3}{0} drop column {1}",
-                _dialect.QuoteForTableName(command.Name),
-                _dialect.QuoteForColumnName(command.ColumnName),
-                _dialect.SchemaNameQuotedPrefix());
+            builder.AppendFormat("alter table {0} drop column {1}",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema),
+                _dialect.QuoteForColumnName(command.ColumnName)
+                );
         }
 
         public virtual void Run(StringBuilder builder, IAlterColumnCommand command)
         {
-            builder.AppendFormat("alter table {3}{0} alter column {1} ",
-                _dialect.QuoteForTableName(command.Name),
-                _dialect.QuoteForColumnName(command.ColumnName),
-                _dialect.SchemaNameQuotedPrefix());
+            builder.AppendFormat("alter table {0} alter column {1} ",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema),
+                _dialect.QuoteForColumnName(command.ColumnName)
+                );
 
             var dbType = _dialect.ToDbType(command.DbType);
 
@@ -212,26 +213,25 @@ namespace YesSql.Sql
 
         public virtual void Run(StringBuilder builder, IRenameColumnCommand command)
         {
-            builder.AppendFormat("alter table {3}{0} rename column {1} to {2}",
-                _dialect.QuoteForTableName(command.Name),
+            builder.AppendFormat("alter table {0} rename column {1} to {2}",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                 _dialect.QuoteForColumnName(command.ColumnName),
-                _dialect.QuoteForColumnName(command.NewColumnName),
-                _dialect.SchemaNameQuotedPrefix()
+                _dialect.QuoteForColumnName(command.NewColumnName)
                 );
         }
 
         public virtual void Run(StringBuilder builder, IAddIndexCommand command)
         {
-            builder.AppendFormat("create index {1} on {3}{0} ({2}) ",
-                _dialect.QuoteForTableName(command.Name),
+            builder.AppendFormat("create index {1} on {0} ({2}) ",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                 _dialect.QuoteForColumnName(command.IndexName),
-                String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray()),
-                _dialect.SchemaNameQuotedPrefix());
+                String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray())
+                );
         }
 
         public virtual void Run(StringBuilder builder, IDropIndexCommand command)
         {
-            builder.Append(_dialect.GetDropIndexString(command.IndexName, command.Name));
+            builder.Append(_dialect.GetDropIndexString(command.IndexName, command.Name, _configuration.Schema));
         }
 
         public virtual IEnumerable<string> Run(ISqlStatementCommand command)
@@ -249,12 +249,11 @@ namespace YesSql.Sql
             var builder = new StringBuilder();
 
             builder.Append("alter table ")
-                .Append(_dialect.SchemaNameQuotedPrefix())
-                .Append(_dialect.QuoteForTableName(command.SrcTable));
+                .Append(_dialect.QuoteForTableName(command.SrcTable, _configuration.Schema));
 
             builder.Append(_dialect.GetAddForeignKeyConstraintString(command.Name,
                 command.SrcColumns.Select(x => _dialect.QuoteForColumnName(x)).ToArray(),
-                _dialect.QuoteForTableName(command.DestTable),
+                _dialect.QuoteForTableName(command.DestTable, _configuration.Schema),
                 command.DestColumns.Select(x => _dialect.QuoteForColumnName(x)).ToArray(),
                 false));
 
@@ -266,8 +265,7 @@ namespace YesSql.Sql
             var builder = new StringBuilder();
 
             builder.Append("alter table ")
-                .Append(_dialect.SchemaNameQuotedPrefix())
-                .Append(_dialect.QuoteForTableName(command.SrcTable))
+                .Append(_dialect.QuoteForTableName(command.SrcTable, _configuration.Schema))
                 .Append(_dialect.GetDropForeignKeyConstraintString(command.Name));
             yield return builder.ToString();
         }

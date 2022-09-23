@@ -137,7 +137,7 @@ namespace YesSql
                     var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
                     selectBuilder.Select();
                     selectBuilder.AddSelector("*");
-                    selectBuilder.Table(documentTable);
+                    selectBuilder.Table(documentTable, null, Configuration.Schema);
                     selectBuilder.Take("1");
 
                     selectCommand.CommandText = selectBuilder.ToSqlString();

@@ -81,11 +81,6 @@ namespace YesSql
         string DefaultSchema { get; }
 
         /// <summary>
-        /// Returns the database schema if applicable.
-        /// </summary>
-        string Schema { get; }
-
-        /// <summary>
         /// Gets whether the identity columns requires the data type.
         /// </summary>
         bool HasDataTypeInIdentityColumn { get; }
@@ -133,7 +128,7 @@ namespace YesSql
         /// <summary>
         /// Returns the quoted table name.
         /// </summary>
-        string QuoteForTableName(string v);
+        string QuoteForTableName(string tableName, string schema);
 
         /// <summary>
         /// Returns the quoted alias name.
@@ -141,19 +136,14 @@ namespace YesSql
         string QuoteForAliasName(string alias);
 
         /// <summary>
-        /// Returns the quoted schema name prefix if applicable.
-        /// </summary>
-        string SchemaNameQuotedPrefix();
-
-        /// <summary>
         /// Gets the DROP TABLE SQL statement.
         /// </summary>
-        string GetDropTableString(string name);
+        string GetDropTableString(string tableName, string schema);
 
         /// <summary>
         /// Gets the DROP INDEX SQL statement.
         /// </summary>
-        string GetDropIndexString(string indexName, string tableName);
+        string GetDropIndexString(string indexName, string tableName, string schema);
 
         /// <summary>
         /// Returns the quoted column.
@@ -188,7 +178,7 @@ namespace YesSql
         /// <summary>
         /// Returns the ADD FOREIGN KEY constraint SQL statement.
         /// </summary>
-        string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
+        string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destQuotedTable, string[] destColumns, bool primaryKey);
 
         /// <summary>
         /// Formats a foreign key name to a deterministic value within the length constraints of the dialect.

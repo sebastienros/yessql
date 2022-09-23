@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -46,9 +47,9 @@ namespace YesSql.Tests
             {
                 _configuration = CreateConfiguration();
                 
-                CreateDatabaseSchema(_configuration);
-                
                 CleanDatabase(_configuration, false);
+
+                CreateDatabaseSchema(_configuration);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");
@@ -126,8 +127,8 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName, configuration.Schema)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
                 }
                 catch
                 {
@@ -141,7 +142,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
                 }
                 catch { }
             }
@@ -152,7 +153,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName, configuration.Schema)}");
                 }
                 catch { }
             }
@@ -4321,7 +4322,7 @@ namespace YesSql.Tests
                 await connection.OpenAsync();
 
                 var dialect = _store.Configuration.SqlDialect;
-                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
+                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate), _store.Configuration.Schema);
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
 
@@ -4360,10 +4361,10 @@ namespace YesSql.Tests
 
                 var dialect = _store.Configuration.SqlDialect;
 
-                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
+                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate), _store.Configuration.Schema) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
                 publishedInTheFutureResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInTheFutureSql);
 
-                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
+                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate), _store.Configuration.Schema) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
                 publishedInThePastResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInThePastSql);
             }
 
@@ -5119,11 +5120,10 @@ namespace YesSql.Tests
                             .Column<string>(column1)
                         );
 
-                    var sqlInsert = String.Format("INSERT INTO {3}{0} ({1}) VALUES({2})",
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                    var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema),
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.GetSqlValue(value),
-                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
+                        _store.Configuration.SqlDialect.GetSqlValue(value)
                         );
 
                     connection.Execute(sqlInsert, transaction: transaction);
@@ -5133,10 +5133,9 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {2}{1}",
+                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
-                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -5159,10 +5158,9 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {2}{1}",
+                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column2),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
-                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();

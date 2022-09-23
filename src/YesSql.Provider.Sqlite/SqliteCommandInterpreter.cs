@@ -6,7 +6,7 @@ namespace YesSql.Provider.Sqlite
 {
     public class SqliteCommandInterpreter : BaseCommandInterpreter
     {
-        public SqliteCommandInterpreter(ISqlDialect dialect) : base(dialect)
+        public SqliteCommandInterpreter(IConfiguration configuration) : base(configuration)
         {
         }
 

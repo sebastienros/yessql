@@ -9,14 +9,14 @@ namespace YesSql.Provider.MySql
 {
     public class MySqlCommandInterpreter : BaseCommandInterpreter
     {
-        public MySqlCommandInterpreter(ISqlDialect dialect) : base(dialect)
+        public MySqlCommandInterpreter(IConfiguration configuration) : base(configuration)
         {
         }
 
         public override void Run(StringBuilder builder, IAlterColumnCommand command)
         {
             builder.AppendFormat("alter table {0} modify column {1} ",
-                            _dialect.QuoteForTableName(command.Name),
+                            _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength = builder.Length;
 
@@ -39,7 +39,7 @@ namespace YesSql.Provider.MySql
             var builder2 = new StringBuilder();
 
             builder2.AppendFormat("alter table {0} alter column {1} ",
-                            _dialect.QuoteForTableName(command.Name),
+                            _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                             _dialect.QuoteForColumnName(command.ColumnName));
             var initLength2 = builder2.Length;
 

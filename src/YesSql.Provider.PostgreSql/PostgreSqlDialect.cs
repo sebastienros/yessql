@@ -83,13 +83,8 @@ namespace YesSql.Provider.PostgreSql
             };
         }
 
-        public PostgreSqlDialect(string schema = null)
+        public PostgreSqlDialect()
         {
-            if (!String.IsNullOrWhiteSpace(schema))
-            {
-                Schema = schema;
-            }
-
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
 
             // DateTimes needs to be stored as Utc in timesstamp fields since npgsql 6.0.
@@ -118,7 +113,6 @@ namespace YesSql.Provider.PostgreSql
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
-        public override string Schema { get; }
         public override string DefaultSchema => "public";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
@@ -215,7 +209,7 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
-        public override string GetDropIndexString(string indexName, string tableName)
+        public override string GetDropIndexString(string indexName, string tableName, string schema)
         {
             return "drop index if exists " + QuoteForColumnName(indexName);
         }
@@ -225,21 +219,18 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + columnName + QuoteString;
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, string schema)
         {
-            return QuoteString + tableName + QuoteString;
+            return String.IsNullOrEmpty(schema)
+                ? $"{QuoteString}{tableName}{QuoteString}"
+                : $"{QuoteString}{schema ?? DefaultSchema}{QuoteString}.{QuoteString}{tableName}{QuoteString}"
+                ;
+
         }
 
         public override string QuoteForAliasName(string aliasName)
         {
             return QuoteString + aliasName + QuoteString;
-        }
-
-        // PostgreSQL schema is generally not quoted but it works too if quoted.
-        public override string SchemaNameQuotedPrefix()
-        {
-            var schema = Schema ?? DefaultSchema;
-            return schema + ".";
         }
 
         public override string CascadeConstraintsString => " cascade ";

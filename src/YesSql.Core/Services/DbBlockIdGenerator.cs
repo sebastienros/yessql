@@ -23,6 +23,7 @@ namespace YesSql.Services
         private readonly int _blockSize;
         private readonly Dictionary<string, Range> _ranges = new Dictionary<string, Range>();
         private string _tablePrefix;
+        private string _schema;
 
         private string SelectCommand;
         private string UpdateCommand;
@@ -39,13 +40,14 @@ namespace YesSql.Services
 
         public async Task InitializeAsync(IStore store, ISchemaBuilder builder)
         {
+            _store = store;
             _dialect = store.Configuration.SqlDialect;
             _tablePrefix = store.Configuration.TablePrefix;
-            _store = store;
+            _schema = store.Configuration.Schema;
 
-            SelectCommand = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + TableName) + " WHERE " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
-            UpdateCommand = "UPDATE " + _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + TableName) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
-            InsertCommand = "INSERT INTO " + _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + TableName) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
+            SelectCommand = "SELECT " + _dialect.QuoteForColumnName("nextval") + " FROM " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " WHERE " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
+            UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
+            InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
             await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())

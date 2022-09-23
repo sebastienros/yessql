@@ -30,8 +30,9 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration.SqlDialect = new SqlServerDialect(schema);
-            configuration.CommandInterpreter = new SqlServerCommandInterpreter(configuration.SqlDialect);
+            configuration.SqlDialect = new SqlServerDialect();
+            configuration.Schema = schema;
+            configuration.CommandInterpreter = new SqlServerCommandInterpreter(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 

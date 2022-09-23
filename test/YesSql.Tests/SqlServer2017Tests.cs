@@ -25,14 +25,14 @@ namespace YesSql.Tests
 
         protected override void CreateDatabaseSchema(IConfiguration configuration)
         {
-            if (!String.IsNullOrWhiteSpace(_configuration.SqlDialect.Schema))
+            if (!String.IsNullOrWhiteSpace(configuration.Schema))
             {
                 using var connection = configuration.ConnectionFactory.CreateConnection();
                 connection.Open();
 
                 try
                 {
-                    connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { configuration.SqlDialect.DefaultSchema };");
+                    connection.Execute($"CREATE SCHEMA { configuration.Schema } ;");
                 }
                 catch { }
             }

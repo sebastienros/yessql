@@ -9,7 +9,7 @@ namespace YesSql.Tests
     public class SqlServer2019Tests : SqlServerTests
     {
 
-        public override SqlConnectionStringBuilder ConnectionStringBuilder => new(Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING") ?? @"Server=localhost;Database=Test;User Id=sa;Password=nvuBnK1e03yYgNPe9mOt");
+        public override SqlConnectionStringBuilder ConnectionStringBuilder => new(Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING") ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True");
 
         public SqlServer2019Tests(ITestOutputHelper output) : base(output)
         {
@@ -26,14 +26,14 @@ namespace YesSql.Tests
 
         protected override void CreateDatabaseSchema(IConfiguration configuration)
         {
-            if (!String.IsNullOrWhiteSpace(_configuration.SqlDialect.Schema))
+            if (!String.IsNullOrWhiteSpace(configuration.Schema))
             {
                 using var connection = configuration.ConnectionFactory.CreateConnection();
                 connection.Open();
 
                 try
                 {
-                    connection.Execute($"CREATE SCHEMA { configuration.SqlDialect.Schema } AUTHORIZATION { configuration.SqlDialect.DefaultSchema };");
+                    connection.Execute($"CREATE SCHEMA { configuration.Schema } ;");
                 }
                 catch { }
             }

@@ -6,15 +6,15 @@ namespace YesSql.Provider.SqlServer
 {
     public class SqlServerCommandInterpreter : BaseCommandInterpreter
     {
-        public SqlServerCommandInterpreter(ISqlDialect dialect) : base(dialect)
+        public SqlServerCommandInterpreter(IConfiguration configuration) : base(configuration)
         {
         }
 
         public override void Run(StringBuilder builder, IRenameColumnCommand command)
         {
             builder.AppendFormat("EXEC sp_RENAME {0}, {1}, 'COLUMN'",
-                _dialect.GetSqlValue(_dialect.SchemaNameQuotedPrefix() + command.Name + "." + command.ColumnName),
-                _dialect.GetSqlValue(command.NewColumnName)
+                _dialect.GetSqlValue(_configuration.SqlDialect.QuoteForTableName(command.Name, _configuration.Schema) + "." + _configuration.SqlDialect.QuoteForColumnName(command.ColumnName)),
+                _dialect.GetSqlValue(_configuration.SqlDialect.QuoteForColumnName(command.NewColumnName))
                 );            
         }
     }

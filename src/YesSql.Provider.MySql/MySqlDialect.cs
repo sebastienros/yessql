@@ -192,9 +192,9 @@ namespace YesSql.Provider.MySql
             return " drop foreign key " + FormatKeyName(name);
         }
 
-        public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)
+        public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destQuotedTable, string[] destColumns, bool primaryKey)
         {
-            string sql = base.GetAddForeignKeyConstraintString(name, srcColumns, destTable, destColumns, primaryKey);
+            var sql = base.GetAddForeignKeyConstraintString(name, srcColumns, destQuotedTable, destColumns, primaryKey);
 
             var res = new StringBuilder(sql);
 
@@ -232,10 +232,10 @@ namespace YesSql.Provider.MySql
             }
         }
 
-        public override string GetDropIndexString(string indexName, string tableName)
+        public override string GetDropIndexString(string indexName, string tableName, string schema)
         {
             // This is dependent on version of MySql < v10.1.4 does not support IF EXISTS
-            return "drop index " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName);
+            return "drop index " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName, schema);
         }
 
         public override string QuoteForColumnName(string columnName)
@@ -243,9 +243,9 @@ namespace YesSql.Provider.MySql
             return "`" + columnName + "`";
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, string schema)
         {
-            return "`" + tableName + "`";
+            return "`" + schema + "`.`" + tableName + "`";
         }
 
         public override string QuoteForAliasName(string aliasName)
