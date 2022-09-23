@@ -245,12 +245,15 @@ namespace YesSql.Provider.MySql
 
         public override string QuoteForTableName(string tableName, string schema)
         {
-            return "`" + schema + "`.`" + tableName + "`";
+            return String.IsNullOrEmpty(schema)
+                ? "`" + tableName + "`"
+                : "`" + schema + "`.`" + tableName + "`"
+                ;
         }
 
         public override string QuoteForAliasName(string aliasName)
         {
-            return aliasName;
+            return "`" + aliasName + "`";
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
