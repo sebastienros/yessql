@@ -7,7 +7,7 @@ using YesSql.Utils;
 
 namespace YesSql.Provider.PostgreSql
 {
-    public class PostgreSqlDialect : BaseDialect
+    public sealed class PostgreSqlDialect : BaseDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
@@ -265,6 +265,11 @@ namespace YesSql.Provider.PostgreSql
                 default:
                     return base.GetSqlValue(value);
             }
+        }
+
+        public override string GetCreateSchemaString(string schema)
+        {
+            return $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";
         }
     }
 }

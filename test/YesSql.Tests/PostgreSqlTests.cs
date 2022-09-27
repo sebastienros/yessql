@@ -31,20 +31,6 @@ namespace YesSql.Tests
                 .UseBlockIdGenerator()
                 ;
         }
-        protected override void CreateDatabaseSchema(IConfiguration configuration)
-        {
-            if (!String.IsNullOrWhiteSpace(configuration.Schema))
-            {
-                using var connection = configuration.ConnectionFactory.CreateConnection();
-                connection.Open();
-
-                try
-                {
-                    connection.Execute($"CREATE SCHEMA IF NOT EXISTS { configuration.Schema } ;");
-                }
-                catch { }
-            }
-        }
 
         [Fact(Skip = "Postgres locks on the table")]
         public override Task ShouldReadUncommittedRecords()

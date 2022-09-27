@@ -8,7 +8,7 @@ namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
-        private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> _columnTypes = new()
         {
             {DbType.Guid, "UNIQUEIDENTIFIER"},
             {DbType.Binary, "VARBINARY(8000)"},
@@ -250,5 +250,10 @@ namespace YesSql.Provider.SqlServer
         public override bool SupportsIfExistsBeforeTableName => true;
 
         public override int MaxParametersPerCommand => 2098;
+
+        public override string GetCreateSchemaString(string schema)
+        {
+            return $"IF NOT EXISTS ( SELECT * FROM sys.schemas WHERE name = N'{schema}' ) EXEC('CREATE SCHEMA [schema]');";
+        }
     }
 }

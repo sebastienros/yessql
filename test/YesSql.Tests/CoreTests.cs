@@ -49,8 +49,6 @@ namespace YesSql.Tests
                 
                 CleanDatabase(_configuration, false);
 
-                CreateDatabaseSchema(_configuration);
-
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");
                 _store.TypeNames[typeof(Person)] = "People";
@@ -202,11 +200,6 @@ namespace YesSql.Tests
         }
 
         protected virtual void OnClearTables(DbConnection connection)
-        {
-
-        }
-
-        protected virtual void CreateDatabaseSchema(IConfiguration configuration)
         {
 
         }

@@ -5,7 +5,7 @@ using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
 {
-    public class SqliteDialect : BaseDialect
+    public sealed class SqliteDialect : BaseDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
@@ -160,5 +160,10 @@ namespace YesSql.Provider.Sqlite
         }
 
         public override bool SupportsIfExistsBeforeTableName => true;
+
+        public override string GetCreateSchemaString(string schema)
+        {
+            return null;
+        }
     }
 }

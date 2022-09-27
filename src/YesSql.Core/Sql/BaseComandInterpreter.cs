@@ -52,6 +52,9 @@ namespace YesSql.Sql
                     case SchemaCommandType.DropForeignKey:
                         sqlCommands.AddRange(Run((IDropForeignKeyCommand)schemaCommand));
                         break;
+                    case SchemaCommandType.CreateSchema:
+                        sqlCommands.AddRange(Run((ICreateSchemaCommand)schemaCommand));
+                        break;
                 }
             }
 
@@ -104,10 +107,12 @@ namespace YesSql.Sql
 
         public virtual IEnumerable<string> Run(IDropTableCommand command)
         {
-            var builder = new StringBuilder();
-            
-            builder.Append(_dialect.GetDropTableString(command.Name, _configuration.Schema));
-            yield return builder.ToString();
+            yield return _dialect.GetDropTableString(command.Name, _configuration.Schema);
+        }
+
+        public virtual IEnumerable<string> Run(ICreateSchemaCommand command)
+        {
+            yield return _dialect.GetCreateSchemaString(command.Name);
         }
 
         public virtual IEnumerable<string> Run(IAlterTableCommand command)

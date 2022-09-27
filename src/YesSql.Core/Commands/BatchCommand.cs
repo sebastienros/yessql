@@ -13,7 +13,7 @@ namespace YesSql.Commands
 
         public List<string> Queries { get; set; } = new List<string>();
         public DbCommand Command { get; set; } 
-        public List<Action<DbDataReader>> Actions = new List<Action<DbDataReader>>();
+        public List<Action<DbDataReader>> Actions = new();
         public int ExecutionOrder => 0;
 
         public BatchCommand(DbCommand command)

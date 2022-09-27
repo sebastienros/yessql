@@ -30,7 +30,7 @@ namespace YesSql.Services
         }
 
         public string _bindingName = "a1";
-        public Dictionary<string, List<Type>> _bindings = new Dictionary<string, List<Type>>();
+        public Dictionary<string, List<Type>> _bindings = new();
         public readonly string _documentTable;
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;
@@ -129,7 +129,7 @@ namespace YesSql.Services
         private string _collection;
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
-            new Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>>();
+            new();
 
         static DefaultQuery()
         {

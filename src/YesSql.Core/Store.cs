@@ -103,8 +103,12 @@ namespace YesSql
                 using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
 #endif            
                 {
-                    var builder = new SchemaBuilder(Configuration, transaction);
-                    await Configuration.IdGenerator.InitializeAsync(this, builder);
+                    var builder = new SchemaBuilder(Configuration, transaction, false);
+
+                    if (!string.IsNullOrEmpty(Configuration.Schema))
+                    {
+                        builder.CreateSchema(Configuration.Schema);
+                    }
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
                     await transaction.CommitAsync();
@@ -113,6 +117,9 @@ namespace YesSql
 #endif
                 }
             }
+
+            // Initializes the if generator
+            await Configuration.IdGenerator.InitializeAsync(this);
 
             // Pre-initialize the default collection
             await InitializeCollectionAsync("");

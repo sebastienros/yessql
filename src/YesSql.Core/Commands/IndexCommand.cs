@@ -19,10 +19,10 @@ namespace YesSql.Commands
 
         protected readonly IStore _store;
 
-        private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor>();
-        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new ConcurrentDictionary<string, PropertyInfo[]>();
-        private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new ConcurrentDictionary<CompoundKey, string>();
-        private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new ConcurrentDictionary<CompoundKey, string>();
+        private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
+        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
+        private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
+        private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
 
         protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 

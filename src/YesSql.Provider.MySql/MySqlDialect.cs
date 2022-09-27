@@ -8,7 +8,7 @@ using YesSql.Utils;
 
 namespace YesSql.Provider.MySql
 {
-    public class MySqlDialect : BaseDialect
+    public sealed class MySqlDialect : BaseDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
@@ -286,6 +286,11 @@ namespace YesSql.Provider.MySql
             }
 
             return base.GetSqlValue(value);
+        }
+
+        public override string GetCreateSchemaString(string schema)
+        {
+            return $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";
         }
     }
 }

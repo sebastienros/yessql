@@ -11,9 +11,9 @@ namespace YesSql.Services
     /// </summary>
     public class DefaultIdGenerator : IIdGenerator
     {
-        private object _synLock = new object();
+        private object _synLock = new();
 
-        private Dictionary<string, long> _seeds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, long> _seeds = new(StringComparer.OrdinalIgnoreCase);
 
         private ISqlDialect _dialect;
 
@@ -32,7 +32,7 @@ namespace YesSql.Services
             }
         }
 
-        public Task InitializeAsync(IStore store, ISchemaBuilder builder)
+        public Task InitializeAsync(IStore store)
         {
             _dialect = store.Configuration.SqlDialect;
 

@@ -296,7 +296,7 @@ namespace YesSql.Provider
             return select;
         }
 
-        private readonly Dictionary<Type, List<Func<object, object>>> _typeHandlers = new Dictionary<Type, List<Func<object, object>>>();
+        private readonly Dictionary<Type, List<Func<object, object>>> _typeHandlers = new();
 
         public void ResetTypeHandlers()
         {
@@ -311,6 +311,11 @@ namespace YesSql.Provider
             }
 
             handlers.Add(i => handler((T)i));
+        }
+
+        public virtual string GetCreateSchemaString(string schema)
+        {
+            return $"CREATE SCHEMA {QuoteForColumnName(schema)}";
         }
     }
 }

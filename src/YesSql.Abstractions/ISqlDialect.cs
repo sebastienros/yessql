@@ -141,6 +141,11 @@ namespace YesSql
         string GetDropTableString(string tableName, string schema);
 
         /// <summary>
+        /// Gets the CREATE SCHEMA SQL statement.
+        /// </summary>
+        string GetCreateSchemaString(string schema);
+
+        /// <summary>
         /// Gets the DROP INDEX SQL statement.
         /// </summary>
         string GetDropIndexString(string indexName, string tableName, string schema);

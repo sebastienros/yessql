@@ -14,7 +14,7 @@ namespace YesSql.Services
 
     internal abstract class CompositeNode : PredicateNode
     {
-        public List<PredicateNode> Children = new List<PredicateNode>();
+        public List<PredicateNode> Children = new();
     }
 
     internal class AndNode : CompositeNode
