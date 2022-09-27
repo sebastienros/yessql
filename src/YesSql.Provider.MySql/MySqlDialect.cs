@@ -290,7 +290,9 @@ namespace YesSql.Provider.MySql
 
         public override string GetCreateSchemaString(string schema)
         {
-            return $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";
+            // MySQL doesn't support schemas
+
+            return null;
         }
     }
 }
