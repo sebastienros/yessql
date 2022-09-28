@@ -14,7 +14,8 @@ namespace YesSql.Provider.SqlServer
         {
             builder.AppendFormat("EXEC sp_RENAME {0}, {1}, 'COLUMN'",
                 _dialect.GetSqlValue(_configuration.SqlDialect.QuoteForTableName(command.Name, _configuration.Schema) + "." + _configuration.SqlDialect.QuoteForColumnName(command.ColumnName)),
-                _dialect.GetSqlValue(_configuration.SqlDialect.QuoteForColumnName(command.NewColumnName))
+                // Don't [quote] the column name
+                _dialect.GetSqlValue(command.NewColumnName)
                 );            
         }
     }

@@ -68,12 +68,6 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public override void ShouldRenameColumn()
-        {
-            base.ShouldRenameColumn();
-        }
-
-        [Fact]
         public async Task ThrowsWhenIndexKeyLengthExceeded()
         {
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())

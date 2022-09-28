@@ -239,9 +239,9 @@ namespace YesSql.Provider.SqlServer
                 return "null";
             }
 
-            if (value.GetType() == typeof(TimeSpan))
+            if (value is TimeSpan timeSpan)
             {
-                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+                return timeSpan.Ticks.ToString(CultureInfo.InvariantCulture);
             }
 
             return base.GetSqlValue(value);
