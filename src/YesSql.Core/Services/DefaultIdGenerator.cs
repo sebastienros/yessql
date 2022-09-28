@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using YesSql.Sql;
 
 namespace YesSql.Services
 {
@@ -11,7 +10,7 @@ namespace YesSql.Services
     /// </summary>
     public class DefaultIdGenerator : IIdGenerator
     {
-        private object _synLock = new();
+        private object _synLock = new object();
 
         private Dictionary<string, long> _seeds = new(StringComparer.OrdinalIgnoreCase);
 

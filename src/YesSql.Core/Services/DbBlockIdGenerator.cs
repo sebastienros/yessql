@@ -12,7 +12,7 @@ namespace YesSql.Services
     /// </summary>
     public class DbBlockIdGenerator : IIdGenerator
     {
-        private readonly object _synLock = new();
+        private readonly object _synLock = new object();
 
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
@@ -50,35 +50,39 @@ namespace YesSql.Services
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
-            await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
+            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
 #else
-            using var connection = store.Configuration.ConnectionFactory.CreateConnection();
+            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
 #endif
-            await connection.OpenAsync();
-
-            try
             {
+                await connection.OpenAsync();
+
+                try
+                {
 #if SUPPORTS_ASYNC_TRANSACTIONS
-                await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                    await using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
 #else
-                using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                    using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
 #endif
-                var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
+                    {
+                        var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
-                localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
-                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                    .Column<ulong>("nextval")
-                    );
+                        localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
+                            .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                            .Column<ulong>("nextval")
+                            );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
-                await transaction.CommitAsync();
+                        await transaction.CommitAsync();
 #else
-                transaction.Commit();
+                        transaction.Commit();
 #endif
-            }
-            catch
-            {
+                    }
+                }
+                catch
+                {
 
+                }
             }
         }
 
@@ -194,76 +198,35 @@ namespace YesSql.Services
             object nextval;
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
-            await using var connection = configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
-
-            await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-#else
-            using var connection = configuration.ConnectionFactory.CreateConnection();
-            
-            await connection.OpenAsync();
-
-            using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-#endif
+            await using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                // Does the record already exist?
-                var selectCommand = transaction.Connection.CreateCommand();
-                selectCommand.CommandText = SelectCommand;
+                await connection.OpenAsync();
 
-                var selectDimension = selectCommand.CreateParameter();
-                selectDimension.Value = collection;
-                selectDimension.ParameterName = "@dimension";
-                selectCommand.Parameters.Add(selectDimension);
-
-                selectCommand.Transaction = transaction;
-
-                if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
-                {
-                    _store.Configuration.Logger.LogTrace(SelectCommand);
-                }
-                nextval = await selectCommand.ExecuteScalarAsync();
-
-#if SUPPORTS_ASYNC_TRANSACTIONS
-                await transaction.CommitAsync();
+                await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
 #else
-                transaction.Commit();
-#endif
-            }
-
-            if (nextval == null)
+            using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                // Try to create a new record. If it fails, retry reading the record.
-                try
-                {
-#if SUPPORTS_ASYNC_TRANSACTIONS
-                    await using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
-#else
-                    using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
 #endif
-                    nextval = 1;
+                {
+                    // Does the record already exist?
+                    var selectCommand = transaction.Connection.CreateCommand();
+                    selectCommand.CommandText = SelectCommand;
 
-                    // To prevent concurrency issues when creating this record (it must be unique)
-                    // we generate a random collection name, then update it safely
+                    var selectDimension = selectCommand.CreateParameter();
+                    selectDimension.Value = collection;
+                    selectDimension.ParameterName = "@dimension";
+                    selectCommand.Parameters.Add(selectDimension);
 
-                    var command = transaction.Connection.CreateCommand();
-                    command.CommandText = InsertCommand;
-                    command.Transaction = transaction;
-
-                    var dimensionParameter = command.CreateParameter();
-                    dimensionParameter.Value = collection;
-                    dimensionParameter.ParameterName = "@dimension";
-                    command.Parameters.Add(dimensionParameter);
-
-                    var nextValParameter = command.CreateParameter();
-                    nextValParameter.Value = 1;
-                    nextValParameter.ParameterName = "@nextval";
-                    command.Parameters.Add(nextValParameter);
+                    selectCommand.Transaction = transaction;
 
                     if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
                     {
-                        _store.Configuration.Logger.LogTrace(InsertCommand);
+                        _store.Configuration.Logger.LogTrace(SelectCommand);
                     }
-                    await command.ExecuteNonQueryAsync();
+                    nextval = await selectCommand.ExecuteScalarAsync();
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
                     await transaction.CommitAsync();
@@ -271,9 +234,54 @@ namespace YesSql.Services
                     transaction.Commit();
 #endif
                 }
-                catch
+
+                if (nextval == null)
                 {
-                    await InitializeCollectionAsync(configuration, collection);
+                    // Try to create a new record. If it fails, retry reading the record.
+                    try
+                    {
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                        await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#else
+                        using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+#endif
+                        {
+                            nextval = 1;
+
+                            // To prevent concurrency issues when creating this record (it must be unique)
+                            // we generate a random collection name, then update it safely
+
+                            var command = transaction.Connection.CreateCommand();
+                            command.CommandText = InsertCommand;
+                            command.Transaction = transaction;
+
+                            var dimensionParameter = command.CreateParameter();
+                            dimensionParameter.Value = collection;
+                            dimensionParameter.ParameterName = "@dimension";
+                            command.Parameters.Add(dimensionParameter);
+
+                            var nextValParameter = command.CreateParameter();
+                            nextValParameter.Value = 1;
+                            nextValParameter.ParameterName = "@nextval";
+                            command.Parameters.Add(nextValParameter);
+
+                            if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
+                            {
+                                _store.Configuration.Logger.LogTrace(InsertCommand);
+                            }
+                            await command.ExecuteNonQueryAsync();
+
+#if SUPPORTS_ASYNC_TRANSACTIONS
+                            await transaction.CommitAsync();
+#else
+                            transaction.Commit();
+#endif
+                        }
+                    }
+                    catch
+                    {
+                        await InitializeCollectionAsync(configuration, collection);
+                    }
                 }
 
                 _ranges[collection] = new Range(collection);
