@@ -32,6 +32,7 @@ namespace YesSql
         public IConnectionFactory ConnectionFactory { get; set; }
         public IContentSerializer ContentSerializer { get; set; }
         public string TablePrefix { get; set; }
+        public string Schema { get; set; }
         public int CommandsPageSize { get; set; }
         public bool QueryGatingEnabled { get; set; }
         public IIdGenerator IdGenerator { get; set; }

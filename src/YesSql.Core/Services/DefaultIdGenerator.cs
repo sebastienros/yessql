@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using YesSql.Sql;
 
 namespace YesSql.Services
 {
@@ -13,7 +12,7 @@ namespace YesSql.Services
     {
         private object _synLock = new object();
 
-        private Dictionary<string, long> _seeds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, long> _seeds = new(StringComparer.OrdinalIgnoreCase);
 
         private ISqlDialect _dialect;
 
@@ -32,7 +31,7 @@ namespace YesSql.Services
             }
         }
 
-        public Task InitializeAsync(IStore store, ISchemaBuilder builder)
+        public Task InitializeAsync(IStore store)
         {
             _dialect = store.Configuration.SqlDialect;
 
@@ -63,7 +62,7 @@ namespace YesSql.Services
                 {
                     var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
-                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(configuration.TablePrefix + tableName);
+                    var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(configuration.TablePrefix + tableName, configuration.Schema);
 
                     var selectCommand = transaction.Connection.CreateCommand();
                     selectCommand.CommandText = sql;

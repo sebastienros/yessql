@@ -1,3 +1,5 @@
+using Dapper;
+using Microsoft.Data.SqlClient;
 using System;
 using Xunit.Abstractions;
 using YesSql.Provider.SqlServer;
@@ -6,10 +8,10 @@ namespace YesSql.Tests
 {
     public class SqlServer2017Tests : SqlServerTests
     {
-        public override string ConnectionString 
-            =>  Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING") 
-                ?? @"Data Source=.;Initial Catalog=tempdb;Integrated Security=True"
-                ;
+        // Docker command
+        // docker run --name sqlserver2017 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Password12!" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2017-latest
+
+        public override SqlConnectionStringBuilder ConnectionStringBuilder => new(Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING") ?? @"Server=127.0.0.1;Database=tempdb;User Id=sa;Password=Password12!");
 
         public SqlServer2017Tests(ITestOutputHelper output) : base(output)
         {
@@ -18,7 +20,7 @@ namespace YesSql.Tests
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UseSqlServer(ConnectionString)
+                .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 ;

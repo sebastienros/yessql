@@ -2,15 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.Text;
 using YesSql.Sql;
-using YesSql.Utils;
 
 namespace YesSql.Provider.SqlServer
 {
     public class SqlServerDialect : BaseDialect
     {
-        private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
+        private static readonly Dictionary<DbType, string> _columnTypes = new()
         {
             {DbType.Guid, "UNIQUEIDENTIFIER"},
             {DbType.Binary, "VARBINARY(8000)"},
@@ -102,12 +100,10 @@ namespace YesSql.Provider.SqlServer
         public override string Name => "SqlServer";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
         public override string IdentityLastId => "SCOPE_IDENTITY()";
-
         public override string RandomOrderByClause => "newid()";
-
         public override byte DefaultDecimalPrecision => 19;
-
         public override byte DefaultDecimalScale => 5;
+        public override string DefaultSchema => "dbo";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
@@ -159,7 +155,7 @@ namespace YesSql.Provider.SqlServer
                 }
             }
 
-            if (_columnTypes.TryGetValue(dbType, out string value))
+            if (_columnTypes.TryGetValue(dbType, out var value))
             {
                 if (dbType == DbType.Decimal)
                 {
@@ -196,9 +192,9 @@ namespace YesSql.Provider.SqlServer
             }
         }
 
-        public override string GetDropIndexString(string indexName, string tableName)
+        public override string GetDropIndexString(string indexName, string tableName, string schema)
         {
-            return "drop index if exists " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName);
+            return "drop index if exists " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName, schema);
         }
 
         public override string QuoteForColumnName(string columnName)
@@ -206,9 +202,17 @@ namespace YesSql.Provider.SqlServer
             return "[" + columnName + "]";
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, string schema)
         {
-            return "[" + tableName + "]";
+            return string.IsNullOrEmpty(schema)
+                ? $"[{tableName}]"
+                : $"[{schema}].[{tableName}]"
+                ;
+        }
+
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return "[" + aliasName + "]";
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
@@ -235,9 +239,9 @@ namespace YesSql.Provider.SqlServer
                 return "null";
             }
 
-            if (value.GetType() == typeof(TimeSpan))
+            if (value is TimeSpan timeSpan)
             {
-                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+                return timeSpan.Ticks.ToString(CultureInfo.InvariantCulture);
             }
 
             return base.GetSqlValue(value);
@@ -246,5 +250,10 @@ namespace YesSql.Provider.SqlServer
         public override bool SupportsIfExistsBeforeTableName => true;
 
         public override int MaxParametersPerCommand => 2098;
+
+        public override string GetCreateSchemaString(string schema)
+        {
+            return $"IF NOT EXISTS ( SELECT * FROM sys.schemas WHERE name = N'{schema}' ) EXEC('CREATE SCHEMA [{schema}]');";
+        }
     }
 }
