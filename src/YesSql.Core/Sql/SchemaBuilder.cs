@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Xml.Linq;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
@@ -35,6 +36,11 @@ namespace YesSql.Sql
         {
             foreach (var statement in statements)
             {
+                if (String.IsNullOrEmpty(statement))
+                {
+                    continue;
+                }
+
                 _logger.LogTrace(statement);
                 Connection.Execute(statement, null, Transaction);
             }
@@ -267,6 +273,24 @@ namespace YesSql.Sql
             {
                 var command = new DropForeignKeyCommand(Dialect.FormatKeyName(Prefix(srcTable)), Prefix(name));
                 Execute(_commandInterpreter.CreateSql(command));
+            }
+            catch
+            {
+                if (ThrowOnError)
+                {
+                    throw;
+                }
+            }
+
+            return this;
+        }
+
+        public ISchemaBuilder CreateSchema(string schema)
+        {
+            try
+            {
+                var createSchema = new CreateSchemaCommand(schema);
+                Execute(_commandInterpreter.CreateSql(createSchema));
             }
             catch
             {

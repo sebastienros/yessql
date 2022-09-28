@@ -88,5 +88,10 @@ namespace YesSql.Sql
         /// Removes a table.
         /// </summary>
         ISchemaBuilder DropTable(string name);
+
+        /// <summary>
+        /// Creates a database schema.
+        /// </summary>
+        ISchemaBuilder CreateSchema(string schema);
     }
 }

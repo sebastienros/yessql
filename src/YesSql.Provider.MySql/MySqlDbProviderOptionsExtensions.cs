@@ -8,15 +8,17 @@ namespace YesSql.Provider.MySql
     {
         public static IConfiguration UseMySql(
             this IConfiguration configuration,
-            string connectionString)
+            string connectionString,
+            string schema = null)
         {
-            return UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            return UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
         }
 
         public static IConfiguration UseMySql(
             this IConfiguration configuration,
             string connectionString,
-            IsolationLevel isolationLevel)
+            IsolationLevel isolationLevel,
+            string schema = null)
         {
             if (configuration == null)
             {
@@ -29,7 +31,8 @@ namespace YesSql.Provider.MySql
             }
 
             configuration.SqlDialect = new MySqlDialect();
-            configuration.CommandInterpreter = new MySqlCommandInterpreter(configuration.SqlDialect);
+            configuration.Schema = schema;
+            configuration.CommandInterpreter = new MySqlCommandInterpreter(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<MySqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 

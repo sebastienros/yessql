@@ -6,9 +6,9 @@ namespace YesSql.Services
 {
     public class TypeService : ITypeService
     {
-        private readonly ConcurrentDictionary<Type, string> typeNames = new ConcurrentDictionary<Type, string>();
+        private readonly ConcurrentDictionary<Type, string> typeNames = new();
 
-        private readonly ConcurrentDictionary<string, Type> nameTypes = new ConcurrentDictionary<string, Type>();
+        private readonly ConcurrentDictionary<string, Type> nameTypes = new();
 
         public string this[Type t]
         {

@@ -4,9 +4,9 @@ namespace YesSql.Indexes
 {
     public class IdentityMap
     {
-        private readonly Dictionary<int, object> _documentIds = new Dictionary<int, object>();
-        private readonly Dictionary<object, int> _entities = new Dictionary<object, int>();
-        private readonly Dictionary<int, Document> _documents = new Dictionary<int, Document>();
+        private readonly Dictionary<int, object> _documentIds = new();
+        private readonly Dictionary<object, int> _entities = new();
+        private readonly Dictionary<int, Document> _documents = new();
 
         public bool TryGetDocumentId(object item, out int id)
         {

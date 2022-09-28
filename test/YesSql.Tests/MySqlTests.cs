@@ -67,12 +67,6 @@ namespace YesSql.Tests
             }
         }
 
-        [Fact(Skip = "The syntax used for MySQL only works since MySQL 8.0 which is not available on appveyor")]
-        public override void ShouldRenameColumn()
-        {
-            base.ShouldRenameColumn();
-        }
-
         [Fact]
         public async Task ThrowsWhenIndexKeyLengthExceeded()
         {

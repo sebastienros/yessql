@@ -32,7 +32,7 @@ namespace YesSql.Provider.Sqlite
             }
 
             configuration.SqlDialect = new SqliteDialect();
-            configuration.CommandInterpreter = new SqliteCommandInterpreter(configuration.SqlDialect);
+            configuration.CommandInterpreter = new SqliteCommandInterpreter(configuration);
             configuration.ConnectionFactory = new DbConnectionFactory<SqliteConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;
 

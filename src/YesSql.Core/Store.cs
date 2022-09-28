@@ -88,31 +88,36 @@ namespace YesSql
             ValidateConfiguration();
 
             TypeNames = new TypeService();
+            if (!string.IsNullOrEmpty(Configuration.Schema))
+            {
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
-            await using (var connection = Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
+                await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+                {
+                    await connection.OpenAsync();
 
-                await using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
+                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
 #else
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
-#endif            
-                {
+                using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+#endif
                     var builder = new SchemaBuilder(Configuration, transaction);
-                    await Configuration.IdGenerator.InitializeAsync(this, builder);
+
+                    builder.CreateSchema(Configuration.Schema);
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
                     await transaction.CommitAsync();
 #else
-                    transaction.Commit();
+                transaction.Commit();
 #endif
                 }
             }
+
+            // Initialize the Id generator
+            await Configuration.IdGenerator.InitializeAsync(this);
 
             // Pre-initialize the default collection
             await InitializeCollectionAsync("");
@@ -137,7 +142,7 @@ namespace YesSql
                     var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
                     selectBuilder.Select();
                     selectBuilder.AddSelector("*");
-                    selectBuilder.Table(documentTable);
+                    selectBuilder.Table(documentTable, null, Configuration.Schema);
                     selectBuilder.Take("1");
 
                     selectCommand.CommandText = selectBuilder.ToSqlString();
@@ -159,28 +164,26 @@ namespace YesSql
 #else
                                 result.Close();
 #endif
-                                using (var migrationTransaction = connection.BeginTransaction())
-                                {
-                                    var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
+                                using var migrationTransaction = connection.BeginTransaction();
+                                var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
-                                    try
-                                    {
-                                        migrationBuilder
-                                            .AlterTable(documentTable, table => table
-                                                .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                            );
+                                try
+                                {
+                                    migrationBuilder
+                                        .AlterTable(documentTable, table => table
+                                            .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                        );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
-                                        await migrationTransaction.CommitAsync();
+                                    await migrationTransaction.CommitAsync();
 #else
-                                        migrationTransaction.Commit();
+                                    migrationTransaction.Commit();
 #endif
-                                    }
-                                    catch
-                                    {
+                                }
+                                catch
+                                {
 
-                                        // Another thread must have altered it
-                                    }
+                                    // Another thread must have altered it
                                 }
                             }
                             return;
@@ -290,7 +293,7 @@ namespace YesSql
         {
             if (target == null)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(target));
             }
 
             var cacheKey = String.IsNullOrEmpty(collection)
@@ -358,10 +361,7 @@ namespace YesSql
         {
             foreach (var indexProvider in indexProviders)
             {
-                if (indexProvider.CollectionName == null)
-                {
-                    indexProvider.CollectionName = collection ?? "";
-                }
+                indexProvider.CollectionName ??= collection ?? "";
             }
 
             Indexes.AddRange(indexProviders);
