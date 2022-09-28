@@ -88,27 +88,32 @@ namespace YesSql
             ValidateConfiguration();
 
             TypeNames = new TypeService();
+            if (!string.IsNullOrEmpty(Configuration.Schema))
+            {
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
-            await using (var connection = Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
+                await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+                {
+                    await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
 #else
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
                 using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
-#endif            
-                var builder = new SchemaBuilder(Configuration, transaction);
+#endif
+                    var builder = new SchemaBuilder(Configuration, transaction);
+
+                    builder.CreateSchema(Configuration.Schema);
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
-                await transaction.CommitAsync();
+                    await transaction.CommitAsync();
 #else
                 transaction.Commit();
 #endif
+                }
             }
 
             // Initialize the Id generator
