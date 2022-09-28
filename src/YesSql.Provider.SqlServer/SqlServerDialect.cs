@@ -253,7 +253,7 @@ namespace YesSql.Provider.SqlServer
 
         public override string GetCreateSchemaString(string schema)
         {
-            return $"IF NOT EXISTS ( SELECT * FROM sys.schemas WHERE name = N'{schema}' ) EXEC('CREATE SCHEMA [schema]');";
+            return $"IF NOT EXISTS ( SELECT * FROM sys.schemas WHERE name = N'{schema}' ) EXEC('CREATE SCHEMA [{schema}]');";
         }
     }
 }
