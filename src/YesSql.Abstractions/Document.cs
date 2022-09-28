@@ -27,5 +27,20 @@ namespace YesSql
         /// This property is used to track updates, and optionally detect concurrency violations.
         /// </remarks>
         public long Version { get; set; }
+
+        /// <summary>
+        /// Clones the current document.
+        /// </summary>
+        /// <returns>A clone of the current document.</returns>
+        public Document Clone()
+        {
+            return new Document
+            {
+                Id = Id,
+                Type = Type,
+                Content = Content,
+                Version = Version
+            };
+        }
     }
 }

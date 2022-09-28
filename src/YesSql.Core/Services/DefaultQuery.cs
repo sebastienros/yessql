@@ -1156,8 +1156,11 @@ namespace YesSql.Services
 
                         if (documents.Length == 0)
                         {
-                            return default(T);
+                            return default;
                         }
+
+                        // Clone documents returned from ProduceAsync as they might be shared across sessions
+                        documents = documents.Select(x => x.Clone()).ToArray();
 
                         return _query._session.Get<T>(documents, _query._collection).FirstOrDefault();
                     }
@@ -1252,6 +1255,9 @@ namespace YesSql.Services
 
                             return state.Connection.QueryAsync<Document>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
+
+                        // Clone documents returned from ProduceAsync as they might be shared across sessions
+                        documents = documents.Select(x => x.Clone());
 
                         return _query._session.Get<T>(documents.ToArray(), _query._collection);
                     }

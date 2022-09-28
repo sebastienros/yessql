@@ -411,6 +411,9 @@ namespace YesSql
                 },
                 new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id } });
 
+                // Clone documents returned from ProduceAsync as they might be shared across sessions
+                result = result.Select(x => x.Clone()).ToArray();
+
                 return result.FirstOrDefault();
             }
             catch
@@ -507,6 +510,9 @@ namespace YesSql
                 },
                 new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids } });
 
+                // Clone documents returned from ProduceAsync as they might be shared across sessions
+                documents = documents.Select(x => x.Clone()).ToArray();
+
                 return Get<T>(documents.OrderBy(d => Array.IndexOf(ids, d.Id)).ToArray(), collection);
             }
             catch
@@ -564,10 +570,7 @@ namespace YesSql
                         accessor = defaultAccessor;
                     }
 
-                    if (accessor != null)
-                    {
-                        accessor.Set(item, d.Id);
-                    }
+                    accessor?.Set(item, d.Id);
 
                     // track the loaded object
                     state.IdentityMap.AddEntity(d.Id, item);
@@ -575,7 +578,7 @@ namespace YesSql
 
                     result.Add(item);
                 }
-            };
+            }
 
             return result;
         }
