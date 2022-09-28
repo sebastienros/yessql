@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -113,6 +113,42 @@ namespace YesSql.Samples.Web
                         })
                         .AlwaysRun()
                     )
+                    .WithNamedTerm("tag", b => b
+                        .OneCondition((val, query) =>
+                        {
+                            if (Enum.TryParse<BlogPostTags>(val, true, out var e))
+                            {
+                                switch (e)
+                                {
+                                    case BlogPostTags.Default:
+                                        break;
+                                    default:
+                                        query.With<BlogPostByTag>(x => x.Tag == val);
+                                        break;
+                                }
+                            }
+
+                            return query;
+                        })
+                        .MapTo<Filter>((val, model) =>
+                        {
+                            if (Enum.TryParse<BlogPostTags>(val, true, out var e))
+                            {
+                                model.SelectedTag = e;
+                            }
+                        })
+                        .MapFrom<Filter>((model) =>
+                        {
+                            if (model.SelectedTag != BlogPostTags.Default)
+                            {
+                                return (true, model.SelectedTag.ToString());
+                            }
+
+                            return (false, String.Empty);
+
+                        })
+                        .AlwaysRun()
+                    )
                     .WithDefaultTerm("title", b => b
                         .ManyCondition(
                             ((val, query) => query.With<BlogPostIndex>(x => x.Title.Contains(val))),
@@ -148,7 +184,11 @@ namespace YesSql.Samples.Web
                             .Column<string>("Content")
                             .Column<DateTime>("PublishedUtc")
                             .Column<bool>("Published")
+                        )
+                        .CreateMapIndexTable<BlogPostByTag>(table => table
+                            .Column<string>("Tag")
                         );
+
 
                     transaction.Commit();
                 }
@@ -163,7 +203,7 @@ namespace YesSql.Samples.Web
                     Content = "Steves first post",
                     PublishedUtc = DateTime.UtcNow,
                     Published = false,
-                    Tags = Array.Empty<string>()
+                    Tags = new[] { "Steve", "beach", "sand", "first" }
                 });
 
                 session.Save(new BlogPost
@@ -173,7 +213,7 @@ namespace YesSql.Samples.Web
                     Content = "Bill first post",
                     PublishedUtc = DateTime.UtcNow,
                     Published = true,
-                    Tags = Array.Empty<string>()
+                    Tags = new[] { "Bill", "beach", "first", "sand" }
                 });
 
                 session.Save(new BlogPost
@@ -183,7 +223,7 @@ namespace YesSql.Samples.Web
                     Content = "Pauls first post",
                     PublishedUtc = DateTime.UtcNow,
                     Published = true,
-                    Tags = Array.Empty<string>()
+                    Tags = new[] { "Paul", "snow", "first", "mountain", "lake" }
                 });
 
                 session.SaveChangesAsync().GetAwaiter().GetResult();

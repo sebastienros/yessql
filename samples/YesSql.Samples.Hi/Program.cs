@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using YesSql.Provider.SqlServer;
 using YesSql.Samples.Hi.Indexes;
@@ -18,9 +18,7 @@ namespace YesSql.Samples.Hi
         {
             var store = await StoreFactory.CreateAndInitializeAsync(
                 new Configuration()
-                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
-                    .SetTablePrefix("Hi")
-                );
+                    .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True"));
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -35,29 +33,50 @@ namespace YesSql.Samples.Hi
                         .CreateReduceIndexTable<BlogPostByDay>(table => table
                             .Column<int>("Count")
                             .Column<int>("Day")
-                    );
+                        )
+                        .CreateMapIndexTable<BlogPostByTag>(table => table
+                            .Column<string>("Tag")
+                        );
 
                     transaction.Commit();
                 }
-            };
+            }
 
             // register available indexes
             store.RegisterIndexes<BlogPostIndexProvider>();
 
             // creating a blog post
-            var post = new BlogPost
+            var post1 = new BlogPost
             {
                 Title = "Hello YesSql",
                 Author = "Bill",
-                Content = "Hello",
+                Content = "Hello Bill!",
                 PublishedUtc = DateTime.UtcNow,
-                Tags = new[] { "Hello", "YesSql" }
+                Tags = new[] { "Hello", "YesSql", "Test" }
+            };
+            var post2 = new BlogPost
+            {
+                Title = "Bye YesSql",
+                Author = "Bill",
+                Content = "Bye Bill!",
+                PublishedUtc = DateTime.UtcNow,
+                Tags = new[] { "Bye", "YesSql", "Test" }
+            };
+            var post3 = new BlogPost
+            {
+                Title = "Other blog title",
+                Author = "Scott",
+                Content = "This is also content.",
+                PublishedUtc = DateTime.UtcNow,
+                Tags = new[] { "YesSql", "Test", "Blog", "Content" }
             };
 
             // saving the post to the database
             using (var session = store.CreateSession())
             {
-                session.Save(post);
+                session.Save(post1);
+                session.Save(post2);
+                session.Save(post3);
 
                 await session.SaveChangesAsync();
             }
@@ -66,8 +85,9 @@ namespace YesSql.Samples.Hi
             using (var session = store.CreateSession())
             {
                 var p = await session.Query().For<BlogPost>().FirstOrDefaultAsync();
-                Console.WriteLine(p.Title); // > Hello YesSql
+                Console.WriteLine($"First blog: '{p.Title}'"); // > Hello YesSql
             }
+            Console.WriteLine("");
 
             // loading blog posts by author
             using (var session = store.CreateSession())
@@ -76,9 +96,10 @@ namespace YesSql.Samples.Hi
 
                 foreach (var p in ps)
                 {
-                    Console.WriteLine(p.Author); // > Bill
+                    Console.WriteLine($"'{p.Title}' by {p.Author}"); // > Bill
                 }
             }
+            Console.WriteLine("");
 
             // loading blog posts by day of publication
             using (var session = store.CreateSession())
@@ -87,9 +108,10 @@ namespace YesSql.Samples.Hi
 
                 foreach (var p in ps)
                 {
-                    Console.WriteLine(p.PublishedUtc); // > [Now]
+                    Console.WriteLine($"'{p.Title}' published on {p.PublishedUtc}"); // > [Now]
                 }
             }
+            Console.WriteLine("");
 
             // counting blog posts by day
             using (var session = store.CreateSession())
@@ -98,9 +120,34 @@ namespace YesSql.Samples.Hi
 
                 foreach (var day in days)
                 {
-                    Console.WriteLine(day.Day + ": " + day.Count); // > [Today]: 1
+                    Console.WriteLine($"Blogs count on {day.Day}: {day.Count}"); // > [Today]: 1
                 }
             }
+            Console.WriteLine("");
+
+            // load blog posts with tag "Hello"
+            using (var session = store.CreateSession())
+            {
+                var ps = await session.Query<BlogPost, BlogPostByTag>(x => x.Tag == "Hello").ListAsync();
+
+                foreach (var p in ps)
+                {
+                    Console.WriteLine($"'{p.Title}' has 'Hello' tag. Tag list: " + string.Join(", ", p.Tags));
+                }
+            }
+            Console.WriteLine("");
+
+            // load blog posts with tag "Test"
+            using (var session = store.CreateSession())
+            {
+                var ps = await session.Query<BlogPost, BlogPostByTag>(x => x.Tag == "Test").ListAsync();
+
+                foreach (var p in ps)
+                {
+                    Console.WriteLine($"'{p.Title}' has 'Test' tag. Tag list: " + string.Join(", ", p.Tags));
+                }
+            }
+            Console.WriteLine("");
         }
     }
 }

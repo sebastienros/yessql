@@ -9,6 +9,7 @@ using YesSql.Samples.Web.Models;
 using YesSql.Samples.Web.ModelBinding;
 using YesSql.Samples.Web.ViewModels;
 using YesSql.Samples.Web.Services;
+using System.Linq;
 
 namespace YesSql.Samples.Web.Controllers
 {
@@ -61,7 +62,19 @@ namespace YesSql.Samples.Web.Controllers
                 {
                     new SelectListItem("Newest", BlogPostSort.Newest.ToString(), search.SelectedSort == BlogPostSort.Newest),
                     new SelectListItem("Oldest", BlogPostSort.Oldest.ToString(), search.SelectedSort == BlogPostSort.Oldest)
-                };                
+                };
+
+                var tags = (BlogPostTags[])Enum.GetValues(typeof(BlogPostTags));
+                search.Tags = new List<SelectListItem>();
+                foreach(var value in tags)
+                {
+                    var name = value.ToString();
+                    search.Tags.Add(new SelectListItem(
+                        value == BlogPostTags.Default ? "Select..." : name,
+                        value == BlogPostTags.Default ? "" : name,
+                        search.SelectedTag == value)
+                    );
+                }
 
                 var vm = new BlogPostViewModel
                 {

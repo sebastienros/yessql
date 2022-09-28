@@ -1,3 +1,4 @@
+﻿using System.Collections.Generic;
 using System.Linq;
 using YesSql.Indexes;
 using YesSql.Samples.Hi.Models;
@@ -37,6 +38,10 @@ namespace YesSql.Samples.Hi.Indexes
                        return index.Count > 0 ? index : null;
                    }
             );
+
+            // for each BlogPost, create BlogPostByTag index
+            context.For<BlogPostByTag>()
+                .Map(blogPost => blogPost.Tags.Select(tag => new BlogPostByTag { Tag = tag }));
         }
     }
 }

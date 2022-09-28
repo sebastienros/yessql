@@ -21,6 +21,7 @@ namespace YesSql.Samples.Web.ViewModels
         public string OriginalSearchText { get; set; }
         public BlogPostStatus SelectedStatus { get; set; }
         public BlogPostSort SelectedSort { get; set; }
+        public BlogPostTags SelectedTag { get; set; }
 
         [ModelBinder(BinderType = typeof(QueryFilterEngineModelBinder<BlogPost>), Name = nameof(SearchText))]
         public QueryFilterResult<BlogPost> FilterResult { get; set; }
@@ -30,11 +31,15 @@ namespace YesSql.Samples.Web.ViewModels
 
         [BindNever]
         public List<SelectListItem> Sorts { get; set; } = new();
+
+        [BindNever]
+        public List<SelectListItem> Tags { get; set; } = new();
     }
 
     public enum BlogPostStatus
     {
         Default,
+
         Draft,
         Published
     }
@@ -43,5 +48,20 @@ namespace YesSql.Samples.Web.ViewModels
     {
         Newest,
         Oldest,
+    }
+
+    public enum BlogPostTags
+    {
+        Default,
+
+        First,
+        Bill,
+        Steve,
+        Paul,
+        Beach,
+        Sand,
+        Mountain,
+        Snow,
+        Lake
     }
 }

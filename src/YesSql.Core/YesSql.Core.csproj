@@ -21,5 +21,4 @@
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
     </ItemGroup>
-
 </Project>
