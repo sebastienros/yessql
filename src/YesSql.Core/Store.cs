@@ -88,31 +88,19 @@ namespace YesSql
             ValidateConfiguration();
 
             TypeNames = new TypeService();
+
             if (!string.IsNullOrEmpty(Configuration.Schema))
             {
-
-#if SUPPORTS_ASYNC_TRANSACTIONS
                 await using (var connection = Configuration.ConnectionFactory.CreateConnection())
                 {
                     await connection.OpenAsync();
 
                     await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
-#else
-            using (var connection = Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
-#endif
                     var builder = new SchemaBuilder(Configuration, transaction);
 
                     builder.CreateSchema(Configuration.Schema);
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
                     await transaction.CommitAsync();
-#else
-                transaction.Commit();
-#endif
                 }
             }
 
@@ -127,11 +115,7 @@ namespace YesSql
         {
             var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
             await using (var connection = Configuration.ConnectionFactory.CreateConnection())
-#else
-            using (var connection = Configuration.ConnectionFactory.CreateConnection())
-#endif            
             {
                 await connection.OpenAsync();
 
@@ -159,11 +143,7 @@ namespace YesSql
                             }
                             catch
                             {
-#if SUPPORTS_ASYNC_TRANSACTIONS
                                 await result.CloseAsync();
-#else
-                                result.Close();
-#endif
                                 using var migrationTransaction = connection.BeginTransaction();
                                 var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
@@ -174,11 +154,7 @@ namespace YesSql
                                             .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
                                         );
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
                                     await migrationTransaction.CommitAsync();
-#else
-                                    migrationTransaction.Commit();
-#endif
                                 }
                                 catch
                                 {
@@ -192,13 +168,9 @@ namespace YesSql
                 }
                 catch
                 {
-#if SUPPORTS_ASYNC_TRANSACTIONS
                     await using (var transaction = connection.BeginTransaction())
-#else
-                    using (var transaction = connection.BeginTransaction())
-#endif
                     {
-                    var builder = new SchemaBuilder(Configuration, transaction);
+                        var builder = new SchemaBuilder(Configuration, transaction);
 
                         try
                         {
@@ -214,11 +186,7 @@ namespace YesSql
                                 .CreateIndex("IX_" + documentTable + "_Type", "Type")
                             );
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
                             await transaction.CommitAsync();
-#else
-                            transaction.Commit();
-#endif
                         }
                         catch
                         {

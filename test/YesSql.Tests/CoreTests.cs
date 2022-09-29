@@ -4687,7 +4687,7 @@ namespace YesSql.Tests
             {
                 var results = await session.Query<Person, PersonByName>().OrderByRandom().ListAsync();
 
-                var idArray = Enumerable.Range(1, 100).Select(x => (long)x).ToArray();
+                var idArray = Enumerable.Range(1, 100).ToArray();
                 Assert.NotEqual(idArray, results.Select(x => x.Id));
             }
         }
@@ -4713,7 +4713,7 @@ namespace YesSql.Tests
 
                 var first50Persons = results.Take(50);
                 Assert.All(first50Persons, person => Assert.Equal("D", person.Firstname));
-                var idArray = Enumerable.Range(1, 50).Select(x => (long)x).ToArray();
+                var idArray = Enumerable.Range(1, 50).ToArray();
                 Assert.NotEqual(idArray, first50Persons.Select(x => x.Id));
             }
         }
@@ -4721,7 +4721,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldImportDetachedObject()
         {
-            var bill = new PersonWithLongId
+            var bill = new Person
             {
                 Firstname = "Bill",
             };
@@ -4730,7 +4730,7 @@ namespace YesSql.Tests
             {
                 session.Save(bill);
 
-                Assert.Single(await session.Query<PersonWithLongId>().ListAsync());
+                Assert.Single(await session.Query<Person>().ListAsync());
                 Assert.True(bill.Id > 0);
 
                 await session.SaveChangesAsync();
@@ -4738,7 +4738,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                bill = new PersonWithLongId
+                bill = new Person
                 {
                     Id = bill.Id,
                     Firstname = "Bill",
@@ -4752,7 +4752,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var all = await session.Query<PersonWithLongId>().ListAsync();
+                var all = await session.Query<Person>().ListAsync();
                 Assert.Single(all);
                 Assert.Equal("Gates", all.First().Lastname);
             }

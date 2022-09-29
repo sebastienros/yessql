@@ -57,8 +57,6 @@ namespace YesSql
         /// <returns>A collection of objects in the same order they were defined.</returns>
         Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class;
 
-        //public Task<IEnumerable<T>> GetAsync<T>(int[] ids, string collection = null) where T : class => GetAsync<T>(ids.Select(x => (long)x).ToArray(), collection);
-
         /// <summary>
         /// Creates a new <see cref="IQuery"/> object.
         /// </summary>
@@ -141,6 +139,12 @@ namespace YesSql
         {
             return (await session.GetAsync<T>(new[] { id }, collection)).FirstOrDefault();
         }
+
+        /// <summary>
+        /// Loads objects by id.
+        /// </summary>
+        /// <returns>A collection of objects in the same order they were defined.</returns>
+        public static Task<IEnumerable<T>> GetAsync<T>(this ISession session, int[] ids, string collection = null) where T : class => session.GetAsync<T>(ids.Select(x => (long)x).ToArray(), collection);
 
         /// <summary>
         /// Imports an object in the local identity map.

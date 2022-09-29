@@ -4,14 +4,14 @@ namespace YesSql.Tests.Models
 {
     public class Product
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public decimal Cost { get; set; }
     }
 
     public class Order
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
         public string Customer { get; set; }
         public IList<OrderLine> OrderLines { get; set; }
 
@@ -23,7 +23,7 @@ namespace YesSql.Tests.Models
 
     public class OrderLine
     {
-        public long ProductId { get; set; }
+        public int ProductId { get; set; }
         public int Quantity { get; set; }
     }
 }

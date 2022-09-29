@@ -861,11 +861,7 @@ namespace YesSql
             }
             finally
             {
-#if SUPPORTS_ASYNC_TRANSACTIONS
                 await CommitOrRollbackTransactionAsync();
-#else
-                CommitOrRollbackTransaction();
-#endif
             }
         }
 
@@ -895,7 +891,6 @@ namespace YesSql
             }
         }
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
         public async ValueTask DisposeAsync()
         {
             // Do nothing if Dispose() was already called
@@ -981,15 +976,6 @@ namespace YesSql
                 _connection = null;
             }
         }
-
-#else
-        public ValueTask DisposeAsync()
-        {
-            Dispose();
-
-            return default;
-        }
-#endif
 
         /// <summary>
         /// Clears all the resources associated to the transaction.
@@ -1408,12 +1394,7 @@ namespace YesSql
 
             _cancel = true;
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
             return ReleaseTransactionAsync();
-#else
-            ReleaseTransaction();
-            return Task.CompletedTask;
-#endif
         }
 
         public IStore Store => _store;

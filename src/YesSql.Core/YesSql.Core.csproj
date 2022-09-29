@@ -3,10 +3,6 @@
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' or '$(TargetFramework)' == 'net5.0' or '$(TargetFramework)' == 'net6.0'">
-        <DefineConstants>$(DefineConstants);SUPPORTS_ASYNC_TRANSACTIONS</DefineConstants>
-    </PropertyGroup>
-
     <ItemGroup>
         <PackageReference Include="Dapper.StrongName" Version="2.0.123" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

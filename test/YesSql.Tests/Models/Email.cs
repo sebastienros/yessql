@@ -6,7 +6,7 @@ namespace YesSql.Tests.Models
 {
     public class Email
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
         public List<Attachment> Attachments { get; set; }
         public DateTime Date { get; set; }
     }
