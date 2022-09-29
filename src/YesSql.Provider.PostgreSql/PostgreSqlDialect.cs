@@ -113,7 +113,6 @@ namespace YesSql.Provider.PostgreSql
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
-        public override string DefaultSchema => "public";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
@@ -223,9 +222,8 @@ namespace YesSql.Provider.PostgreSql
         {
             return String.IsNullOrEmpty(schema)
                 ? $"{QuoteString}{tableName}{QuoteString}"
-                : $"{QuoteString}{schema ?? DefaultSchema}{QuoteString}.{QuoteString}{tableName}{QuoteString}"
+                : $"{QuoteString}{schema}{QuoteString}.{QuoteString}{tableName}{QuoteString}"
                 ;
-
         }
 
         public override string QuoteForAliasName(string aliasName)

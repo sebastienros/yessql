@@ -76,11 +76,6 @@ namespace YesSql
         bool PrefixIndex { get; }
 
         /// <summary>
-        /// Return the default database schema name.
-        /// </summary>
-        string DefaultSchema { get; }
-
-        /// <summary>
         /// Gets whether the identity columns requires the data type.
         /// </summary>
         bool HasDataTypeInIdentityColumn { get; }
