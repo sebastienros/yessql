@@ -103,7 +103,6 @@ namespace YesSql.Provider.SqlServer
         public override string RandomOrderByClause => "newid()";
         public override byte DefaultDecimalPrecision => 19;
         public override byte DefaultDecimalScale => 5;
-        public override string DefaultSchema => "dbo";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {

@@ -194,8 +194,6 @@ namespace YesSql.Provider
 
         public virtual bool PrefixIndex => false;
 
-        public virtual string DefaultSchema => null;
-
         public abstract byte DefaultDecimalPrecision { get; }
 
         public abstract byte DefaultDecimalScale { get; }
