@@ -2,11 +2,7 @@
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>
-    <!-- Can't use 6.0.0 on windows and netcoreapp3.1 c.f. https://github.com/dotnet/efcore/issues/26574 -->
-    <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.12" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetFramework)' != 'netcoreapp3.1'">
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.0" />
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.9" />
     </ItemGroup>
 </Project>
