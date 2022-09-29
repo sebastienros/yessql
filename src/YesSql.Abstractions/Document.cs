@@ -8,7 +8,7 @@ namespace YesSql
         /// <summary>
         /// The unique identifier of the document in the database.
         /// </summary>
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         /// <summary>
         /// The type of the document.

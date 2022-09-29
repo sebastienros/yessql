@@ -41,5 +41,6 @@ namespace YesSql
         public ITableNameConvention TableNameConvention { get; set; }
         public ICommandInterpreter CommandInterpreter { get; set; }
         public ISqlDialect SqlDialect { get; set; }
+        public bool UseLegacyIdentityColumn { get; set; }
     }
 }

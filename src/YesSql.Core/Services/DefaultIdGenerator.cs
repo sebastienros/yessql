@@ -34,31 +34,18 @@ namespace YesSql.Services
         public Task InitializeAsync(IStore store)
         {
             _dialect = store.Configuration.SqlDialect;
-
-#if NET451
-            return Task.FromResult(0);
-#else
             return Task.CompletedTask;
-#endif
         }
 
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
         {
             // Extract the current max value from the database
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
             await using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
                 await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-#else
-            using (var connection = configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-#endif
                 {
                     var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -74,11 +61,7 @@ namespace YesSql.Services
                     }
                     var result = await selectCommand.ExecuteScalarAsync();
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
                     await transaction.CommitAsync();
-#else
-                    transaction.Commit();
-#endif
 
                     _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
                 }

@@ -806,7 +806,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSerializeComplexObject()
         {
-            int productId;
+            long productId;
 
             using (var session = _store.CreateSession())
             {
@@ -855,9 +855,9 @@ namespace YesSql.Tests
                     Lastname = "Gates"
                 };
 
-                Assert.True(bill.Id == 0);
+                Assert.Equal(0, bill.Id);
                 session.Save(bill);
-                Assert.True(bill.Id != 0);
+                Assert.NotEqual(0, bill.Id);
 
                 await session.SaveChangesAsync();
             }
@@ -3241,7 +3241,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetTypeById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3270,7 +3270,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldReturnNullWithWrongTypeById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3298,7 +3298,7 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldGetDocumentById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3326,7 +3326,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetObjectById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3355,7 +3355,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetDynamicById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3387,7 +3387,7 @@ namespace YesSql.Tests
         [Theory]
         public async Task ShouldReturnObjectsByIdsInCorrectOrder(int numberOfItems)
         {
-            var circleIds = new List<int>();
+            var circleIds = new List<long>();
 
             using (var session = _store.CreateSession())
             {
@@ -4728,7 +4728,6 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-
                 session.Save(bill);
 
                 Assert.Single(await session.Query<Person>().ListAsync());
@@ -4888,8 +4887,8 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldCreateMoreObjectThanIdBlock()
         {
-            var lastId = 0;
-            var firstId = 0;
+            long lastId = 0;
+            long firstId = 0;
 
             using (var session = _store.CreateSession())
             {
@@ -5786,7 +5785,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }
@@ -5844,7 +5843,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }
@@ -5908,7 +5907,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }
@@ -5967,7 +5966,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }

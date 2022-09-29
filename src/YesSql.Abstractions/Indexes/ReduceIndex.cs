@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace YesSql.Indexes
 {
@@ -9,7 +9,7 @@ namespace YesSql.Indexes
             Documents = new List<Document>();
         }
 
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         List<Document> RemovedDocuments = new List<Document>();
 

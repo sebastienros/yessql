@@ -1,5 +1,4 @@
 using System;
-using System.Data;
 
 namespace YesSql.Sql.Schema
 {
@@ -25,6 +24,8 @@ namespace YesSql.Sql.Schema
         {
             return Column(columnName, typeof(T), column);
         }
+
+        public ICreateTableCommand Column(bool useInt64Type, string columnName, Action<ICreateColumnCommand> column = null) => useInt64Type ? Column<int>(columnName, column) : Column<long>(columnName, column);
 
     }
 }

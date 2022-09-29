@@ -91,6 +91,11 @@ namespace YesSql
         string IdentityColumnString { get; }
 
         /// <summary>
+        /// Gets the Int64 primary key with identity column SQL statement.
+        /// </summary>
+        string LegacyIdentityColumnString { get; }
+        
+        /// <summary>
         /// Gets the identity select SQL statement to append to an insert in order to return the last generated identifier.
         /// </summary>
         string IdentitySelectString { get; }

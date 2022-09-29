@@ -147,7 +147,7 @@ namespace YesSql
             state.Saved.Add(entity);
         }
 
-        public bool Import(object entity, int id = 0, int version = 0, string collection = null)
+        public bool Import(object entity, long id = 0, long version = 0, string collection = null)
         {
             CheckDisposed();
 
@@ -282,7 +282,7 @@ namespace YesSql
 
             if (versionAccessor != null)
             {
-                versionAccessor.Set(entity, (int) doc.Version);
+                versionAccessor.Set(entity, doc.Version);
             }
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
@@ -365,7 +365,7 @@ namespace YesSql
                 // apply the new version to the object
                 if (versionAccessor != null)
                 {
-                    versionAccessor.Set(entity, (int)oldDoc.Version);
+                    versionAccessor.Set(entity, oldDoc.Version);
 
                     newContent = Store.Configuration.ContentSerializer.Serialize(entity);
                 }
@@ -387,7 +387,7 @@ namespace YesSql
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
 
-        private async Task<Document> GetDocumentByIdAsync(int id, string collection)
+        private async Task<Document> GetDocumentByIdAsync(long id, string collection)
         {
             await CreateConnectionAsync();
 
@@ -476,7 +476,7 @@ namespace YesSql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(int[] ids, string collection = null) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class
         {
             if (ids == null || !ids.Any())
             {
@@ -547,7 +547,7 @@ namespace YesSql
                 {
                     T item;
 
-                    IAccessor<int> accessor;
+                    IAccessor<long> accessor;
                     // If the document type doesn't match the requested one, check it's a base type
                     if (!String.Equals(typeName, d.Type, StringComparison.Ordinal))
                     {
@@ -599,23 +599,13 @@ namespace YesSql
 
             var discriminator = NullableThumbprintFactory.GetNullableThumbprint(compiledQuery);
 
-            if (!_store.CompiledQueries.TryGetValue(discriminator, out var queryState))
+            var queryState = _store.CompiledQueries.GetOrAdd(discriminator, discriminator =>
             {
-                lock (_store.CompiledQueries)
-                {
-                    if (!_store.CompiledQueries.TryGetValue(discriminator, out queryState))
-                    {
-
-                        var localQuery = ((IQuery)new DefaultQuery(this, _tablePrefix, collection)).For<T>(false);
-                        var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
-                        queryState = defaultQuery._query._queryState;
-
-                        _store.CompiledQueries[discriminator] = queryState;
-                    }
-                } 
-            }
-
-            queryState = queryState.Clone();
+                var localQuery = ((IQuery)new DefaultQuery(this, _tablePrefix, collection)).For<T>(false);
+                var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
+                return defaultQuery._query._queryState;
+            })
+            .Clone();
 
             IQuery newQuery = new DefaultQuery(this, queryState, compiledQuery);
             return newQuery.For<T>(false);
@@ -871,11 +861,7 @@ namespace YesSql
             }
             finally
             {
-#if SUPPORTS_ASYNC_TRANSACTIONS
                 await CommitOrRollbackTransactionAsync();
-#else
-                CommitOrRollbackTransaction();
-#endif
             }
         }
 
@@ -905,7 +891,6 @@ namespace YesSql
             }
         }
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
         public async ValueTask DisposeAsync()
         {
             // Do nothing if Dispose() was already called
@@ -991,15 +976,6 @@ namespace YesSql
                 _connection = null;
             }
         }
-
-#else
-        public ValueTask DisposeAsync()
-        {
-            Dispose();
-
-            return default;
-        }
-#endif
 
         /// <summary>
         /// Clears all the resources associated to the transaction.
@@ -1219,29 +1195,19 @@ namespace YesSql
         /// </summary>
         private Func<IIndex, object> GetGroupingMetod(IndexDescriptor descriptor)
         {
-            if (!_store.GroupMethods.TryGetValue(descriptor.Type, out var result))
+            return _store.GroupMethods.GetOrAdd(descriptor.Type, type =>
             {
-                lock (_store.GroupMethods)
-                {
-                    if (!_store.GroupMethods.TryGetValue(descriptor.Type, out result))
-                    {
-                        // IIndex i => i
-                        var instance = Expression.Parameter(typeof(IIndex), "i");
-                        // i => ((TIndex)i)
-                        var convertInstance = Expression.Convert(instance, descriptor.GroupKey.DeclaringType);
-                        // i => ((TIndex)i).{Property}
-                        var property = Expression.Property(convertInstance, descriptor.GroupKey);
-                        // i => (object)(((TIndex)i).{Property})
-                        var convert = Expression.Convert(property, typeof(object));
+                // IIndex i => i
+                var instance = Expression.Parameter(typeof(IIndex), "i");
+                // i => ((TIndex)i)
+                var convertInstance = Expression.Convert(instance, descriptor.GroupKey.DeclaringType);
+                // i => ((TIndex)i).{Property}
+                var property = Expression.Property(convertInstance, descriptor.GroupKey);
+                // i => (object)(((TIndex)i).{Property})
+                var convert = Expression.Convert(property, typeof(object));
 
-                        result = Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
-
-                        _store.GroupMethods[descriptor.Type] = result;
-                    }
-                }
-            }
-
-            return result;
+                return Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
+            });
         }
 
         /// <summary>
@@ -1306,11 +1272,11 @@ namespace YesSql
                         {
                             if (index.Id == 0)
                             {
-                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<int>(), Store, collection));
+                                _commands.Add(new CreateIndexCommand(index, Enumerable.Empty<long>(), Store, collection));
                             }
                             else
                             {
-                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<int>(), Enumerable.Empty<int>(), Store, collection));
+                                _commands.Add(new UpdateIndexCommand(index, Enumerable.Empty<long>(), Enumerable.Empty<long>(), Store, collection));
                             }
                         }
                         else
@@ -1428,25 +1394,9 @@ namespace YesSql
 
             _cancel = true;
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
             return ReleaseTransactionAsync();
-#else
-            ReleaseTransaction();
-            return Task.CompletedTask;
-#endif
         }
 
         public IStore Store => _store;
-
-#region Storage implementation
-
-        private struct IdString
-        {
-#pragma warning disable 0649
-            public int Id;
-            public string Content;
-#pragma warning restore 0649
-        }
-#endregion
     }
 }

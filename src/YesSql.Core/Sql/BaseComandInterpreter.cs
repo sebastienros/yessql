@@ -290,7 +290,7 @@ namespace YesSql.Sql
             // append identity if handled
             if (command.IsIdentity && _dialect.SupportsIdentityColumns)
             {
-                builder.Append(Space).Append(_dialect.IdentityColumnString);
+                builder.Append(Space).Append(_configuration.UseLegacyIdentityColumn ? _dialect.LegacyIdentityColumnString : _dialect.IdentityColumnString);
             }
 
             // [default value]

@@ -110,10 +110,10 @@ namespace YesSql.Provider.PostgreSql
         public override string IdentitySelectString => "RETURNING";
         public override string IdentityLastId => $"lastval()";
         public override string IdentityColumnString => "SERIAL PRIMARY KEY";
+        public override string LegacyIdentityColumnString => "SERIAL PRIMARY KEY";
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
-
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
@@ -220,7 +220,7 @@ namespace YesSql.Provider.PostgreSql
 
         public override string QuoteForTableName(string tableName, string schema)
         {
-            return String.IsNullOrEmpty(schema)
+            return string.IsNullOrEmpty(schema)
                 ? $"{QuoteString}{tableName}{QuoteString}"
                 : $"{QuoteString}{schema}{QuoteString}.{QuoteString}{tableName}{QuoteString}"
                 ;

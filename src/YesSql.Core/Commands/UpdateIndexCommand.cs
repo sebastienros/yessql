@@ -6,21 +6,20 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Indexes;
-using YesSql.Sql.Schema;
 
 namespace YesSql.Commands
 {
     public sealed class UpdateIndexCommand : IndexCommand
     {
-        private readonly int[] _addedDocumentIds;
-        private readonly int[] _deletedDocumentIds;
+        private readonly long[] _addedDocumentIds;
+        private readonly long[] _deletedDocumentIds;
 
         public override int ExecutionOrder { get; } = 3;
 
         public UpdateIndexCommand(
             IIndex index,
-            IEnumerable<int> addedDocumentIds,
-            IEnumerable<int> deletedDocumentIds,
+            IEnumerable<long> addedDocumentIds,
+            IEnumerable<long> deletedDocumentIds,
             IStore _store,
             string collection) : base(index, _store, collection)
         {
@@ -93,7 +92,7 @@ namespace YesSql.Commands
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"Id{index}";
             parameter.Value = Index.Id;
-            parameter.DbType = System.Data.DbType.Int32;
+            parameter.DbType = System.Data.DbType.Int64;
             command.Parameters.Add(parameter);
 
             // Update the documents list
@@ -106,7 +105,7 @@ namespace YesSql.Commands
                 parameter = command.CreateParameter();
                 parameter.ParameterName = $"Id_{index}";
                 parameter.Value = Index.Id;
-                parameter.DbType = System.Data.DbType.Int32;
+                parameter.DbType = System.Data.DbType.Int64;
                 command.Parameters.Add(parameter);
 
                 for (var i = 0; i < _addedDocumentIds.Length; i++)
@@ -117,7 +116,7 @@ namespace YesSql.Commands
                     parameter = command.CreateParameter();
                     parameter.ParameterName = $"AddedId_{index}_{i}";
                     parameter.Value = _addedDocumentIds[i];
-                    parameter.DbType = System.Data.DbType.Int32;
+                    parameter.DbType = System.Data.DbType.Int64;
                     command.Parameters.Add(parameter);
                 }
 
@@ -129,7 +128,7 @@ namespace YesSql.Commands
                     parameter = command.CreateParameter();
                     parameter.ParameterName = $"RemovedId_{index}_{i}";
                     parameter.Value = _deletedDocumentIds[i];
-                    parameter.DbType = System.Data.DbType.Int32;
+                    parameter.DbType = System.Data.DbType.Int64;
                     command.Parameters.Add(parameter);
                 }
             }

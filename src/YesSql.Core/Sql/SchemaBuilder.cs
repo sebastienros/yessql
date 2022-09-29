@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Xml.Linq;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
@@ -19,6 +18,7 @@ namespace YesSql.Sql
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
         public bool ThrowOnError { get; private set; }
+        public bool UseLegacyIdentityColumn { get; set; }
 
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
         {
@@ -30,6 +30,7 @@ namespace YesSql.Sql
             TablePrefix = configuration.TablePrefix;
             ThrowOnError = throwOnError;
             TableNameConvention = configuration.TableNameConvention;
+            UseLegacyIdentityColumn = configuration.UseLegacyIdentityColumn;
         }
 
         private void Execute(IEnumerable<string> statements)
@@ -63,8 +64,8 @@ namespace YesSql.Sql
                 // NB: Identity() implies PrimaryKey()
 
                 createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
-                    .Column<int>("DocumentId")
+                    .Column(UseLegacyIdentityColumn, "Id", column => column.Identity().NotNull())
+                    .Column(UseLegacyIdentityColumn, "DocumentId")
                     ;
 
                 table(createTable);
@@ -98,8 +99,7 @@ namespace YesSql.Sql
 
                 // NB: Identity() implies PrimaryKey()
 
-                createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
+                createTable.Column(UseLegacyIdentityColumn, "Id", column => column.Identity().NotNull())
                     ;
 
                 table(createTable);
@@ -108,8 +108,8 @@ namespace YesSql.Sql
                 var bridgeTableName = indexTable + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
-                    .Column<int>(indexName + "Id", column => column.NotNull())
-                    .Column<int>("DocumentId", column => column.NotNull())
+                    .Column(UseLegacyIdentityColumn, indexName + "Id", column => column.NotNull())
+                    .Column(UseLegacyIdentityColumn, "DocumentId", column => column.NotNull())
                 );
 
                 CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { indexName + "Id" }, indexTable, new[] { "Id" });

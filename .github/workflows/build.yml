@@ -75,7 +75,10 @@ jobs:
       run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net6.0
 
     - name: Test - SQL Server 2019 .NET 6.0
-      run: dotnet test --configuration release --filter yessql.tests.sqlserver2019tests --no-restore --no-build --framework net6.0
+      run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net6.0
+
+    - name: Test - PostgresQL Legacy Identity - No Schema
+      run: dotnet test --configuration release --filter YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net6.0
 
     - name: Pack with dotnet
       run: dotnet pack --output artifacts --configuration Release --no-restore --no-build -p:PackageVersion=$GITHUB_RUN_NUMBER
