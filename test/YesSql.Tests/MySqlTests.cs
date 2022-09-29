@@ -1,7 +1,6 @@
-using System;
-using System.Data.Common;
-using System.Threading.Tasks;
 using MySqlConnector;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using YesSql.Provider.MySql;

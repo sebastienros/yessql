@@ -71,6 +71,12 @@ namespace YesSql.Tests
             return Task.CompletedTask;
         }
 
+        protected void EnableLogging()
+        {
+            var logger = new ConsoleLogger(_output);
+            _store.Configuration.Logger = logger;
+        }
+
         //[DebuggerNonUserCode]
         protected virtual void CleanDatabase(IConfiguration configuration, bool throwOnError)
         {
@@ -103,6 +109,7 @@ namespace YesSql.Tests
             builder.DropMapIndexTable<PersonByNameCol>("Col1");
             builder.DropMapIndexTable<PersonByBothNamesCol>("Col1");
             builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
+            builder.DropReduceIndexTable<PersonsByNameCol>("LongCollection");
 
             builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Col1"));
             builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
@@ -700,11 +707,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryNullVariables()
         {
-            var logger = new ConsoleLogger(_output);
-
-            _store.Configuration.Logger = logger;
-
-
             _store.RegisterIndexes<PersonIndexProvider>();
 
             using (var session = _store.CreateSession())
@@ -1046,10 +1048,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryWithCompiledQueries()
         {
-            var logger = new ConsoleLogger(_output);
-
-            _store.Configuration.Logger = logger;
-
             _store.RegisterIndexes<PersonAgeIndexProvider>();
 
             using (var session = _store.CreateSession())
