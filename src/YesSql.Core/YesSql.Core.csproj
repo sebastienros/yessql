@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
     </PropertyGroup>
@@ -11,11 +11,6 @@
         <PackageReference Include="Dapper.StrongName" Version="2.0.123" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.0" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-        <!-- Latest minimum LTS version. We don't want to force a higher version to applications -->
-        <PackageReference Include="System.Buffers" Version="4.5.1" />
     </ItemGroup>
 
     <ItemGroup>

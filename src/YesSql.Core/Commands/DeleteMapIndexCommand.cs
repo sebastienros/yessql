@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace YesSql.Commands
@@ -12,12 +11,12 @@ namespace YesSql.Commands
     public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName
     {
         private readonly IStore _store;
-        public int DocumentId { get; }
+        public long DocumentId { get; }
         public Type IndexType { get; }
         public string Collection { get; }
         public int ExecutionOrder { get; } = 1;
 
-        public DeleteMapIndexCommand(Type indexType, int documentId, IStore store, string collection)
+        public DeleteMapIndexCommand(Type indexType, long documentId, IStore store, string collection)
         {
             IndexType = indexType;
             DocumentId = documentId;
@@ -43,7 +42,7 @@ namespace YesSql.Commands
 
             queries.Add(sql);
 
-            command.AddParameter($"Id_{index}", DocumentId, DbType.Int32);
+            command.AddParameter($"Id_{index}", DocumentId);
 
             return true;
         }

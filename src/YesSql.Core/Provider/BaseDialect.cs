@@ -107,7 +107,7 @@ namespace YesSql.Provider
         public abstract string IdentitySelectString { get; }
         public abstract string IdentityLastId { get; }
         
-        public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
+        public abstract string IdentityColumnString { get; }
 
         public virtual string NullColumnString => String.Empty;
 
@@ -193,8 +193,6 @@ namespace YesSql.Provider
         public virtual string DefaultValuesInsert => "DEFAULT VALUES";
 
         public virtual bool PrefixIndex => false;
-
-        public virtual string DefaultSchema => null;
 
         public abstract byte DefaultDecimalPrecision { get; }
 

@@ -98,12 +98,12 @@ namespace YesSql.Provider.SqlServer
         }
 
         public override string Name => "SqlServer";
+        public override string IdentityColumnString => "[BIGINT] IDENTITY(1,1) primary key";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
         public override string IdentityLastId => "SCOPE_IDENTITY()";
         public override string RandomOrderByClause => "newid()";
         public override byte DefaultDecimalPrecision => 19;
         public override byte DefaultDecimalScale => 5;
-        public override string DefaultSchema => "dbo";
 
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {

@@ -11,13 +11,13 @@ namespace YesSql.Commands
 {
     public sealed class CreateIndexCommand : IndexCommand
     {
-        private readonly int[] _addedDocumentIds;
+        private readonly long[] _addedDocumentIds;
 
         public override int ExecutionOrder { get; } = 2;
 
         public CreateIndexCommand(
             IIndex index,
-            IEnumerable<int> addedDocumentIds,
+            IEnumerable<long> addedDocumentIds,
             IStore store,
             string collection) : base(index, store, collection)
         {
@@ -44,11 +44,11 @@ namespace YesSql.Commands
                 command.CommandText = sql;
                 GetProperties(command, Index, "", dialect);
                 command.AddParameter($"DocumentId", Index.GetAddedDocuments().Single().Id);
-                Index.Id = Convert.ToInt32(await command.ExecuteScalarAsync());
+                Index.Id = Convert.ToInt64(await command.ExecuteScalarAsync());
             }
             else
             {
-                Index.Id = await connection.ExecuteScalarAsync<int>(sql, Index, transaction);
+                Index.Id = await connection.ExecuteScalarAsync<long>(sql, Index, transaction);
 
                 var reduceIndex = Index as ReduceIndex;
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
@@ -93,7 +93,7 @@ namespace YesSql.Commands
             actions.Add(dr =>
             {
                 dr.Read();
-                Index.Id = Convert.ToInt32(dr[0]);
+                Index.Id = Convert.ToInt64(dr[0]);
                 dr.NextResult();
             });
 

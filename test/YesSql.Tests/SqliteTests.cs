@@ -48,11 +48,14 @@ namespace YesSql.Tests
             return base.ShouldReadCommittedRecords();
         }
 
-        //[Fact(Skip = "Breaks other tests if can't finish during delay")]
-        //public override Task ShouldGateQuery()
-        //{
-        //    return base.ShouldGateQuery();
-        //}
+//        [Theory(Skip = "Sqlite doesn't use DbBlockIdGenerator")]
+//        [InlineData(100)]
+//#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
+//        public override Task ShouldGenerateLongIds(long id)
+//#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
+//        {
+//            return Task.CompletedTask;
+//        }
 
         [Fact(Skip = "Sqlite doesn't support concurrent writers")]
         public override Task ShouldReadUncommittedRecords()

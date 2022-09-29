@@ -69,7 +69,7 @@ namespace YesSql.Services
 
                         localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
                             .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                            .Column<ulong>("nextval")
+                            .Column<long>("nextval")
                             );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
@@ -141,6 +141,7 @@ namespace YesSql.Services
                         {
                             _store.Configuration.Logger.LogTrace(SelectCommand);
                         }
+
                         nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
 
                         var updateCommand = connection.CreateCommand();
