@@ -9,7 +9,7 @@ namespace YesSql.Tests
     {
         // Docker command
         // docker run --name sqlserver2019 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Password12!" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2019-latest
-        public override SqlConnectionStringBuilder ConnectionStringBuilder => new(Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING") ?? @"Server=127.0.0.1;Database=tempdb;User Id=sa;Password=Password12!");
+        public override SqlConnectionStringBuilder ConnectionStringBuilder => new(Environment.GetEnvironmentVariable("SQLSERVER_2019_CONNECTION_STRING") ?? @"Server=127.0.0.1;Database=tempdb;User Id=sa;Password=Password12!;Encrypt=False");
 
         public SqlServer2019Tests(ITestOutputHelper output) : base(output)
         {
