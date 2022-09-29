@@ -86,6 +86,7 @@ namespace YesSql.Provider.MySql
         public MySqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+            AddTypeHandler<DateTimeOffset, string>(x => x.ToString("O"));
             Methods.Add("now", new TemplateFunction("UTC_TIMESTAMP()"));
         }
 
