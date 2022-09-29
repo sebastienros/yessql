@@ -99,6 +99,7 @@ namespace YesSql.Provider.SqlServer
 
         public override string Name => "SqlServer";
         public override string IdentityColumnString => "[BIGINT] IDENTITY(1,1) primary key";
+        public override string LegacyIdentityColumnString => "[INT] IDENTITY(1,1) primary key";
         public override string IdentitySelectString => "; select SCOPE_IDENTITY()";
         public override string IdentityLastId => "SCOPE_IDENTITY()";
         public override string RandomOrderByClause => "newid()";

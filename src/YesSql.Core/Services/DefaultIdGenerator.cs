@@ -34,12 +34,7 @@ namespace YesSql.Services
         public Task InitializeAsync(IStore store)
         {
             _dialect = store.Configuration.SqlDialect;
-
-#if NET451
-            return Task.FromResult(0);
-#else
             return Task.CompletedTask;
-#endif
         }
 
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)

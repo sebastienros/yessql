@@ -177,7 +177,7 @@ namespace YesSql
                             // The table doesn't exist, create it
                             builder
                                 .CreateTable(documentTable, table => table
-                                .Column<long>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
+                                .Column(Configuration.UseLegacyIdentityColumn, nameof(Document.Id), column => column.PrimaryKey().NotNull())
                                 .Column<string>(nameof(Document.Type), column => column.NotNull())
                                 .Column<string>(nameof(Document.Content), column => column.Unlimited())
                                 .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
@@ -314,12 +314,8 @@ namespace YesSql
                 if (!Workers.TryGetValue(key, out var result))
                 {
                     // Multiple threads can potentially reach this point which is fine
-#if !NET451
                     // c.f. https://blogs.msdn.microsoft.com/seteplia/2018/10/01/the-danger-of-taskcompletionsourcet-class/
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-#else
-                    var tcs = new TaskCompletionSource<object>();
-#endif
 
                     Workers.TryAdd(key, tcs.Task);
 

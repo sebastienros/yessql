@@ -17,5 +17,12 @@ namespace YesSql
 
             return configuration;
         }
+
+        public static IConfiguration UseLegacyIdentityColumn(this IConfiguration configuration)
+        {
+            configuration.UseLegacyIdentityColumn = true;
+
+            return configuration;
+        }
     }
 }

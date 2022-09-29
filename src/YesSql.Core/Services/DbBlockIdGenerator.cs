@@ -12,7 +12,8 @@ namespace YesSql.Services
     /// </summary>
     public class DbBlockIdGenerator : IIdGenerator
     {
-        private readonly object _synLock = new object();
+        internal long _initialValue = 1;
+        private readonly object _synLock = new();
 
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
@@ -59,7 +60,7 @@ namespace YesSql.Services
                     {
                         var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
-                        localBuilder.CreateTable(DbBlockIdGenerator.TableName, table => table
+                        localBuilder.CreateTable(TableName, table => table
                             .Column<string>("dimension", column => column.PrimaryKey().NotNull())
                             .Column<long>("nextval")
                             );
@@ -207,6 +208,7 @@ namespace YesSql.Services
                     {
                         _store.Configuration.Logger.LogTrace(SelectCommand);
                     }
+
                     nextval = await selectCommand.ExecuteScalarAsync();
 
                     await transaction.CommitAsync();
@@ -219,8 +221,6 @@ namespace YesSql.Services
                     {
                         await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
                         {
-                            nextval = 1;
-
                             // To prevent concurrency issues when creating this record (it must be unique)
                             // we generate a random collection name, then update it safely
 
@@ -234,7 +234,7 @@ namespace YesSql.Services
                             command.Parameters.Add(dimensionParameter);
 
                             var nextValParameter = command.CreateParameter();
-                            nextValParameter.Value = 1;
+                            nextValParameter.Value = _initialValue;
                             nextValParameter.ParameterName = "@nextval";
                             command.Parameters.Add(nextValParameter);
 
@@ -242,6 +242,7 @@ namespace YesSql.Services
                             {
                                 _store.Configuration.Logger.LogTrace(InsertCommand);
                             }
+
                             await command.ExecuteNonQueryAsync();
 
                             await transaction.CommitAsync();

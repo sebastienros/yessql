@@ -75,7 +75,7 @@ namespace YesSql.Provider
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {
-            if (values.StartsWith("@") && !values.Contains(","))
+            if (values.StartsWith("@") && !values.Contains(','))
             {
                 return " IN " + values;
             }
@@ -108,6 +108,7 @@ namespace YesSql.Provider
         public abstract string IdentityLastId { get; }
         
         public abstract string IdentityColumnString { get; }
+        public abstract string LegacyIdentityColumnString { get; }
 
         public virtual string NullColumnString => String.Empty;
 
@@ -224,6 +225,7 @@ namespace YesSql.Provider
                     return Quote(value.ToString());
                 case TypeCode.Boolean:
                     return (bool)value ? "1" : "0";
+                case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
                 case TypeCode.UInt16:
@@ -237,6 +239,7 @@ namespace YesSql.Provider
                     return Convert.ToString(value, CultureInfo.InvariantCulture);
                 case TypeCode.DateTime:
                     return String.Concat("'", Convert.ToString(value, CultureInfo.InvariantCulture), "'");
+                default: break;
             }
 
             return "null";

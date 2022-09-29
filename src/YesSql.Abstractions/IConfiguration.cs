@@ -85,6 +85,11 @@ namespace YesSql
         /// Gets or sets the <see cref="ISqlDialect" /> instance.
         /// </summary>
         ISqlDialect SqlDialect { get; set; }
+
+        /// <summary>
+        /// Whether to use legacy Int64 identity columns.
+        /// </summary>
+        bool UseLegacyIdentityColumn { get; set; }
     }
 
     public static class ConfigurationExtensions
