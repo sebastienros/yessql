@@ -70,6 +70,9 @@ jobs:
     - name: Test - PostgresQL Legacy Identity - No Schema
       run: dotnet test --configuration release --filter YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net6.0
 
+    - name: Test - Sqlite Legacy Identity
+      run: dotnet test --configuration release --filter YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net6.0
+
     - name: Pack
       run: |
         arrTag=(${GITHUB_REF//\// })
