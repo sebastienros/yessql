@@ -33,6 +33,7 @@ namespace YesSql.Tests
                 .UseSqLite(connectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseDefaultIdGenerator()
+                .SetIdentityColumnSize(IdentityColumnSize.Int64)
                 ;
         }
 

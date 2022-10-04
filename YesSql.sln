@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29123.88
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.32804.182
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{0882456B-4A70-4895-A3AE-39B9D30A1B31}"
 EndProject
@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\workflows\build.yml = .github\workflows\build.yml
 		src\Directory.Build.props = src\Directory.Build.props
 		NuGet.config = NuGet.config
+		.github\workflows\pr.yml = .github\workflows\pr.yml
 		.github\workflows\publish.yml = .github\workflows\publish.yml
 		README.md = README.md
 		src\YesSqlKey.snk = src\YesSqlKey.snk
@@ -45,9 +46,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Provider.PostgreSql"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql", "src\YesSql\YesSql.csproj", "{6BAC7887-02FB-4B6F-BB5C-D6DEF9646CC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Filters.Abstractions", "src\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj", "{348B307C-66F0-4DBE-BA96-5D9DFAB5588E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Filters.Abstractions", "src\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj", "{348B307C-66F0-4DBE-BA96-5D9DFAB5588E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YesSql.Filters.Query", "src\YesSql.Filters.Query\YesSql.Filters.Query.csproj", "{86C3967F-B817-4119-B354-B6EB1AC1F237}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YesSql.Filters.Query", "src\YesSql.Filters.Query\YesSql.Filters.Query.csproj", "{86C3967F-B817-4119-B354-B6EB1AC1F237}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,24 +1,30 @@
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
-using YesSql.Provider.PostgreSql;
+using YesSql.Provider.Sqlite;
 
 namespace YesSql.Tests
 {
-    // Docker command
-    // docker run --name postgresql -e POSTGRES_USER=root -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=yessql -d -p 5432:5432 postgres:11
-    public class PostgreSqlLegacyIdentityTests : PostgreSqlTests
+    /// <summary>
+    /// Run all tests with a Sqlite document storage
+    /// </summary>
+    public class SqliteLegacyIdentityTests : SqliteTests
     {
-        public PostgreSqlLegacyIdentityTests(ITestOutputHelper output) : base(output)
+        private TemporaryFolder _tempFolder;
+
+        public SqliteLegacyIdentityTests(ITestOutputHelper output) : base(output)
         {
         }
 
         protected override IConfiguration CreateConfiguration()
         {
+            _tempFolder = new TemporaryFolder();
+            var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
+
             return new Configuration()
-                .UsePostgreSql(ConnectionStringBuilder.ConnectionString)
+                .UseSqLite(connectionString)
                 .SetTablePrefix(TablePrefix)
-                .UseBlockIdGenerator()
+                .UseDefaultIdGenerator()
                 .SetIdentityColumnSize(IdentityColumnSize.Int32)
                 ;
         }

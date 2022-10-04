@@ -87,9 +87,9 @@ namespace YesSql
         ISqlDialect SqlDialect { get; set; }
 
         /// <summary>
-        /// Whether to use legacy Int64 identity columns.
+        /// Gets or sets the identity column size. Default is <see cref="IdentityColumnSize.Int32"/>.
         /// </summary>
-        bool UseLegacyIdentityColumn { get; set; }
+        IdentityColumnSize IdentityColumnSize { get; set; }
     }
 
     public static class ConfigurationExtensions
@@ -198,6 +198,15 @@ namespace YesSql
         public static IConfiguration SetTableNameConvention(this IConfiguration configuration, ITableNameConvention convention)
         {
             configuration.TableNameConvention = convention;
+            return configuration;
+        }
+
+        /// <summary>
+        /// Sets the size of the identity column. Default is <see cref="IdentityColumnSize.Int32"/>.
+        /// </summary>
+        public static IConfiguration SetIdentityColumnSize(this IConfiguration configuration, IdentityColumnSize identityColumnSize)
+        {
+            configuration.IdentityColumnSize = identityColumnSize;
             return configuration;
         }
     }
