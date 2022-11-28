@@ -28,6 +28,7 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
+        <ProjectReference Include="..\..\src\YesSql.Filters.Enumerable\YesSql.Filters.Enumerable.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
