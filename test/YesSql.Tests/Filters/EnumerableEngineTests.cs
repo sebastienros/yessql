@@ -152,7 +152,7 @@ namespace YesSql.Tests.Filters
                     {
                         if (Int32.TryParse(val, out var age))
                         {
-                            query.Where(x => x.Age == age);
+                            query = query.Where(x => x.Age == age);
                         }
 
                         return query;
@@ -177,7 +177,7 @@ namespace YesSql.Tests.Filters
                         {
                             if (Int32.TryParse(val, out var age))
                             {
-                                query.Where(x => x.Age == age);
+                                query = query.Where(x => x.Age == age);
                             }
 
                             return query;

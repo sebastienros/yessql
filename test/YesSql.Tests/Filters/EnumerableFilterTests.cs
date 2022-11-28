@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using YesSql.Filters.Enumerable;
-using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
 namespace YesSql.Tests.Filters

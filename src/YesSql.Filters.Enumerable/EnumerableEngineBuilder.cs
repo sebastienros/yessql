@@ -7,11 +7,11 @@ using YesSql.Filters.Enumerable.Services;
 namespace YesSql.Filters.Enumerable
 {
     /// <summary>
-    /// Builds a <see cref="EnumerableEngineBuilder{T}"/> for an <see cref="IQuery{T}"/>.
+    /// Builds a <see cref="EnumerableEngineBuilder{T}"/> for an <see cref="IEnumerable{T}"/>.
     /// </summary>
     public class EnumerableEngineBuilder<T> where T : class
     {
-        private Dictionary<string, TermEngineBuilder<T, EnumerableTermOption<T>>> _termBuilders = new Dictionary<string, TermEngineBuilder<T, EnumerableTermOption<T>>>();
+        private readonly Dictionary<string, TermEngineBuilder<T, EnumerableTermOption<T>>> _termBuilders = new Dictionary<string, TermEngineBuilder<T, EnumerableTermOption<T>>>();
 
         public EnumerableEngineBuilder<T> SetTermParser(TermEngineBuilder<T, EnumerableTermOption<T>> builder)
         {
