@@ -25,8 +25,8 @@ namespace YesSql
         public HashSet<object> Tracked => _tracked ??= new HashSet<object>();
 
         // ids of entities that are checked for concurrency
-        internal HashSet<int> _concurrent;
-        public HashSet<int> Concurrent => _concurrent ??= new HashSet<int>();
+        internal HashSet<long> _concurrent;
+        public HashSet<long> Concurrent => _concurrent ??= new HashSet<long>();
 
         // entities that need to be deleted in the next flush
         internal HashSet<object> _deleted;

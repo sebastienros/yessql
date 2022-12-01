@@ -12,7 +12,7 @@ namespace YesSql.Provider
     /// </summary>
     public abstract class BaseDialect : ISqlDialect
     {
-        public readonly Dictionary<string, ISqlFunction> Methods = new Dictionary<string, ISqlFunction>(StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, ISqlFunction> Methods = new(StringComparer.OrdinalIgnoreCase);
 
         protected static Dictionary<Type, DbType> _propertyTypes;
 
@@ -75,7 +75,7 @@ namespace YesSql.Provider
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {
-            if (values.StartsWith("@") && !values.Contains(","))
+            if (values.StartsWith("@") && !values.Contains(','))
             {
                 return " IN " + values;
             }
@@ -107,7 +107,8 @@ namespace YesSql.Provider
         public abstract string IdentitySelectString { get; }
         public abstract string IdentityLastId { get; }
         
-        public virtual string IdentityColumnString => "[int] IDENTITY(1,1) primary key";
+        public abstract string IdentityColumnString { get; }
+        public abstract string LegacyIdentityColumnString { get; }
 
         public virtual string NullColumnString => String.Empty;
 
@@ -125,7 +126,7 @@ namespace YesSql.Provider
         public virtual string FormatKeyName(string name) => name;
         public virtual string FormatIndexName(string name) => name;
 
-        public virtual string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey)
+        public virtual string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destQuotedTable, string[] destColumns, bool primaryKey)
         {
             var res = new StringBuilder(200);
 
@@ -143,7 +144,7 @@ namespace YesSql.Provider
                 .Append(String.Join(", ", srcColumns))
 #endif
                 .Append(") references ")
-                .Append(destTable);
+                .Append(destQuotedTable);
 
             if (!primaryKey)
             {
@@ -163,7 +164,7 @@ namespace YesSql.Provider
         public virtual bool SupportsIfExistsBeforeTableName => false;
         public virtual string CascadeConstraintsString => String.Empty;
         public virtual bool SupportsIfExistsAfterTableName => false;
-        public virtual string GetDropTableString(string name)
+        public virtual string GetDropTableString(string tableName, string schema)
         {
             var sb = new StringBuilder("drop table ");
             if (SupportsIfExistsBeforeTableName)
@@ -171,7 +172,7 @@ namespace YesSql.Provider
                 sb.Append("if exists ");
             }
 
-            sb.Append(QuoteForTableName(name)).Append(CascadeConstraintsString);
+            sb.Append(QuoteForTableName(tableName, schema)).Append(CascadeConstraintsString);
 
             if (SupportsIfExistsAfterTableName)
             {
@@ -180,9 +181,10 @@ namespace YesSql.Provider
 
             return sb.ToString();
         }
-        public abstract string GetDropIndexString(string indexName, string tableName);
+        public abstract string GetDropIndexString(string indexName, string tableName, string schema);
         public abstract string QuoteForColumnName(string columnName);
-        public abstract string QuoteForTableName(string tableName);
+        public abstract string QuoteForTableName(string tableName, string schema);
+        public abstract string QuoteForAliasName(string aliasName);
 
         public virtual string QuoteString => "\"";
         public virtual string DoubleQuoteString => "\"\"";
@@ -223,6 +225,7 @@ namespace YesSql.Provider
                     return Quote(value.ToString());
                 case TypeCode.Boolean:
                     return (bool)value ? "1" : "0";
+                case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
                 case TypeCode.UInt16:
@@ -236,6 +239,7 @@ namespace YesSql.Provider
                     return Convert.ToString(value, CultureInfo.InvariantCulture);
                 case TypeCode.DateTime:
                     return String.Concat("'", Convert.ToString(value, CultureInfo.InvariantCulture), "'");
+                default: break;
             }
 
             return "null";
@@ -279,7 +283,7 @@ namespace YesSql.Provider
             return select;
         }
 
-        private readonly Dictionary<Type, List<Func<object, object>>> _typeHandlers = new Dictionary<Type, List<Func<object, object>>>();
+        private readonly Dictionary<Type, List<Func<object, object>>> _typeHandlers = new();
 
         public void ResetTypeHandlers()
         {
@@ -294,6 +298,11 @@ namespace YesSql.Provider
             }
 
             handlers.Add(i => handler((T)i));
+        }
+
+        public virtual string GetCreateSchemaString(string schema)
+        {
+            return $"CREATE SCHEMA {QuoteForColumnName(schema)}";
         }
     }
 }

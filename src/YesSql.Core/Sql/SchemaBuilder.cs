@@ -9,7 +9,7 @@ namespace YesSql.Sql
 {
     public class SchemaBuilder : ISchemaBuilder
     {
-        private ICommandInterpreter _commandInterpreter;
+        private readonly ICommandInterpreter _commandInterpreter;
         private readonly ILogger _logger;
 
         public string TablePrefix { get; private set; }
@@ -18,6 +18,7 @@ namespace YesSql.Sql
         public DbConnection Connection { get; private set; }
         public DbTransaction Transaction { get; private set; }
         public bool ThrowOnError { get; private set; }
+        public IdentityColumnSize IdentityColumnSize { get; set; }
 
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
         {
@@ -29,12 +30,18 @@ namespace YesSql.Sql
             TablePrefix = configuration.TablePrefix;
             ThrowOnError = throwOnError;
             TableNameConvention = configuration.TableNameConvention;
+            IdentityColumnSize = configuration.IdentityColumnSize;
         }
 
         private void Execute(IEnumerable<string> statements)
         {
             foreach (var statement in statements)
             {
+                if (String.IsNullOrEmpty(statement))
+                {
+                    continue;
+                }
+
                 _logger.LogTrace(statement);
                 Connection.Execute(statement, null, Transaction);
             }
@@ -57,8 +64,8 @@ namespace YesSql.Sql
                 // NB: Identity() implies PrimaryKey()
 
                 createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
-                    .Column<int>("DocumentId")
+                    .Column(IdentityColumnSize, "Id", column => column.Identity().NotNull())
+                    .Column(IdentityColumnSize, "DocumentId")
                     ;
 
                 table(createTable);
@@ -92,8 +99,7 @@ namespace YesSql.Sql
 
                 // NB: Identity() implies PrimaryKey()
 
-                createTable
-                    .Column<int>("Id", column => column.Identity().NotNull())
+                createTable.Column(IdentityColumnSize, "Id", column => column.Identity().NotNull())
                     ;
 
                 table(createTable);
@@ -102,8 +108,8 @@ namespace YesSql.Sql
                 var bridgeTableName = indexTable + "_" + documentTable;
 
                 CreateTable(bridgeTableName, bridge => bridge
-                    .Column<int>(indexName + "Id", column => column.NotNull())
-                    .Column<int>("DocumentId", column => column.NotNull())
+                    .Column(IdentityColumnSize, indexName + "Id", column => column.NotNull())
+                    .Column(IdentityColumnSize, "DocumentId", column => column.NotNull())
                 );
 
                 CreateForeignKey("FK_" + bridgeTableName + "_Id", bridgeTableName, new[] { indexName + "Id" }, indexTable, new[] { "Id" });
@@ -267,6 +273,24 @@ namespace YesSql.Sql
             {
                 var command = new DropForeignKeyCommand(Dialect.FormatKeyName(Prefix(srcTable)), Prefix(name));
                 Execute(_commandInterpreter.CreateSql(command));
+            }
+            catch
+            {
+                if (ThrowOnError)
+                {
+                    throw;
+                }
+            }
+
+            return this;
+        }
+
+        public ISchemaBuilder CreateSchema(string schema)
+        {
+            try
+            {
+                var createSchema = new CreateSchemaCommand(schema);
+                Execute(_commandInterpreter.CreateSql(createSchema));
             }
             catch
             {

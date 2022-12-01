@@ -23,19 +23,19 @@ namespace YesSql
         public ISqlDialect Dialect { get; private set; }
         public ITypeService TypeNames { get; private set; }
 
-        internal Dictionary<Type, Func<IIndex, object>> GroupMethods = new();
+        internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
-        internal Dictionary<string, IEnumerable<IndexDescriptor>> Descriptors = new();
+        internal readonly ConcurrentDictionary<string, IEnumerable<IndexDescriptor>> Descriptors = new();
 
-        internal Dictionary<Type, IAccessor<int>> IdAccessors = new();
+        internal readonly ConcurrentDictionary<Type, IAccessor<long>> IdAccessors = new();
 
-        internal Dictionary<Type, IAccessor<int>> VersionAccessors = new();
+        internal readonly ConcurrentDictionary<Type, IAccessor<long>> VersionAccessors = new();
 
-        internal Dictionary<Type, Func<IDescriptor>> DescriptorActivators = new();
+        internal readonly ConcurrentDictionary<Type, Func<IDescriptor>> DescriptorActivators = new();
 
         internal readonly ConcurrentDictionary<WorkerQueryKey, Task<object>> Workers = new();
 
-        internal Dictionary<long, QueryState> CompiledQueries = new();
+        internal readonly ConcurrentDictionary<long, QueryState> CompiledQueries = new();
 
         internal const int SmallBufferSize = 128;
         internal const int MediumBufferSize = 512;
@@ -89,30 +89,23 @@ namespace YesSql
 
             TypeNames = new TypeService();
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
-            await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+            if (!string.IsNullOrEmpty(Configuration.Schema))
             {
-                await connection.OpenAsync();
-
-                await using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
-#else
-            using (var connection = Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
-#endif            
+                await using (var connection = Configuration.ConnectionFactory.CreateConnection())
                 {
-                    var builder = new SchemaBuilder(Configuration, transaction);
-                    await Configuration.IdGenerator.InitializeAsync(this, builder);
+                    await connection.OpenAsync();
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
+                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+                    var builder = new SchemaBuilder(Configuration, transaction);
+
+                    builder.CreateSchema(Configuration.Schema);
+
                     await transaction.CommitAsync();
-#else
-                    transaction.Commit();
-#endif
                 }
             }
+
+            // Initialize the Id generator
+            await Configuration.IdGenerator.InitializeAsync(this);
 
             // Pre-initialize the default collection
             await InitializeCollectionAsync("");
@@ -122,11 +115,7 @@ namespace YesSql
         {
             var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
             await using (var connection = Configuration.ConnectionFactory.CreateConnection())
-#else
-            using (var connection = Configuration.ConnectionFactory.CreateConnection())
-#endif            
             {
                 await connection.OpenAsync();
 
@@ -137,7 +126,7 @@ namespace YesSql
                     var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
                     selectBuilder.Select();
                     selectBuilder.AddSelector("*");
-                    selectBuilder.Table(documentTable);
+                    selectBuilder.Table(documentTable, null, Configuration.Schema);
                     selectBuilder.Take("1");
 
                     selectCommand.CommandText = selectBuilder.ToSqlString();
@@ -154,33 +143,23 @@ namespace YesSql
                             }
                             catch
                             {
-#if SUPPORTS_ASYNC_TRANSACTIONS
                                 await result.CloseAsync();
-#else
-                                result.Close();
-#endif
-                                using (var migrationTransaction = connection.BeginTransaction())
+                                using var migrationTransaction = connection.BeginTransaction();
+                                var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
+
+                                try
                                 {
-                                    var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
+                                    migrationBuilder
+                                        .AlterTable(documentTable, table => table
+                                            .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                        );
 
-                                    try
-                                    {
-                                        migrationBuilder
-                                            .AlterTable(documentTable, table => table
-                                                .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                            );
+                                    await migrationTransaction.CommitAsync();
+                                }
+                                catch
+                                {
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
-                                        await migrationTransaction.CommitAsync();
-#else
-                                        migrationTransaction.Commit();
-#endif
-                                    }
-                                    catch
-                                    {
-
-                                        // Another thread must have altered it
-                                    }
+                                    // Another thread must have altered it
                                 }
                             }
                             return;
@@ -189,20 +168,16 @@ namespace YesSql
                 }
                 catch
                 {
-#if SUPPORTS_ASYNC_TRANSACTIONS
                     await using (var transaction = connection.BeginTransaction())
-#else
-                    using (var transaction = connection.BeginTransaction())
-#endif
                     {
-                    var builder = new SchemaBuilder(Configuration, transaction);
+                        var builder = new SchemaBuilder(Configuration, transaction);
 
                         try
                         {
                             // The table doesn't exist, create it
                             builder
                                 .CreateTable(documentTable, table => table
-                                .Column<int>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
+                                .Column(Configuration.IdentityColumnSize, nameof(Document.Id), column => column.PrimaryKey().NotNull())
                                 .Column<string>(nameof(Document.Type), column => column.NotNull())
                                 .Column<string>(nameof(Document.Content), column => column.Unlimited())
                                 .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
@@ -211,11 +186,7 @@ namespace YesSql
                                 .CreateIndex("IX_" + documentTable + "_Type", "Type")
                             );
 
-#if SUPPORTS_ASYNC_TRANSACTIONS
                             await transaction.CommitAsync();
-#else
-                            transaction.Commit();
-#endif
                         }
                         catch
                         {
@@ -247,40 +218,15 @@ namespace YesSql
         {
         }
 
-        public IAccessor<int> GetIdAccessor(Type tContainer)
+        public IAccessor<long> GetIdAccessor(Type tContainer)
         {
-            if (!IdAccessors.TryGetValue(tContainer, out var result))
-            {
-                lock (IdAccessors)
-                {
-                    if (!IdAccessors.TryGetValue(tContainer, out result))
-                    {
-                        result = Configuration.IdentifierAccessorFactory.CreateAccessor<int>(tContainer);
-
-                        IdAccessors[tContainer] = result;
-                    }
-                }
-            }
-
-            return result;
+            return IdAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierAccessorFactory.CreateAccessor<long>(type));
         }
 
-        public IAccessor<int> GetVersionAccessor(Type tContainer)
+        public IAccessor<long> GetVersionAccessor(Type tContainer)
         {
-            if (!VersionAccessors.TryGetValue(tContainer, out var result))
-            {
-                lock (VersionAccessors)
-                {
-                    if (!VersionAccessors.TryGetValue(tContainer, out result))
-                    {
-                        result = Configuration.VersionAccessorFactory.CreateAccessor<int>(tContainer);
+            return VersionAccessors.GetOrAdd(tContainer, type => Configuration.VersionAccessorFactory.CreateAccessor<long>(type));
 
-                        VersionAccessors[tContainer] = result;
-                    }
-                }
-            }
-
-            return result;
         }
 
         /// <summary>
@@ -290,7 +236,7 @@ namespace YesSql
         {
             if (target == null)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(target));
             }
 
             var cacheKey = String.IsNullOrEmpty(collection)
@@ -298,36 +244,12 @@ namespace YesSql
                 : target.FullName + ":" + collection
                 ;
 
-            if (!Descriptors.TryGetValue(cacheKey, out var result))
-            {
-                lock (Descriptors)
-                {
-                    if (!Descriptors.TryGetValue(cacheKey, out result))
-                    {
-                        result = CreateDescriptors(target, collection, Indexes);
-
-                        Descriptors[cacheKey] = result;
-                    }
-                }
-            }
-
-            return result;
+            return Descriptors.GetOrAdd(cacheKey, key => CreateDescriptors(target, collection, Indexes));
         }
 
         internal IEnumerable<IndexDescriptor> CreateDescriptors(Type target, string collection, IEnumerable<IIndexProvider> indexProviders)
         {
-            if (!DescriptorActivators.TryGetValue(target, out var activator))
-            {
-                lock (DescriptorActivators)
-                {
-                    if (!DescriptorActivators.TryGetValue(target, out activator))
-                    {
-                        activator = MakeDescriptorActivator(target);
-
-                        DescriptorActivators[target] = activator;
-                    }
-                }
-            }
+            var activator = DescriptorActivators.GetOrAdd(target, type => MakeDescriptorActivator(type));
 
             var context = activator();
 
@@ -358,10 +280,7 @@ namespace YesSql
         {
             foreach (var indexProvider in indexProviders)
             {
-                if (indexProvider.CollectionName == null)
-                {
-                    indexProvider.CollectionName = collection ?? "";
-                }
+                indexProvider.CollectionName ??= collection ?? "";
             }
 
             Indexes.AddRange(indexProviders);
@@ -395,12 +314,8 @@ namespace YesSql
                 if (!Workers.TryGetValue(key, out var result))
                 {
                     // Multiple threads can potentially reach this point which is fine
-#if !NET451
                     // c.f. https://blogs.msdn.microsoft.com/seteplia/2018/10/01/the-danger-of-taskcompletionsourcet-class/
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-#else
-                    var tcs = new TaskCompletionSource<object>();
-#endif
 
                     Workers.TryAdd(key, tcs.Task);
 

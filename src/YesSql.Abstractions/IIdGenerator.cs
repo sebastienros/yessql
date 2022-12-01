@@ -13,8 +13,7 @@ namespace YesSql
         /// Invoked when the underlying store is created.
         /// </summary>
         /// <param name="store">The store that this <see cref="IIdGenerator"/> instance is assigned to.</param>
-        /// <param name="builder">An <see cref="ISchemaBuilder"/> instance.</param>
-        Task InitializeAsync(IStore store, ISchemaBuilder builder);
+        Task InitializeAsync(IStore store);
 
         /// <summary>
         /// Initializes a document collection.

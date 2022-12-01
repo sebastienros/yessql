@@ -51,6 +51,12 @@ namespace YesSql
         string TablePrefix { get; set; }
 
         /// <summary>
+        /// Gets or sets the database schema.
+        /// </summary>
+        /// <remarks>Use <code>null</code> for default schema.</remarks>
+        string Schema { get; set; }
+
+        /// <summary>
         /// Gets or sets the command page size.
         /// </summary>
         int CommandsPageSize { get; set; }
@@ -79,6 +85,11 @@ namespace YesSql
         /// Gets or sets the <see cref="ISqlDialect" /> instance.
         /// </summary>
         ISqlDialect SqlDialect { get; set; }
+
+        /// <summary>
+        /// Gets or sets the identity column size. Default is <see cref="IdentityColumnSize.Int32"/>.
+        /// </summary>
+        IdentityColumnSize IdentityColumnSize { get; set; }
     }
 
     public static class ConfigurationExtensions
@@ -187,6 +198,15 @@ namespace YesSql
         public static IConfiguration SetTableNameConvention(this IConfiguration configuration, ITableNameConvention convention)
         {
             configuration.TableNameConvention = convention;
+            return configuration;
+        }
+
+        /// <summary>
+        /// Sets the size of the identity column. Default is <see cref="IdentityColumnSize.Int32"/>.
+        /// </summary>
+        public static IConfiguration SetIdentityColumnSize(this IConfiguration configuration, IdentityColumnSize identityColumnSize)
+        {
+            configuration.IdentityColumnSize = identityColumnSize;
             return configuration;
         }
     }

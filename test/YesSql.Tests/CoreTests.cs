@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -45,7 +46,7 @@ namespace YesSql.Tests
             if (_configuration == null)
             {
                 _configuration = CreateConfiguration();
-
+                
                 CleanDatabase(_configuration, false);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
@@ -68,6 +69,12 @@ namespace YesSql.Tests
         public virtual Task DisposeAsync()
         {
             return Task.CompletedTask;
+        }
+
+        protected void EnableLogging()
+        {
+            var logger = new ConsoleLogger(_output);
+            _store.Configuration.Logger = logger;
         }
 
         //[DebuggerNonUserCode]
@@ -102,6 +109,7 @@ namespace YesSql.Tests
             builder.DropMapIndexTable<PersonByNameCol>("Col1");
             builder.DropMapIndexTable<PersonByBothNamesCol>("Col1");
             builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
+            builder.DropReduceIndexTable<PersonsByNameCol>("LongCollection");
 
             builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Col1"));
             builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
@@ -124,8 +132,8 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName, configuration.Schema)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
                 }
                 catch
                 {
@@ -139,7 +147,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
                 }
                 catch { }
             }
@@ -150,7 +158,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName, configuration.Schema)}");
                 }
                 catch { }
             }
@@ -699,11 +707,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryNullVariables()
         {
-            var logger = new ConsoleLogger(_output);
-
-            _store.Configuration.Logger = logger;
-
-
             _store.RegisterIndexes<PersonIndexProvider>();
 
             using (var session = _store.CreateSession())
@@ -803,7 +806,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSerializeComplexObject()
         {
-            int productId;
+            long productId;
 
             using (var session = _store.CreateSession())
             {
@@ -852,9 +855,9 @@ namespace YesSql.Tests
                     Lastname = "Gates"
                 };
 
-                Assert.True(bill.Id == 0);
+                Assert.Equal(0, bill.Id);
                 session.Save(bill);
-                Assert.True(bill.Id != 0);
+                Assert.NotEqual(0, bill.Id);
 
                 await session.SaveChangesAsync();
             }
@@ -1045,10 +1048,6 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryWithCompiledQueries()
         {
-            var logger = new ConsoleLogger(_output);
-
-            _store.Configuration.Logger = logger;
-
             _store.RegisterIndexes<PersonAgeIndexProvider>();
 
             using (var session = _store.CreateSession())
@@ -1978,7 +1977,7 @@ namespace YesSql.Tests
                 Assert.Equal("Steve", (await query.FirstOrDefaultAsync()).Firstname);
             }
         }
-        
+
         [Fact]
         public async Task ShouldJoinReduceIndex()
         {
@@ -3242,7 +3241,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetTypeById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3271,7 +3270,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldReturnNullWithWrongTypeById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3299,7 +3298,7 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldGetDocumentById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3327,7 +3326,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetObjectById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3356,7 +3355,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGetDynamicById()
         {
-            int circleId;
+            long circleId;
 
             using (var session = _store.CreateSession())
             {
@@ -3388,7 +3387,7 @@ namespace YesSql.Tests
         [Theory]
         public async Task ShouldReturnObjectsByIdsInCorrectOrder(int numberOfItems)
         {
-            var circleIds = new List<int>();
+            var circleIds = new List<long>();
 
             using (var session = _store.CreateSession())
             {
@@ -4314,7 +4313,7 @@ namespace YesSql.Tests
                 await connection.OpenAsync();
 
                 var dialect = _store.Configuration.SqlDialect;
-                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
+                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate), _store.Configuration.Schema);
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
 
@@ -4353,10 +4352,10 @@ namespace YesSql.Tests
 
                 var dialect = _store.Configuration.SqlDialect;
 
-                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
+                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate), _store.Configuration.Schema) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
                 publishedInTheFutureResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInTheFutureSql);
 
-                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
+                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate), _store.Configuration.Schema) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
                 publishedInThePastResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInThePastSql);
             }
 
@@ -4729,7 +4728,6 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-
                 session.Save(bill);
 
                 Assert.Single(await session.Query<Person>().ListAsync());
@@ -4889,8 +4887,8 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldCreateMoreObjectThanIdBlock()
         {
-            var lastId = 0;
-            var firstId = 0;
+            long lastId = 0;
+            long firstId = 0;
 
             using (var session = _store.CreateSession())
             {
@@ -5162,7 +5160,7 @@ namespace YesSql.Tests
                         );
 
                     var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema),
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
                         _store.Configuration.SqlDialect.GetSqlValue(value)
                         );
@@ -5176,7 +5174,7 @@ namespace YesSql.Tests
                 {
                     var sqlSelect = String.Format("SELECT {0} FROM {1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -5201,7 +5199,7 @@ namespace YesSql.Tests
                 {
                     var sqlSelect = String.Format("SELECT {0} FROM {1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column2),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -5836,7 +5834,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }
@@ -5894,7 +5892,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }
@@ -5958,7 +5956,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }
@@ -6017,7 +6015,7 @@ namespace YesSql.Tests
                 var connection = await session.CreateConnectionAsync();
                 var transaction = await session.BeginTransactionAsync();
 
-                await new CreateIndexCommand(index, new[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
 
                 await session.SaveChangesAsync();
             }
@@ -6203,13 +6201,19 @@ namespace YesSql.Tests
 
                 await parsed.ExecuteAsync(filterQuery);
 
+                var assert1 = (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title;
+                var assert2 = await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync();
+
                 // Normal YesSql query
-                Assert.Equal("post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync());
+                Assert.Equal("post by steve about cats", assert1);
+                Assert.Equal(1, assert2);
+
+                var assert3 = (await filterQuery.FirstOrDefaultAsync()).Title;
+                var assert4 = await filterQuery.CountAsync();
 
                 // Parsed query
-                Assert.Equal("post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await filterQuery.CountAsync());
+                Assert.Equal("post by steve about cats", assert3);
+                Assert.Equal(1, assert4);
             }
         }
 

@@ -91,6 +91,11 @@ namespace YesSql
         string IdentityColumnString { get; }
 
         /// <summary>
+        /// Gets the Int64 primary key with identity column SQL statement.
+        /// </summary>
+        string LegacyIdentityColumnString { get; }
+        
+        /// <summary>
         /// Gets the identity select SQL statement to append to an insert in order to return the last generated identifier.
         /// </summary>
         string IdentitySelectString { get; }
@@ -123,17 +128,27 @@ namespace YesSql
         /// <summary>
         /// Returns the quoted table name.
         /// </summary>
-        string QuoteForTableName(string v);
+        string QuoteForTableName(string tableName, string schema);
+
+        /// <summary>
+        /// Returns the quoted alias name.
+        /// </summary>
+        string QuoteForAliasName(string alias);
 
         /// <summary>
         /// Gets the DROP TABLE SQL statement.
         /// </summary>
-        string GetDropTableString(string name);
+        string GetDropTableString(string tableName, string schema);
+
+        /// <summary>
+        /// Gets the CREATE SCHEMA SQL statement.
+        /// </summary>
+        string GetCreateSchemaString(string schema);
 
         /// <summary>
         /// Gets the DROP INDEX SQL statement.
         /// </summary>
-        string GetDropIndexString(string indexName, string tableName);
+        string GetDropIndexString(string indexName, string tableName, string schema);
 
         /// <summary>
         /// Returns the quoted column.
@@ -168,7 +183,7 @@ namespace YesSql
         /// <summary>
         /// Returns the ADD FOREIGN KEY constraint SQL statement.
         /// </summary>
-        string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destTable, string[] destColumns, bool primaryKey);
+        string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destQuotedTable, string[] destColumns, bool primaryKey);
 
         /// <summary>
         /// Formats a foreign key name to a deterministic value within the length constraints of the dialect.

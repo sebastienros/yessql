@@ -25,7 +25,7 @@ namespace YesSql.Commands
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
+            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} "
                 + $"set {dialect.QuoteForColumnName("Content")} = @Content, {dialect.QuoteForColumnName("Version")} = @Version where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id "
                 + (_checkVersion > -1
@@ -64,7 +64,7 @@ namespace YesSql.Commands
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
+            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} "
                 + $"set {dialect.QuoteForColumnName("Content")} = @Content_{index}, {dialect.QuoteForColumnName("Version")} = @Version_{index} where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id_{index};"
                 ;
@@ -72,9 +72,9 @@ namespace YesSql.Commands
             queries.Add(updateCmd);
 
             batchCommand
-                .AddParameter("Id_" + index, Document.Id, DbType.Int32)
-                .AddParameter("Content_" + index, Document.Content, DbType.String)
-                .AddParameter("Version_" + index, Document.Version, DbType.Int64);
+                .AddParameter("Id_" + index, Document.Id)
+                .AddParameter("Content_" + index, Document.Content)
+                .AddParameter("Version_" + index, Document.Version);
 
             return true;
         }

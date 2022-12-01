@@ -10,9 +10,9 @@ namespace YesSql
     {
         string Clause { get; }
         Dictionary<string, object> Parameters { get; }
-        string FormatColumn(string table, string column, bool isAlias = false);
+        string FormatColumn(string table, string column, string schema, bool isAlias = false);
         string GetSelector();
-        void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null, string toAlias = null);
+        void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null);
         bool HasJoin { get; }
         bool HasOrder { get; }
         void ClearGroupBy();
@@ -22,14 +22,14 @@ namespace YesSql
         void OrderByRandom();
         void Select();
         void Selector(string selector);
-        void Selector(string table, string column);
+        void Selector(string table, string column, string schema);
         void AddSelector(string select);
         void InsertSelector(string select);
         void Distinct();
         bool HasPaging { get; }
         void Skip(string skip);
         void Take(string take);
-        void Table(string table, string alias = null);
+        void Table(string table, string alias, string schema);
         void From(string from);
         void ThenOrderBy(string orderBy);
         void ThenOrderByDescending(string orderBy);

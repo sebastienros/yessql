@@ -21,7 +21,7 @@ namespace YesSql.Commands
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
-            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = @Id;";
+            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} where {dialect.QuoteForColumnName("Id")} = @Id;";
             
             if (logger.IsEnabled(LogLevel.Trace))
             {
@@ -35,9 +35,9 @@ namespace YesSql.Commands
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} where {dialect.QuoteForColumnName("Id")} = @Id_{index};";
+            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} where {dialect.QuoteForColumnName("Id")} = @Id_{index};";
             queries.Add(deleteCmd);
-            command.AddParameter($"Id_{index}", Document.Id, DbType.Int32);
+            command.AddParameter($"Id_{index}", Document.Id);
 
             return true;
         }

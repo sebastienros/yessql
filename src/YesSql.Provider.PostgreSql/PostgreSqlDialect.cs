@@ -7,7 +7,7 @@ using YesSql.Utils;
 
 namespace YesSql.Provider.PostgreSql
 {
-    public class PostgreSqlDialect : BaseDialect
+    public sealed class PostgreSqlDialect : BaseDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
@@ -110,10 +110,10 @@ namespace YesSql.Provider.PostgreSql
         public override string IdentitySelectString => "RETURNING";
         public override string IdentityLastId => $"lastval()";
         public override string IdentityColumnString => "SERIAL PRIMARY KEY";
+        public override string LegacyIdentityColumnString => "SERIAL PRIMARY KEY";
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
-
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
@@ -208,7 +208,7 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
-        public override string GetDropIndexString(string indexName, string tableName)
+        public override string GetDropIndexString(string indexName, string tableName, string schema)
         {
             return "drop index if exists " + QuoteForColumnName(indexName);
         }
@@ -218,9 +218,17 @@ namespace YesSql.Provider.PostgreSql
             return QuoteString + columnName + QuoteString;
         }
 
-        public override string QuoteForTableName(string tableName)
+        public override string QuoteForTableName(string tableName, string schema)
         {
-            return QuoteString + tableName + QuoteString;
+            return string.IsNullOrEmpty(schema)
+                ? $"{QuoteString}{tableName}{QuoteString}"
+                : $"{QuoteString}{schema}{QuoteString}.{QuoteString}{tableName}{QuoteString}"
+                ;
+        }
+
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return QuoteString + aliasName + QuoteString;
         }
 
         public override string CascadeConstraintsString => " cascade ";
@@ -257,6 +265,11 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
+        public override string GetCreateSchemaString(string schema)
+        {
+            return $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";
+        }
+        
         public override List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
         {
             // Most databases (PostgreSql and SqlServer) requires all ordered fields to be part of the select when DISTINCT is used

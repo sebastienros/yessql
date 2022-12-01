@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 
 namespace YesSql.Samples.Web.Models
 {
     public class BlogPost
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         public string Title { get; set; }
 

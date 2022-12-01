@@ -1,7 +1,6 @@
-using System;
-using System.Data.Common;
-using System.Threading.Tasks;
 using MySqlConnector;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using YesSql.Provider.MySql;
@@ -31,6 +30,7 @@ namespace YesSql.Tests
                 .UseMySql(ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
+                .SetIdentityColumnSize(IdentityColumnSize.Int64)
                 ;
         }
 
@@ -65,12 +65,6 @@ namespace YesSql.Tests
 
                 session.Delete(person);
             }
-        }
-
-        [Fact(Skip = "The syntax used for MySQL only works since MySQL 8.0 which is not available on appveyor")]
-        public override void ShouldRenameColumn()
-        {
-            base.ShouldRenameColumn();
         }
 
         [Fact]

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace YesSql.Sql.Schema
 {
@@ -15,6 +15,7 @@ namespace YesSql.Sql.Schema
         AlterTable,
         SqlStatement,
         CreateForeignKey,
-        DropForeignKey
+        DropForeignKey,
+        CreateSchema,
     }
 }

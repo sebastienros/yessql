@@ -46,15 +46,15 @@ namespace YesSql.Sql
 
         public string Clause { get { return _clause; } }
 
-        public void Table(string table, string alias = null)
+        public void Table(string table, string alias, string schema)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
 
             if (!String.IsNullOrEmpty(alias))
             {
                 FromSegments.Add(" AS ");
-                FromSegments.Add(_dialect.QuoteForTableName(alias));
+                FromSegments.Add(_dialect.QuoteForAliasName(alias));
             }
         }
 
@@ -75,35 +75,45 @@ namespace YesSql.Sql
             _count = take;
         }
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string alias = null, string toAlias = null)
+        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string schema, string toColumn, string alias = null, string toAlias = null)
         {
             // Don't prefix if alias is used
             if (alias != onTable)
             {
-                onTable = _tablePrefix + onTable;
+                onTable = _dialect.QuoteForTableName(onTable, schema);
+            }
+            else
+            {
+                onTable = _dialect.QuoteForAliasName(onTable);
             }
 
             if (toTable != toAlias)
+            {
+                toTable = _dialect.QuoteForTableName(_tablePrefix + toTable, schema);
+            }
+            else
             {
                 toTable = _tablePrefix + toTable;
             }
 
             if (!String.IsNullOrEmpty(toAlias))
             {
-                toTable = toAlias;
+                toTable = _dialect.QuoteForAliasName(toAlias);
             }
-            
+
             JoinSegments.Add(" INNER JOIN ");
-            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
+
             if (!String.IsNullOrEmpty(alias))
             {
-                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
+                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForAliasName(alias) });
             }
+
             JoinSegments.AddRange(new[] {
-                " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
+                " ON ", onTable, ".", _dialect.QuoteForColumnName(onColumn),
+                " = ", toTable, ".", _dialect.QuoteForColumnName(toColumn)
                 }
-            );            
+            );
         }
 
         public void Select()
@@ -117,9 +127,9 @@ namespace YesSql.Sql
             SelectSegments.Add(selector);
         }
 
-        public void Selector(string table, string column)
+        public void Selector(string table, string column, string schema)
         {
-            Selector(FormatColumn(table, column));
+            Selector(FormatColumn(table, column, schema));
         }
 
         public void AddSelector(string select)
@@ -149,7 +159,7 @@ namespace YesSql.Sql
             _distinct = true;
         }
 
-        public virtual string FormatColumn(string table, string column, bool isAlias = false)
+        public virtual string FormatColumn(string table, string column, string schema, bool isAlias = false)
         {
             if (column != "*")
             {
@@ -159,9 +169,12 @@ namespace YesSql.Sql
             if (!isAlias)
             {
                 table = _tablePrefix + table;
+                return _dialect.QuoteForTableName(table, schema) + "." + column;
             }
-
-            return _dialect.QuoteForTableName(table) + "." + column;
+            else
+            {
+                return _dialect.QuoteForAliasName(table) + "." + column;
+            }
         }
 
         public virtual void AndAlso(string where)

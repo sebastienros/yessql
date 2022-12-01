@@ -40,28 +40,75 @@ namespace YesSql.Data
             var getter = propertyInfo.GetGetMethod().CreateDelegate(getType);
             var setter = propertyInfo.GetSetMethod(true).CreateDelegate(setType);
 
-            var accessorType = typeof(IAccessor<,>).MakeGenericType(tContainer, tProperty);
+            Type accessorType = null;
+            
+            if (tProperty == typeof(int))
+            {
+                accessorType = typeof(IntAccessor<>);
+            }
+            else if (tProperty == typeof(long))
+            {
+                accessorType = typeof(LongAccessor<>);
+            }
+
+            if (accessorType == null)
+            {
+                // Id type is not supported
+                return null;
+            }
+
+            accessorType = accessorType.MakeGenericType(tContainer);
 
             return Activator.CreateInstance(accessorType, new object[] { getter, setter }) as IAccessor<T>;
         }
 
-        private class IAccessor<T, TU> : IAccessor<TU>
+        /// <summary>
+        /// An accessor to an Int32 Id property
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        internal class IntAccessor<T> : IAccessor<long>
         {
-            private readonly Func<T, TU> _getter;
-            private readonly Action<T, TU> _setter;
+            private readonly Func<T, int> _getter;
+            private readonly Action<T, int> _setter;
 
-            public IAccessor(Func<T, TU> getter, Action<T, TU> setter)
+            public IntAccessor(Func<T, int> getter, Action<T, int> setter)
             {
                 _getter = getter;
                 _setter = setter;
             }
 
-            TU IAccessor<TU>.Get(object obj)
+            long IAccessor<long>.Get(object obj)
             {
                 return _getter((T)obj);
             }
 
-            void IAccessor<TU>.Set(object obj, TU value)
+            void IAccessor<long>.Set(object obj, long value)
+            {
+                _setter((T)obj, (int)value);
+            }
+        }
+
+        /// <summary>
+        /// An accessor to an Int64 Id property
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        internal class LongAccessor<T> : IAccessor<long>
+        {
+            private readonly Func<T, long> _getter;
+            private readonly Action<T, long> _setter;
+
+            public LongAccessor(Func<T, long> getter, Action<T, long> setter)
+            {
+                _getter = getter;
+                _setter = setter;
+            }
+
+            long IAccessor<long>.Get(object obj)
+            {
+                return _getter((T)obj);
+            }
+
+            void IAccessor<long>.Set(object obj, long value)
             {
                 _setter((T)obj, value);
             }
