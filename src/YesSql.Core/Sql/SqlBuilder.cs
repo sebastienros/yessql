@@ -49,7 +49,7 @@ namespace YesSql.Sql
         public void Table(string table, string alias, string schema)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
+            FromSegments.Add(FormatTable(table, schema));
 
             if (!String.IsNullOrEmpty(alias))
             {
@@ -89,7 +89,7 @@ namespace YesSql.Sql
 
             if (toTable != toAlias)
             {
-                toTable = _dialect.QuoteForTableName(_tablePrefix + toTable, schema);
+                toTable = FormatTable(toTable, schema);
             }
             else
             {
@@ -102,7 +102,7 @@ namespace YesSql.Sql
             }
 
             JoinSegments.Add(" INNER JOIN ");
-            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
+            JoinSegments.Add(FormatTable(table, schema));
 
             if (!String.IsNullOrEmpty(alias))
             {
@@ -168,13 +168,18 @@ namespace YesSql.Sql
 
             if (!isAlias)
             {
-                table = _tablePrefix + table;
-                return _dialect.QuoteForTableName(table, schema) + "." + column;
+                return FormatTable(table, schema) + "." + column;
             }
             else
             {
                 return _dialect.QuoteForAliasName(table) + "." + column;
             }
+        }
+
+        public virtual string FormatTable(string table, string schema)
+        {
+            table = _tablePrefix + table;
+            return _dialect.QuoteForTableName(table, schema);
         }
 
         public virtual void AndAlso(string where)
@@ -302,11 +307,6 @@ namespace YesSql.Sql
                 return "";
             }
 
-            if (_skip != null || _count != null)
-            {
-                _dialect.Page(this, _skip, _count);
-            }
-
             var sb = new RentedStringBuilder(Store.LargeBufferSize);
 
             sb.Append("SELECT ");
@@ -315,15 +315,31 @@ namespace YesSql.Sql
             {
                 sb.Append("DISTINCT ");
 
-                // Some databases require the ORDER BY clauses to be part of the SELECT clause when DISTINCT is used
-
                 if (_order != null)
                 {
-                    // _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
                     sb.Append("ON(");
                     sb.Append(OrderSegments.First());
                     sb.Append(") ");
                 }
+            }
+
+            if (_group != null)
+            {
+                // Some databases require the ORDER BY clauses to be part of the SELECT clause when GROUP BY is used
+
+                if (_order != null)
+                {
+                    _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
+
+                    // Add a 0 offset if not offset was specified.
+                    // This is necessary for SQL SERVER which requires an offset when ORDER BY is used in a sub-select
+                    _skip ??= "0";
+                }
+            }
+
+            if (_skip != null || _count != null)
+            {
+                _dialect.Page(this, _skip, _count);
             }
 
             foreach (var s in _select)

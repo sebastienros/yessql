@@ -1240,6 +1240,8 @@ namespace YesSql.Services
 
                 var connection = await _query._session.CreateConnectionAsync();
                 var transaction = _query._session.CurrentTransaction;
+                var schema = _query._queryState._store.Configuration.Schema;
+                var sqlBuilder = _query._queryState._sqlBuilder;
 
                 _query._queryState.FlushFilters();
 
@@ -1247,7 +1249,7 @@ namespace YesSql.Services
                 {
                     foreach (var binding in _query._queryState._parameterBindings)
                     {
-                        binding(_query._compiledQuery, _query._queryState._sqlBuilder);
+                        binding(_query._compiledQuery, sqlBuilder);
                     }
                 }
 
@@ -1255,15 +1257,15 @@ namespace YesSql.Services
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                     {
-                        _query._queryState._sqlBuilder.Selector("*");
+                        sqlBuilder.Selector("*");
 
                         // If a page is requested without order add a default one
-                        if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
+                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
                         {
-                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState.GetTypeAlias(typeof(T)), "Id", _query._queryState._store.Configuration.Schema, true));
+                            sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState.GetTypeAlias(typeof(T)), "Id", schema, true));
                         }
 
-                        var sql = _query._queryState._sqlBuilder.ToSqlString();
+                        var sql = sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                         return await _query._session._store.ProduceAsync(key, static (state) =>
                         {
@@ -1280,19 +1282,22 @@ namespace YesSql.Services
                     else
                     {
                         // If a page is requested without order add a default one
-                        if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
+                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
                         {
-                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", _query._queryState._store.Configuration.Schema));
+                            sqlBuilder.OrderBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
                         }
 
-                        _query._queryState._sqlBuilder.Selector(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", _query._queryState._store.Configuration.Schema));
+                        sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
 
-                        // Group by document id to remove duplicate records if the index has multiple matches for a single document
+                        // Group by document id to de-duplicate records if the index has multiple matches for a single document
                         // This could potentially be opt-in by exposing GroupBy(field) in the interface, or a boolean to deduplicate results
-                        //_query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
+                        sqlBuilder.GroupBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
 
-                        var sql = _query._queryState._sqlBuilder.ToSqlString();
-                        var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
+                        var sql = sqlBuilder.ToSqlString();
+
+                        sql = $"SELECT {sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema)} FROM {sqlBuilder.FormatTable(_query._queryState._documentTable, schema)} INNER JOIN ({sql}) AS {_query._dialect.QuoteForAliasName("IndexQuery")} ON {sqlBuilder.FormatColumn("IndexQuery", "Id", schema, true)} = {sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema)}";
+
+                        var key = new WorkerQueryKey(sql, sqlBuilder.Parameters);
                         var documents = await _query._session._store.ProduceAsync(key, static (state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
@@ -1622,8 +1627,8 @@ namespace YesSql.Services
                 // Ideally GroupByDocument() would be inferred automatically when the index is a MultiMapIndex (MapIndex that can return multiple indexes per document).
                 // It would also imply a new IQuery type that requires aggregates on orders. Or this could be checked at runtime.
 
-                _query.Bind<TIndex>();
-                _query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id"));
+                //_query.Bind<TIndex>();
+                //_query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", _query._queryState._store.Configuration.Schema));
                 return this;
             }
 

@@ -1779,6 +1779,44 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldDeduplicateDocuments()
+        {
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 1; i <= 1; i++)
+                {
+                    var scott = new Person
+                    {
+                        Firstname = "Scott",
+                        Lastname = "Scott",
+                        Age = i
+                    };
+
+                    var scotty = new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Scott",
+                        Age = 10000 + i
+                    };
+
+                    session.Save(scott);
+                    session.Save(scotty);
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, (await session.Query<Person>().With<PersonIdentity>(x => x.Identity == "Scott").With<PersonByAge>().OrderBy(x => x.Age).ListAsync()).Count());
+                Assert.Equal(2, await session.Query<Person>().With<PersonIdentity>(x => x.Identity == "Scott").CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldCreateIndexAndLinkToDocument()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -5010,9 +5048,9 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldReturnDistinctDocuments()
         {
-            // The INNER JOIN with the index returns 2 record for the same document.
+            // The INNER JOIN with the index returns 2 records for the same document.
             // Here we ensure that a GROUP BY is issued to resolve this.
-            // DISTINCT queries would require applying it on all fields that need to be read inclyding the JSON payload
+            // DISTINCT queries would require applying it on all fields that need to be read including the JSON payload
 
             _store.RegisterIndexes<EmailByAttachmentProvider>();
 
@@ -5036,7 +5074,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var result = await session.Query<Email, EmailByAttachment>().GroupByDocument().Where(e => e.AttachmentName.EndsWith(".doc")).ListAsync();
+                var result = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).ListAsync();
 
                 Assert.Single(result);
             }
@@ -5073,18 +5111,15 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                var result1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).GroupByDocument().OrderBy(x => x.Id.Max()).Take(10).ListAsync();
-                // .GroupByDocument() is optional in Count() since it will be removed automatically
-                var count1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).GroupByDocument().CountAsync();
-                var uniqueDocuments1 = result1.Select(x => x.Id).Distinct();
+                var result1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).Take(10).ListAsync();
+                var count1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).CountAsync();
 
-                Assert.Equal(10, uniqueDocuments1.Count());
+                Assert.Equal(10, result1.Count());
                 Assert.Equal(30, count1);
 
-                var result2 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).GroupByDocument().OrderBy(x => x.Id.Max()).Skip(20).Take(40).ListAsync();
-                var uniqueDocuments2 = result2.Select(x => x.Id).Distinct();
+                var result2 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).Skip(20).Take(40).ListAsync();
 
-                Assert.Equal(10, uniqueDocuments2.Count());
+                Assert.Equal(10, result2.Count());
             }
         }
 
