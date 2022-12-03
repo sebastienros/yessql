@@ -4,7 +4,6 @@ using YesSql.Filters.Abstractions.Builders;
 using YesSql.Filters.Abstractions.Nodes;
 using YesSql.Filters.Abstractions.Services;
 using YesSql.Filters.Query.Services;
-using YesSql;
 
 namespace YesSql.Filters.Query
 {

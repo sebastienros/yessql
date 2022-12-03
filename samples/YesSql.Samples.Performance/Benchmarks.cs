@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using YesSql.Provider.SqlServer;
 using YesSql.Provider.PostgreSql;
 using YesSql.Services;
 using YesSql.Sql;

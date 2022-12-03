@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -1775,6 +1774,44 @@ namespace YesSql.Tests
                 Assert.Equal(0, await session.QueryIndex<PersonIdentity>().CountAsync());
 
                 await session.SaveChangesAsync();
+            }
+        }
+
+        [Fact]
+        public async Task ShouldDeduplicateDocuments()
+        {
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 1; i <= 1; i++)
+                {
+                    var scott = new Person
+                    {
+                        Firstname = "Scott",
+                        Lastname = "Scott",
+                        Age = i
+                    };
+
+                    var scotty = new Person
+                    {
+                        Firstname = "Bill",
+                        Lastname = "Scott",
+                        Age = 10000 + i
+                    };
+
+                    session.Save(scott);
+                    session.Save(scotty);
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, (await session.Query<Person>().With<PersonIdentity>(x => x.Identity == "Scott").With<PersonByAge>().OrderBy(x => x.Age).ListAsync()).Count());
+                Assert.Equal(2, await session.Query<Person>().With<PersonIdentity>(x => x.Identity == "Scott").CountAsync());
             }
         }
 
@@ -4669,6 +4706,32 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldOrderWithoutDuplicates()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = "D" });
+                session.Save(new Person { Firstname = "G" });
+                session.Save(new Person { Firstname = "F" });
+                session.Save(new Person { Firstname = "A" });
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).NoDuplicates().ListAsync();
+
+                Assert.Equal("A", results.ElementAt(0).Firstname);
+                Assert.Equal("D", results.ElementAt(1).Firstname);
+                Assert.Equal("F", results.ElementAt(2).Firstname);
+                Assert.Equal("G", results.ElementAt(3).Firstname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryOrderByRandom()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -5008,8 +5071,12 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldReturnSingleDocument()
+        public async Task ShouldReturnDistinctDocuments()
         {
+            // The INNER JOIN with the index returns 2 records for the same document.
+            // Here we ensure that a GROUP BY is issued to resolve this.
+            // DISTINCT queries would require applying it on all fields that need to be read including the JSON payload
+
             _store.RegisterIndexes<EmailByAttachmentProvider>();
 
             using (var session = _store.CreateSession())
@@ -5032,10 +5099,52 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                // Get all emails that have '.doc' attachments
                 var result = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).ListAsync();
 
                 Assert.Single(result);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldReturnNonUniqueResultsWithDistinctOption()
+        {
+            // Query a page of documents, but collisions in the results should trigger database round-trips to fill the page
+            _store.RegisterIndexes<EmailByAttachmentProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                // Creates 30 emails with 3 attachments each
+
+                for (int i = 0; i < 30; i++)
+                {
+                    var email = new Email()
+                    {
+                        Date = DateTime.Now,
+                        Attachments = new List<Attachment>()
+                        {
+                            new Attachment("resume.doc"),
+                            new Attachment("letter.doc"),
+                            new Attachment("photo.jpg")
+                        }
+                    };
+
+                    session.Save(email);
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var result1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).Take(10).ListAsync();
+                var count1 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).CountAsync();
+
+                Assert.Equal(10, result1.Count());
+                Assert.Equal(30, count1);
+
+                var result2 = await session.Query<Email, EmailByAttachment>().Where(e => e.AttachmentName.EndsWith(".doc")).Skip(20).Take(40).ListAsync();
+
+                Assert.Equal(10, result2.Count());
             }
         }
 

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace YesSql
@@ -11,10 +10,12 @@ namespace YesSql
         string Clause { get; }
         Dictionary<string, object> Parameters { get; }
         string FormatColumn(string table, string column, string schema, bool isAlias = false);
+        string FormatTable(string table, string schema);
         string GetSelector();
         void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null);
         bool HasJoin { get; }
         bool HasOrder { get; }
+        void ClearGroupBy();
         void ClearOrder();
         void OrderBy(string orderBy);
         void OrderByDescending(string orderBy);
@@ -41,5 +42,7 @@ namespace YesSql
         void WhereAnd(string clause);
         void WhereOr(string clause);
         ISqlBuilder Clone();
+        IEnumerable<string> GetSelectors();
+        IEnumerable<string> GetOrders();
     }
 }

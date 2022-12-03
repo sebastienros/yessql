@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using YesSql.Sql;
 
 namespace YesSql
 {

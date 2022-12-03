@@ -106,6 +106,11 @@ namespace YesSql
         /// Returns the SQL alias currently used for the specified index type.
         /// </summary>
         string GetTypeAlias(Type t);
+
+        /// <summary>
+        /// Adds a Group By clause to the query for fold documents when an index returns multiple records.
+        /// </summary>
+        IQuery<T> NoDuplicates();
     }
 
     /// <summary>
@@ -221,12 +226,12 @@ namespace YesSql
         /// Adds a named parameter to the query.
         /// </summary>
         IQuery<T, TIndex> WithParameter(string name, object value);
-        
+
         /// <summary>
         /// Adds a named parameter to the query.
         /// </summary>
         IQuery<T, TIndex> Where(Expression<Func<TIndex, bool>> predicate);
-        
+
         /// <summary>
         /// Sets an OrderBy clause using a custom lambda expression.
         /// </summary>

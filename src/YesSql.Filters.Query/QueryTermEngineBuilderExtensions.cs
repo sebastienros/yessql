@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using YesSql.Filters.Abstractions.Builders;
 using YesSql.Filters.Query.Services;
-using YesSql;
 
 namespace YesSql.Filters.Query
 {

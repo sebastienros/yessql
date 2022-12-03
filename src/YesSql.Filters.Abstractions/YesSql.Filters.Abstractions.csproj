@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-        <PackageReference Include="Parlot" Version="0.0.23" />
+        <PackageReference Include="Parlot" Version="0.0.24" />
     </ItemGroup>
 
 </Project>

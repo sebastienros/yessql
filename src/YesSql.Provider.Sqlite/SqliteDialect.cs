@@ -165,5 +165,38 @@ namespace YesSql.Provider.Sqlite
         {
             return null;
         }
+
+        public override IEnumerable<(string aggregate, string alias)> GetAggregateOrders(IList<string> select, IList<string> orderBy)
+        {
+            // Most databases (MySql, PostgreSql and SqlServer) require all ordered fields to be part of the select when GROUP BY (or DISTINCT) is used
+
+            var result = new List<(string, string)>();
+
+            var index = 1;
+
+            for (var i = 0; i < orderBy.Count; i++)
+            {
+                var o = orderBy[i];
+                var next = i + 1 < orderBy.Count ? orderBy[i + 1].Trim() : null;
+                var trimmed = o.Trim();
+                var alias = QuoteForAliasName("order_" + index++);
+
+                // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
+                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC")
+                {
+                    // Don't aggregate the order field in Sqlite
+                    var aggregate = $"{o} AS {alias}";
+
+                    if (next == "DESC" || next == "ASC")
+                    {
+                        alias += " " + next;
+                    }
+
+                    result.Add((aggregate, alias));
+                }
+            }
+
+            return result;
+        }
     }
 }

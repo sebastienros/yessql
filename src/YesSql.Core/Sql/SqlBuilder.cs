@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using YesSql.Utils;
 
 namespace YesSql.Sql
@@ -48,7 +49,7 @@ namespace YesSql.Sql
         public void Table(string table, string alias, string schema)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
+            FromSegments.Add(FormatTable(table, schema));
 
             if (!String.IsNullOrEmpty(alias))
             {
@@ -88,7 +89,7 @@ namespace YesSql.Sql
 
             if (toTable != toAlias)
             {
-                toTable = _dialect.QuoteForTableName(_tablePrefix + toTable, schema);
+                toTable = FormatTable(toTable, schema);
             }
             else
             {
@@ -101,7 +102,7 @@ namespace YesSql.Sql
             }
 
             JoinSegments.Add(" INNER JOIN ");
-            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table, schema));
+            JoinSegments.Add(FormatTable(table, schema));
 
             if (!String.IsNullOrEmpty(alias))
             {
@@ -119,6 +120,10 @@ namespace YesSql.Sql
         {
             _clause = "SELECT";
         }
+
+        public IEnumerable<string> GetSelectors() => SelectSegments;
+
+        public IEnumerable<string> GetOrders() => OrderSegments;
 
         public void Selector(string selector)
         {
@@ -167,13 +172,18 @@ namespace YesSql.Sql
 
             if (!isAlias)
             {
-                table = _tablePrefix + table;
-                return _dialect.QuoteForTableName(table, schema) + "." + column;
+                return FormatTable(table, schema) + "." + column;
             }
             else
             {
                 return _dialect.QuoteForAliasName(table) + "." + column;
             }
+        }
+
+        public virtual string FormatTable(string table, string schema)
+        {
+            table = _tablePrefix + table;
+            return _dialect.QuoteForTableName(table, schema);
         }
 
         public virtual void AndAlso(string where)
@@ -230,6 +240,12 @@ namespace YesSql.Sql
             _order = null;
         }
 
+        public void ClearGroupBy()
+        {
+            _group = null;
+            _having = null;
+        }
+
         public virtual void OrderBy(string orderBy)
         {
             OrderSegments.Clear();
@@ -251,20 +267,32 @@ namespace YesSql.Sql
 
         public virtual void ThenOrderBy(string orderBy)
         {
-            OrderSegments.Add(", ");
+            if (HasOrder) 
+            {
+                OrderSegments.Add(", ");
+            }
+            
             OrderSegments.Add(orderBy);
         }
 
         public virtual void ThenOrderByDescending(string orderBy)
         {
-            OrderSegments.Add(", ");
+            if (HasOrder)
+            {
+                OrderSegments.Add(", ");
+            }
+
             OrderSegments.Add(orderBy);
             OrderSegments.Add(" DESC");
         }
 
         public virtual void ThenOrderByRandom()
         {
-            OrderSegments.Add(", ");
+            if (HasOrder)
+            {
+                OrderSegments.Add(", ");
+            }
+
             OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
@@ -295,11 +323,6 @@ namespace YesSql.Sql
                 return "";
             }
 
-            if (_skip != null || _count != null)
-            {
-                _dialect.Page(this, _skip, _count);
-            }
-
             var sb = new RentedStringBuilder(Store.LargeBufferSize);
 
             sb.Append("SELECT ");
@@ -310,8 +333,15 @@ namespace YesSql.Sql
 
                 if (_order != null)
                 {
-                    _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
+                    sb.Append("ON(");
+                    sb.Append(OrderSegments.First());
+                    sb.Append(") ");
                 }
+            }
+
+            if (_skip != null || _count != null)
+            {
+                _dialect.Page(this, _skip, _count);
             }
 
             foreach (var s in _select)
@@ -367,7 +397,7 @@ namespace YesSql.Sql
                 }
             }
 
-            if (_order != null)
+            if (HasOrder)
             {
                 sb.Append(" ORDER BY ");
 
