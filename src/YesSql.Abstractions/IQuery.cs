@@ -106,6 +106,11 @@ namespace YesSql
         /// Returns the SQL alias currently used for the specified index type.
         /// </summary>
         string GetTypeAlias(Type t);
+
+        /// <summary>
+        /// Adds a Group By clause to the query for fold documents when an index returns multiple records.
+        /// </summary>
+        IQuery<T> NoDuplicates();
     }
 
     /// <summary>

@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -4703,6 +4702,32 @@ namespace YesSql.Tests
                 Assert.Equal("e", results.ElementAt(4).Firstname);
                 Assert.Equal("F", results.ElementAt(5).Firstname);
                 Assert.Equal("G", results.ElementAt(6).Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldOrderWithoutDuplicates()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                session.Save(new Person { Firstname = "D" });
+                session.Save(new Person { Firstname = "G" });
+                session.Save(new Person { Firstname = "F" });
+                session.Save(new Person { Firstname = "A" });
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var results = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).NoDuplicates().ListAsync();
+
+                Assert.Equal("A", results.ElementAt(0).Firstname);
+                Assert.Equal("D", results.ElementAt(1).Firstname);
+                Assert.Equal("F", results.ElementAt(2).Firstname);
+                Assert.Equal("G", results.ElementAt(3).Firstname);
             }
         }
 

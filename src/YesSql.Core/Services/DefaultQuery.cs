@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Utils;
-using static YesSql.Services.DefaultQuery;
 
 namespace YesSql.Services
 {
@@ -40,6 +39,7 @@ namespace YesSql.Services
         internal CompositeNode _predicate; // the defaut root predicate is an AND expression
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
+        public bool _deduplicate = true;
 
         public void FlushFilters()
         {
@@ -112,10 +112,11 @@ namespace YesSql.Services
 
             clone._currentPredicate = (CompositeNode) _predicate.Clone();
             clone._predicate = clone._currentPredicate;
-            
+            clone._deduplicate = _deduplicate;
+
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
-
+            
             return clone;
         }
     }
@@ -1287,13 +1288,13 @@ namespace YesSql.Services
                             sqlBuilder.OrderBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
                         }
 
-                        sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
+                        sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
 
                         // Group by document id to de-duplicate records if the index has multiple matches for a single document
                         
                         // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
 
-                        var sql = GetDeduplicatedQuery();
+                        var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
 
                         var key = new WorkerQueryKey(sql, sqlBuilder.Parameters);
 
@@ -1328,7 +1329,10 @@ namespace YesSql.Services
                 var schema = _query._queryState._store.Configuration.Schema;
                 var sqlBuilder = _query._queryState._sqlBuilder;
 
-                sqlBuilder.GroupBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
+                var selector = sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema);
+
+                sqlBuilder.Selector(selector);
+                sqlBuilder.GroupBy(selector);
 
                 var aggregates = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToArray(), sqlBuilder.GetOrders().ToArray());
 
@@ -1497,6 +1501,12 @@ namespace YesSql.Services
                 _query.Bind<TIndex>();
                 _query.Filter(predicate);
                 return new Query<T, TIndex>(_query);
+            }
+
+            IQuery<T> IQuery<T>.NoDuplicates()
+            {
+                _query._queryState._deduplicate = false;
+                return new Query<T>(_query);
             }
         }
 

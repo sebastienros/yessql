@@ -1,6 +1,3 @@
-using Microsoft.Data.Sqlite;
-using System.Data.Common;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;

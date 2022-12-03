@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Filters.Abstractions.Nodes;
 using YesSql.Filters.Abstractions.Services;
-using YesSql;
 
 namespace YesSql.Filters.Query.Services
 {
