@@ -43,5 +43,7 @@ namespace YesSql
         void WhereAnd(string clause);
         void WhereOr(string clause);
         ISqlBuilder Clone();
+        IEnumerable<string> GetSelectors();
+        IEnumerable<string> GetOrders();
     }
 }

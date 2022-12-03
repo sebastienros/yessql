@@ -1290,14 +1290,13 @@ namespace YesSql.Services
                         sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
 
                         // Group by document id to de-duplicate records if the index has multiple matches for a single document
-                        // This could potentially be opt-in by exposing GroupBy(field) in the interface, or a boolean to deduplicate results
-                        sqlBuilder.GroupBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
+                        
+                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
 
-                        var sql = sqlBuilder.ToSqlString();
-
-                        sql = $"SELECT {sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema)} FROM {sqlBuilder.FormatTable(_query._queryState._documentTable, schema)} INNER JOIN ({sql}) AS {_query._dialect.QuoteForAliasName("IndexQuery")} ON {sqlBuilder.FormatColumn("IndexQuery", "Id", schema, true)} = {sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema)}";
+                        var sql = GetDeduplicatedQuery();
 
                         var key = new WorkerQueryKey(sql, sqlBuilder.Parameters);
+
                         var documents = await _query._session._store.ProduceAsync(key, static (state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
@@ -1322,6 +1321,46 @@ namespace YesSql.Services
 
                     throw;
                 }
+            }
+
+            private string GetDeduplicatedQuery()
+            {
+                var schema = _query._queryState._store.Configuration.Schema;
+                var sqlBuilder = _query._queryState._sqlBuilder;
+
+                sqlBuilder.GroupBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
+
+                var aggregates = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToArray(), sqlBuilder.GetOrders().ToArray());
+
+                if (sqlBuilder.HasOrder)
+                {
+                    sqlBuilder.ClearOrder();
+                    foreach (var result in aggregates)
+                    {
+                        sqlBuilder.AddSelector(", ");
+                        sqlBuilder.AddSelector(result.aggregate);
+                        sqlBuilder.ThenOrderBy(result.alias);
+                    }
+
+                    // Add a 0 offset if not offset was specified as it might be required by the RDBMS
+                    if (!sqlBuilder.HasPaging)
+                    {
+                        sqlBuilder.Skip("0");
+                    }
+                }
+
+                var sql = sqlBuilder.ToSqlString();
+
+                sql = $"SELECT {sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema)} " +
+                    $"FROM {sqlBuilder.FormatTable(_query._queryState._documentTable, schema)} " +
+                    $"INNER JOIN ({sql}) AS {_query._dialect.QuoteForAliasName("IndexQuery")} ON {sqlBuilder.FormatColumn("IndexQuery", "Id", schema, true)} = {sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema)}";
+
+                if (sqlBuilder.HasOrder)
+                {
+                    sql += $" ORDER BY {String.Join(", ", aggregates.Select(x => x.alias).ToArray())}";
+                }
+
+                return sql;
             }
 
             IQuery<T> IQuery<T>.Skip(int count)
@@ -1619,16 +1658,6 @@ namespace YesSql.Services
             {
                 _query.Bind<TIndex>();
                 _query.Filter<TIndex>(predicate);
-                return this;
-            }
-
-            IQuery<T, TIndex> IQuery<T, TIndex>.GroupByDocument()
-            {
-                // Ideally GroupByDocument() would be inferred automatically when the index is a MultiMapIndex (MapIndex that can return multiple indexes per document).
-                // It would also imply a new IQuery type that requires aggregates on orders. Or this could be checked at runtime.
-
-                //_query.Bind<TIndex>();
-                //_query._queryState._sqlBuilder.GroupBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", _query._queryState._store.Configuration.Schema));
                 return this;
             }
 

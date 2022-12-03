@@ -228,11 +228,6 @@ namespace YesSql
         IQuery<T, TIndex> Where(Expression<Func<TIndex, bool>> predicate);
 
         /// <summary>
-        /// Adds a Group By clause to the query for fold documents when an index returns multiple records.
-        /// </summary>
-        IQuery<T, TIndex> GroupByDocument();
-
-        /// <summary>
         /// Sets an OrderBy clause using a custom lambda expression.
         /// </summary>
         IQuery<T, TIndex> OrderBy(Expression<Func<TIndex, object>> keySelector);

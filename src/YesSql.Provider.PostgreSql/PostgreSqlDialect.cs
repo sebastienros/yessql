@@ -269,29 +269,5 @@ namespace YesSql.Provider.PostgreSql
         {
             return $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";
         }
-        
-        public override List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
-        {
-            // Most databases (PostgreSql and SqlServer) requires all ordered fields to be part of the select when DISTINCT is used
-
-            var index = 1;
-
-            for (var i = 0; i < orderBy.Count; i++)
-            {
-                var o = orderBy[i];
-                var trimmed = o.Trim();
-
-                // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
-                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && !select.Contains(o))
-                {
-                    var alias = QuoteForAliasName("order_" + index++);
-                    select.Add(", ");
-                    select.Add($"MAX({o}) AS {alias}");
-                    orderBy[i] = alias;
-                }
-            }
-
-            return select;
-        }
     }
 }

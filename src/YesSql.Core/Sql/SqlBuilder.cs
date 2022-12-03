@@ -121,6 +121,10 @@ namespace YesSql.Sql
             _clause = "SELECT";
         }
 
+        public IEnumerable<string> GetSelectors() => SelectSegments;
+
+        public IEnumerable<string> GetOrders() => OrderSegments;
+
         public void Selector(string selector)
         {
             SelectSegments.Clear();
@@ -263,20 +267,32 @@ namespace YesSql.Sql
 
         public virtual void ThenOrderBy(string orderBy)
         {
-            OrderSegments.Add(", ");
+            if (HasOrder) 
+            {
+                OrderSegments.Add(", ");
+            }
+            
             OrderSegments.Add(orderBy);
         }
 
         public virtual void ThenOrderByDescending(string orderBy)
         {
-            OrderSegments.Add(", ");
+            if (HasOrder)
+            {
+                OrderSegments.Add(", ");
+            }
+
             OrderSegments.Add(orderBy);
             OrderSegments.Add(" DESC");
         }
 
         public virtual void ThenOrderByRandom()
         {
-            OrderSegments.Add(", ");
+            if (HasOrder)
+            {
+                OrderSegments.Add(", ");
+            }
+
             OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
@@ -320,20 +336,6 @@ namespace YesSql.Sql
                     sb.Append("ON(");
                     sb.Append(OrderSegments.First());
                     sb.Append(") ");
-                }
-            }
-
-            if (_group != null)
-            {
-                // Some databases require the ORDER BY clauses to be part of the SELECT clause when GROUP BY is used
-
-                if (_order != null)
-                {
-                    _select = _dialect.GetDistinctOrderBySelectString(_select, _order);
-
-                    // Add a 0 offset if not offset was specified.
-                    // This is necessary for SQL SERVER which requires an offset when ORDER BY is used in a sub-select
-                    _skip ??= "0";
                 }
             }
 
@@ -395,7 +397,7 @@ namespace YesSql.Sql
                 }
             }
 
-            if (_order != null)
+            if (HasOrder)
             {
                 sb.Append(" ORDER BY ");
 
