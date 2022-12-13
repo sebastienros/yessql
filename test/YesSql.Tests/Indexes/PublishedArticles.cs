@@ -1,4 +1,3 @@
-﻿using System.Linq;
 using YesSql.Indexes;
 using YesSql.Tests.Models;
 

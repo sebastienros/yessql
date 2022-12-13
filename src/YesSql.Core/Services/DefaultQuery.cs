@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Utils;
-using static YesSql.Services.DefaultQuery;
 
 namespace YesSql.Services
 {
@@ -40,6 +39,7 @@ namespace YesSql.Services
         internal CompositeNode _predicate; // the defaut root predicate is an AND expression
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
+        public bool _deduplicate = true;
 
         public void FlushFilters()
         {
@@ -112,10 +112,11 @@ namespace YesSql.Services
 
             clone._currentPredicate = (CompositeNode) _predicate.Clone();
             clone._predicate = clone._currentPredicate;
-            
+            clone._deduplicate = _deduplicate;
+
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
-
+            
             return clone;
         }
     }
@@ -182,6 +183,42 @@ namespace YesSql.Services
 
                 dialect.Concat(builder, generators.ToArray());
             };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Min))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("MIN(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Max))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("MAX(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Count))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("COUNT(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Average))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("AVG(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Sum))] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("SUM(");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                builder.Append(")");
+            };
+
 
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsLike")] = static (query, builder, dialect, expression) =>
             {
@@ -945,6 +982,14 @@ namespace YesSql.Services
             builder.Dispose();
         }
 
+        private void GroupBy<T>(Expression<Func<T, object>> keySelector)
+        {
+            var builder = new RentedStringBuilder(Store.SmallBufferSize);
+            ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
+            _queryState._sqlBuilder.GroupBy(builder.ToString());
+            builder.Dispose();
+        }
+
         private void ThenBy<T>(Expression<Func<T, object>> keySelector)
         {
             var builder = new RentedStringBuilder(Store.SmallBufferSize);
@@ -1002,6 +1047,7 @@ namespace YesSql.Services
 
             // Clear paging and order when counting 
             localBuilder.ClearOrder();
+            localBuilder.ClearGroupBy();
             localBuilder.Skip(null);
             localBuilder.Take(null);
 
@@ -1195,6 +1241,8 @@ namespace YesSql.Services
 
                 var connection = await _query._session.CreateConnectionAsync();
                 var transaction = _query._session.CurrentTransaction;
+                var schema = _query._queryState._store.Configuration.Schema;
+                var sqlBuilder = _query._queryState._sqlBuilder;
 
                 _query._queryState.FlushFilters();
 
@@ -1202,7 +1250,7 @@ namespace YesSql.Services
                 {
                     foreach (var binding in _query._queryState._parameterBindings)
                     {
-                        binding(_query._compiledQuery, _query._queryState._sqlBuilder);
+                        binding(_query._compiledQuery, sqlBuilder);
                     }
                 }
 
@@ -1210,15 +1258,15 @@ namespace YesSql.Services
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                     {
-                        _query._queryState._sqlBuilder.Selector("*");
+                        sqlBuilder.Selector("*");
 
                         // If a page is requested without order add a default one
-                        if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
+                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
                         {
-                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState.GetTypeAlias(typeof(T)), "Id", _query._queryState._store.Configuration.Schema, true));
+                            sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState.GetTypeAlias(typeof(T)), "Id", schema, true));
                         }
 
-                        var sql = _query._queryState._sqlBuilder.ToSqlString();
+                        var sql = sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                         return await _query._session._store.ProduceAsync(key, static (state) =>
                         {
@@ -1235,15 +1283,21 @@ namespace YesSql.Services
                     else
                     {
                         // If a page is requested without order add a default one
-                        if (!_query._queryState._sqlBuilder.HasOrder && _query._queryState._sqlBuilder.HasPaging)
+                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
                         {
-                            _query._queryState._sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", _query._queryState._store.Configuration.Schema));
+                            sqlBuilder.OrderBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
                         }
 
-                        _query._queryState._sqlBuilder.Selector(_query._queryState._sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", _query._queryState._store.Configuration.Schema));
-                        _query._queryState._sqlBuilder.Distinct();
-                        var sql = _query._queryState._sqlBuilder.ToSqlString();
-                        var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
+                        sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
+
+                        // Group by document id to de-duplicate records if the index has multiple matches for a single document
+                        
+                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
+
+                        var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
+
+                        var key = new WorkerQueryKey(sql, sqlBuilder.Parameters);
+
                         var documents = await _query._session._store.ProduceAsync(key, static (state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
@@ -1268,6 +1322,49 @@ namespace YesSql.Services
 
                     throw;
                 }
+            }
+
+            private string GetDeduplicatedQuery()
+            {
+                var schema = _query._queryState._store.Configuration.Schema;
+                var sqlBuilder = _query._queryState._sqlBuilder;
+
+                var selector = sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema);
+
+                sqlBuilder.Selector(selector);
+                sqlBuilder.GroupBy(selector);
+
+                var aggregates = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToArray(), sqlBuilder.GetOrders().ToArray());
+
+                if (sqlBuilder.HasOrder)
+                {
+                    sqlBuilder.ClearOrder();
+                    foreach (var result in aggregates)
+                    {
+                        sqlBuilder.AddSelector(", ");
+                        sqlBuilder.AddSelector(result.aggregate);
+                        sqlBuilder.ThenOrderBy(result.alias);
+                    }
+
+                    // Add a 0 offset if not offset was specified as it might be required by the RDBMS
+                    if (!sqlBuilder.HasPaging)
+                    {
+                        sqlBuilder.Skip("0");
+                    }
+                }
+
+                var sql = sqlBuilder.ToSqlString();
+
+                sql = $"SELECT {sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema)} " +
+                    $"FROM {sqlBuilder.FormatTable(_query._queryState._documentTable, schema)} " +
+                    $"INNER JOIN ({sql}) AS {_query._dialect.QuoteForAliasName("IndexQuery")} ON {sqlBuilder.FormatColumn("IndexQuery", "Id", schema, true)} = {sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema)}";
+
+                if (sqlBuilder.HasOrder)
+                {
+                    sql += $" ORDER BY {String.Join(", ", aggregates.Select(x => x.alias).ToArray())}";
+                }
+
+                return sql;
             }
 
             IQuery<T> IQuery<T>.Skip(int count)
@@ -1404,6 +1501,12 @@ namespace YesSql.Services
                 _query.Bind<TIndex>();
                 _query.Filter(predicate);
                 return new Query<T, TIndex>(_query);
+            }
+
+            IQuery<T> IQuery<T>.NoDuplicates()
+            {
+                _query._queryState._deduplicate = false;
+                return new Query<T>(_query);
             }
         }
 
@@ -1642,6 +1745,31 @@ namespace YesSql.Services
 
     public static class DefaultQueryExtensions
     {
+        public static object Min(this object source)
+        {
+            return source;
+        }
+
+        public static object Max(this object source)
+        {
+            return source;
+        }
+
+        public static object Sum(this object source)
+        {
+            return source;
+        }
+
+        public static object Count(this object source)
+        {
+            return source;
+        }
+
+        public static object Average(this object source)
+        {
+            return source;
+        }
+
         public static bool IsIn(this object source, IEnumerable values)
         {
             return false;

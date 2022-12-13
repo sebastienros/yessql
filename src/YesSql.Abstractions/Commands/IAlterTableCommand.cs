@@ -1,5 +1,4 @@
 using System;
-using System.Data;
 
 namespace YesSql.Sql.Schema
 {

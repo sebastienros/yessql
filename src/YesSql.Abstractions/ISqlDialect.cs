@@ -193,12 +193,12 @@ namespace YesSql
         /// <summary>
         /// Formats a index name to a deterministic value within the length constraints of the dialect.
         /// </summary>
-        string FormatIndexName(string name);        
-        
+        string FormatIndexName(string name);
+
         /// <summary>
-        /// Returns the DISTINCT SELECT SQL statement.
+        /// Returns the aggregate fields for GROUP BY or DISTINCT.
         /// </summary>
-        List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy);
+        IEnumerable<(string aggregate, string alias)> GetAggregateOrders(IList<string> select, IList<string> orderBy);
 
         /// <summary>
         /// Concatenates multiple <see cref="StringBuilder" />.

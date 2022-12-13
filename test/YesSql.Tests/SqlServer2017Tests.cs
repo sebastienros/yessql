@@ -1,4 +1,3 @@
-using Dapper;
 using Microsoft.Data.SqlClient;
 using System;
 using Xunit.Abstractions;

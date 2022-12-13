@@ -280,20 +280,6 @@ namespace YesSql.Provider
 
         public virtual List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
         {
-            // Most databases (PostgreSql and SqlServer) requires all ordered fields to be part of the select when DISTINCT is used
-
-            foreach (var o in orderBy)
-            {
-                var trimmed = o.Trim();
-
-                // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
-                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && !select.Contains(o))
-                {
-                    select.Add(",");
-                    select.Add(o);
-                }
-            }
-
             return select;
         }
 
@@ -317,6 +303,38 @@ namespace YesSql.Provider
         public virtual string GetCreateSchemaString(string schema)
         {
             return $"CREATE SCHEMA {QuoteForColumnName(schema)}";
+        }
+
+        public virtual IEnumerable<(string aggregate, string alias)> GetAggregateOrders(IList<string> select, IList<string> orderBy)
+        {
+            // Most databases (MySql, PostgreSql and SqlServer) require all ordered fields to be part of the select when GROUP BY (or DISTINCT) is used
+
+            var result = new List<(string, string)>();
+
+            var index = 1;
+
+            for (var i = 0; i < orderBy.Count; i++)
+            {
+                var o = orderBy[i];
+                var next = i + 1 < orderBy.Count ? orderBy[i + 1].Trim() : null;
+                var trimmed = o.Trim();
+                var alias = QuoteForAliasName("order_" + index++);
+
+                // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
+                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC")
+                {
+                    var aggregate = $"MAX({o}) AS {alias}";
+
+                    if (next == "DESC" || next == "ASC")
+                    {
+                        alias += " " + next;
+                    }
+
+                    result.Add((aggregate, alias));
+                }
+            }
+
+            return result;
         }
     }
 }
