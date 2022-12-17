@@ -49,6 +49,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    # as of 12/2022, 3.1 and 5.0 are not installed by default on the images
     - uses: actions/setup-dotnet@v3
       with:
         dotnet-version: | 
