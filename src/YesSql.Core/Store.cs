@@ -19,6 +19,7 @@ namespace YesSql
     {
         protected List<IIndexProvider> Indexes;
         protected List<Type> ScopedIndexes;
+        private List<string> _collections;
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
@@ -63,6 +64,10 @@ namespace YesSql
         {
             Indexes = new List<IIndexProvider>();
             ScopedIndexes = new List<Type>();
+            _collections = new List<string>()
+            {
+                String.Empty
+            };
         }
 
         /// <summary>
@@ -84,6 +89,15 @@ namespace YesSql
         {
             Configuration = configuration;
             Dialect = Configuration.SqlDialect;
+        }
+
+        /// <summary>
+        /// Initializes a <see cref="Store"/> instance using a specific <see cref="Configuration"/> instance.
+        /// </summary>
+        /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
+        internal Store(IConfiguration configuration, string[] collections) : this(configuration)
+        {
+            _collections.AddRange(collections);
         }
 
         public async Task InitializeAsync()
@@ -118,8 +132,11 @@ namespace YesSql
             // Initialize the Id generator
             await Configuration.IdGenerator.InitializeAsync(this);
 
-            // Pre-initialize the default collection
-            await InitializeCollectionAsync("");
+            // Pre-initialize the default collections
+            foreach (var collection in _collections)
+            {
+                await InitializeCollectionAsync(collection);
+            }
 
             _isInitialized = true;
             _semaphore.Release();

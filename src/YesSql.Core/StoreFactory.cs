@@ -31,6 +31,16 @@ namespace YesSql
         }
 
         /// <summary>
+        /// Initializes an <see cref="IStore"/> instance using a specific <see cref="Configuration"/> instance.
+        /// </summary>
+        /// <param name="configuration">The <see cref="Configuration"/> instance to use.</param>
+        /// <remarks>The instance will still need to be initialized.</remarks>
+        public static IStore Create(IConfiguration configuration, params string[] collections)
+        {
+            var store = new Store(configuration, collections);
+            return store;
+        }
+        /// <summary>
         /// Initializes an <see cref="IStore"/> instance and its new <see cref="Configuration"/>.
         /// </summary>
         /// <param name="configuration">An action to execute on the <see cref="Configuration"/> of the new <see cref="Store"/> instance.</param>
