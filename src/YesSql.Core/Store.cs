@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
@@ -23,6 +24,8 @@ namespace YesSql
         public ISqlDialect Dialect { get; private set; }
         public ITypeService TypeNames { get; private set; }
         private bool _isInitialized { get; set; }
+
+        private readonly SemaphoreSlim _semaphore = new(1);
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
@@ -90,6 +93,8 @@ namespace YesSql
                 return;
             }
 
+            await _semaphore.WaitAsync();
+
             IndexCommand.ResetQueryCache();
             ValidateConfiguration();
 
@@ -117,6 +122,7 @@ namespace YesSql
             await InitializeCollectionAsync("");
 
             _isInitialized = true;
+            _semaphore.Release();
         }
 
         public async Task InitializeCollectionAsync(string collection)
