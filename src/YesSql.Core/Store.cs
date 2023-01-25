@@ -7,7 +7,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YesSql.Commands;
-using YesSql.Core;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
@@ -23,7 +22,7 @@ namespace YesSql
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
         public ITypeService TypeNames { get; private set; }
-        private StoreState _state { get; set; }
+        private bool _isInitialized { get; set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
@@ -61,7 +60,6 @@ namespace YesSql
         {
             Indexes = new List<IIndexProvider>();
             ScopedIndexes = new List<Type>();
-            _state = StoreState.Uninitialized;
         }
 
         /// <summary>
@@ -87,7 +85,7 @@ namespace YesSql
 
         public async Task InitializeAsync()
         {
-            if (_state == StoreState.Initialized)
+            if (_isInitialized)
             {
                 return;
             }
@@ -118,7 +116,7 @@ namespace YesSql
             // Pre-initialize the default collection
             await InitializeCollectionAsync("");
 
-            _state = StoreState.Initialized;
+            _isInitialized = true;
         }
 
         public async Task InitializeCollectionAsync(string collection)
