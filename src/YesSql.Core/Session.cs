@@ -123,7 +123,6 @@ namespace YesSql
                 {
                     state.IdentityMap.AddEntity(id, entity);
                     state.Updated.Add(entity);
-                    
                     // If this entity needs to be checked for concurrency, track its version
                     if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
                     {
@@ -222,7 +221,6 @@ namespace YesSql
         public void Detach(object entity, string collection)
         {
             CheckDisposed();
-            
             var state = GetState(collection);
 
             state.Saved.Remove(entity);
@@ -403,7 +401,7 @@ namespace YesSql
                     var logger = state.Store.Configuration.Logger;
 
                     if (logger.IsEnabled(LogLevel.Trace))
-                    { 
+                    {
                         logger.LogTrace(state.Command);
                     }
 
@@ -421,13 +419,12 @@ namespace YesSql
                 await CancelAsync();
 
                 throw;
-            }            
+            }
         }
 
         public void Delete(object obj, string collection = null)
         {
             CheckDisposed();
-            
             var state = GetState(collection);
 
             state.Deleted.Add(obj);
@@ -883,7 +880,7 @@ namespace YesSql
                     {
                         _transaction.Commit();
                     }
-                }                
+                }
             }
             finally
             {
@@ -1217,7 +1214,7 @@ namespace YesSql
         {
             _descriptors ??= new Dictionary<string, IEnumerable<IndexDescriptor>>();
 
-            var cacheKey = String.IsNullOrEmpty(collection) 
+            var cacheKey = String.IsNullOrEmpty(collection)
                 ? t.FullName
                 : String.Concat(t.FullName + ":" + collection)
                 ;
@@ -1348,6 +1345,8 @@ namespace YesSql
             CheckDisposed();
 
             _connection ??= _store.Configuration.ConnectionFactory.CreateConnection();
+
+            await _store.InitializeAsync();
 
             if (_connection.State == ConnectionState.Closed)
             {

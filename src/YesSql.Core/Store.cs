@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YesSql.Commands;
+using YesSql.Core;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
@@ -22,6 +23,7 @@ namespace YesSql
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
         public ITypeService TypeNames { get; private set; }
+        private StoreState _state { get; set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
@@ -47,7 +49,7 @@ namespace YesSql
 
             // Databases that don't support DateTimeOffset natively will store these in string columns.
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
-            
+
             // Required by Sqlite. Guids are stored as text (uniqueidentifier) and are converted back to Guid with this handler.
             SqlMapper.AddTypeHandler(new GuidHandler());
 
@@ -59,6 +61,7 @@ namespace YesSql
         {
             Indexes = new List<IIndexProvider>();
             ScopedIndexes = new List<Type>();
+            _state = StoreState.Uninitialized;
         }
 
         /// <summary>
@@ -84,6 +87,11 @@ namespace YesSql
 
         public async Task InitializeAsync()
         {
+            if (_state == StoreState.Initialized)
+            {
+                return;
+            }
+
             IndexCommand.ResetQueryCache();
             ValidateConfiguration();
 
@@ -109,6 +117,8 @@ namespace YesSql
 
             // Pre-initialize the default collection
             await InitializeCollectionAsync("");
+
+            _state = StoreState.Initialized;
         }
 
         public async Task InitializeCollectionAsync(string collection)
