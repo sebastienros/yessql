@@ -19,7 +19,7 @@ namespace YesSql
     {
         protected List<IIndexProvider> Indexes;
         protected List<Type> ScopedIndexes;
-        private List<string> _collections;
+        private readonly List<string> _collections;
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
@@ -102,12 +102,14 @@ namespace YesSql
 
         public async Task InitializeAsync()
         {
+            await _semaphore.WaitAsync();
+
             if (_isInitialized)
             {
+                _semaphore.Release();
+
                 return;
             }
-
-            await _semaphore.WaitAsync();
 
             IndexCommand.ResetQueryCache();
             ValidateConfiguration();
