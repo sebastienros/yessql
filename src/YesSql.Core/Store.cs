@@ -107,10 +107,10 @@ namespace YesSql
                 return;
             }
 
+            await _semaphore.WaitAsync();
+
             try
             {
-                await _semaphore.WaitAsync();
-
                 if (_isInitialized)
                 {
                     return;
