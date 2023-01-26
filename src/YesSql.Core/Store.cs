@@ -102,46 +102,55 @@ namespace YesSql
 
         public async Task InitializeAsync()
         {
-            await _semaphore.WaitAsync();
-
             if (_isInitialized)
             {
-                _semaphore.Release();
-
                 return;
             }
 
-            IndexCommand.ResetQueryCache();
-            ValidateConfiguration();
-
-            TypeNames = new TypeService();
-
-            if (!string.IsNullOrEmpty(Configuration.Schema))
+            try
             {
-                await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+                await _semaphore.WaitAsync();
+
+                if (_isInitialized)
                 {
-                    await connection.OpenAsync();
-
-                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
-                    var builder = new SchemaBuilder(Configuration, transaction);
-
-                    builder.CreateSchema(Configuration.Schema);
-
-                    await transaction.CommitAsync();
+                    return;
                 }
+
+                IndexCommand.ResetQueryCache();
+                ValidateConfiguration();
+
+                TypeNames = new TypeService();
+
+                if (!string.IsNullOrEmpty(Configuration.Schema))
+                {
+                    await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+                    {
+                        await connection.OpenAsync();
+
+                        await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+                        var builder = new SchemaBuilder(Configuration, transaction);
+
+                        builder.CreateSchema(Configuration.Schema);
+
+                        await transaction.CommitAsync();
+                    }
+                }
+
+                // Initialize the Id generator
+                await Configuration.IdGenerator.InitializeAsync(this);
+
+                // Pre-initialize the default collections
+                foreach (var collection in _collections)
+                {
+                    await InitializeCollectionAsync(collection);
+                }
+
+                _isInitialized = true;
             }
-
-            // Initialize the Id generator
-            await Configuration.IdGenerator.InitializeAsync(this);
-
-            // Pre-initialize the default collections
-            foreach (var collection in _collections)
+            finally
             {
-                await InitializeCollectionAsync(collection);
+                _semaphore.Release();
             }
-
-            _isInitialized = true;
-            _semaphore.Release();
         }
 
         public async Task InitializeCollectionAsync(string collection)
