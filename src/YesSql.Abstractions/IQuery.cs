@@ -22,6 +22,12 @@ namespace YesSql
         IQueryIndex<T> ForIndex<T>() where T : class, IIndex;
 
         /// <summary>
+        /// Defines what type of index should be returned
+        /// </summary>
+        /// <typeparam name="T">The type of index to return</typeparam>
+        IQueryIndexAdvanced<T> ForIndexAdvanced<T>() where T : class, IIndex;
+
+        /// <summary>
         /// Returns documents from any type
         /// </summary>
         IQuery<object> Any();
@@ -63,13 +69,13 @@ namespace YesSql
         /// </summary>
         /// <typeparam name="TIndex">The index to filter on.</typeparam>
         IQuery<T, TIndex> With<TIndex>() where TIndex : class, IIndex;
-        
+
         /// <summary>
         /// Filters the documents with a constraint on the specified index.
         /// </summary>
         /// <typeparam name="TIndex">The index to filter on.</typeparam>
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
-        
+
         /// <summary>
         /// Skips the specified number of document.
         /// </summary>
@@ -128,7 +134,7 @@ namespace YesSql
         /// Joins the document table with an index, and filter it with a predicate.
         /// </summary>
         IQueryIndex<TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
-        
+
         /// <summary>
         /// Adds a custom Where clause to the query.
         /// </summary>
@@ -163,7 +169,7 @@ namespace YesSql
         /// Adds an OrderBy clause using a custom lambda expression.
         /// </summary>
         IQueryIndex<T> ThenBy(Expression<Func<T, object>> keySelector);
-        
+
         /// <summary>
         /// Adds a descending OrderBy clause using a custom lambda expression.
         /// </summary>
@@ -204,6 +210,23 @@ namespace YesSql
     }
 
     /// <summary>
+    /// Represents a query over an index, which can be ordered.
+    /// </summary>
+    /// <typeparam name="T">The index's type to query over.</typeparam>
+    public interface IQueryIndexAdvanced<T> : IQueryIndex<T> where T : IIndex
+    {
+        /// <summary>
+        /// Filters any predicates on newly joined indexes.
+        /// </summary>
+        IQueryIndex<T> Any(params Func<IQueryIndex<T>, IQueryIndex<T>>[] predicates);
+
+        /// <summary>
+        /// Filters all predicates on newly joined indexes.
+        /// </summary>
+        IQueryIndex<T> All(params Func<IQueryIndex<T>, IQueryIndex<T>>[] predicates);
+    }
+
+    /// <summary>
     /// Represents a query over an index that targets a specific entity.
     /// </summary>
     /// <typeparam name="T">The entity's type to return.</typeparam>
@@ -221,7 +244,7 @@ namespace YesSql
         /// Adds a custom Where clause to the query using a specific dialect. 
         /// </summary>
         IQuery<T, TIndex> Where(Func<ISqlDialect, string> sql);
-        
+
         /// <summary>
         /// Adds a named parameter to the query.
         /// </summary>
@@ -236,19 +259,19 @@ namespace YesSql
         /// Sets an OrderBy clause using a custom lambda expression.
         /// </summary>
         IQuery<T, TIndex> OrderBy(Expression<Func<TIndex, object>> keySelector);
-        
+
         /// <summary>
         /// Sets an OrderBy clause using a custom SQL statement.
         /// </summary>
         IQuery<T, TIndex> OrderBy(string sql);
-        
+
         IQuery<T, TIndex> OrderByDescending(Expression<Func<TIndex, object>> keySelector);
-        
+
         /// <summary>
         /// Sets a descending OrderBy clause using a custom SQL statement.
         /// </summary>
         IQuery<T, TIndex> OrderByDescending(string sql);
-        
+
         /// <summary>
         /// Sets a random OrderBy clause.
         /// </summary>
