@@ -1103,7 +1103,7 @@ namespace YesSql.Services
             return new Query<T>(this);
         }
 
-        IQueryIndex<TIndex> IQuery.ForIndex<TIndex>(bool advanced)
+        IQueryIndex<TIndex> IQuery.ForIndex<TIndex>()
         {
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(TIndex));
