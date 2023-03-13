@@ -25,9 +25,9 @@ namespace YesSql
         /// <summary>
         /// Creates a query on an index.
         /// </summary>
-        public static IQueryIndexAdvanced<TIndex> QueryIndexAdvanced<TIndex>(this ISession session, string collection = null) where TIndex : class, IIndex
+        public static IQuery<TIndex> AdvancedQueryIndex<TIndex>(this ISession session, string collection = null) where TIndex : class, IIndex
         {
-            return session.Query(collection).ForIndexAdvanced<TIndex>();
+            return session.Query(collection).ForAdvancedIndex<TIndex>();
         }
 
         /// <summary>

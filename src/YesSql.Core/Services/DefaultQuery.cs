@@ -1113,6 +1113,34 @@ namespace YesSql.Services
             return new QueryIndex<TIndex>(this);
         }
 
+        IQuery<TIndex> IQuery.ForAdvancedIndex<TIndex>()
+        {
+            _queryState.GetBindings().Clear();
+
+            var tIndex = typeof(TIndex);
+
+            var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(tIndex, _collection);
+            var indexTableAlias = _queryState.GetTypeAlias(tIndex);
+
+            _queryState.AddBinding(tIndex);
+            _queryState._sqlBuilder.Select();
+
+            _queryState._sqlBuilder.Table(indexTable, indexTableAlias, _queryState._store.Configuration.Schema);
+
+            _queryState.AddBinding(typeof(Document));
+
+            if (typeof(MapIndex).IsAssignableFrom(tIndex))
+            {
+                _queryState._sqlBuilder.InnerJoin(_queryState._documentTable, indexTableAlias, "DocumentId", _queryState._documentTable, _queryState._store.Configuration.Schema, "Id");
+            }
+            else
+            {
+                throw new InvalidOperationException("Reduce Indexes are not supported");
+            }
+
+            return new Query<TIndex>(this);
+        }
+
         IQuery<object> IQuery.Any()
         {
             _queryState.GetBindings().Clear();
@@ -1629,53 +1657,6 @@ namespace YesSql.Services
                 _query._queryState._sqlBuilder.Parameters[name] = value;
                 return this;
             }
-        }
-
-        class QueryIndex<T, TIndex> : QueryIndex<TIndex>, IQueryIndex<T, TIndex> where T : class where TIndex : class, IIndex
-        {
-            public QueryIndex(DefaultQuery query) : base(query)
-            { }
-
-            private IQueryIndex<T, TIndex> ComposeQuery(Func<IQueryIndex<T, TIndex>, IQueryIndex<T, TIndex>>[] predicates, CompositeNode predicate)
-            {
-                _query._queryState._currentPredicate.Children.Add(predicate);
-
-                _query._queryState._currentPredicate = predicate;
-
-                foreach (var p in predicates)
-                {
-                    var name = "a" + (_query._queryState._bindings.Count + 1);
-                    _query._queryState._bindingName = name;
-                    _query._queryState._bindings.Add(name, new List<Type>());
-
-                    p(this);
-                }
-
-                return new QueryIndex<T, TIndex>(_query);
-            }
-
-            IQueryIndex<T, TIndex> IQueryIndex<T, TIndex>.Any(params Func<IQueryIndex<T, TIndex>, IQueryIndex<T, TIndex>>[] predicates)
-            {
-                // Scope the currentPredicate so multiple calls will not act on the new predicate.
-                var currentPredicate = _query._queryState._currentPredicate;
-                var query = ComposeQuery(predicates, new OrNode());
-                // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
-                _query._queryState._currentPredicate = currentPredicate;
-
-                return query;
-            }
-
-            IQueryIndex<T, TIndex> IQueryIndex<T, TIndex>.All(params Func<IQueryIndex<T, TIndex>, IQueryIndex<T, TIndex>>[] predicates)
-            {
-                // Scope the currentPredicate so multiple calls will not act on the new predicate.
-                var currentPredicate = _query._queryState._currentPredicate;
-                var query = ComposeQuery(predicates, new AndNode());
-                // Return the currentPredicate to it's previous value, so another method call will act on the previous predicate.
-                _query._queryState._currentPredicate = currentPredicate;
-
-                return query;
-            }
-
         }
 
         class Query<T, TIndex> : Query<T>, IQuery<T, TIndex>

@@ -25,7 +25,7 @@ namespace YesSql
         /// Defines what type of index should be returned
         /// </summary>
         /// <typeparam name="T">The type of index to return</typeparam>
-        IQueryIndexAdvanced<T> ForIndexAdvanced<T>() where T : class, IIndex;
+        IQuery<T> ForAdvancedIndex<T>() where T : class, IIndex;
 
         /// <summary>
         /// Returns documents from any type
@@ -207,23 +207,6 @@ namespace YesSql
         /// Returns the number of results only.
         /// </summary>
         Task<int> CountAsync();
-    }
-
-    /// <summary>
-    /// Represents a query over an index, which can be ordered.
-    /// </summary>
-    /// <typeparam name="T">The index's type to query over.</typeparam>
-    public interface IQueryIndexAdvanced<T> : IQueryIndex<T> where T : IIndex
-    {
-        /// <summary>
-        /// Filters any predicates on newly joined indexes.
-        /// </summary>
-        IQueryIndex<T> Any(params Func<IQueryIndex<T>, IQueryIndex<T>>[] predicates);
-
-        /// <summary>
-        /// Filters all predicates on newly joined indexes.
-        /// </summary>
-        IQueryIndex<T> All(params Func<IQueryIndex<T>, IQueryIndex<T>>[] predicates);
     }
 
     /// <summary>

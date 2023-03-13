@@ -1584,19 +1584,21 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldQueryIndexMultipleIndexes()
+        public async Task ShouldAdvancedQueryMultipleIndexes()
         {
-            // We should be able to query documents on multiple rows in an index
+            // We should be able to query documents on multiple rows in multiple index
             // This mean the same Index table needs to be JOINed
 
             _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+            _store.RegisterIndexes<PersonByNullableAgeIndexProvider>();
 
             using (var session = _store.CreateSession())
             {
                 var hanselman = new Person
                 {
                     Firstname = "Scott",
-                    Lastname = "Hanselman"
+                    Lastname = "Hanselman",
+                    Age = -1
                 };
 
                 var guthrie = new Person
@@ -1613,10 +1615,13 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                Assert.Equal(2, await session.QueryIndexAdvanced<PersonIdentity>()
-                    .Any(
-                        x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
-                        x => x.With<PersonIdentity>(x => x.Identity == "Guthrie"))
+                Assert.Equal(2, await session.AdvancedQueryIndex<PersonIdentity>()
+                    .All(
+                        x => x.With<PersonByNullableAge>(x => x.Age == null || x.Age == 0),
+                        x => x.Any(
+                            x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                            x => x.With<PersonIdentity>(x => x.Identity == "Guthrie"))
+                        )
                     .CountAsync()
                     );
             }
