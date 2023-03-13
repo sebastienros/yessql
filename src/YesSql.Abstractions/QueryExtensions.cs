@@ -23,6 +23,14 @@ namespace YesSql
         }
 
         /// <summary>
+        /// Creates a query on an index.
+        /// </summary>
+        public static IQuery<TIndex> AdvancedQueryIndex<TIndex>(this ISession session, string collection = null) where TIndex : class, IIndex
+        {
+            return session.Query(collection).ForAdvancedIndex<TIndex>();
+        }
+
+        /// <summary>
         /// Creates a query on an index, with a predicate.
         /// </summary>
         public static IQueryIndex<TIndex> QueryIndex<TIndex>(this ISession session, Expression<Func<TIndex, bool>> predicate, string collection = null) where TIndex : class, IIndex
