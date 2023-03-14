@@ -75,7 +75,7 @@ namespace YesSql.Sql
             _count = take;
         }
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string schema, string toColumn, string alias = null, string toAlias = null)
+        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null)
         {
             // Don't prefix if alias is used
             if (alias != onTable)
