@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Text;
 using YesSql.Sql;
@@ -15,18 +14,17 @@ namespace YesSql.Provider.PostgreSql
 
         public override void Run(StringBuilder builder, IAlterColumnCommand command)
         {
-            builder.AppendFormat("alter table {0} modify column {1} ",
-                            _dialect.QuoteForTableName(command.Name, _configuration.Schema),
-                            _dialect.QuoteForColumnName(command.ColumnName)
-                            );
-            var initLength = builder.Length;
+            builder.AppendFormat("alter table {0} alter column {1} ",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema),
+                _dialect.QuoteForColumnName(command.ColumnName));
 
             var dbType = _dialect.ToDbType(command.DbType);
 
-            // type
             if (dbType != DbType.Object)
             {
-                builder.Append(_dialect.GetTypeName(dbType, command.Length, command.Precision, command.Scale));
+                builder
+                    .Append("type ")
+                    .Append(_dialect.GetTypeName(dbType, command.Length, command.Precision, command.Scale));
             }
             else
             {
@@ -36,30 +34,11 @@ namespace YesSql.Provider.PostgreSql
                 }
             }
 
-            // [default value]
-            var builder2 = new StringBuilder();
-
-            builder2.AppendFormat("alter table {0} alter column {1} ",
-                            _dialect.QuoteForTableName(command.Name, _configuration.Schema),
-                            _dialect.QuoteForColumnName(command.ColumnName));
-            var initLength2 = builder2.Length;
-
             if (command.Default != null)
             {
-                builder2.Append(" set default ").Append(_dialect.GetSqlValue(command.Default)).Append(" ");
-            }
-
-            // result
-            var result = new List<string>();
-
-            if (builder.Length > initLength)
-            {
-                result.Add(builder.ToString());
-            }
-
-            if (builder2.Length > initLength2)
-            {
-                result.Add(builder2.ToString());
+                builder
+                    .Append(" set default ")
+                    .Append(_dialect.GetSqlValue(command.Default));
             }
         }
     }
