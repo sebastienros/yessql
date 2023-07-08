@@ -4864,6 +4864,45 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldHandleBooleanConstants()
+        {
+            using (var session = _store.CreateSession())
+            {
+                var user = new User
+                {
+                    UserName = "admin",
+                    NormalizedUserName = "ADMIN",
+                    RoleNames = { "administrator", "editor" }
+                };
+
+                session.Save(user);
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                string roleName = null;
+                var result1 = await session
+                    .QueryIndex<UserByRoleNameIndex>(x => roleName == null || roleName == x.RoleName)
+                    .FirstOrDefaultAsync();
+
+                var result2 = await session
+                    .QueryIndex<UserByRoleNameIndex>(x => null == roleName || roleName == x.RoleName)
+                    .FirstOrDefaultAsync();
+
+                var result3 = await session
+                    .QueryIndex<UserByRoleNameIndex>(x => null == null || roleName == x.RoleName)
+                    .FirstOrDefaultAsync();
+
+                Assert.Null(result1);
+                Assert.Null(result2);
+                Assert.Null(result3);
+
+            }
+        }
+
+        [Fact]
         public async Task ShouldLogSql()
         {
             var logger = new TestLogger();
