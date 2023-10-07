@@ -1,7 +1,7 @@
 using Parlot;
 using Parlot.Fluent;
 using System.Collections.Generic;
-using YesSql.Filters.Abstractions.Nodes;
+using YesSql.Filters.Nodes;
 using static Parlot.Fluent.Parsers;
 
 namespace YesSql.Filters.Query.Services
