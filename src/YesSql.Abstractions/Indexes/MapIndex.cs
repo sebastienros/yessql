@@ -4,23 +4,23 @@ namespace YesSql.Indexes
 {
     public abstract class MapIndex : IIndex
     {
-        private Document Document { get; set; }
+        private Document _document;
 
         public long Id { get; set; }
 
         void IIndex.AddDocument(Document document)
         {
-            Document = document;
+            _document = document;
         }
 
         void IIndex.RemoveDocument(Document document)
         {
-            Document = null;
+            _document = null;
         }
 
         IEnumerable<Document> IIndex.GetAddedDocuments()
         {
-            yield return Document;
+            yield return _document;
         }
 
         IEnumerable<Document> IIndex.GetRemovedDocuments()

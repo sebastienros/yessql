@@ -1,9 +1,9 @@
-using YesSql.Filters.Abstractions.Nodes;
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Nodes;
+using YesSql.Filters.Services;
 using Parlot.Fluent;
 using static Parlot.Fluent.Parsers;
 
-namespace YesSql.Filters.Abstractions.Builders
+namespace YesSql.Filters.Builders
 {
     public abstract class UnaryEngineBuilder<T, TTermOption> : OperatorEngineBuilder<T, TTermOption> where TTermOption : TermOption
     {
@@ -15,7 +15,7 @@ namespace YesSql.Filters.Abstractions.Builders
 
         protected TTermOption _termOption;
 
-        public UnaryEngineBuilder(TTermOption termOption)
+        protected UnaryEngineBuilder(TTermOption termOption)
         {
             _termOption = termOption;
         }

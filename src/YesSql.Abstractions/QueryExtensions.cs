@@ -57,7 +57,7 @@ namespace YesSql
             where T : class
             where TIndex : class, IIndex
         {
-            return session.Query(collection).For<T>(filterType).With<TIndex>(predicate);
+            return session.Query(collection).For<T>(filterType).With(predicate);
         }
 
         /// <summary>

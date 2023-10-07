@@ -144,7 +144,7 @@ namespace YesSql.Provider.PostgreSql
                 }
             }
 
-            if (_columnTypes.TryGetValue(dbType, out string value))
+            if (_columnTypes.TryGetValue(dbType, out var value))
             {
                 if (dbType == DbType.Decimal)
                 {

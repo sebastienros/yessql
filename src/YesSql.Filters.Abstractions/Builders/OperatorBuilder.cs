@@ -1,8 +1,8 @@
-using YesSql.Filters.Abstractions.Nodes;
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Nodes;
+using YesSql.Filters.Services;
 using Parlot.Fluent;
 
-namespace YesSql.Filters.Abstractions.Builders
+namespace YesSql.Filters.Builders
 {
     public abstract class OperatorEngineBuilder<T, TTermOption> where TTermOption : TermOption
     {

@@ -13,9 +13,6 @@ namespace YesSql.Indexes
 
         public string CollectionName { get; set; }
 
-        public Type ForType()
-        {
-            return typeof(T);
-        }
+        public Type ForType() => typeof(T);
     }
 }
