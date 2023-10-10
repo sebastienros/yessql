@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using YesSql.Sql;
 using YesSql.Sql.Schema;
 
@@ -68,8 +69,29 @@ namespace YesSql.Provider.MySql
             builder.AppendFormat("create index {1} on {0} ({2}) ",
                 _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                 _dialect.QuoteForColumnName(command.IndexName),
-                string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray())
+                string.Join(", ", command.ColumnNames.Select(x => GetColumName(x)).ToArray())
                 );
+        }
+
+        private static readonly Regex ColumnNamePattern = new(@"([a-zA-Z_][a-zA-Z0-9_]+)\s*(\(\s*(\d+)\s*\))?");
+
+        private string GetColumName(string name)
+        {
+            var final = string.Empty;
+            var result = ColumnNamePattern.Match(name);
+            if (result.Success && result.Groups[1].Success)
+            {
+                final += _dialect.QuoteForColumnName(result.Groups[1].Value);
+
+                if (result.Groups.Count == 4 && result.Groups[3].Success)
+                {
+                    final += $"({int.Parse(result.Groups[2].Value)})";
+                }
+
+                return final;
+            }
+
+            return _dialect.QuoteForColumnName(name);
         }
     }
 }
