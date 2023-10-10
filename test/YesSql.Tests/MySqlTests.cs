@@ -98,6 +98,38 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldCreatePropertyIndexWithSpecifiedLength()
+        {
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                    builder
+                        .DropMapIndexTable<PropertyIndex>();
+
+                    builder
+                        .CreateMapIndexTable<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(769))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(768))
+                        );
+
+                    // 300 + 468 = 768 which is the max allowed by MySQL.
+                    builder
+                        .AlterTable(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name(300)", "Location(468)"));
+
+                    transaction.Commit();
+                }
+            }
+        }
+
+        [Fact]
         public async Task ThrowsWhenIndexKeysWithBitsLengthExceeded()
         {
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
@@ -122,7 +154,6 @@ namespace YesSql.Tests
                     Assert.Throws<MySqlException>(() => builder
                         .AlterTable(nameof(PropertyIndex), table => table
                         .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location")));
-
                 }
             }
         }
@@ -143,16 +174,17 @@ namespace YesSql.Tests
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
-                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(385))
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(768))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(384))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(768))
                         );
 
-                    Assert.Throws<MySqlException>(() => builder
+                    builder
                         .AlterTable(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name", "Location")));
+                        .CreateIndex("IDX_Property", "Name"));
 
+                    transaction.Commit();
                 }
             }
         }
@@ -264,7 +296,7 @@ namespace YesSql.Tests
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                     // tpFK_LongCollection_PersonsByNameCol_LongCollection_Document_Id : 64 chars. Throws exception if not hashed.
-                    
+
                     builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
                         .Column<string>(nameof(PersonsByNameCol.Name))
                         .Column<int>(nameof(PersonsByNameCol.Count)),
