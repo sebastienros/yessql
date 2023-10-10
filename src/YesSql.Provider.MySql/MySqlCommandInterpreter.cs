@@ -61,5 +61,8 @@ namespace YesSql.Provider.MySql
                 result.Add(builder2.ToString());
             }
         }
+
+        protected override string GetRawColumnName(string name)
+            => name;
     }
 }
