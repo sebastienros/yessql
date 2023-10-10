@@ -324,7 +324,12 @@ namespace YesSql.Sql
         {
             var index = name.IndexOf('(');
 
-            return name[..index].Trim();
+            if (index > -1)
+            {
+                return name[..index].Trim();
+            }
+
+            return name;
         }
     }
 }
