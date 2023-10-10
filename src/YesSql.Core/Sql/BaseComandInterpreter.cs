@@ -320,7 +320,7 @@ namespace YesSql.Sql
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        protected virtual string GetRawColumnName(string name)
+        private string GetRawColumnName(string name)
         {
             var index = name.IndexOf('(');
 

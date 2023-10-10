@@ -174,17 +174,15 @@ namespace YesSql.Tests
 
                     builder
                         .CreateMapIndexTable<PropertyIndex>(column => column
-                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(768))
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(385))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(768))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(384))
                         );
 
-                    builder
+                    Assert.Throws<MySqlException>(() => builder
                         .AlterTable(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name"));
-
-                    transaction.Commit();
+                        .CreateIndex("IDX_Property", "Name", "Location")));
                 }
             }
         }

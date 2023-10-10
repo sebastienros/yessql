@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Text;
 using YesSql.Sql;
 using YesSql.Sql.Schema;
@@ -62,7 +63,13 @@ namespace YesSql.Provider.MySql
             }
         }
 
-        protected override string GetRawColumnName(string name)
-            => name;
+        public override void Run(StringBuilder builder, IAddIndexCommand command)
+        {
+            builder.AppendFormat("create index {1} on {0} ({2}) ",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema),
+                _dialect.QuoteForColumnName(command.IndexName),
+                string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray())
+                );
+        }
     }
 }
