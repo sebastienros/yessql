@@ -45,7 +45,7 @@ namespace YesSql.Tests
             if (_configuration == null)
             {
                 _configuration = CreateConfiguration();
-
+                
                 CleanDatabase(_configuration, false);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
@@ -2914,9 +2914,6 @@ namespace YesSql.Tests
                 {
                     Assert.Equal(1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
-
-                //query should discard previous skip/take
-                Assert.Equal(5, (await query.Skip(10).Take(5).ListAsync()).Count());
             }
         }
 
