@@ -10,6 +10,8 @@ namespace YesSql.Provider.MySql
 {
     public class MySqlCommandInterpreter : BaseCommandInterpreter
     {
+        private static readonly char[] Separators = { '(', ')', ' ' };
+
         public MySqlCommandInterpreter(IConfiguration configuration) : base(configuration)
         {
         }
@@ -68,13 +70,13 @@ namespace YesSql.Provider.MySql
             builder.AppendFormat("create index {1} on {0} ({2}) ",
                 _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                 _dialect.QuoteForColumnName(command.IndexName),
-                string.Join(", ", command.ColumnNames.Select(x => GetColumName(x)).ToArray())
+                string.Join(", ", command.ColumnNames.Select(x => GetColumnName(x)).ToArray())
                 );
         }
 
-        private string GetColumName(string name)
+        private string GetColumnName(string name)
         {
-            var parts = name.Split(new[] { '(', ')', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = name.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
 
             var final = _dialect.QuoteForColumnName(parts[0]);
 
