@@ -79,7 +79,12 @@ namespace YesSql.Commands
 
         protected string Inserts(Type type, ISqlDialect dialect)
         {
-            var key = new CompoundKey(dialect.Name, type.FullName, _store.Configuration.TablePrefix, Collection);
+            var key = new CompoundKey(
+                dialect.Name,
+                type.FullName,
+                _store.Configuration.Schema,
+                _store.Configuration.TablePrefix,
+                Collection);
 
             if (!InsertsList.TryGetValue(key, out var result))
             {
@@ -136,12 +141,17 @@ namespace YesSql.Commands
                 InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema)} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
             }
 
-            return result;            
+            return result;
         }
 
         protected string Updates(Type type, ISqlDialect dialect)
         {
-            var key = new CompoundKey(dialect.Name, type.FullName, _store.Configuration.TablePrefix, Collection);
+            var key = new CompoundKey(
+                dialect.Name,
+                type.FullName,
+                _store.Configuration.Schema,
+                _store.Configuration.TablePrefix,
+                Collection);
 
             if (!UpdatesList.TryGetValue(key, out var result))
             {
@@ -182,13 +192,15 @@ namespace YesSql.Commands
             private readonly string _key2;
             private readonly string _key3;
             private readonly string _key4;
+            private readonly string _key5;
 
-            public CompoundKey(string key1, string key2, string key3, string key4)
+            public CompoundKey(string key1, string key2, string key3, string key4, string key5)
             {
                 _key1 = key1;
                 _key2 = key2;
                 _key3 = key3;
                 _key4 = key4;
+                _key5 = key5;
             }
 
             /// <inheritdoc />
@@ -209,6 +221,7 @@ namespace YesSql.Commands
                     && String.Equals(_key2, other._key2)
                     && String.Equals(_key3, other._key3)
                     && String.Equals(_key4, other._key4)
+                    && String.Equals(_key5, other._key5)
                     ;
             }
 
@@ -222,6 +235,7 @@ namespace YesSql.Commands
                     hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key2) ? _key2.GetHashCode() : 0);
                     hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key3) ? _key3.GetHashCode() : 0);
                     hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key4) ? _key4.GetHashCode() : 0);
+                    hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key5) ? _key5.GetHashCode() : 0);
 
                     return hashCode;
                 }
