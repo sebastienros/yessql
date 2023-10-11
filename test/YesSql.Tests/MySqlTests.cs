@@ -122,7 +122,7 @@ namespace YesSql.Tests
                     // 300 + 468 = 768 which is the max allowed by MySQL.
                     builder
                         .AlterTable(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name(300)", "Location(468)"));
+                        .CreateIndex("IDX_Property", "Name(300)", "Location (468)"));
 
                     transaction.Commit();
                 }

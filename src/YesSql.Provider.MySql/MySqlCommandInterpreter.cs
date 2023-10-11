@@ -77,15 +77,14 @@ namespace YesSql.Provider.MySql
 
         private string GetColumName(string name)
         {
-            var final = string.Empty;
             var result = ColumnNamePattern.Match(name);
             if (result.Success && result.Groups[1].Success)
             {
-                final += _dialect.QuoteForColumnName(result.Groups[1].Value);
+                var final = _dialect.QuoteForColumnName(result.Groups[1].Value);
 
                 if (result.Groups.Count == 4 && result.Groups[3].Success)
                 {
-                    final += $"({int.Parse(result.Groups[2].Value)})";
+                    final += $"({int.Parse(result.Groups[3].Value)})";
                 }
 
                 return final;
