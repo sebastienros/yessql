@@ -680,18 +680,34 @@ namespace YesSql.Services
                         // Don't reduce to a single value, just render both ends
 
                         var binaryExpression = (BinaryExpression)expression;
-                        if (binaryExpression.Left is ConstantExpression left && binaryExpression.Right is ConstantExpression right)
+                        if (binaryExpression.Left is ConstantExpression left1 && binaryExpression.Right is ConstantExpression right1)
                         {
-                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                            _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(left.Value));
-                            builder.Append(_queryState._lastParameterName);
-                            
+                            AddConstantParameter(left1);
+
                             builder.Append(GetBinaryOperator(expression));
 
-                            _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                            _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(right.Value));
-                            builder.Append(_queryState._lastParameterName);
-                        
+                            AddConstantParameter(right1);
+
+                            return;
+                        }
+                        else if (binaryExpression.Left is MemberExpression left2 && binaryExpression.Right is ConstantExpression right2)
+                        {
+                            AddMemberParameter(left2);
+
+                            builder.Append(GetBinaryOperator(expression));
+
+                            AddConstantParameter(right2);
+
+                            return;
+                        }
+                        else if (binaryExpression.Left is ConstantExpression left3 && binaryExpression.Right is MemberExpression right3)
+                        {
+                            AddConstantParameter(left3);
+
+                            builder.Append(GetBinaryOperator(expression));
+
+                            AddMemberParameter(right3);
+
                             return;
                         }
 
@@ -784,6 +800,32 @@ namespace YesSql.Services
                     break;
                 default:
                     throw new ArgumentException("Not supported expression: " + expression);
+            }
+
+            void AddConstantParameter(ConstantExpression expression)
+            {
+                _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(expression.Value));
+                
+                builder.Append(_queryState._lastParameterName);
+            }
+
+            void AddMemberParameter(MemberExpression expression)
+            {
+                object value = null;
+
+                if (expression.Member.MemberType == MemberTypes.Field)
+                {
+                    ConstantExpression obj = null;
+                    if (expression.Expression != null)
+                    {
+                        obj = Expression.Constant(Evaluate(expression.Expression).Value) ?? Expression.Constant(null);
+                    }
+
+                    value = ((FieldInfo)expression.Member).GetValue(obj.Value);
+                }
+
+                builder.Append(_dialect.GetSqlValue(value));
             }
         }
 

@@ -87,8 +87,7 @@ namespace YesSql.Sql
             // We only create PK statements on columns that don't have IsIdentity since IsIdentity statements also contains the notion of primary key.
 
             var primaryKeys = command.TableCommands.OfType<CreateColumnCommand>().Where(ccc => ccc.IsPrimaryKey && !ccc.IsIdentity).Select(ccc => _dialect.QuoteForColumnName(ccc.ColumnName)).ToArray();
-            
-            if (primaryKeys.Any())
+            if (primaryKeys.Length > 0)
             {
                 if (appendComma)
                 {
@@ -97,7 +96,7 @@ namespace YesSql.Sql
 
                 builder.Append(_dialect.PrimaryKeyString)
                     .Append(" ( ")
-                    .Append(String.Join(", ", primaryKeys.ToArray()))
+                    .Append(string.Join(", ", primaryKeys.ToArray()))
                     .Append(" )");
             }
 
@@ -230,7 +229,7 @@ namespace YesSql.Sql
             builder.AppendFormat("create index {1} on {0} ({2}) ",
                 _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                 _dialect.QuoteForColumnName(command.IndexName),
-                String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray())
+                string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(GetRawColumnName(x))).ToArray())
                 );
         }
 
@@ -311,6 +310,25 @@ namespace YesSql.Sql
             {
                 builder.Append(" unique");
             }
+        }
+
+        /// <summary>
+        /// When the given column name contains length (ex, Alias(50)), we return the actual column name
+        /// which is in this example 'Alias'.
+        /// Some providers like MySQL support specifying length of each column in a combined index.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        private string GetRawColumnName(string name)
+        {
+            var index = name.IndexOf('(');
+
+            if (index > -1)
+            {
+                return name[..index].Trim();
+            }
+
+            return name;
         }
     }
 }
