@@ -49,12 +49,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    # as of 12/2022, 3.1 and 5.0 are not installed by default on the images
-    - uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: | 
-          3.1.x
-          5.0.x
+    # Required if the .NET version is not available on the GH Actions images
+    # - uses: actions/setup-dotnet@v3
+    #   with:
+    #     dotnet-version: | 
+    #       6.0.x
+    #       7.0.x
 
     - name: Build
       run: dotnet build --configuration Release
@@ -64,12 +64,6 @@ jobs:
 
     - name: Test - Sqlite .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net6.0
-
-    - name: Test - Sqlite .NET 5.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net5.0
-
-    - name: Test - Sqlite .NET 3.1
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework netcoreapp3.1
 
     - name: Test - PostgresQL .NET 7.0
       run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net7.0

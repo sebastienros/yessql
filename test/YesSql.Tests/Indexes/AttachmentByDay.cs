@@ -28,7 +28,7 @@ namespace YesSql.Tests.Indexes
                     .Map(email => new AttachmentByDay
                     {
                         Date = email.Date.DayOfYear,
-                        Count = email.Attachments.Count()
+                        Count = email.Attachments.Count
                     })
                     .Group(email => email.Date)
                     .Reduce(group => new AttachmentByDay

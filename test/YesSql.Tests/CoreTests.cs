@@ -1307,7 +1307,7 @@ namespace YesSql.Tests
                     results.Add(person);
                 }
 
-                Assert.Equal(2, results.Count());
+                Assert.Equal(2, results.Count);
             }
         }
 
@@ -3825,7 +3825,7 @@ namespace YesSql.Tests
              * session2 1 index found (session1 statements isolated)
              * session2 save and commit person
              * session2 2 index found (session2 statements flushed)
-             * session2 disposed (session2 transation committed)
+             * session2 disposed (session2 transaction committed)
              * session2 2 index found
              * session1 2 index found
              */
@@ -3924,7 +3924,7 @@ namespace YesSql.Tests
              * session2 1 index found (session1 statements isolated)
              * session2 save and commit person
              * session2 2 index found (session2 statements flushed)
-             * session2 disposed (session2 transation committed)
+             * session2 disposed (session2 transaction committed)
              * session2 2 index found
              * session1 disposed
              * session1 2 index found

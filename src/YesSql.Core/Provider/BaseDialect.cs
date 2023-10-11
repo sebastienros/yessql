@@ -138,11 +138,7 @@ namespace YesSql.Provider
             res.Append(" constraint ")
                 .Append(name)
                 .Append(" foreign key (")
-#if NETSTANDARD2_1
                 .AppendJoin(", ", srcColumns)
-#else
-                .Append(String.Join(", ", srcColumns))
-#endif
                 .Append(") references ")
                 .Append(destQuotedTable);
 
