@@ -235,6 +235,11 @@ namespace YesSql.Provider.SqlServer
             builder.Append(")");
         }
 
+        protected override string Quote(string value)
+        {
+            return "N" + SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
+        }
+        
         public override string GetSqlValue(object value)
         {
             if (value == null)
