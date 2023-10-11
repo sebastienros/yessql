@@ -171,6 +171,8 @@ namespace YesSql.Provider.SqlServer
 
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
+            sqlBuilder.ClearTrail();
+
             if (offset != null)
             {
                 sqlBuilder.Trail(" OFFSET ");
