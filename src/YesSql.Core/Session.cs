@@ -1375,14 +1375,9 @@ namespace YesSql
             {
                 await CreateConnectionAsync();
 
-                // In the case of shared connections (InMemory) this can throw as the transation
+                // In the case of shared connections (InMemory) this can throw as the transaction
                 // might already be set by a concurrent thread on the same shared connection.
-#if SUPPORTS_ASYNC_TRANSACTIONS
                 _transaction = await _connection.BeginTransactionAsync(isolationLevel);
-#else
-                _transaction = _connection.BeginTransaction(isolationLevel);
-#endif
-
             }
 
             return _transaction;

@@ -96,22 +96,22 @@ namespace YesSql.Commands
                 {
                     var sbColumnList = new StringBuilder(null);
 
-                    for (var i = 0; i < allProperties.Count(); i++)
+                    for (var i = 0; i < allProperties.Length; i++)
                     {
                         var property = allProperties.ElementAt(i);
                         sbColumnList.Append(dialect.QuoteForColumnName(property.Name));
-                        if (i < allProperties.Count() - 1)
+                        if (i < allProperties.Length - 1)
                         {
                             sbColumnList.Append(", ");
                         }
                     }
 
                     var sbParameterList = new StringBuilder(null);
-                    for (var i = 0; i < allProperties.Count(); i++)
+                    for (var i = 0; i < allProperties.Length; i++)
                     {
                         var property = allProperties.ElementAt(i);
                         sbParameterList.Append("@").Append(property.Name).Append(ParameterSuffix);
-                        if (i < allProperties.Count() - 1)
+                        if (i < allProperties.Length - 1)
                         {
                             sbParameterList.Append(", ");
                         }
@@ -186,60 +186,6 @@ namespace YesSql.Commands
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
 
-        public struct CompoundKey : IEquatable<CompoundKey>
-        {
-            private readonly string _key1;
-            private readonly string _key2;
-            private readonly string _key3;
-            private readonly string _key4;
-            private readonly string _key5;
-
-            public CompoundKey(string key1, string key2, string key3, string key4, string key5)
-            {
-                _key1 = key1;
-                _key2 = key2;
-                _key3 = key3;
-                _key4 = key4;
-                _key5 = key5;
-            }
-
-            /// <inheritdoc />
-            public override bool Equals(object obj)
-            {
-                if (obj is CompoundKey other)
-                {
-                    return Equals(other);
-                }
-
-                return false;
-            }
-
-            /// <inheritdoc />
-            public bool Equals(CompoundKey other)
-            {
-                return String.Equals(_key1, other._key1)
-                    && String.Equals(_key2, other._key2)
-                    && String.Equals(_key3, other._key3)
-                    && String.Equals(_key4, other._key4)
-                    && String.Equals(_key5, other._key5)
-                    ;
-            }
-
-            /// <inheritdoc />
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    var hashCode = 13;
-                    hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key1) ? _key1.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key2) ? _key2.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key3) ? _key3.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key4) ? _key4.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(_key5) ? _key5.GetHashCode() : 0);
-
-                    return hashCode;
-                }
-            }
-        }
+        private record CompoundKey(string Dialect, string Type, string Schema, string Prefix, string Collection);
     }
 }
