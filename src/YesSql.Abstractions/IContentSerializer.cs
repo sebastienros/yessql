@@ -22,12 +22,5 @@ namespace YesSql
         /// <param name="type">The type of the object to deserialize.</param>
         /// <returns>The deserialized object.</returns>
         object Deserialize(string content, Type type);
-
-        /// <summary>
-        /// Deserializes an object to a <c>dynamic</c> instance.
-        /// </summary>
-        /// <param name="content">The <see cref="String" /> instance representing the object to deserialize.</param>
-        /// <returns>The deserialized object.</returns>
-        dynamic DeserializeDynamic(string content);
     }
 }
