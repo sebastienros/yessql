@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace YesSql.Serialization
 {
@@ -10,6 +11,8 @@ namespace YesSql.Serialization
         public DefaultContentSerializer()
         {
             _options = new();
+            _options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            _options.Converters.Add(UtcDateTimeJsonConverter.Instance);
         }
 
         public DefaultContentSerializer(JsonSerializerOptions options)
@@ -19,12 +22,12 @@ namespace YesSql.Serialization
 
         public object Deserialize(string content, Type type)
         {
-            return JsonSerializer.Deserialize(content, type);
+            return JsonSerializer.Deserialize(content, type, _options);
         }
 
         public string Serialize(object item)
         {
-            return JsonSerializer.Serialize(item);
+            return JsonSerializer.Serialize(item, _options);
         }
     }
 }
