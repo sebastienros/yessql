@@ -459,7 +459,7 @@ namespace YesSql.Services
             if (typeof(MapIndex).IsAssignableFrom(tIndex))
             {
                 // inner join [PersonByName] as [PersonByName_a1] on [PersonByName_a1].[Id] = [Document].[Id] 
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "DocumentId", _queryState._documentTable, _queryState._store.Configuration.Schema, "Id", indexTableAlias);
+                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, indexTableAlias);
             }
             else
             {
@@ -467,10 +467,10 @@ namespace YesSql.Services
                 var bridgeAlias = _queryState.GetBridgeAlias(tIndex);
 
                 // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document].[DocumentId] = [Document].[Id]
-                _queryState._sqlBuilder.InnerJoin(bridgeName, bridgeAlias, "DocumentId", _queryState._documentTable, _queryState._store.Configuration.Schema, "Id", bridgeAlias);
+                _queryState._sqlBuilder.InnerJoin(bridgeName, bridgeAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, bridgeAlias);
 
                 // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document].[ArticlesByDayId]
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeName, _queryState._store.Configuration.Schema, name + "Id", indexTableAlias, bridgeAlias);
+                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeName, name + "Id", _queryState._store.Configuration.Schema, indexTableAlias, bridgeAlias);
             }
         }
 
