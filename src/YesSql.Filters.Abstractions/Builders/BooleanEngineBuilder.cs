@@ -1,14 +1,13 @@
-
-using YesSql.Filters.Abstractions.Nodes;
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Nodes;
+using YesSql.Filters.Services;
 using Parlot.Fluent;
 using static Parlot.Fluent.Parsers;
 
-namespace YesSql.Filters.Abstractions.Builders
+namespace YesSql.Filters.Builders
 {
     public abstract class BooleanEngineBuilder<T, TTermOption> : OperatorEngineBuilder<T, TTermOption> where TTermOption : TermOption
     {
-        private static Parser<OperatorNode> _parser;
+        private static readonly Parser<OperatorNode> _parser;
         protected TTermOption _termOption;
 
         static BooleanEngineBuilder()
@@ -35,7 +34,7 @@ namespace YesSql.Filters.Abstractions.Builders
 
             // Default operator.
             var OrOperator = Literals.WhiteSpace()
-                .Then<string>(static x => " ") // Normalize whitespace.
+                .Then(static _ => " ") // Normalize whitespace.
                 .AndSkip(Not(NotOrOperators))
                 .Or(
                     OrTextOperators
@@ -72,7 +71,7 @@ namespace YesSql.Filters.Abstractions.Builders
                 .Or(Primary);
 
             var AndNode = UnaryNode.And(ZeroOrMany(AndOperator.And(UnaryNode)))
-                .Then<OperatorNode>(static node =>
+                .Then(static node =>
                 {
                     // unary
                     var result = node.Item1;
@@ -86,7 +85,7 @@ namespace YesSql.Filters.Abstractions.Builders
                 });
 
             OperatorNode.Parser = AndNode.And(ZeroOrMany(NotOperator.Or(OrOperator).And(AndNode)))
-               .Then<OperatorNode>(static (node) =>
+               .Then(static (node) =>
                {
                    static NotNode CreateNotNode(OperatorNode result, (string, OperatorNode) op)
                        => new NotNode(result, new UnaryNode(((UnaryNode)op.Item2).Value, ((UnaryNode)op.Item2).Quotes, false), op.Item1);

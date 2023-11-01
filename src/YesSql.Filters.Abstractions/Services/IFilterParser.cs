@@ -1,4 +1,4 @@
-namespace YesSql.Filters.Abstractions.Services
+namespace YesSql.Filters.Services
 {
     public interface IFilterParser<TResult>
     {

@@ -50,7 +50,7 @@ namespace YesSql.Indexes
         private Func<object, bool> _filter;
 
         public PropertyInfo GroupProperty { get; set; }
-        public Type IndexType { get { return typeof(TIndex); } }
+        public Type IndexType => typeof(TIndex);
 
         public Func<object, bool> Filter => _filter;
 
@@ -102,10 +102,10 @@ namespace YesSql.Indexes
 
             GroupProperty = property;
 
-            var reduceDescibeFor = new IndexDescriptor<T, TIndex, TKeyG>();
-            _reduceDescribeFor = reduceDescibeFor;
+            var reduceDescribeFor = new IndexDescriptor<T, TIndex, TKeyG>();
+            _reduceDescribeFor = reduceDescribeFor;
 
-            return reduceDescibeFor;
+            return reduceDescribeFor;
         }
 
         public IDeleteFor<TIndex> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce)
@@ -166,10 +166,7 @@ namespace YesSql.Indexes
             _enumerable = enumerable;
         }
 
-        public TKey Key
-        {
-            get { return (TKey)_key; }
-        }
+        public TKey Key => (TKey)_key;
 
         public IEnumerator<TIndex> GetEnumerator()
         {

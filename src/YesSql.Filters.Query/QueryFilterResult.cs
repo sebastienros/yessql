@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using YesSql.Filters.Abstractions.Nodes;
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Nodes;
+using YesSql.Filters.Services;
 using YesSql.Filters.Query.Services;
 
 namespace YesSql.Filters.Query

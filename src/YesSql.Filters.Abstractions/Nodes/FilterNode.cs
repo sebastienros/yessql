@@ -1,6 +1,6 @@
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Services;
 
-namespace YesSql.Filters.Abstractions.Nodes
+namespace YesSql.Filters.Nodes
 {
     public abstract class FilterNode
     {

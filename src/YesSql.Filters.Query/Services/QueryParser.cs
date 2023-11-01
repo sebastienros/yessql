@@ -1,7 +1,6 @@
-
 using System;
 using System.Collections.Generic;
-using YesSql.Filters.Abstractions.Nodes;
+using YesSql.Filters.Nodes;
 using Parlot;
 using Parlot.Fluent;
 using static Parlot.Fluent.Parsers;

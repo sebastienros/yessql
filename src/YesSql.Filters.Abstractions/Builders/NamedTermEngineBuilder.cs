@@ -1,9 +1,9 @@
-using YesSql.Filters.Abstractions.Nodes;
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Nodes;
+using YesSql.Filters.Services;
 using Parlot.Fluent;
 using static Parlot.Fluent.Parsers;
 
-namespace YesSql.Filters.Abstractions.Builders
+namespace YesSql.Filters.Builders
 {
     public class NamedTermEngineBuilder<T, TTermOption> : TermEngineBuilder<T, TTermOption> where TTermOption : TermOption
     {

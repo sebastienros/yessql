@@ -2,21 +2,21 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using YesSql.Filters.Abstractions.Nodes;
+using YesSql.Filters.Nodes;
 
-namespace YesSql.Filters.Abstractions.Services
+namespace YesSql.Filters.Services
 {
     public abstract class FilterResult<T, TTermOption> : IEnumerable<TermNode> where TTermOption : TermOption
     {
 
         protected Dictionary<string, TermNode> _terms = new Dictionary<string, TermNode>(StringComparer.OrdinalIgnoreCase);
 
-        public FilterResult(IReadOnlyDictionary<string, TTermOption> termOptions)
+        protected FilterResult(IReadOnlyDictionary<string, TTermOption> termOptions)
         {
             TermOptions = termOptions;
         }
 
-        public FilterResult(List<TermNode> terms, IReadOnlyDictionary<string, TTermOption> termOptions)
+        protected FilterResult(List<TermNode> terms, IReadOnlyDictionary<string, TTermOption> termOptions)
         {
             TermOptions = termOptions;
 
@@ -42,8 +42,7 @@ namespace YesSql.Filters.Abstractions.Services
                 var option = TermOptions[term.TermName];
 
                 if (option.MapTo is Action<string, TModel> action &&
-                    term is TermOperationNode operationNode &&
-                    operationNode.Operation is UnaryNode node)
+                    term is TermOperationNode { Operation: UnaryNode node })
                 {
                     action(node.Value, model);
                 }
@@ -60,7 +59,7 @@ namespace YesSql.Filters.Abstractions.Services
         /// Returns the filter terms.
         /// </summary>
         public override string ToString()
-            => $"{String.Join(" ", _terms.Values.Select(s => s.ToString()))}";
+            => $"{string.Join(" ", _terms.Values.Select(s => s.ToString()))}";
 
         /// <summary>
         /// Adds or replaces a <see cref="TermNode"/>

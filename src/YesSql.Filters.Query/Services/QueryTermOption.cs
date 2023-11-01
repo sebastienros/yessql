@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Services;
 
 namespace YesSql.Filters.Query.Services
 {

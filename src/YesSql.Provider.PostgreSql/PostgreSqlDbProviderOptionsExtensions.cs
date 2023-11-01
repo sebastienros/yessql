@@ -6,26 +6,17 @@ namespace YesSql.Provider.PostgreSql
 {
     public static class PostgreSqlDbProviderOptionsExtensions
     {
-        public static IConfiguration UsePostgreSql(
-            this IConfiguration configuration,
-            string connectionString,
-            string schema = null)
-        {
-            return UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
-        }
+        public static IConfiguration UsePostgreSql(this IConfiguration configuration, string connectionString, string schema = null)
+            => UsePostgreSql(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
 
-        public static IConfiguration UsePostgreSql(
-            this IConfiguration configuration,
-            string connectionString,
-            IsolationLevel isolationLevel,
-            string schema = null)
+        public static IConfiguration UsePostgreSql(this IConfiguration configuration, string connectionString, IsolationLevel isolationLevel, string schema = null)
         {
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (String.IsNullOrWhiteSpace(connectionString))
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentException(nameof(connectionString));
             }
