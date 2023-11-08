@@ -1,8 +1,6 @@
 <Project>
     <PropertyGroup>
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-        <!-- Special case - this property is used by a DotNetCliToolReference -->
-        <DotNetXunitVersion>2.3.0</DotNetXunitVersion>
     </PropertyGroup>
     <ItemGroup>
         <!-- Miscellaneous Packages -->
