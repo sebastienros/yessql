@@ -3,7 +3,6 @@
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     </PropertyGroup>
     <ItemGroup>
-        <!-- Miscellaneous Packages -->
         <PackageVersion Include="Parlot" Version="0.0.24" />
         <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.1.2" />
         <PackageVersion Include="Microsoft.Data.Sqlite" Version="7.0.13" />
@@ -13,5 +12,6 @@
         <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.32" />
         <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.32" />
+        <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
     </ItemGroup>
 </Project>
