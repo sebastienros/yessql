@@ -67,7 +67,7 @@ namespace YesSql
 
         private SessionState GetState(string collection)
         {
-            if (String.IsNullOrEmpty(collection))
+            if (string.IsNullOrEmpty(collection))
             {
                 return _defaultState;
             }
@@ -334,7 +334,7 @@ namespace YesSql
 
             // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
             // been changed before doing another query
-            if (tracked && String.Equals(newContent, oldDoc.Content))
+            if (tracked && string.Equals(newContent, oldDoc.Content))
             {
                 return;
             }
@@ -545,7 +545,7 @@ namespace YesSql
 
                     IAccessor<long> accessor;
                     // If the document type doesn't match the requested one, check it's a base type
-                    if (!String.Equals(typeName, d.Type, StringComparison.Ordinal))
+                    if (!string.Equals(typeName, d.Type, StringComparison.Ordinal))
                     {
                         var itemType = Store.TypeNames[d.Type];
 
@@ -1207,9 +1207,9 @@ namespace YesSql
         {
             _descriptors ??= new Dictionary<string, IEnumerable<IndexDescriptor>>();
 
-            var cacheKey = String.IsNullOrEmpty(collection)
+            var cacheKey = string.IsNullOrEmpty(collection)
                 ? t.FullName
-                : String.Concat(t.FullName + ":" + collection)
+                : string.Concat(t.FullName + ":" + collection)
                 ;
 
             if (!_descriptors.TryGetValue(cacheKey, out var typedDescriptors))

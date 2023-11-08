@@ -8,7 +8,7 @@ namespace YesSql.Services
         
         public string GetIndexTable(Type type, string collection = null)
         {
-            if (String.IsNullOrEmpty(collection))
+            if (string.IsNullOrEmpty(collection))
             {
                 return type.Name;
             }
@@ -18,7 +18,7 @@ namespace YesSql.Services
 
         public string GetDocumentTable(string collection = null)
         {
-            if (String.IsNullOrEmpty(collection))
+            if (string.IsNullOrEmpty(collection))
             {
                 return DocumentTable;
             }

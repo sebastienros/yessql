@@ -23,7 +23,7 @@ namespace YesSql.Services
                     }
 
                     var customName = typeInfo.GetCustomAttribute<SimplifiedTypeName>();
-                    var calculatedName = String.IsNullOrEmpty(customName?.Name) ? $"{type.FullName}, {typeInfo.Assembly.GetName().Name}" : customName.Name;
+                    var calculatedName = string.IsNullOrEmpty(customName?.Name) ? $"{type.FullName}, {typeInfo.Assembly.GetName().Name}" : customName.Name;
                     nameTypes[calculatedName] = t;
 
                     return calculatedName;

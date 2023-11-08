@@ -23,7 +23,7 @@ namespace YesSql.Samples.Web.ModelBinding
 
             if (valueProviderResult == ValueProviderResult.None)
             {
-                bindingContext.Result = ModelBindingResult.Success(Parse(String.Empty));
+                bindingContext.Result = ModelBindingResult.Success(Parse(string.Empty));
 
                 return Task.CompletedTask;
             }
@@ -35,7 +35,7 @@ namespace YesSql.Samples.Web.ModelBinding
             // Check if the argument value is null or empty
             if (string.IsNullOrEmpty(value))
             {
-                bindingContext.Result = ModelBindingResult.Success(Parse(String.Empty));
+                bindingContext.Result = ModelBindingResult.Success(Parse(string.Empty));
 
                 return Task.CompletedTask;
             }

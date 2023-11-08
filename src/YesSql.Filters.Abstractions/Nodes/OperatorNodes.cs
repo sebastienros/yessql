@@ -27,7 +27,7 @@ namespace YesSql.Filters.Abstractions.Nodes
         public string Value { get; }
         public OperateNodeQuotes Quotes { get; }
         public bool UseMatch { get; }
-        public bool HasValue => !String.IsNullOrEmpty(Value);
+        public bool HasValue => !string.IsNullOrEmpty(Value);
 
         public override string ToNormalizedString()
             => ToString();
@@ -46,7 +46,7 @@ namespace YesSql.Filters.Abstractions.Nodes
             }
             else
             {
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -94,7 +94,7 @@ namespace YesSql.Filters.Abstractions.Nodes
             => $"({Left.ToNormalizedString()} OR {Right.ToNormalizedString()})";
 
         public override string ToString()
-            => String.IsNullOrWhiteSpace(Value) ? $"{Left.ToString()} {Right.ToString()}" : $"{Left.ToString()} {Value} {Right.ToString()}";
+            => string.IsNullOrWhiteSpace(Value) ? $"{Left.ToString()} {Right.ToString()}" : $"{Left.ToString()} {Value} {Right.ToString()}";
     }
 
     public class AndNode : OperatorNode

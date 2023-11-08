@@ -168,10 +168,10 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
-            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string[]) })] =
-            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string) })] =
-            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
-            MethodMappings[typeof(String).GetMethod(nameof(String.Concat), new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string[]) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
+            MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) })] =
                 static (query, builder, dialect, expression) =>
             {
                 var generators = new List<Action<IStringBuilder>>();
@@ -490,7 +490,7 @@ namespace YesSql.Services
         private void Filter<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : IIndex
         {
             // For<T> hasn't been called already
-            if (String.IsNullOrEmpty(_queryState._sqlBuilder.Clause))
+            if (string.IsNullOrEmpty(_queryState._sqlBuilder.Clause))
             {
                 var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection);
 
@@ -1403,7 +1403,7 @@ namespace YesSql.Services
 
                 if (sqlBuilder.HasOrder)
                 {
-                    sql += $" ORDER BY {String.Join(", ", aggregates.Select(x => x.alias).ToList())}";
+                    sql += $" ORDER BY {string.Join(", ", aggregates.Select(x => x.alias).ToList())}";
                 }
 
                 return sql;

@@ -106,7 +106,7 @@ namespace YesSql.Services
 
         public override void Build(RentedStringBuilder builder)
         {
-            if (String.IsNullOrEmpty(Filter))
+            if (string.IsNullOrEmpty(Filter))
             {
                 return;
             }

@@ -240,7 +240,7 @@ namespace YesSql
                 throw new ArgumentNullException(nameof(target));
             }
 
-            var cacheKey = String.IsNullOrEmpty(collection)
+            var cacheKey = string.IsNullOrEmpty(collection)
                 ? target.FullName
                 : target.FullName + ":" + collection
                 ;
@@ -257,7 +257,7 @@ namespace YesSql
             foreach (var provider in indexProviders)
             {
                 if (provider.ForType().IsAssignableFrom(target) &&
-                    String.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
                 {
                     provider.Describe(context);
                 }

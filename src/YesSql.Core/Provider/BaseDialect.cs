@@ -110,7 +110,7 @@ namespace YesSql.Provider
         public abstract string IdentityColumnString { get; }
         public abstract string LegacyIdentityColumnString { get; }
 
-        public virtual string NullColumnString => String.Empty;
+        public virtual string NullColumnString => string.Empty;
 
         public virtual string PrimaryKeyString => "primary key";
 
@@ -145,7 +145,7 @@ namespace YesSql.Provider
             if (!primaryKey)
             {
                 res.Append(" (")
-                    .Append(String.Join(", ", destColumns))
+                    .Append(string.Join(", ", destColumns))
                     .Append(')');
             }
 
@@ -158,7 +158,7 @@ namespace YesSql.Provider
         }
 
         public virtual bool SupportsIfExistsBeforeTableName => false;
-        public virtual string CascadeConstraintsString => String.Empty;
+        public virtual string CascadeConstraintsString => string.Empty;
         public virtual bool SupportsIfExistsAfterTableName => false;
         public virtual string GetDropTableString(string tableName, string schema)
         {
@@ -234,7 +234,7 @@ namespace YesSql.Provider
                 case TypeCode.Decimal:
                     return Convert.ToString(value, CultureInfo.InvariantCulture);
                 case TypeCode.DateTime:
-                    return String.Concat("'", Convert.ToString(value, CultureInfo.InvariantCulture), "'");
+                    return string.Concat("'", Convert.ToString(value, CultureInfo.InvariantCulture), "'");
                 default: break;
             }
 
@@ -254,7 +254,7 @@ namespace YesSql.Provider
                 return method.Render(args);
             }
 
-            return name + "(" + String.Join(", ", args) + ")";
+            return name + "(" + string.Join(", ", args) + ")";
         }
 
         public virtual void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
