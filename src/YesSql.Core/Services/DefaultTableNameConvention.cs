@@ -5,7 +5,7 @@ namespace YesSql.Services
     public class DefaultTableNameConvention : ITableNameConvention
     {
         public const string DocumentTable = "Document";
-        
+
         public string GetIndexTable(Type type, string collection = null)
         {
             if (string.IsNullOrEmpty(collection))
@@ -24,7 +24,6 @@ namespace YesSql.Services
             }
 
             return collection + "_" + DocumentTable;
-
         }
     }
 }

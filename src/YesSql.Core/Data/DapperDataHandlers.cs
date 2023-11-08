@@ -23,17 +23,19 @@ namespace YesSql.Data
             {
                 return DateTimeOffset.Parse(s);
             }
+
             if (value is DateTime dt)
             {
                 return dt;
             }
-            else if (value is DateTimeOffset d)
+
+            if (value is DateTimeOffset d)
             {
                 return d;
             }
 
             return DateTimeOffset.MinValue;
-        }            
+        }
     }
 
     class GuidHandler : DapperTypeHandler<Guid>

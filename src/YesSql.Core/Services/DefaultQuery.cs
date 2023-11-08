@@ -101,10 +101,12 @@ namespace YesSql.Services
 
         public QueryState Clone()
         {
-            var clone = new QueryState(_sqlBuilder.Clone(), _store, _collection);
+            var clone = new QueryState(_sqlBuilder.Clone(), _store, _collection)
+            {
+                _bindingName = _bindingName,
+                _bindings = new Dictionary<string, List<Type>>()
+            };
 
-            clone._bindingName = _bindingName;
-            clone._bindings = new Dictionary<string, List<Type>>();
             foreach (var binding in _bindings)
             {
                 clone._bindings.Add(binding.Key, new List<Type>(binding.Value));
