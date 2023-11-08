@@ -110,13 +110,13 @@ namespace YesSql.Services
                 clone._bindings.Add(binding.Key, new List<Type>(binding.Value));
             }
 
-            clone._currentPredicate = (CompositeNode) _predicate.Clone();
+            clone._currentPredicate = (CompositeNode)_predicate.Clone();
             clone._predicate = clone._currentPredicate;
             clone._deduplicate = _deduplicate;
 
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
-            
+
             return clone;
         }
     }
@@ -126,8 +126,8 @@ namespace YesSql.Services
         internal QueryState _queryState;
         private readonly Session _session;
         private readonly ISqlDialect _dialect;
-        private object _compiledQuery = null;
-        private string _collection;
+        private readonly object _compiledQuery = null;
+        private readonly string _collection;
 
         public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
             new();
@@ -260,7 +260,7 @@ namespace YesSql.Services
                     var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
                     var values = new List<object>();
 
-                    foreach(var o in objects)
+                    foreach (var o in objects)
                     {
                         values.Add(o);
                     }
@@ -272,7 +272,7 @@ namespace YesSql.Services
                     else if (values.Count == 1)
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
-                        builder.Append(" = " );
+                        builder.Append(" = ");
                         query.ConvertFragment(builder, Expression.Constant(values[0]));
                     }
                     else
@@ -440,7 +440,7 @@ namespace YesSql.Services
             if (bindingIndex != -1)
             {
                 // When a binding is reused it should be last to be correctly applied to a filter predicate.
-                if (bindingIndex != bindings.Count -1)
+                if (bindingIndex != bindings.Count - 1)
                 {
                     var binding = bindings[bindingIndex];
                     bindings.RemoveAt(bindingIndex);
@@ -776,7 +776,7 @@ namespace YesSql.Services
                         var boundTable = _queryState.GetTypeAlias(bound);
                         builder.Append(_queryState._sqlBuilder.FormatColumn(boundTable, memberExpression.Member.Name, _queryState._store.Configuration.Schema, true));
                     }
-                    
+
                     break;
                 case ExpressionType.Constant:
                     _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
@@ -788,7 +788,7 @@ namespace YesSql.Services
                     var methodCallExpression = (MethodCallExpression)expression;
                     var methodInfo = methodCallExpression.Method;
                     Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression> action;
-                    if (MethodMappings.TryGetValue(methodInfo, out action) 
+                    if (MethodMappings.TryGetValue(methodInfo, out action)
                         || MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action))
                     {
                         action(this, builder, _dialect, methodCallExpression);
@@ -806,7 +806,7 @@ namespace YesSql.Services
             {
                 _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
                 _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(expression.Value));
-                
+
                 builder.Append(_queryState._lastParameterName);
             }
 
@@ -1002,7 +1002,7 @@ namespace YesSql.Services
             builder.Append(")");
         }
 
-        private Expression RemoveUnboxing(Expression e)
+        private static Expression RemoveUnboxing(Expression e)
         {
             // If an expression is a conversion, extract its body.
             // This is used when an OrderBy expression uses a ValueType but
@@ -1230,7 +1230,7 @@ namespace YesSql.Services
                         _query._queryState._sqlBuilder.Selector(_query._queryState._documentTable, "*", _query._queryState._store.Configuration.Schema);
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        var documents = (await _query._session._store.ProduceAsync(key, static (state) =>
+                        var documents = await _query._session._store.ProduceAsync(key, static (state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
 
@@ -1240,17 +1240,17 @@ namespace YesSql.Services
                             }
 
                             return state.Connection.QueryAsync<Document>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
-                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction })).ToArray();
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
 
-                        if (documents.Length == 0)
+                        // Clone documents returned from ProduceAsync as they might be shared across sessions
+                        var clonedDocuments = documents.Select(x => x.Clone()).ToList();
+
+                        if (clonedDocuments.Count == 0)
                         {
                             return default;
                         }
 
-                        // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        documents = documents.Select(x => x.Clone()).ToArray();
-
-                        return _query._session.Get<T>(documents, _query._collection).FirstOrDefault();
+                        return _query._session.Get<T>(clonedDocuments, _query._collection).FirstOrDefault();
                     }
                 }
                 catch
@@ -1268,7 +1268,7 @@ namespace YesSql.Services
             async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach(var item in await ListImpl())
+                foreach (var item in await ListImpl())
                 {
                     yield return item;
                 }
@@ -1333,7 +1333,7 @@ namespace YesSql.Services
                         sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
 
                         // Group by document id to de-duplicate records if the index has multiple matches for a single document
-                        
+
                         // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
 
                         var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
@@ -1355,7 +1355,7 @@ namespace YesSql.Services
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         documents = documents.Select(x => x.Clone());
 
-                        return _query._session.Get<T>(documents.ToArray(), _query._collection);
+                        return _query._session.Get<T>(documents.ToList(), _query._collection);
                     }
                 }
                 catch
@@ -1376,7 +1376,7 @@ namespace YesSql.Services
                 sqlBuilder.Selector(selector);
                 sqlBuilder.GroupBy(selector);
 
-                var aggregates = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToArray(), sqlBuilder.GetOrders().ToArray());
+                var aggregates = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList());
 
                 if (sqlBuilder.HasOrder)
                 {
@@ -1403,7 +1403,7 @@ namespace YesSql.Services
 
                 if (sqlBuilder.HasOrder)
                 {
-                    sql += $" ORDER BY {String.Join(", ", aggregates.Select(x => x.alias).ToArray())}";
+                    sql += $" ORDER BY {String.Join(", ", aggregates.Select(x => x.alias).ToList())}";
                 }
 
                 return sql;
@@ -1514,7 +1514,7 @@ namespace YesSql.Services
                 }
 
                 return new Query<T>(_query);
-            }            
+            }
 
             IQuery<T, TIndex> IQuery<T>.With<TIndex>()
             {
@@ -1709,7 +1709,7 @@ namespace YesSql.Services
             IQuery<T, TIndex> IQuery<T, TIndex>.Where(Expression<Func<TIndex, bool>> predicate)
             {
                 _query.Bind<TIndex>();
-                _query.Filter<TIndex>(predicate);
+                _query.Filter(predicate);
                 return this;
             }
 

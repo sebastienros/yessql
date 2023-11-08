@@ -47,7 +47,7 @@ namespace YesSql
 
             // Databases that don't support DateTimeOffset natively will store these in string columns.
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
-            
+
             // Required by Sqlite. Guids are stored as text (uniqueidentifier) and are converted back to Guid with this handler.
             SqlMapper.AddTypeHandler(new GuidHandler());
 
@@ -130,6 +130,7 @@ namespace YesSql
                     selectBuilder.Take("1");
 
                     selectCommand.CommandText = selectBuilder.ToSqlString();
+
                     Configuration.Logger.LogTrace(selectCommand.CommandText);
 
                     using (var result = await selectCommand.ExecuteReaderAsync())
@@ -220,12 +221,12 @@ namespace YesSql
 
         public IAccessor<long> GetIdAccessor(Type tContainer)
         {
-            return IdAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierAccessorFactory.CreateAccessor<long>(type));
+            return IdAccessors.GetOrAdd(tContainer, Configuration.IdentifierAccessorFactory.CreateAccessor<long>);
         }
 
         public IAccessor<long> GetVersionAccessor(Type tContainer)
         {
-            return VersionAccessors.GetOrAdd(tContainer, type => Configuration.VersionAccessorFactory.CreateAccessor<long>(type));
+            return VersionAccessors.GetOrAdd(tContainer, Configuration.VersionAccessorFactory.CreateAccessor<long>);
 
         }
 
@@ -249,7 +250,7 @@ namespace YesSql
 
         internal IEnumerable<IndexDescriptor> CreateDescriptors(Type target, string collection, IEnumerable<IIndexProvider> indexProviders)
         {
-            var activator = DescriptorActivators.GetOrAdd(target, type => MakeDescriptorActivator(type));
+            var activator = DescriptorActivators.GetOrAdd(target, MakeDescriptorActivator);
 
             var context = activator();
 
@@ -271,9 +272,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(string collection)
+        public long GetNextId(string collection)
         {
-            return (int)Configuration.IdGenerator.GetNextId(collection);
+            return Configuration.IdGenerator.GetNextId(collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)
@@ -335,7 +336,7 @@ namespace YesSql
                         // Remove the worker task before setting the result.
                         // If the result is null, other threads would potentially
                         // acquire it otherwise.
-                        Workers.TryRemove(key, out result);
+                        Workers.TryRemove(key, out _);
 
                         // Notify all other awaiters to return the result
                         tcs.TrySetResult(content);
