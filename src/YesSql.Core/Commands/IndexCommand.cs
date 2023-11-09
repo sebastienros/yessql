@@ -92,7 +92,7 @@ namespace YesSql.Commands
 
                 var allProperties = TypePropertiesCache(type);
 
-                if (allProperties.Any())
+                if (allProperties.Length > 0)
                 {
                     var sbColumnList = new StringBuilder(null);
 

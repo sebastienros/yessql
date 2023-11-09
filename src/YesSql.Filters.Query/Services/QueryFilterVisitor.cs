@@ -22,7 +22,7 @@ namespace YesSql.Filters.Query.Services
                 predicates.Add(predicate);
             }
 
-            Func<IQuery<T>, ValueTask<IQuery<T>>> result = (Func<IQuery<T>, ValueTask<IQuery<T>>>)Delegate.Combine(predicates.ToArray());
+            var result = (Func<IQuery<T>, ValueTask<IQuery<T>>>)Delegate.Combine(predicates.ToArray());
 
             return result;
         }
@@ -50,7 +50,7 @@ namespace YesSql.Filters.Query.Services
             return result => argument.Item.AnyAsync(
                 (q) => node.Left.Accept(this, argument)(q),
                 (q) => node.Right.Accept(this, argument)(q)
-            );            
+            );
         }
 
         public Func<IQuery<T>, ValueTask<IQuery<T>>> Visit(AndNode node, QueryExecutionContext<T> argument)
@@ -58,7 +58,7 @@ namespace YesSql.Filters.Query.Services
             return result => argument.Item.AllAsync(
                 (q) => node.Left.Accept(this, argument)(q),
                 (q) => node.Right.Accept(this, argument)(q)
-            );            
+            );
         }
 
         public Func<IQuery<T>, ValueTask<IQuery<T>>> Visit(GroupNode node, QueryExecutionContext<T> argument)

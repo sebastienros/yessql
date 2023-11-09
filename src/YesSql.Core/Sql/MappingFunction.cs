@@ -13,7 +13,7 @@ namespace YesSql.Sql
 
         public string Render(string[] arguments)
         {
-            return _name + "(" + String.Join(", ", arguments) + ")";
+            return _name + "(" + string.Join(", ", arguments) + ")";
         }
     }
 }

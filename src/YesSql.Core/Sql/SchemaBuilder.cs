@@ -37,7 +37,7 @@ namespace YesSql.Sql
         {
             foreach (var statement in statements)
             {
-                if (String.IsNullOrEmpty(statement))
+                if (string.IsNullOrEmpty(statement))
                 {
                     continue;
                 }
@@ -139,7 +139,7 @@ namespace YesSql.Sql
 
                 var bridgeTableName = indexTable + "_" + documentTable;
 
-                if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
+                if (string.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
                     DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_Id");
                     DropForeignKey(bridgeTableName, "FK_" + bridgeTableName + "_DocumentId");
@@ -166,7 +166,7 @@ namespace YesSql.Sql
                 var indexName = indexType.Name;
                 var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
 
-                if (String.IsNullOrEmpty(Dialect.CascadeConstraintsString))
+                if (string.IsNullOrEmpty(Dialect.CascadeConstraintsString))
                 {
                     DropForeignKey(indexTable, "FK_" + (collection ?? "") + indexName);
                 }

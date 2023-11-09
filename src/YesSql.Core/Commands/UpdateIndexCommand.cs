@@ -48,7 +48,7 @@ namespace YesSql.Commands
                 var bridgeSqlAdd = "insert into " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName, _store.Configuration.Schema) + " (" + columnList + ") values (@Id, @DocumentId);";
                 var bridgeSqlRemove = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName, _store.Configuration.Schema) + " where " + dialect.QuoteForColumnName("DocumentId") + " = @DocumentId and " + dialect.QuoteForColumnName(type.Name + "Id") + " = @Id;";
 
-                if (_addedDocumentIds.Any())
+                if (_addedDocumentIds.Length > 0)
                 {
                     var dynamicParamsAdded = new DynamicParameters();
                     foreach (var id in _addedDocumentIds)
@@ -63,7 +63,7 @@ namespace YesSql.Commands
                     await connection.ExecuteAsync(bridgeSqlAdd, dynamicParamsAdded, transaction);
                 }
 
-                if (_deletedDocumentIds.Any())
+                if (_deletedDocumentIds.Length > 0)
                 {
                     var dynamicParamsDeleted = new DynamicParameters();
                     foreach (var id in _deletedDocumentIds)

@@ -43,7 +43,7 @@ namespace YesSql.Tests.Filters
 
             Assert.Equal("name:账单", parser.Parse("name:账单").ToString());
             Assert.Equal("name:账单", parser.Parse("name:账单").ToNormalizedString());
-        }        
+        }
 
         [Fact]
         public void ShouldParseManyNamedTerms()
@@ -151,7 +151,7 @@ namespace YesSql.Tests.Filters
                 .WithNamedTerm("age", b => b
                     .OneCondition((val, query) =>
                     {
-                        if (Int32.TryParse(val, out var age))
+                        if (int.TryParse(val, out var age))
                         {
                             query.With<PersonByAge>(x => x.Age == age);
                         }
@@ -176,7 +176,7 @@ namespace YesSql.Tests.Filters
                     builder
                         .OneCondition((val, query) =>
                         {
-                            if (Int32.TryParse(val, out var age))
+                            if (int.TryParse(val, out var age))
                             {
                                 query.With<PersonByAge>(x => x.Age == age);
                             }
@@ -271,7 +271,7 @@ namespace YesSql.Tests.Filters
             var result = parser.Parse(search);
 
             Assert.Equal(search, result.ToString());
-        }        
+        }
 
         [Fact]
         public void ShouldIgnoreMultipleNamedTerms()
@@ -317,7 +317,7 @@ namespace YesSql.Tests.Filters
             var result = parser.Parse(search);
 
             Assert.Equal(search, result.ToString());
-        } 
+        }
 
         private static Func<string, IQuery<Person>, IQuery<Person>> PersonOneConditionQuery()
         {

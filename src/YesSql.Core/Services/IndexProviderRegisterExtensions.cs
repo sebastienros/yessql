@@ -46,6 +46,5 @@ namespace YesSql
             var indexes = exportedTypes.Where(x => typeof(IIndexProvider).IsAssignableFrom(x));
             return store.RegisterIndexes(indexes, collection);
         }
-
     }
 }
