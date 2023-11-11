@@ -45,7 +45,7 @@ namespace YesSql.Tests
             if (_configuration == null)
             {
                 _configuration = CreateConfiguration();
-                
+
                 CleanDatabase(_configuration, false);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
@@ -3860,7 +3860,7 @@ namespace YesSql.Tests
 
                 if (!session2IsDisposed.WaitOne(5000))
                 {
-                    Assert.True(false, "session2IsDisposed timeout");
+                    Assert.Fail("session2IsDisposed timeout");
                 }
 
                 // IsolationLevel.ReadCommitted is the default
@@ -3874,7 +3874,7 @@ namespace YesSql.Tests
             {
                 if (!session1IsDisposed.WaitOne(5000))
                 {
-                    Assert.True(false, "session1IsDisposed timeout");
+                    Assert.Fail("session1IsDisposed timeout");
                 }
 
                 // IsolationLevel.ReadCommitted is the default
@@ -3957,7 +3957,7 @@ namespace YesSql.Tests
                     session1IsFlushed.Set();
                     if (!session2IsDisposed.WaitOne(5000))
                     {
-                        Assert.True(false, "session2IsDisposed timeout");
+                        Assert.Fail("session2IsDisposed timeout");
                     }
 
                     await session1.SaveChangesAsync();
@@ -3977,7 +3977,7 @@ namespace YesSql.Tests
             {
                 if (!session1IsFlushed.WaitOne(5000))
                 {
-                    Assert.True(false, "session1IsFlushed timeout");
+                    Assert.Fail("session1IsFlushed timeout");
                 }
 
                 using (var session2 = _store.CreateSession())
@@ -5339,7 +5339,7 @@ namespace YesSql.Tests
                     // Wait for the other thread to load the person before updating it
                     if (!task2Loaded.WaitOne(5000))
                     {
-                        Assert.True(false, "task2Loaded timeout");
+                        Assert.Fail("task2Loaded timeout");
                         await session.CancelAsync();
                     }
 
@@ -5371,7 +5371,7 @@ namespace YesSql.Tests
                         // Wait for the other thread to save the person before updating it
                         if (!task1Saved.WaitOne(5000))
                         {
-                            Assert.True(false, "task1Saved timeout");
+                            Assert.Fail("task1Saved timeout");
                             await session.CancelAsync();
                         }
 
