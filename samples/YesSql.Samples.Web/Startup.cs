@@ -124,7 +124,7 @@ namespace YesSql.Samples.Web
             );
         }
 
-        public async Task ConfigureAsync(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseRouting();
 
@@ -135,29 +135,28 @@ namespace YesSql.Samples.Web
 
             var store = app.ApplicationServices.GetRequiredService<IStore>();
             store.RegisterIndexes(new[] { new BlogPostIndexProvider() });
-
-            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            Task.Run(async () =>
             {
+                using var connection = store.Configuration.ConnectionFactory.CreateConnection();
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(store.Configuration, transaction);
+                using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(store.Configuration, transaction);
 
-                    await builder.CreateMapIndexTableAsync<BlogPostIndex>(table => table
-                            .Column<string>("Title")
-                            .Column<string>("Author")
-                            .Column<string>("Content")
-                            .Column<DateTime>("PublishedUtc")
-                            .Column<bool>("Published")
-                        );
+                await builder.CreateMapIndexTableAsync<BlogPostIndex>(table => table
+                        .Column<string>("Title")
+                        .Column<string>("Author")
+                        .Column<string>("Content")
+                        .Column<DateTime>("PublishedUtc")
+                        .Column<bool>("Published")
+                    );
 
-                    await transaction.CommitAsync();
-                }
-            }
+                await transaction.CommitAsync();
+            });
 
-            using (var session = app.ApplicationServices.GetRequiredService<IStore>().CreateSession())
+            Task.Run(async () =>
             {
+                using var session = app.ApplicationServices.GetRequiredService<IStore>().CreateSession();
                 session.Save(new BlogPost
                 {
                     Title = "On the beach in the sand we found lizards",
@@ -189,7 +188,7 @@ namespace YesSql.Samples.Web
                 });
 
                 await session.SaveChangesAsync();
-            }
+            });
         }
     }
 }
