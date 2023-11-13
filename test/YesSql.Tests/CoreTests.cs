@@ -895,7 +895,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task NoSavingChangesShouldRollbackAutoFlush()
         {
-            await using (var session = _store.CreateSession())
+            using (var session = _store.CreateSession())
             {
                 var bill = new Person
                 {
@@ -909,7 +909,7 @@ namespace YesSql.Tests
                 Assert.Same(newBill, bill);
             }
 
-            await using (var session = _store.CreateSession())
+            using (var session = _store.CreateSession())
             {
                 Assert.Equal(0, await session.Query<Person>().CountAsync());
             }
