@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+<Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Npgsql" Version="7.0.6" />
+        <PackageReference Include="Npgsql" />
     </ItemGroup>
 </Project>
