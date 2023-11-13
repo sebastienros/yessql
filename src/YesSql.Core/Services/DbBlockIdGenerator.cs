@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Sql;
 
@@ -13,7 +14,7 @@ namespace YesSql.Services
     public class DbBlockIdGenerator : IIdGenerator
     {
         internal long _initialValue = 1;
-        private readonly object _synLock = new();
+        private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
@@ -50,36 +51,40 @@ namespace YesSql.Services
             UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
-            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            try
             {
-                await connection.OpenAsync();
+                await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
-                try
-                {
-                    await using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
-                    {
-                        var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
+                await localBuilder.CreateTableAsync(TableName, table => table
+                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                    .Column<long>("nextval")
+                    );
 
-                        await localBuilder.CreateTableAsync(TableName, table => table
-                            .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                            .Column<long>("nextval")
-                            );
-
-                        await transaction.CommitAsync();
-                    }
-                }
-                catch
-                {
-
-                }
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+            }
+            finally
+            {
+                await connection.CloseAsync();
             }
         }
 
         public long GetNextId(string collection)
-        {
-            collection ??= "";
+            => GetNextIdAsync(collection).ConfigureAwait(false).GetAwaiter().GetResult();
 
-            lock (_synLock)
+        public async Task<long> GetNextIdAsync(string collection)
+        {
+            collection ??= string.Empty;
+
+            await _semaphoreSlim.WaitAsync();
+
+            try
             {
                 if (!_ranges.TryGetValue(collection, out var range))
                 {
@@ -90,22 +95,26 @@ namespace YesSql.Services
 
                 if (nextId > range.End)
                 {
-                    LeaseRange(range);
+                    await LeaseRangeAsync(range);
                     nextId = range.Next();
                 }
 
                 return nextId;
             }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
 
-        private void LeaseRange(Range range)
+        private async Task LeaseRangeAsync(Range range)
         {
             var affectedRows = 0;
-            long nextval = 0;
+            long nextValue = 0;
             var retries = 0;
 
             using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
-            connection.Open();
+            await connection.OpenAsync();
 
             do
             {
@@ -131,7 +140,7 @@ namespace YesSql.Services
                             _store.Configuration.Logger.LogTrace(SelectCommand);
                         }
 
-                        nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
+                        nextValue = Convert.ToInt64(await selectCommand.ExecuteScalarAsync());
 
                         var updateCommand = connection.CreateCommand();
                         updateCommand.CommandText = UpdateCommand;
@@ -142,12 +151,12 @@ namespace YesSql.Services
                         updateCommand.Parameters.Add(updateDimension);
 
                         var newValue = updateCommand.CreateParameter();
-                        newValue.Value = nextval + _blockSize;
+                        newValue.Value = nextValue + _blockSize;
                         newValue.ParameterName = "@new";
                         updateCommand.Parameters.Add(newValue);
 
                         var previousValue = updateCommand.CreateParameter();
-                        previousValue.Value = nextval;
+                        previousValue.Value = nextValue;
                         previousValue.ParameterName = "@previous";
                         updateCommand.Parameters.Add(previousValue);
 
@@ -157,14 +166,14 @@ namespace YesSql.Services
                         {
                             _store.Configuration.Logger.LogTrace(UpdateCommand);
                         }
-                        affectedRows = updateCommand.ExecuteNonQuery();
+                        affectedRows = await updateCommand.ExecuteNonQueryAsync();
 
-                        transaction.Commit();
+                        await transaction.CommitAsync();
                     }
                     catch
                     {
                         affectedRows = 0;
-                        transaction.Rollback();
+                        await transaction.RollbackAsync();
                     }
                 }
 
@@ -175,7 +184,8 @@ namespace YesSql.Services
 
             } while (affectedRows == 0);
 
-            range.SetBlock(nextval, _blockSize);
+            await connection.CloseAsync();
+            range.SetBlock(nextValue, _blockSize);
         }
 
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
@@ -244,7 +254,6 @@ namespace YesSql.Services
                             }
 
                             await command.ExecuteNonQueryAsync();
-
                             await transaction.CommitAsync();
                         }
                     }

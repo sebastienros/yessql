@@ -246,7 +246,7 @@ namespace YesSql.Samples.Performance
             foreach (var name in Names)
             {
                 batch++;
-                session.Save(new User
+                await session.SaveAsync(new User
                 {
                     Email = name + "@" + name + ".name",
                     Name = name
@@ -283,7 +283,7 @@ namespace YesSql.Samples.Performance
 
                 if (batch % batchSize == 0)
                 {
-                    users.ForEach(u => session.Save(u));
+                    users.ForEach(async u => await session.SaveAsync(u));
                     await session.SaveChangesAsync();
                     session.Dispose();
                     session = _store.CreateSession();
@@ -291,7 +291,7 @@ namespace YesSql.Samples.Performance
                 }
             }
 
-            users.ForEach(u => session.Save(u));
+            users.ForEach(async u => await session.SaveAsync(u));
             await session.SaveChangesAsync();
             session.Dispose();
             session = _store.CreateSession();

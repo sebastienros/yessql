@@ -51,7 +51,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                session.Save(bill);
+                await session.SaveAsync(bill);
 
                 await session.SaveChangesAsync();
             }

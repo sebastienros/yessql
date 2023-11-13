@@ -59,7 +59,7 @@ namespace YesSql.Samples.Hi
             // saving the post to the database
             using (var session = store.CreateSession())
             {
-                session.Save(post);
+                await session.SaveAsync(post);
 
                 await session.SaveChangesAsync();
             }

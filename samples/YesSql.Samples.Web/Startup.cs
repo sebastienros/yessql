@@ -157,7 +157,7 @@ namespace YesSql.Samples.Web
             Task.Run(async () =>
             {
                 using var session = app.ApplicationServices.GetRequiredService<IStore>().CreateSession();
-                session.Save(new BlogPost
+                await session.SaveAsync(new BlogPost
                 {
                     Title = "On the beach in the sand we found lizards",
                     Author = "Steve Balmer",
@@ -167,7 +167,7 @@ namespace YesSql.Samples.Web
                     Tags = Array.Empty<string>()
                 });
 
-                session.Save(new BlogPost
+                await session.SaveAsync(new BlogPost
                 {
                     Title = "On the beach in the sand we built sandcastles",
                     Author = "Bill Gates",
@@ -177,7 +177,7 @@ namespace YesSql.Samples.Web
                     Tags = Array.Empty<string>()
                 });
 
-                session.Save(new BlogPost
+                await session.SaveAsync(new BlogPost
                 {
                     Title = "On the mountain it snowed at the lake",
                     Author = "Paul Allen",

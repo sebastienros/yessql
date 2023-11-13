@@ -33,7 +33,7 @@ namespace Bench
                         .Column<int>("Age")
                     );
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -52,8 +52,7 @@ namespace Bench
                 };
 
 
-                session.Save(bill);
-
+                await session.SaveAsync(bill);
                 await session.SaveChangesAsync();
             }
 

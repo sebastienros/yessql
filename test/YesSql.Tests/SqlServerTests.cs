@@ -56,7 +56,7 @@ namespace YesSql.Tests
             {
                 var p1 = new Person { Firstname = "Bill" };
 
-                session1.Save(p1);
+                await session1.SaveAsync(p1);
 
                 Assert.Equal(1, p1.Id);
 
@@ -69,7 +69,7 @@ namespace YesSql.Tests
             {
                 var p2 = new Person { Firstname = "Bill" };
 
-                session2.Save(p2);
+                await session2.SaveAsync(p2);
 
                 Assert.Equal(21, p2.Id);
 
@@ -114,7 +114,7 @@ namespace YesSql.Tests
 
                 while (!cts.IsCancellationRequested)
                 {
-                    lastId = taskId = store1.Configuration.IdGenerator.GetNextId(collection);
+                    lastId = taskId = await store1.Configuration.IdGenerator.GetNextIdAsync(collection);
 
                     if (taskId > MaxTransactions)
                     {
@@ -174,7 +174,7 @@ namespace YesSql.Tests
                     // Maximum length of standard nonclustered index column is 1700 bytes 850 * 2 = 1700
                     Name = new string('*', 851)
                 };
-                session.Save(property);
+                await session.SaveAsync(property);
             }
             finally
             {
@@ -227,7 +227,7 @@ namespace YesSql.Tests
                     ForRent = true,
                     IsOccupied = true
                 };
-                session.Save(property);
+                await session.SaveAsync(property);
             }
             finally
             {
@@ -280,7 +280,7 @@ namespace YesSql.Tests
                     Name = new string('*', 425),
                     Location = new string('*', 426), // Max length + 2 bytes
                 };
-                session.Save(property);
+                await session.SaveAsync(property);
             }
             finally
             {
@@ -331,7 +331,7 @@ namespace YesSql.Tests
                     Name = new string('*', 850)
                 };
 
-                session.Save(property);
+                await session.SaveAsync(property);
             }
         }
 
@@ -377,7 +377,7 @@ namespace YesSql.Tests
                     Location = new string('*', 425)
                 };
 
-                session.Save(property);
+                await session.SaveAsync(property);
             }
         }
 
@@ -424,7 +424,7 @@ namespace YesSql.Tests
                     Location = new string('*', 424)
                 };
 
-                session.Save(property);
+                await session.SaveAsync(property);
             }
         }
     }

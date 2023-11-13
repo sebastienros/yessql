@@ -48,10 +48,10 @@ namespace YesSql.Samples.FullText
             // creating articles
             using (var session = store.CreateSession())
             {
-                session.Save(new Article { Content = "This is a green fox" });
-                session.Save(new Article { Content = "This is a yellow cat" });
-                session.Save(new Article { Content = "This is a pink elephant" });
-                session.Save(new Article { Content = "This is a green tiger" });
+                await session.SaveAsync(new Article { Content = "This is a green fox" });
+                await session.SaveAsync(new Article { Content = "This is a yellow cat" });
+                await session.SaveAsync(new Article { Content = "This is a pink elephant" });
+                await session.SaveAsync(new Article { Content = "This is a green tiger" });
 
                 await session.SaveChangesAsync();
             }

@@ -75,18 +75,16 @@ namespace YesSql.Tests
 
             _store.RegisterIndexes<PropertyIndexProvider>();
 
-            using (var session = _store.CreateSession())
+            using var session = _store.CreateSession();
+            var property = new Property
             {
-                var property = new Property
-                {
-                    Name = new string('*', 4000),
-                    IsOccupied = true,
-                    ForRent = true,
-                    Location = new string('*', 4000)
-                };
+                Name = new string('*', 4000),
+                IsOccupied = true,
+                ForRent = true,
+                Location = new string('*', 4000)
+            };
 
-                session.Save(property);
-            }
+            await session.SaveAsync(property);
         }
 
         [Fact]
