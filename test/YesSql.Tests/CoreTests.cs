@@ -396,7 +396,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldCancelTransactionAfterFlush()
         {
-            (var session = _store.CreateSession())
+            using (var session = _store.CreateSession())
             {
                 var bill = new Person
                 {
