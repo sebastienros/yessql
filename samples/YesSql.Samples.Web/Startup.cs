@@ -185,6 +185,7 @@ namespace YesSql.Samples.Web
                 });
 
                 await session.SaveChangesAsync();
+                await connection.CloseAsync();
             });
         }
     }
