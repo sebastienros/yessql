@@ -918,29 +918,27 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldKeepIdentityMapOnCommitAsync()
         {
-            await using (var session = _store.CreateSession())
+            await using var session = _store.CreateSession();
+            var bill = new Person
             {
-                var bill = new Person
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                await session.SaveAsync(bill);
-                var newBill = await session.GetAsync<Person>(bill.Id);
+            await session.SaveAsync(bill);
+            var newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.Equal(bill, newBill);
+            Assert.Equal(bill, newBill);
 
-                await session.SaveChangesAsync();
+            await session.SaveChangesAsync();
 
-                newBill = await session.GetAsync<Person>(bill.Id);
+            newBill = await session.GetAsync<Person>(bill.Id);
 
-                Assert.Equal(bill, newBill);
-            }
+            Assert.Equal(bill, newBill);
         }
 
         [Fact]
-        public async Task ShouldUpdateAutoflushedIndex()
+        public async Task ShouldUpdateAutoFlushedIndex()
         {
             // When auto-flush is called on an entity
             // its indexes should be updated on the actual commit
