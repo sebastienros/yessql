@@ -101,11 +101,11 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldIndexPropertyKeys()
         {
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                 await builder

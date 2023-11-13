@@ -41,11 +41,11 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldIndexPropertyKeys()
         {
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                await using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
@@ -54,7 +54,7 @@ namespace YesSql.Tests
                     await transaction.CommitAsync();
                 }
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+                await using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
                     await builder
@@ -94,30 +94,28 @@ namespace YesSql.Tests
             // This will cause exceptions in other tables when the 'short' key is truncated again.
             await _store.InitializeCollectionAsync("LongCollection");
 
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            await using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            await using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
             {
-                await connection.OpenAsync();
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+                await builder.CreateReduceIndexTableAsync<PersonsByNameCol>(column => column
+                    .Column<string>(nameof(PersonsByNameCol.Name))
+                    .Column<int>(nameof(PersonsByNameCol.Count)),
+                    "LongCollection"
+                    );
 
-                    await builder.CreateReduceIndexTableAsync<PersonsByNameCol>(column => column
-                        .Column<string>(nameof(PersonsByNameCol.Name))
-                        .Column<int>(nameof(PersonsByNameCol.Count)),
-                        "LongCollection"
-                        );
+                await transaction.CommitAsync();
+            }
 
-                    await transaction.CommitAsync();
-                }
+            await using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+            {
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(_store.Configuration, transaction);
-
-                    await builder.DropReduceIndexTableAsync<PersonsByNameCol>("LongCollection");
-                    await transaction.CommitAsync();
-                }
+                await builder.DropReduceIndexTableAsync<PersonsByNameCol>("LongCollection");
+                await transaction.CommitAsync();
             }
         }
     }

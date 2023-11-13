@@ -141,7 +141,7 @@ namespace YesSql
                     catch
                     {
                         await result.CloseAsync();
-                        using var migrationTransaction = connection.BeginTransaction();
+                        await using var migrationTransaction = connection.BeginTransaction();
                         var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
                         try

@@ -25,28 +25,26 @@ namespace YesSql.Samples.FullText
 
             var store = await StoreFactory.CreateAndInitializeAsync(configuration);
 
-            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(store.Configuration, transaction);
+                await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(store.Configuration, transaction);
 
-                    await builder.CreateReduceIndexTableAsync<ArticleByWord>(table => table
-                        .Column<int>("Count")
-                        .Column<string>("Word")
-                    );
+                await builder.CreateReduceIndexTableAsync<ArticleByWord>(table => table
+                    .Column<int>("Count")
+                    .Column<string>("Word")
+                );
 
-                    await transaction.CommitAsync();
-                }
+                await transaction.CommitAsync();
             }
 
             // register available indexes
             store.RegisterIndexes<ArticleIndexProvider>();
 
             // creating articles
-            using (var session = store.CreateSession())
+            await using (var session = store.CreateSession())
             {
                 await session.SaveAsync(new Article { Content = "This is a green fox" });
                 await session.SaveAsync(new Article { Content = "This is a yellow cat" });
@@ -56,7 +54,7 @@ namespace YesSql.Samples.FullText
                 await session.SaveChangesAsync();
             }
 
-            using (var session = store.CreateSession())
+            await using (var session = store.CreateSession())
             {
                 Console.WriteLine("Simple term: 'green'");
                 var simple = await session

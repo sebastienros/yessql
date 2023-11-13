@@ -113,7 +113,7 @@ namespace YesSql.Services
             long nextValue = 0;
             var retries = 0;
 
-            using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            await using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
 
             do
@@ -121,7 +121,7 @@ namespace YesSql.Services
                 // Ensure we overwrite the value that has been read by this
                 // instance in case another client is trying to lease a range
                 // at the same time
-                using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                await using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                 {
                     try
                     {
@@ -197,74 +197,70 @@ namespace YesSql.Services
 
             object nextval;
 
-            await using (var connection = configuration.ConnectionFactory.CreateConnection())
+            await using var connection = configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
             {
-                await connection.OpenAsync();
+                // Does the record already exist?
+                var selectCommand = transaction.Connection.CreateCommand();
+                selectCommand.CommandText = SelectCommand;
 
-                await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+                var selectDimension = selectCommand.CreateParameter();
+                selectDimension.Value = collection;
+                selectDimension.ParameterName = "@dimension";
+                selectCommand.Parameters.Add(selectDimension);
+
+                selectCommand.Transaction = transaction;
+
+                if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
                 {
-                    // Does the record already exist?
-                    var selectCommand = transaction.Connection.CreateCommand();
-                    selectCommand.CommandText = SelectCommand;
+                    _store.Configuration.Logger.LogTrace(SelectCommand);
+                }
 
-                    var selectDimension = selectCommand.CreateParameter();
-                    selectDimension.Value = collection;
-                    selectDimension.ParameterName = "@dimension";
-                    selectCommand.Parameters.Add(selectDimension);
+                nextval = await selectCommand.ExecuteScalarAsync();
 
-                    selectCommand.Transaction = transaction;
+                await transaction.CommitAsync();
+            }
+
+            if (nextval == null)
+            {
+                // Try to create a new record. If it fails, retry reading the record.
+                try
+                {
+                    await using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+                    // To prevent concurrency issues when creating this record (it must be unique)
+                    // we generate a random collection name, then update it safely
+
+                    var command = transaction.Connection.CreateCommand();
+                    command.CommandText = InsertCommand;
+                    command.Transaction = transaction;
+
+                    var dimensionParameter = command.CreateParameter();
+                    dimensionParameter.Value = collection;
+                    dimensionParameter.ParameterName = "@dimension";
+                    command.Parameters.Add(dimensionParameter);
+
+                    var nextValParameter = command.CreateParameter();
+                    nextValParameter.Value = _initialValue;
+                    nextValParameter.ParameterName = "@nextval";
+                    command.Parameters.Add(nextValParameter);
 
                     if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
                     {
-                        _store.Configuration.Logger.LogTrace(SelectCommand);
+                        _store.Configuration.Logger.LogTrace(InsertCommand);
                     }
 
-                    nextval = await selectCommand.ExecuteScalarAsync();
-
+                    await command.ExecuteNonQueryAsync();
                     await transaction.CommitAsync();
                 }
-
-                if (nextval == null)
+                catch
                 {
-                    // Try to create a new record. If it fails, retry reading the record.
-                    try
-                    {
-                        await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-                        {
-                            // To prevent concurrency issues when creating this record (it must be unique)
-                            // we generate a random collection name, then update it safely
-
-                            var command = transaction.Connection.CreateCommand();
-                            command.CommandText = InsertCommand;
-                            command.Transaction = transaction;
-
-                            var dimensionParameter = command.CreateParameter();
-                            dimensionParameter.Value = collection;
-                            dimensionParameter.ParameterName = "@dimension";
-                            command.Parameters.Add(dimensionParameter);
-
-                            var nextValParameter = command.CreateParameter();
-                            nextValParameter.Value = _initialValue;
-                            nextValParameter.ParameterName = "@nextval";
-                            command.Parameters.Add(nextValParameter);
-
-                            if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
-                            {
-                                _store.Configuration.Logger.LogTrace(InsertCommand);
-                            }
-
-                            await command.ExecuteNonQueryAsync();
-                            await transaction.CommitAsync();
-                        }
-                    }
-                    catch
-                    {
-                        await InitializeCollectionAsync(configuration, collection);
-                    }
+                    await InitializeCollectionAsync(configuration, collection);
                 }
-
-                _ranges[collection] = new Range(collection);
             }
+
+            _ranges[collection] = new Range(collection);
         }
 
         private class Range

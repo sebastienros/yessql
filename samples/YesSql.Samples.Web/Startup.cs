@@ -30,7 +30,7 @@ namespace YesSql.Samples.Web
 
             services.AddMvc(options => options.EnableEndpointRouting = false);
 
-            services.AddSingleton<IQueryParser<BlogPost>>(sp =>
+            services.AddSingleton(sp =>
                 new QueryEngineBuilder<BlogPost>()
                     .WithNamedTerm("status", builder => builder
                         .OneCondition((val, query) =>
@@ -137,10 +137,10 @@ namespace YesSql.Samples.Web
             store.RegisterIndexes(new[] { new BlogPostIndexProvider() });
             Task.Run(async () =>
             {
-                using var connection = store.Configuration.ConnectionFactory.CreateConnection();
+                await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
                 await connection.OpenAsync();
 
-                using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(store.Configuration, transaction);
 
                 await builder.CreateMapIndexTableAsync<BlogPostIndex>(table => table
@@ -152,11 +152,8 @@ namespace YesSql.Samples.Web
                     );
 
                 await transaction.CommitAsync();
-            });
 
-            Task.Run(async () =>
-            {
-                using var session = app.ApplicationServices.GetRequiredService<IStore>().CreateSession();
+                await using var session = app.ApplicationServices.GetRequiredService<IStore>().CreateSession();
                 await session.SaveAsync(new BlogPost
                 {
                     Title = "On the beach in the sand we found lizards",
