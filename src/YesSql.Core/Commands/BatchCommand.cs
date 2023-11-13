@@ -47,7 +47,7 @@ namespace YesSql.Commands
                 return;
             }
 
-            var command = String.Concat(Queries);
+            var command = string.Concat(Queries);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {

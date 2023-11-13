@@ -45,7 +45,7 @@ namespace YesSql.Tests
             if (_configuration == null)
             {
                 _configuration = CreateConfiguration();
-                
+
                 CleanDatabase(_configuration, false);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
@@ -1455,9 +1455,9 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => (x.Name + x.Name).Contains("Bill")).CountAsync());
 
                 // Concat method
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name) == "BillBill").CountAsync());
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name, x.Name) == "BillBillBill").CountAsync());
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => String.Concat(x.Name, x.Name, x.Name, x.Name) == "BillBillBillBill").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => string.Concat(x.Name, x.Name) == "BillBill").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => string.Concat(x.Name, x.Name, x.Name) == "BillBillBill").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => string.Concat(x.Name, x.Name, x.Name, x.Name) == "BillBillBillBill").CountAsync());
             }
         }
 
@@ -2880,7 +2880,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
 
@@ -2896,7 +2896,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(-1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(-1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
 
@@ -2912,7 +2912,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, String.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
                 }
             }
         }
@@ -3860,7 +3860,7 @@ namespace YesSql.Tests
 
                 if (!session2IsDisposed.WaitOne(5000))
                 {
-                    Assert.True(false, "session2IsDisposed timeout");
+                    Assert.Fail("session2IsDisposed timeout");
                 }
 
                 // IsolationLevel.ReadCommitted is the default
@@ -3874,7 +3874,7 @@ namespace YesSql.Tests
             {
                 if (!session1IsDisposed.WaitOne(5000))
                 {
-                    Assert.True(false, "session1IsDisposed timeout");
+                    Assert.Fail("session1IsDisposed timeout");
                 }
 
                 // IsolationLevel.ReadCommitted is the default
@@ -3957,7 +3957,7 @@ namespace YesSql.Tests
                     session1IsFlushed.Set();
                     if (!session2IsDisposed.WaitOne(5000))
                     {
-                        Assert.True(false, "session2IsDisposed timeout");
+                        Assert.Fail("session2IsDisposed timeout");
                     }
 
                     await session1.SaveChangesAsync();
@@ -3977,7 +3977,7 @@ namespace YesSql.Tests
             {
                 if (!session1IsFlushed.WaitOne(5000))
                 {
-                    Assert.True(false, "session1IsFlushed timeout");
+                    Assert.Fail("session1IsFlushed timeout");
                 }
 
                 using (var session2 = _store.CreateSession())
@@ -5258,7 +5258,7 @@ namespace YesSql.Tests
                             .Column<string>(column1)
                         );
 
-                    var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
+                    var sqlInsert = string.Format("INSERT INTO {0} ({1}) VALUES({2})",
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema),
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
                         _store.Configuration.SqlDialect.GetSqlValue(value)
@@ -5271,7 +5271,7 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                    var sqlSelect = string.Format("SELECT {0} FROM {1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
@@ -5296,7 +5296,7 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                    var sqlSelect = string.Format("SELECT {0} FROM {1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column2),
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
@@ -5339,7 +5339,7 @@ namespace YesSql.Tests
                     // Wait for the other thread to load the person before updating it
                     if (!task2Loaded.WaitOne(5000))
                     {
-                        Assert.True(false, "task2Loaded timeout");
+                        Assert.Fail("task2Loaded timeout");
                         await session.CancelAsync();
                     }
 
@@ -5371,7 +5371,7 @@ namespace YesSql.Tests
                         // Wait for the other thread to save the person before updating it
                         if (!task1Saved.WaitOne(5000))
                         {
-                            Assert.True(false, "task1Saved timeout");
+                            Assert.Fail("task1Saved timeout");
                             await session.CancelAsync();
                         }
 

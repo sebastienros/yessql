@@ -51,7 +51,7 @@ namespace YesSql.Sql
             FromSegments.Clear();
             FromSegments.Add(FormatTable(table, schema));
 
-            if (!String.IsNullOrEmpty(alias))
+            if (!string.IsNullOrEmpty(alias))
             {
                 FromSegments.Add(" AS ");
                 FromSegments.Add(_dialect.QuoteForAliasName(alias));
@@ -75,7 +75,7 @@ namespace YesSql.Sql
             _count = take;
         }
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string schema, string toColumn, string alias = null, string toAlias = null)
+        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null)
         {
             // Don't prefix if alias is used
             if (alias != onTable)
@@ -96,7 +96,7 @@ namespace YesSql.Sql
                 toTable = _tablePrefix + toTable;
             }
 
-            if (!String.IsNullOrEmpty(toAlias))
+            if (!string.IsNullOrEmpty(toAlias))
             {
                 toTable = _dialect.QuoteForAliasName(toAlias);
             }
@@ -104,7 +104,7 @@ namespace YesSql.Sql
             JoinSegments.Add(" INNER JOIN ");
             JoinSegments.Add(FormatTable(table, schema));
 
-            if (!String.IsNullOrEmpty(alias))
+            if (!string.IsNullOrEmpty(alias))
             {
                 JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForAliasName(alias) });
             }
@@ -188,7 +188,7 @@ namespace YesSql.Sql
 
         public virtual void AndAlso(string where)
         {
-            if (String.IsNullOrWhiteSpace(where))
+            if (string.IsNullOrWhiteSpace(where))
             {
                 return;
             }
@@ -203,7 +203,7 @@ namespace YesSql.Sql
 
         public virtual void WhereOr(string where)
         {
-            if (String.IsNullOrWhiteSpace(where))
+            if (string.IsNullOrWhiteSpace(where))
             {
                 return;
             }
@@ -218,7 +218,7 @@ namespace YesSql.Sql
 
         public virtual void WhereAnd(string where)
         {
-            if (String.IsNullOrWhiteSpace(where))
+            if (string.IsNullOrWhiteSpace(where))
             {
                 return;
             }
@@ -318,7 +318,7 @@ namespace YesSql.Sql
 
         public virtual string ToSqlString()
         {
-            if (!String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
                 return "";
             }

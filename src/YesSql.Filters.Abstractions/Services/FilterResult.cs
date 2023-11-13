@@ -54,13 +54,13 @@ namespace YesSql.Filters.Abstractions.Services
         /// Returns a normalized query string, applying any inferred boolean logic and parenthesis
         /// </summary>
         public string ToNormalizedString()
-            => $"{String.Join(" ", _terms.Values.Select(s => s.ToNormalizedString()))}";
+            => $"{string.Join(" ", _terms.Values.Select(s => s.ToNormalizedString()))}";
 
         /// <summary>
         /// Returns the filter terms.
         /// </summary>
         public override string ToString()
-            => $"{String.Join(" ", _terms.Values.Select(s => s.ToString()))}";
+            => $"{string.Join(" ", _terms.Values.Select(s => s.ToString()))}";
 
         /// <summary>
         /// Adds or replaces a <see cref="TermNode"/>

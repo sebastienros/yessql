@@ -49,7 +49,7 @@ namespace YesSql.Filters.Query
 
                 if (!_terms.ContainsKey(termOption.Key))
                 {
-                    var alwaysRunNode = new NamedTermNode(termOption.Key, new UnaryNode(String.Empty, OperateNodeQuotes.None));
+                    var alwaysRunNode = new NamedTermNode(termOption.Key, new UnaryNode(string.Empty, OperateNodeQuotes.None));
                     await VisitTerm(TermOptions, context, visitor, alwaysRunNode);
                 }
             }

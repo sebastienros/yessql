@@ -65,7 +65,7 @@ namespace YesSql.Samples.Web
                                 return (true, model.SelectedStatus.ToString());
                             }
 
-                            return (false, String.Empty);
+                            return (false, string.Empty);
 
                         })
                     )
@@ -108,7 +108,7 @@ namespace YesSql.Samples.Web
                                 return (true, model.SelectedSort.ToString());
                             }
 
-                            return (false, String.Empty);
+                            return (false, string.Empty);
 
                         })
                         .AlwaysRun()
