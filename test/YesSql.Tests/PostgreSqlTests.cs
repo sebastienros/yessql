@@ -47,28 +47,29 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(_store.Configuration, transaction)
-                        .DropMapIndexTable<PropertyIndex>();
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    transaction.Commit();
+                    await builder.DropMapIndexTableAsync<PropertyIndex>();
+
+                    await transaction.CommitAsync();
                 }
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
                         );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -103,21 +104,21 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
+                    await builder.CreateReduceIndexTableAsync<PersonsByNameCol>(column => column
                         .Column<string>(nameof(PersonsByNameCol.Name))
                         .Column<int>(nameof(PersonsByNameCol.Count)),
                         "LongCollection"
                         );
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder.DropReduceIndexTable<PersonsByNameCol>("LongCollection");
-                    transaction.Commit();
+                    await builder.DropReduceIndexTableAsync<PersonsByNameCol>("LongCollection");
+                    await transaction.CommitAsync();
                 }
             }
         }

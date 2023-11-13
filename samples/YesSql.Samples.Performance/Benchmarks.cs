@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Engines;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,14 +8,13 @@ using System.Threading.Tasks;
 using YesSql.Provider.PostgreSql;
 using YesSql.Services;
 using YesSql.Sql;
-using BenchmarkDotNet.Engines;
 
 namespace YesSql.Samples.Performance
 {
     [MemoryDiagnoser, ShortRunJob]
     public class Benchmarks
     {
-        private Consumer _consumer = new Consumer();
+        private readonly Consumer _consumer = new Consumer();
 
         IStore _store;
 
@@ -29,21 +29,22 @@ namespace YesSql.Samples.Performance
                     .UsePostgreSql(@"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;")
                     .SetTablePrefix("Performance")
                     ;
-            
+
             try
             {
                 using (var connection = configuration.ConnectionFactory.CreateConnection())
                 {
-                    connection.Open();
+                    await connection.OpenAsync();
 
                     using (var transaction = connection.BeginTransaction())
                     {
-                        new SchemaBuilder(configuration, transaction)
-                        .DropTable("UserByName")
-                        .DropTable("Identifiers")
-                        .DropTable(configuration.TableNameConvention.GetDocumentTable(""));
+                        var builder = new SchemaBuilder(configuration, transaction);
 
-                        transaction.Commit();
+                        await builder.DropTableAsync("UserByName");
+                        await builder.DropTableAsync("Identifiers");
+                        await builder.DropTableAsync(configuration.TableNameConvention.GetDocumentTable(""));
+
+                        await transaction.CommitAsync();
                     }
                 }
             }
@@ -53,18 +54,21 @@ namespace YesSql.Samples.Performance
 
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction())
                 {
-                    new SchemaBuilder(configuration, transaction).CreateMapIndexTable<UserByName>(table => table
+                    var builder = new SchemaBuilder(configuration, transaction);
+
+                    await builder.CreateMapIndexTableAsync<UserByName>(table => table
                         .Column<string>("Name")
-                    )
-                    .AlterTable("UserByName", table => table
+                    );
+
+                    await builder.AlterTableAsync("UserByName", table => table
                         .CreateIndex("IX_Name", "Name")
                     );
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -102,7 +106,7 @@ namespace YesSql.Samples.Performance
 
             using (var session = _store.CreateSession())
             {
-                foreach(var user in await session.QueryIndex<UserByName>(x => x.Name.IsIn(names)).ListAsync())
+                foreach (var user in await session.QueryIndex<UserByName>(x => x.Name.IsIn(names)).ListAsync())
                 {
                     _consumer.Consume(user);
                 }
@@ -117,7 +121,7 @@ namespace YesSql.Samples.Performance
 
             using (var session = _store.CreateSession())
             {
-                foreach(var user in await session.QueryIndex<UserByName>(x => x.Name.IsIn(names)).ListAsync())
+                foreach (var user in await session.QueryIndex<UserByName>(x => x.Name.IsIn(names)).ListAsync())
                 {
                     _consumer.Consume(user);
                 }
@@ -147,7 +151,7 @@ namespace YesSql.Samples.Performance
 
             using (var session = _store.CreateSession())
             {
-                foreach (var user in  await session.Query<User, UserByName>(x => x.Name.IsIn(names)).ListAsync())
+                foreach (var user in await session.Query<User, UserByName>(x => x.Name.IsIn(names)).ListAsync())
                 {
                     _consumer.Consume(user);
                 }
@@ -222,7 +226,7 @@ namespace YesSql.Samples.Performance
                 }
             }
         }
-        
+
         private async Task CleanAsync()
         {
             using (var session = _store.CreateSession())

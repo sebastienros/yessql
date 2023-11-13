@@ -43,10 +43,10 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
-                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
-                    builder.DropTable("Identifiers");
+                    await builder.DropTableAsync(configuration.TableNameConvention.GetDocumentTable(""));
+                    await builder.DropTableAsync("Identifiers");
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -91,10 +91,10 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
-                    builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
-                    builder.DropTable("Identifiers");
+                    await builder.DropTableAsync(configuration.TableNameConvention.GetDocumentTable(""));
+                    await builder.DropTableAsync("Identifiers");
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -144,22 +144,22 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -180,7 +180,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
+                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
                 }
             }
         }
@@ -196,21 +196,21 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
-                    builder.AlterTable(nameof(PropertyIndex), table => table
+                    await builder.AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -233,7 +233,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
+                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
                 }
             }
         }
@@ -249,22 +249,22 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name", "Location"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -286,7 +286,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
+                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
                 }
             }
         }
@@ -302,22 +302,22 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -347,22 +347,22 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name", "Location"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -392,22 +392,22 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
                         );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 

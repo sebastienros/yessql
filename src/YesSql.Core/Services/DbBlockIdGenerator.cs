@@ -60,7 +60,7 @@ namespace YesSql.Services
                     {
                         var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
-                        localBuilder.CreateTable(TableName, table => table
+                        await localBuilder.CreateTableAsync(TableName, table => table
                             .Column<string>("dimension", column => column.PrimaryKey().NotNull())
                             .Column<long>("nextval")
                             );
@@ -255,7 +255,7 @@ namespace YesSql.Services
                 }
 
                 _ranges[collection] = new Range(collection);
-            }                
+            }
         }
 
         private class Range

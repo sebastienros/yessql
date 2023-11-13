@@ -27,7 +27,7 @@ namespace Bench
                 {
                     var builder = new SchemaBuilder(configuration, transaction);
 
-                    builder.CreateMapIndexTable<UserByName>(c => c
+                    await builder.CreateMapIndexTableAsync<UserByName>(c => c
                         .Column<string>("Name")
                         .Column<bool>("Adult")
                         .Column<int>("Age")

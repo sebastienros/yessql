@@ -24,20 +24,22 @@ namespace YesSql.Samples.Hi
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(store.Configuration, transaction)
-                        .CreateMapIndexTable<BlogPostByAuthor>(table => table
+                    var builder = new SchemaBuilder(store.Configuration, transaction);
+
+                    await builder.CreateMapIndexTableAsync<BlogPostByAuthor>(table => table
                             .Column<string>("Author")
-                        )
-                        .CreateReduceIndexTable<BlogPostByDay>(table => table
+                        );
+
+                    await builder.CreateReduceIndexTableAsync<BlogPostByDay>(table => table
                             .Column<int>("Count")
                             .Column<int>("Day")
                     );
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             };
 

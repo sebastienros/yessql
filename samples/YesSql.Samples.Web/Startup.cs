@@ -1,8 +1,9 @@
-using System;
-using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using YesSql.Filters.Query;
 using YesSql.Provider.Sqlite;
 using YesSql.Samples.Web.Indexes;
@@ -92,7 +93,7 @@ namespace YesSql.Samples.Web
                                 query.With<BlogPostIndex>().OrderByDescending(x => x.PublishedUtc);
                             }
 
-                            return query;          
+                            return query;
                         })
                         .MapTo<Filter>((val, model) =>
                         {
@@ -123,7 +124,7 @@ namespace YesSql.Samples.Web
             );
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public async Task ConfigureAsync(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseRouting();
 
@@ -137,12 +138,13 @@ namespace YesSql.Samples.Web
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(store.Configuration, transaction)
-                        .CreateMapIndexTable<BlogPostIndex>(table => table
+                    var builder = new SchemaBuilder(store.Configuration, transaction);
+
+                    await builder.CreateMapIndexTableAsync<BlogPostIndex>(table => table
                             .Column<string>("Title")
                             .Column<string>("Author")
                             .Column<string>("Content")
@@ -150,7 +152,7 @@ namespace YesSql.Samples.Web
                             .Column<bool>("Published")
                         );
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 
@@ -186,7 +188,7 @@ namespace YesSql.Samples.Web
                     Tags = Array.Empty<string>()
                 });
 
-                session.SaveChangesAsync().GetAwaiter().GetResult();
+                await session.SaveChangesAsync();
             }
         }
     }

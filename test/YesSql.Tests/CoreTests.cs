@@ -45,14 +45,14 @@ namespace YesSql.Tests
             if (_configuration == null)
             {
                 _configuration = CreateConfiguration();
-                
-                CleanDatabase(_configuration, false);
+
+                await CleanDatabaseAsync(_configuration, false);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");
                 _store.TypeNames[typeof(Person)] = "People";
 
-                CreateTables(_configuration);
+                await CreateTablesAsync(_configuration);
             }
             else
             {
@@ -62,13 +62,11 @@ namespace YesSql.Tests
             }
 
             // Clear the tables for each new test
-            ClearTables(_configuration);
+            await ClearTablesAsync(_configuration);
         }
 
         public virtual Task DisposeAsync()
-        {
-            return Task.CompletedTask;
-        }
+            => Task.CompletedTask;
 
         protected void EnableLogging()
         {
@@ -77,7 +75,7 @@ namespace YesSql.Tests
         }
 
         //[DebuggerNonUserCode]
-        protected virtual void CleanDatabase(IConfiguration configuration, bool throwOnError)
+        protected virtual async Task CleanDatabaseAsync(IConfiguration configuration, bool throwOnError)
         {
             // Remove existing tables
             using var connection = configuration.ConnectionFactory.CreateConnection();
@@ -86,43 +84,43 @@ namespace YesSql.Tests
             using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
             var builder = new SchemaBuilder(configuration, transaction, throwOnError);
 
-            builder.DropReduceIndexTable<ArticlesByDay>();
-            builder.DropReduceIndexTable<AttachmentByDay>();
-            builder.DropMapIndexTable<ArticleByPublishedDate>();
-            builder.DropMapIndexTable<PersonByName>();
-            builder.DropMapIndexTable<CarIndex>();
-            builder.DropMapIndexTable<PersonByNameCol>();
-            builder.DropMapIndexTable<PersonIdentity>();
-            builder.DropMapIndexTable<EmailByAttachment>();
-            builder.DropMapIndexTable<TypesIndex>();
+            await builder.DropReduceIndexTableAsync<ArticlesByDay>();
+            await builder.DropReduceIndexTableAsync<AttachmentByDay>();
+            await builder.DropMapIndexTableAsync<ArticleByPublishedDate>();
+            await builder.DropMapIndexTableAsync<PersonByName>();
+            await builder.DropMapIndexTableAsync<CarIndex>();
+            await builder.DropMapIndexTableAsync<PersonByNameCol>();
+            await builder.DropMapIndexTableAsync<PersonIdentity>();
+            await builder.DropMapIndexTableAsync<EmailByAttachment>();
+            await builder.DropMapIndexTableAsync<TypesIndex>();
 
-            builder.DropMapIndexTable<ShapeIndex>();
-            builder.DropMapIndexTable<PersonByAge>();
-            builder.DropMapIndexTable<PersonByNullableAge>();
-            builder.DropMapIndexTable<Binary>();
-            builder.DropMapIndexTable<PublishedArticle>();
-            builder.DropMapIndexTable<PropertyIndex>();
-            builder.DropReduceIndexTable<UserByRoleNameIndex>();
+            await builder.DropMapIndexTableAsync<ShapeIndex>();
+            await builder.DropMapIndexTableAsync<PersonByAge>();
+            await builder.DropMapIndexTableAsync<PersonByNullableAge>();
+            await builder.DropMapIndexTableAsync<Binary>();
+            await builder.DropMapIndexTableAsync<PublishedArticle>();
+            await builder.DropMapIndexTableAsync<PropertyIndex>();
+            await builder.DropReduceIndexTableAsync<UserByRoleNameIndex>();
 
-            builder.DropMapIndexTable<PersonByName>("Col1");
-            builder.DropMapIndexTable<PersonByNameCol>("Col1");
-            builder.DropMapIndexTable<PersonByBothNamesCol>("Col1");
-            builder.DropReduceIndexTable<PersonsByNameCol>("Col1");
-            builder.DropReduceIndexTable<PersonsByNameCol>("LongCollection");
+            await builder.DropMapIndexTableAsync<PersonByName>("Col1");
+            await builder.DropMapIndexTableAsync<PersonByNameCol>("Col1");
+            await builder.DropMapIndexTableAsync<PersonByBothNamesCol>("Col1");
+            await builder.DropReduceIndexTableAsync<PersonsByNameCol>("Col1");
+            await builder.DropReduceIndexTableAsync<PersonsByNameCol>("LongCollection");
 
-            builder.DropTable(configuration.TableNameConvention.GetDocumentTable("Col1"));
-            builder.DropTable(configuration.TableNameConvention.GetDocumentTable(""));
+            await builder.DropTableAsync(configuration.TableNameConvention.GetDocumentTable("Col1"));
+            await builder.DropTableAsync(configuration.TableNameConvention.GetDocumentTable(""));
 
-            builder.DropTable(DbBlockIdGenerator.TableName);
+            await builder.DropTableAsync(DbBlockIdGenerator.TableName);
 
-            OnCleanDatabase(builder, transaction);
+            await OnCleanDatabaseAsync(builder, transaction);
 
-            transaction.Commit();
+            await transaction.CommitAsync();
         }
 
-        protected virtual void ClearTables(IConfiguration configuration)
+        protected virtual async Task ClearTablesAsync(IConfiguration configuration)
         {
-            void DeleteReduceIndexTable<IndexType>(DbConnection connection, string collection = "")
+            async Task DeleteReduceIndexTableAsync<IndexType>(DbConnection connection, string collection = "")
             {
                 var indexTable = configuration.TableNameConvention.GetIndexTable(typeof(IndexType), collection);
                 var documentTable = configuration.TableNameConvention.GetDocumentTable(collection);
@@ -131,33 +129,33 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName, configuration.Schema)}");
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
+                    await connection.ExecuteAsync($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName, configuration.Schema)}");
+                    await connection.ExecuteAsync($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
                 }
                 catch
                 {
                 }
             }
 
-            void DeleteMapIndexTable<IndexType>(DbConnection connection, string collection = "")
+            async Task DeleteMapIndexTableAsync<IndexType>(DbConnection connection, string collection = "")
             {
                 var indexName = typeof(IndexType).Name;
                 var indexTable = configuration.TableNameConvention.GetIndexTable(typeof(IndexType), collection);
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
+                    await connection.ExecuteAsync($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable, configuration.Schema)}");
                 }
                 catch { }
             }
 
-            void DeleteDocumentTable(DbConnection connection, string collection = "")
+            async Task DeleteDocumentTableAsync(DbConnection connection, string collection = "")
             {
                 var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName, configuration.Schema)}");
+                    await connection.ExecuteAsync($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName, configuration.Schema)}");
                 }
                 catch { }
             }
@@ -165,188 +163,184 @@ namespace YesSql.Tests
             // Remove existing tables
             using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
 
-                DeleteReduceIndexTable<ArticlesByDay>(connection);
-                DeleteReduceIndexTable<AttachmentByDay>(connection);
-                DeleteMapIndexTable<ArticleByPublishedDate>(connection);
-                DeleteMapIndexTable<PersonByName>(connection);
-                DeleteMapIndexTable<CarIndex>(connection);
-                DeleteMapIndexTable<PersonByNameCol>(connection);
-                DeleteMapIndexTable<PersonIdentity>(connection);
-                DeleteMapIndexTable<EmailByAttachment>(connection);
-                DeleteMapIndexTable<TypesIndex>(connection);
+                await DeleteReduceIndexTableAsync<ArticlesByDay>(connection);
+                await DeleteReduceIndexTableAsync<AttachmentByDay>(connection);
+                await DeleteMapIndexTableAsync<ArticleByPublishedDate>(connection);
+                await DeleteMapIndexTableAsync<PersonByName>(connection);
+                await DeleteMapIndexTableAsync<CarIndex>(connection);
+                await DeleteMapIndexTableAsync<PersonByNameCol>(connection);
+                await DeleteMapIndexTableAsync<PersonIdentity>(connection);
+                await DeleteMapIndexTableAsync<EmailByAttachment>(connection);
+                await DeleteMapIndexTableAsync<TypesIndex>(connection);
 
-                DeleteMapIndexTable<ShapeIndex>(connection);
-                DeleteMapIndexTable<PersonByAge>(connection);
-                DeleteMapIndexTable<PersonByNullableAge>(connection);
-                DeleteMapIndexTable<Binary>(connection);
-                DeleteMapIndexTable<PublishedArticle>(connection);
-                DeleteMapIndexTable<PropertyIndex>(connection);
-                DeleteReduceIndexTable<UserByRoleNameIndex>(connection);
+                await DeleteMapIndexTableAsync<ShapeIndex>(connection);
+                await DeleteMapIndexTableAsync<PersonByAge>(connection);
+                await DeleteMapIndexTableAsync<PersonByNullableAge>(connection);
+                await DeleteMapIndexTableAsync<Binary>(connection);
+                await DeleteMapIndexTableAsync<PublishedArticle>(connection);
+                await DeleteMapIndexTableAsync<PropertyIndex>(connection);
+                await DeleteReduceIndexTableAsync<UserByRoleNameIndex>(connection);
 
-                DeleteMapIndexTable<PersonByName>(connection, "Col1");
-                DeleteMapIndexTable<PersonByNameCol>(connection, "Col1");
-                DeleteMapIndexTable<PersonByBothNamesCol>(connection, "Col1");
-                DeleteReduceIndexTable<PersonsByNameCol>(connection, "Col1");
+                await DeleteMapIndexTableAsync<PersonByName>(connection, "Col1");
+                await DeleteMapIndexTableAsync<PersonByNameCol>(connection, "Col1");
+                await DeleteMapIndexTableAsync<PersonByBothNamesCol>(connection, "Col1");
+                await DeleteReduceIndexTableAsync<PersonsByNameCol>(connection, "Col1");
 
-                DeleteDocumentTable(connection, "Col1");
-                DeleteDocumentTable(connection, "");
+                await DeleteDocumentTableAsync(connection, "Col1");
+                await DeleteDocumentTableAsync(connection, "");
 
                 //connection.Execute($"DELETE FROM {TablePrefix}{DbBlockIdGenerator.TableName}");
 
-                OnClearTables(connection);
-
+                await OnClearTablesAsync(connection);
             }
         }
 
-        protected virtual void OnCleanDatabase(SchemaBuilder builder, DbTransaction transaction)
-        {
+        protected virtual Task OnCleanDatabaseAsync(SchemaBuilder builder, DbTransaction transaction)
+            => Task.CompletedTask;
 
-        }
+        protected virtual Task OnClearTablesAsync(DbConnection connection)
+            => Task.CompletedTask;
 
-        protected virtual void OnClearTables(DbConnection connection)
-        {
-
-        }
-
-        public void CreateTables(IConfiguration configuration)
+        public async Task CreateTablesAsync(IConfiguration configuration)
         {
             using var connection = configuration.ConnectionFactory.CreateConnection();
-            connection.Open();
+            await connection.OpenAsync();
 
             using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
             var builder = new SchemaBuilder(configuration, transaction);
 
-            builder.CreateReduceIndexTable<ArticlesByDay>(column => column
-                    .Column<int>(nameof(ArticlesByDay.Count))
-                    .Column<int>(nameof(ArticlesByDay.DayOfYear))
-                );
-            builder.CreateReduceIndexTable<AttachmentByDay>(column => column
-                    .Column<int>(nameof(AttachmentByDay.Count))
-                    .Column<int>(nameof(AttachmentByDay.Date))
-                );
+            await builder.CreateReduceIndexTableAsync<ArticlesByDay>(column => column
+                .Column<int>(nameof(ArticlesByDay.Count))
+                .Column<int>(nameof(ArticlesByDay.DayOfYear))
+            );
 
-            builder.CreateReduceIndexTable<UserByRoleNameIndex>(column => column
-                    .Column<int>(nameof(UserByRoleNameIndex.Count))
-                    .Column<string>(nameof(UserByRoleNameIndex.RoleName))
-                );
+            await builder.CreateReduceIndexTableAsync<AttachmentByDay>(column => column
+                .Column<int>(nameof(AttachmentByDay.Count))
+                .Column<int>(nameof(AttachmentByDay.Date))
+            );
 
-            builder.CreateMapIndexTable<ArticleByPublishedDate>(column => column
-                    .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
-                    .Column<string>(nameof(ArticleByPublishedDate.Title))
-                );
+            await builder.CreateReduceIndexTableAsync<UserByRoleNameIndex>(column => column
+                .Column<int>(nameof(UserByRoleNameIndex.Count))
+                .Column<string>(nameof(UserByRoleNameIndex.RoleName))
+            );
 
-            builder.CreateMapIndexTable<PersonByName>(column => column
-                    .Column<string>(nameof(PersonByName.SomeName))
-                );
+            await builder.CreateMapIndexTableAsync<ArticleByPublishedDate>(column => column
+                .Column<DateTime>(nameof(ArticleByPublishedDate.PublishedDateTime))
+                .Column<string>(nameof(ArticleByPublishedDate.Title))
+            );
 
-            builder.CreateMapIndexTable<CarIndex>(column => column
-                    .Column<string>(nameof(CarIndex.Name))
-                    .Column<Categories>(nameof(CarIndex.Category))
-                );
+            await builder.CreateMapIndexTableAsync<PersonByName>(column => column
+                .Column<string>(nameof(PersonByName.SomeName))
+            );
 
-            builder.CreateMapIndexTable<PersonByNameCol>(column => column
-                    .Column<string>(nameof(PersonByNameCol.Name))
-                    );
+            await builder.CreateMapIndexTableAsync<CarIndex>(column => column
+                .Column<string>(nameof(CarIndex.Name))
+                .Column<Categories>(nameof(CarIndex.Category))
+            );
 
-            builder.CreateMapIndexTable<PersonIdentity>(column => column
-                    .Column<string>(nameof(PersonIdentity.Identity))
-                );
+            await builder.CreateMapIndexTableAsync<PersonByNameCol>(column => column
+                .Column<string>(nameof(PersonByNameCol.Name))
+            );
 
-            builder.CreateMapIndexTable<PersonByAge>(column => column
-                    .Column<int>(nameof(PersonByAge.Age))
-                    .Column<bool>(nameof(PersonByAge.Adult))
-                    .Column<string>(nameof(PersonByAge.Name))
-                );
+            await builder.CreateMapIndexTableAsync<PersonIdentity>(column => column
+                .Column<string>(nameof(PersonIdentity.Identity))
+            );
 
-            builder.CreateMapIndexTable<ShapeIndex>(column => column
-                    .Column<string>(nameof(ShapeIndex.Name))
-                );
+            await builder.CreateMapIndexTableAsync<PersonByAge>(column => column
+                .Column<int>(nameof(PersonByAge.Age))
+                .Column<bool>(nameof(PersonByAge.Adult))
+                .Column<string>(nameof(PersonByAge.Name))
+            );
 
-            builder.CreateMapIndexTable<PersonByNullableAge>(column => column
-                    .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
-                );
+            await builder.CreateMapIndexTableAsync<ShapeIndex>(column => column
+                .Column<string>(nameof(ShapeIndex.Name))
+            );
 
-            builder.CreateMapIndexTable<PublishedArticle>(column => { });
+            await builder.CreateMapIndexTableAsync<PersonByNullableAge>(column => column
+                .Column<int?>(nameof(PersonByAge.Age), c => c.Nullable())
+            );
 
-            builder.CreateMapIndexTable<EmailByAttachment>(column => column
-                    .Column<DateTime>(nameof(EmailByAttachment.Date))
-                    .Column<string>(nameof(EmailByAttachment.AttachmentName))
-                );
+            await builder.CreateMapIndexTableAsync<PublishedArticle>(column => { });
 
-            builder.CreateMapIndexTable<PropertyIndex>(column => column
+            await builder.CreateMapIndexTableAsync<EmailByAttachment>(column => column
+                .Column<DateTime>(nameof(EmailByAttachment.Date))
+                .Column<string>(nameof(EmailByAttachment.AttachmentName))
+            );
+
+            await builder.CreateMapIndexTableAsync<PropertyIndex>(column => column
                 .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
                 .Column<bool>(nameof(PropertyIndex.ForRent))
                 .Column<bool>(nameof(PropertyIndex.IsOccupied))
                 .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
             );
 
-            builder.CreateMapIndexTable<Binary>(column => column
-                    .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
-                    .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
-                    .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
-                    .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
-                );
+            await builder.CreateMapIndexTableAsync<Binary>(column => column
+                .Column<byte[]>(nameof(Binary.Content1), c => c.WithLength(255))
+                .Column<byte[]>(nameof(Binary.Content2), c => c.WithLength(8000))
+                .Column<byte[]>(nameof(Binary.Content3), c => c.WithLength(65535))
+                .Column<byte[]>(nameof(Binary.Content4), c => c.WithLength(1))
+            );
 
-            builder.CreateMapIndexTable<TypesIndex>(column => column
-                    .Column<bool>(nameof(TypesIndex.ValueBool))
-                    //.Column<char>(nameof(TypesIndex.ValueChar))
-                    .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
-                    .Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
-                    .Column<decimal>(nameof(TypesIndex.ValueDecimal))
-                    .Column<double>(nameof(TypesIndex.ValueDouble))
-                    .Column<float>(nameof(TypesIndex.ValueFloat))
-                    .Column<Guid>(nameof(TypesIndex.ValueGuid))
-                    .Column<int>(nameof(TypesIndex.ValueInt))
-                    .Column<long>(nameof(TypesIndex.ValueLong))
-                    //.Column<sbyte>(nameof(TypesIndex.ValueSByte))
-                    .Column<short>(nameof(TypesIndex.ValueShort))
-                    .Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
-                    //.Column<uint>(nameof(TypesIndex.ValueUInt))
-                    //.Column<ulong>(nameof(TypesIndex.ValueULong))
-                    //.Column<ushort>(nameof(TypesIndex.ValueUShort))
-                    .Column<bool?>(nameof(TypesIndex.NullableBool), c => c.Nullable())
-                    //.Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
-                    .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
-                    .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
-                    .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
-                    .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
-                    .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
-                    .Column<Guid?>(nameof(TypesIndex.NullableGuid), c => c.Nullable())
-                    .Column<int?>(nameof(TypesIndex.NullableInt), c => c.Nullable())
-                    .Column<long?>(nameof(TypesIndex.NullableLong), c => c.Nullable())
-                    //.Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
-                    .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
-                    .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
-                //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
-                //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
-                //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
-                );
+            await builder.CreateMapIndexTableAsync<TypesIndex>(column => column
+                .Column<bool>(nameof(TypesIndex.ValueBool))
+                //.Column<char>(nameof(TypesIndex.ValueChar))
+                .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
+                .Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
+                .Column<decimal>(nameof(TypesIndex.ValueDecimal))
+                .Column<double>(nameof(TypesIndex.ValueDouble))
+                .Column<float>(nameof(TypesIndex.ValueFloat))
+                .Column<Guid>(nameof(TypesIndex.ValueGuid))
+                .Column<int>(nameof(TypesIndex.ValueInt))
+                .Column<long>(nameof(TypesIndex.ValueLong))
+                //.Column<sbyte>(nameof(TypesIndex.ValueSByte))
+                .Column<short>(nameof(TypesIndex.ValueShort))
+                .Column<TimeSpan>(nameof(TypesIndex.ValueTimeSpan))
+                //.Column<uint>(nameof(TypesIndex.ValueUInt))
+                //.Column<ulong>(nameof(TypesIndex.ValueULong))
+                //.Column<ushort>(nameof(TypesIndex.ValueUShort))
+                .Column<bool?>(nameof(TypesIndex.NullableBool), c => c.Nullable())
+                //.Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
+                .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
+                .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
+                .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
+                .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
+                .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
+                .Column<Guid?>(nameof(TypesIndex.NullableGuid), c => c.Nullable())
+                .Column<int?>(nameof(TypesIndex.NullableInt), c => c.Nullable())
+                .Column<long?>(nameof(TypesIndex.NullableLong), c => c.Nullable())
+                //.Column<sbyte?>(nameof(TypesIndex.NullableSByte), c => c.Nullable())
+                .Column<short?>(nameof(TypesIndex.NullableShort), c => c.Nullable())
+                .Column<TimeSpan?>(nameof(TypesIndex.NullableTimeSpan), c => c.Nullable())
+            //.Column<uint?>(nameof(TypesIndex.NullableUInt), c => c.Nullable())
+            //.Column<ulong?>(nameof(TypesIndex.NullableULong), c => c.Nullable())
+            //.Column<ushort?>(nameof(TypesIndex.NullableUShort), c => c.Nullable())
+            );
 
-            builder.CreateMapIndexTable<PersonByName>(column => column
-                    .Column<string>(nameof(PersonByName.SomeName)),
-                    "Col1"
-                    );
+            await builder.CreateMapIndexTableAsync<PersonByName>(column => column
+                .Column<string>(nameof(PersonByName.SomeName)),
+                "Col1"
+            );
 
-            builder.CreateMapIndexTable<PersonByNameCol>(column => column
-                    .Column<string>(nameof(PersonByNameCol.Name)),
-                    "Col1"
-                    );
+            await builder.CreateMapIndexTableAsync<PersonByNameCol>(column => column
+                .Column<string>(nameof(PersonByNameCol.Name)),
+                "Col1"
+            );
 
-            builder.CreateMapIndexTable<PersonByBothNamesCol>(column => column
-                    .Column<string>(nameof(PersonByBothNamesCol.Firstname))
-                    .Column<string>(nameof(PersonByBothNamesCol.Lastname)),
-                    "Col1"
-                    );
+            await builder.CreateMapIndexTableAsync<PersonByBothNamesCol>(column => column
+                .Column<string>(nameof(PersonByBothNamesCol.Firstname))
+                .Column<string>(nameof(PersonByBothNamesCol.Lastname)),
+                "Col1"
+            );
 
-            builder.CreateReduceIndexTable<PersonsByNameCol>(column => column
-                    .Column<string>(nameof(PersonsByNameCol.Name))
-                    .Column<int>(nameof(PersonsByNameCol.Count)),
-                    "Col1"
-                    );
+            await builder.CreateReduceIndexTableAsync<PersonsByNameCol>(column => column
+                .Column<string>(nameof(PersonsByNameCol.Name))
+                .Column<int>(nameof(PersonsByNameCol.Count)),
+                "Col1"
+            );
 
-            transaction.Commit();
+            await transaction.CommitAsync();
         }
 
         [Fact]
@@ -5220,7 +5214,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public virtual void ShouldRenameColumn()
+        public virtual async Task ShouldRenameColumn()
         {
             var table = "Table1";
             var prefixedTable = TablePrefix + table;
@@ -5230,7 +5224,7 @@ namespace YesSql.Tests
 
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 try
                 {
@@ -5239,9 +5233,9 @@ namespace YesSql.Tests
 
                         var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                        builder.DropTable(table);
+                        await builder.DropTableAsync(table);
 
-                        transaction.Commit();
+                        await transaction.CommitAsync();
                     }
                 }
                 catch
@@ -5254,9 +5248,9 @@ namespace YesSql.Tests
 
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder.CreateTable(table, column => column
-                            .Column<string>(column1)
-                        );
+                    await builder.CreateTableAsync(table, column => column
+                        .Column<string>(column1)
+                    );
 
                     var sqlInsert = string.Format("INSERT INTO {0} ({1}) VALUES({2})",
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema),
@@ -5264,9 +5258,9 @@ namespace YesSql.Tests
                         _store.Configuration.SqlDialect.GetSqlValue(value)
                         );
 
-                    connection.Execute(sqlInsert, transaction: transaction);
+                    await connection.ExecuteAsync(sqlInsert, transaction: transaction);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
@@ -5276,22 +5270,22 @@ namespace YesSql.Tests
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
 
-                    var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
+                    var result = (await connection.QueryAsync(sqlSelect, transaction: transaction)).FirstOrDefault();
 
                     Assert.Equal(value, result.Column1);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder.AlterTable(table, column => column
+                    await builder.AlterTableAsync(table, column => column
                             .RenameColumn(column1, column2)
                         );
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
@@ -5301,13 +5295,12 @@ namespace YesSql.Tests
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable, _store.Configuration.Schema)
                         );
 
-                    var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
+                    var result = (await connection.QueryAsync(sqlSelect, transaction: transaction)).FirstOrDefault();
 
                     Assert.Equal(value, result.Column2);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
-
             }
         }
 
@@ -5545,22 +5538,20 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder.DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder.CreateMapIndexTableAsync<PropertyIndex>(column => column
                         .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(767))
                         .Column<bool>(nameof(PropertyIndex.ForRent))
                         .Column<bool>(nameof(PropertyIndex.IsOccupied))
                         .Column<string>(nameof(PropertyIndex.Location))
-                        );
+                    );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+                    await builder.AlterTableAsync(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied")
+                    );
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 

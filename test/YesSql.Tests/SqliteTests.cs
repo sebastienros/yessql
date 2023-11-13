@@ -46,14 +46,14 @@ namespace YesSql.Tests
             return base.ShouldReadCommittedRecords();
         }
 
-//        [Theory(Skip = "Sqlite doesn't use DbBlockIdGenerator")]
-//        [InlineData(100)]
-//#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
-//        public override Task ShouldGenerateLongIds(long id)
-//#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
-//        {
-//            return Task.CompletedTask;
-//        }
+        //        [Theory(Skip = "Sqlite doesn't use DbBlockIdGenerator")]
+        //        [InlineData(100)]
+        //#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
+        //        public override Task ShouldGenerateLongIds(long id)
+        //#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
+        //        {
+        //            return Task.CompletedTask;
+        //        }
 
         [Fact(Skip = "Sqlite doesn't support concurrent writers")]
         public override Task ShouldReadUncommittedRecords()
@@ -111,22 +111,22 @@ namespace YesSql.Tests
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
                             .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
                             .Column<bool>(nameof(PropertyIndex.ForRent))
                             .Column<bool>(nameof(PropertyIndex.IsOccupied))
                             .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
                         );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
                             .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
 

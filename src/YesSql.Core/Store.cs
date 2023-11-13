@@ -98,7 +98,7 @@ namespace YesSql
                     await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
                     var builder = new SchemaBuilder(Configuration, transaction);
 
-                    builder.CreateSchema(Configuration.Schema);
+                    await builder.CreateSchemaAsync(Configuration.Schema);
 
                     await transaction.CommitAsync();
                 }
@@ -150,8 +150,7 @@ namespace YesSql
 
                                 try
                                 {
-                                    migrationBuilder
-                                        .AlterTable(documentTable, table => table
+                                    await migrationBuilder.AlterTableAsync(documentTable, table => table
                                             .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
                                         );
 
@@ -159,7 +158,6 @@ namespace YesSql
                                 }
                                 catch
                                 {
-
                                     // Another thread must have altered it
                                 }
                             }
@@ -176,14 +174,14 @@ namespace YesSql
                         try
                         {
                             // The table doesn't exist, create it
-                            builder
-                                .CreateTable(documentTable, table => table
+                            await builder.CreateTableAsync(documentTable, table => table
                                 .Column(Configuration.IdentityColumnSize, nameof(Document.Id), column => column.PrimaryKey().NotNull())
                                 .Column<string>(nameof(Document.Type), column => column.NotNull())
                                 .Column<string>(nameof(Document.Content), column => column.Unlimited())
                                 .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
-                            )
-                            .AlterTable(documentTable, table => table
+                            );
+
+                            await builder.AlterTableAsync(documentTable, table => table
                                 .CreateIndex("IX_" + documentTable + "_Type", "Type")
                             );
 

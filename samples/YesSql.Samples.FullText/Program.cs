@@ -27,17 +27,18 @@ namespace YesSql.Samples.FullText
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
                 {
-                    new SchemaBuilder(store.Configuration, transaction)
-                        .CreateReduceIndexTable<ArticleByWord>(table => table
-                            .Column<int>("Count")
-                            .Column<string>("Word")
-                        );
+                    var builder = new SchemaBuilder(store.Configuration, transaction);
 
-                    transaction.Commit();
+                    await builder.CreateReduceIndexTableAsync<ArticleByWord>(table => table
+                        .Column<int>("Count")
+                        .Column<string>("Word")
+                    );
+
+                    await transaction.CommitAsync();
                 }
             }
 
