@@ -52,22 +52,31 @@ namespace YesSql.Services
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
             await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
-            using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+
             try
             {
-                var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
+                await connection.OpenAsync();
+                using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+                try
+                {
+                    var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
 
-                await localBuilder.CreateTableAsync(TableName, table => table
-                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                    .Column<long>("nextval")
-                    );
+                    await localBuilder.CreateTableAsync(TableName, table => table
+                        .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                        .Column<long>("nextval")
+                        );
 
-                await transaction.CommitAsync();
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction?.RollbackAsync();
+                _store.Configuration.Logger.LogError("Unable to create the Identifiers table. Message: {message}", ex.Message);
+                throw;
             }
         }
 
