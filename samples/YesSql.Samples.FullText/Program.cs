@@ -29,7 +29,7 @@ namespace YesSql.Samples.FullText
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(store.Configuration, transaction);
 
                 await builder.CreateReduceIndexTableAsync<ArticleByWord>(table => table

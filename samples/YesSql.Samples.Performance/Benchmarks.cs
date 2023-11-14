@@ -35,7 +35,7 @@ namespace YesSql.Samples.Performance
                 await using var connection = configuration.ConnectionFactory.CreateConnection();
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
                 var builder = new SchemaBuilder(configuration, transaction);
 
                 await builder.DropTableAsync("UserByName");
@@ -52,7 +52,7 @@ namespace YesSql.Samples.Performance
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
                 var builder = new SchemaBuilder(configuration, transaction);
 
                 await builder.CreateMapIndexTableAsync<UserByName>(table => table

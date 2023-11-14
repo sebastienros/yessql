@@ -53,7 +53,7 @@ namespace YesSql.Services
             await using var connection = configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
 
-            await using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+            await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
             var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
             var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(configuration.TablePrefix + tableName, configuration.Schema);

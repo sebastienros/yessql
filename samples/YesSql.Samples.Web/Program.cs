@@ -132,7 +132,7 @@ store.RegisterIndexes(new[] { new BlogPostIndexProvider() });
 await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
 await connection.OpenAsync();
 
-await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
 var schemaBuilder = new SchemaBuilder(store.Configuration, transaction);
 
 await schemaBuilder.CreateMapIndexTableAsync<BlogPostIndex>(table => table

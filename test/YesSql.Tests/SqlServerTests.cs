@@ -39,7 +39,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
                 var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
                 await builder.DropTableAsync(configuration.TableNameConvention.GetDocumentTable(""));
@@ -82,7 +82,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
                 var builder = new SchemaBuilder(configuration, transaction, throwOnError: false);
 
                 await builder.DropTableAsync(configuration.TableNameConvention.GetDocumentTable(""));
@@ -133,7 +133,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                 await builder
@@ -184,7 +184,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                 await builder
@@ -236,7 +236,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                 await builder
@@ -288,7 +288,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
                 try
                 {
                     var builder = new SchemaBuilder(_store.Configuration, transaction);
@@ -336,7 +336,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                 await builder
@@ -377,7 +377,7 @@ namespace YesSql.Tests
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
                 var builder = new SchemaBuilder(_store.Configuration, transaction);
 
                 await builder

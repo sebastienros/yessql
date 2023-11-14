@@ -23,7 +23,7 @@ namespace Bench
             {
                 await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+                await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
                 var builder = new SchemaBuilder(configuration, transaction);
 
                 await builder.CreateMapIndexTableAsync<UserByName>(c => c

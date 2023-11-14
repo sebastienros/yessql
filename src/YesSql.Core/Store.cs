@@ -95,7 +95,7 @@ namespace YesSql
                 {
                     await connection.OpenAsync();
 
-                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+                    await using var transaction = await connection.BeginTransactionAsync(Configuration.IsolationLevel);
 
                     var builder = new SchemaBuilder(Configuration, transaction);
 
@@ -144,7 +144,7 @@ namespace YesSql
                     catch
                     {
                         await result.CloseAsync();
-                        await using var migrationTransaction = connection.BeginTransaction();
+                        await using var migrationTransaction = await connection.BeginTransactionAsync();
                         var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
                         try
@@ -166,7 +166,7 @@ namespace YesSql
             }
             catch
             {
-                await using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
                 var builder = new SchemaBuilder(Configuration, transaction);
 
                 try

@@ -117,7 +117,7 @@ namespace YesSql.Services
                 // Ensure we overwrite the value that has been read by this
                 // instance in case another client is trying to lease a range
                 // at the same time
-                await using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                await using (var transaction = await connection.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted))
                 {
                     try
                     {
@@ -195,7 +195,7 @@ namespace YesSql.Services
             await using var connection = configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
 
-            await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+            await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel))
             {
                 // Does the record already exist?
                 var selectCommand = transaction.Connection.CreateCommand();
@@ -223,7 +223,7 @@ namespace YesSql.Services
                 // Try to create a new record. If it fails, retry reading the record.
                 try
                 {
-                    await using var transaction = connection.BeginTransaction(configuration.IsolationLevel);
+                    await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
                     // To prevent concurrency issues when creating this record (it must be unique)
                     // we generate a random collection name, then update it safely
 
