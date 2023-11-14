@@ -186,7 +186,7 @@ namespace YesSql.Samples.Web
 
                 await session.SaveChangesAsync();
                 await connection.CloseAsync();
-            });
+            }).ConfigureAwait(false).GetAwaiter().GetResult();
         }
     }
 }

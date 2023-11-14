@@ -91,15 +91,24 @@ namespace YesSql
 
             if (!string.IsNullOrEmpty(Configuration.Schema))
             {
-                await using var connection = Configuration.ConnectionFactory.CreateConnection();
-                await connection.OpenAsync();
+                await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+                {
+                    await connection.OpenAsync();
 
-                await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
-                var builder = new SchemaBuilder(Configuration, transaction);
+                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+                    try
+                    {
+                        var builder = new SchemaBuilder(Configuration, transaction);
 
-                await builder.CreateSchemaAsync(Configuration.Schema);
+                        await builder.CreateSchemaAsync(Configuration.Schema);
 
-                await transaction.CommitAsync();
+                        await transaction.CommitAsync();
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                    }
+                }
             }
 
             // Initialize the Id generator
@@ -154,6 +163,7 @@ namespace YesSql
                         }
                         catch
                         {
+                            await migrationTransaction.RollbackAsync();
                             // Another thread must have altered it
                         }
                     }
