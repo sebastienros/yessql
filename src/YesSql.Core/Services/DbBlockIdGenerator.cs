@@ -180,7 +180,6 @@ namespace YesSql.Services
 
             } while (affectedRows == 0);
 
-            await connection.CloseAsync();
             range.SetBlock(nextValue, _blockSize);
         }
 
