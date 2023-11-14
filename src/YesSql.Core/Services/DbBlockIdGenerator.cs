@@ -53,7 +53,7 @@ namespace YesSql.Services
 
             await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
-            await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+            using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
             try
             {
                 var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
@@ -67,7 +67,7 @@ namespace YesSql.Services
             }
             catch
             {
-                await transaction.RollbackAsync();
+                await transaction?.RollbackAsync();
             }
         }
 
