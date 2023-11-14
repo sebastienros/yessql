@@ -96,18 +96,12 @@ namespace YesSql
                     await connection.OpenAsync();
 
                     await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
-                    try
-                    {
-                        var builder = new SchemaBuilder(Configuration, transaction);
 
-                        await builder.CreateSchemaAsync(Configuration.Schema);
+                    var builder = new SchemaBuilder(Configuration, transaction);
 
-                        await transaction.CommitAsync();
-                    }
-                    catch
-                    {
-                        // await transaction.RollbackAsync();
-                    }
+                    await builder.CreateSchemaAsync(Configuration.Schema);
+
+                    await transaction.CommitAsync();
                 }
             }
 
