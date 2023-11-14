@@ -59,7 +59,7 @@ namespace YesSql.Services
                 var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
                 try
                 {
-                    var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
+                    var localBuilder = new SchemaBuilder(store.Configuration, transaction, true);
 
                     await localBuilder.CreateTableAsync(TableName, table => table
                         .Column<string>("dimension", column => column.PrimaryKey().NotNull())
