@@ -53,34 +53,26 @@ namespace YesSql.Services
 
             await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
 
+            await connection.OpenAsync();
+            var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
             try
             {
-                await connection.OpenAsync();
-                var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
-                try
-                {
-                    var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
+                var localBuilder = new SchemaBuilder(store.Configuration, transaction, true);
 
-                    await localBuilder.CreateTableAsync(TableName, table => table
-                        .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                        .Column<long>("nextval")
-                        );
+                await localBuilder.CreateTableAsync(TableName, table => table
+                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                    .Column<long>("nextval")
+                    );
 
-                    await transaction.CommitAsync();
-                }
-                catch
-                {
-                    await transaction.RollbackAsync();
-                }
-                finally
-                {
-                    await transaction.DisposeAsync();
-                }
+                await transaction.CommitAsync();
             }
-            catch (Exception ex)
+            catch
             {
-                _store.Configuration.Logger.LogError("Unable to create the {name} table. Message: {message}", TableName, ex.Message);
-                throw;
+                await transaction.RollbackAsync();
+            }
+            finally
+            {
+                await transaction.DisposeAsync();
             }
         }
 
