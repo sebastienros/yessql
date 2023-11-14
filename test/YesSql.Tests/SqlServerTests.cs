@@ -50,7 +50,7 @@ namespace YesSql.Tests
 
             var store1 = await StoreFactory.CreateAndInitializeAsync(configuration);
 
-            using (var session1 = store1.CreateSession())
+            await using (var session1 = store1.CreateSession())
             {
                 var p1 = new Person { Firstname = "Bill" };
 
@@ -172,6 +172,7 @@ namespace YesSql.Tests
                 if (session != null)
                 {
                     await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await session.DisposeAsync();
                 }
             }
         }
@@ -223,6 +224,7 @@ namespace YesSql.Tests
                 if (session != null)
                 {
                     await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await session.DisposeAsync();
                 }
             }
         }
@@ -274,6 +276,7 @@ namespace YesSql.Tests
                 if (session != null)
                 {
                     await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await session.DisposeAsync();
                 }
             }
         }
@@ -286,24 +289,31 @@ namespace YesSql.Tests
                 await connection.OpenAsync();
 
                 await using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
-                var builder = new SchemaBuilder(_store.Configuration, transaction);
+                try
+                {
+                    var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                await builder
-                    .DropMapIndexTableAsync<PropertyIndex>();
+                    await builder
+                        .DropMapIndexTableAsync<PropertyIndex>();
 
-                await builder
-                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
-                    );
+                    await builder
+                        .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(1000))
+                            .Column<bool>(nameof(PropertyIndex.ForRent))
+                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(1000))
+                        );
 
-                await builder
-                    .AlterTableAsync(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name"));
+                    await builder
+                        .AlterTableAsync(nameof(PropertyIndex), table => table
+                            .CreateIndex("IDX_Property", "Name"));
 
-                await transaction.CommitAsync();
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                }
             }
 
             _store.RegisterIndexes<PropertyIndexProvider>();

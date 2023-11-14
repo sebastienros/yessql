@@ -75,7 +75,7 @@ namespace YesSql.Tests
 
             _store.RegisterIndexes<PropertyIndexProvider>();
 
-            using var session = _store.CreateSession();
+            await using var session = _store.CreateSession();
             var property = new Property
             {
                 Name = new string('*', 4000),

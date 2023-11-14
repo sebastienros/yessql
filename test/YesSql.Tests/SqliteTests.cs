@@ -70,7 +70,7 @@ namespace YesSql.Tests
 
                 var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
-                using (var session1 = store1.CreateSession())
+                await using (var session1 = store1.CreateSession())
                 {
                     var p1 = new Person { Firstname = "Bill" };
 
@@ -83,7 +83,7 @@ namespace YesSql.Tests
 
                 var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
-                using var session2 = store2.CreateSession();
+                await using var session2 = store2.CreateSession();
                 var p2 = new Person { Firstname = "Bill" };
 
                 await session2.SaveAsync(p2);
@@ -128,7 +128,7 @@ namespace YesSql.Tests
 
             _store.RegisterIndexes<PropertyIndexProvider>();
 
-            using var session = _store.CreateSession();
+            await using var session = _store.CreateSession();
             var property = new Property
             {
                 Name = new string('*', 4000),

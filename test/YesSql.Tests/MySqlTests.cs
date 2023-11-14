@@ -49,7 +49,7 @@ namespace YesSql.Tests
                 Lastname = "Gates"
             };
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 await session.SaveAsync(bill);
 
@@ -58,7 +58,7 @@ namespace YesSql.Tests
 
             // second store, don't register the index
             _store = await StoreFactory.CreateAndInitializeAsync(configuration);
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var person = await session.Query().For<Person>().FirstOrDefaultAsync();
                 Assert.NotNull(person);

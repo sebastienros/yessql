@@ -396,7 +396,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldCancelTransactionAfterFlush()
         {
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var bill = new Person
                 {
@@ -417,9 +417,11 @@ namespace YesSql.Tests
                 await session.SaveAsync(steve);
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
-                Assert.Equal(0, await session.Query<Person>().CountAsync());
+                var total = await session.Query<Person>().CountAsync();
+
+                Assert.Equal(0, total);
             }
         }
 
@@ -455,25 +457,23 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSaveAnonymousObject()
         {
-            await using (var session = _store.CreateSession())
+            await using var session = _store.CreateSession();
+            var bill = new
             {
-                var bill = new
-                {
-                    Firstname = "Bill",
-                    Lastname = "Gates"
-                };
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
 
-                var steve = new
-                {
-                    Firstname = "Steve",
-                    Lastname = "Balmer"
-                };
+            var steve = new
+            {
+                Firstname = "Steve",
+                Lastname = "Balmer"
+            };
 
-                await session.SaveAsync(bill);
-                await session.SaveAsync(steve);
+            await session.SaveAsync(bill);
+            await session.SaveAsync(steve);
 
-                await session.SaveChangesAsync();
-            }
+            await session.SaveChangesAsync();
         }
 
         [Fact]
@@ -514,11 +514,9 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQueryNonExistentResult()
         {
-            await using (var session = _store.CreateSession())
-            {
-                var person = await session.Query<Person>().FirstOrDefaultAsync();
-                Assert.Null(person);
-            }
+            await using var session = _store.CreateSession();
+            var person = await session.Query<Person>().FirstOrDefaultAsync();
+            Assert.Null(person);
         }
 
         [Fact]
@@ -797,7 +795,7 @@ namespace YesSql.Tests
         {
             long productId;
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var product = new Product
                 {
@@ -825,7 +823,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var prod = await session.GetAsync<Product>(productId);
                 Assert.NotNull(prod);
@@ -895,7 +893,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task NoSavingChangesShouldRollbackAutoFlush()
         {
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var bill = new Person
                 {
@@ -909,7 +907,7 @@ namespace YesSql.Tests
                 Assert.Same(newBill, bill);
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 Assert.Equal(0, await session.Query<Person>().CountAsync());
             }
@@ -3268,7 +3266,7 @@ namespace YesSql.Tests
         {
             long circleId;
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = new Circle
                 {
@@ -3283,7 +3281,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = await session.GetAsync<Circle>(circleId);
 
@@ -3297,7 +3295,7 @@ namespace YesSql.Tests
         {
             long circleId;
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = new Circle
                 {
@@ -3312,7 +3310,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var square = await session.GetAsync<Square>(circleId);
 
@@ -3325,7 +3323,7 @@ namespace YesSql.Tests
         {
             long circleId;
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = new Circle
                 {
@@ -3340,7 +3338,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = await session.GetAsync<Circle>(circleId);
 
@@ -3353,7 +3351,7 @@ namespace YesSql.Tests
         {
             long circleId;
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = new Circle
                 {
@@ -3368,7 +3366,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = await session.GetAsync<object>(circleId);
 
@@ -3382,7 +3380,7 @@ namespace YesSql.Tests
         {
             long circleId;
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = new Circle
                 {
@@ -3397,7 +3395,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 var circle = await session.GetAsync<dynamic>(circleId);
 
@@ -3414,7 +3412,7 @@ namespace YesSql.Tests
         {
             var circleIds = new List<long>();
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 for (var i = 0; i < numberOfItems; i++)
                 {
@@ -3431,7 +3429,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 circleIds.Reverse();
 
@@ -3826,7 +3824,7 @@ namespace YesSql.Tests
             var task1 = Task.Run(async () =>
             {
                 // IsolationLevel.ReadCommitted is the default
-                using (var session1 = _store.CreateSession())
+                await using (var session1 = _store.CreateSession())
                 {
                     Assert.Equal(0, await session1.QueryIndex<PersonByName>().CountAsync());
 
@@ -3852,7 +3850,7 @@ namespace YesSql.Tests
                 }
 
                 // IsolationLevel.ReadCommitted is the default
-                using (var session1 = _store.CreateSession())
+                await using (var session1 = _store.CreateSession())
                 {
                     Assert.Equal(2, await session1.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3866,7 +3864,7 @@ namespace YesSql.Tests
                 }
 
                 // IsolationLevel.ReadCommitted is the default
-                using (var session2 = _store.CreateSession())
+                await using (var session2 = _store.CreateSession())
                 {
                     Assert.Equal(1, await session2.QueryIndex<PersonByName>().CountAsync());
 
@@ -3886,7 +3884,7 @@ namespace YesSql.Tests
                 }
 
                 // IsolationLevel.ReadCommitted is the default
-                using (var session2 = _store.CreateSession())
+                await using (var session2 = _store.CreateSession())
                 {
                     Assert.Equal(2, await session2.QueryIndex<PersonByName>().CountAsync());
                 }
@@ -3925,7 +3923,7 @@ namespace YesSql.Tests
 
             var task1 = Task.Run(async () =>
             {
-                using (var session1 = _store.CreateSession())
+                await using (var session1 = _store.CreateSession())
                 {
                     await session1.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
@@ -3951,7 +3949,7 @@ namespace YesSql.Tests
                     await session1.SaveChangesAsync();
                 }
 
-                using (var session1 = _store.CreateSession())
+                await using (var session1 = _store.CreateSession())
                 {
                     await session1.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
@@ -3968,7 +3966,7 @@ namespace YesSql.Tests
                     Assert.Fail("session1IsFlushed timeout");
                 }
 
-                using (var session2 = _store.CreateSession())
+                await using (var session2 = _store.CreateSession())
                 {
                     await session2.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
@@ -3989,7 +3987,7 @@ namespace YesSql.Tests
                     await session2.SaveChangesAsync();
                 }
 
-                using (var session2 = _store.CreateSession())
+                await using (var session2 = _store.CreateSession())
                 {
                     await session2.BeginTransactionAsync(IsolationLevel.ReadUncommitted);
 
@@ -4268,7 +4266,7 @@ namespace YesSql.Tests
                 Lastname = "Gates"
             };
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 await session.SaveAsync(bill);
                 Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
@@ -4277,7 +4275,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            using (var session = _store.CreateSession())
+            await using (var session = _store.CreateSession())
             {
                 bill.Firstname = "Bill2";
                 await session.SaveAsync(bill);

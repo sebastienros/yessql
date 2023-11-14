@@ -72,7 +72,7 @@ namespace YesSql.Samples.Performance
             await CreateUsersAsync();
 
             // pre initialize configuration
-            _store.CreateSession().Dispose();
+            await _store.CreateSession().DisposeAsync();
 
             await WriteAllWithYesSql();
         }
@@ -226,14 +226,13 @@ namespace YesSql.Samples.Performance
 
                 if (batch % batchSize == 0)
                 {
-                    session.Dispose();
+                    await session.DisposeAsync();
                     session = _store.CreateSession();
                 }
             }
 
             await session.SaveChangesAsync();
-
-            session.Dispose();
+            await session.DisposeAsync();
         }
 
         public async Task CreateUsersAsync()
@@ -257,7 +256,7 @@ namespace YesSql.Samples.Performance
                 {
                     users.ForEach(async u => await session.SaveAsync(u));
                     await session.SaveChangesAsync();
-                    session.Dispose();
+                    await session.DisposeAsync();
                     session = _store.CreateSession();
                     users = new List<User>();
                 }
@@ -265,7 +264,7 @@ namespace YesSql.Samples.Performance
 
             users.ForEach(async u => await session.SaveAsync(u));
             await session.SaveChangesAsync();
-            session.Dispose();
+            await session.DisposeAsync();
             session = _store.CreateSession();
         }
 
