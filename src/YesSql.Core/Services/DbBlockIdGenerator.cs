@@ -51,23 +51,25 @@ namespace YesSql.Services
             UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
-            await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
-            await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
-            try
+            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
-
-                await localBuilder.CreateTableAsync(TableName, table => table
-                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                    .Column<long>("nextval")
-                    );
-
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
+                await connection.OpenAsync();
+                await using var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel);
+                try
+                {
+                    var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
+    
+                    await localBuilder.CreateTableAsync(TableName, table => table
+                        .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                        .Column<long>("nextval")
+                        );
+    
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                }
             }
         }
 
