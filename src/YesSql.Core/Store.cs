@@ -106,7 +106,7 @@ namespace YesSql
                     }
                     catch
                     {
-                        await transaction.RollbackAsync();
+                        // await transaction.RollbackAsync();
                     }
                 }
             }
