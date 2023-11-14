@@ -52,9 +52,10 @@ namespace YesSql.Services
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
             await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
-
             await connection.OpenAsync();
-            var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+            
+            await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+            
             try
             {
                 var localBuilder = new SchemaBuilder(store.Configuration, transaction, true);
@@ -69,10 +70,6 @@ namespace YesSql.Services
             catch
             {
                 await transaction.RollbackAsync();
-            }
-            finally
-            {
-                await transaction.DisposeAsync();
             }
         }
 
