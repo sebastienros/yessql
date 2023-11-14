@@ -56,7 +56,7 @@ namespace YesSql.Services
             try
             {
                 await connection.OpenAsync();
-                using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+                var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
                 try
                 {
                     var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
@@ -72,10 +72,14 @@ namespace YesSql.Services
                 {
                     await transaction.RollbackAsync();
                 }
+                finally
+                {
+                    await transaction.DisposeAsync();
+                }
             }
             catch (Exception ex)
             {
-                _store.Configuration.Logger.LogError("Unable to create the Identifiers table. Message: {message}", ex.Message);
+                _store.Configuration.Logger.LogError("Unable to create the {name} table. Message: {message}", TableName, ex.Message);
                 throw;
             }
         }
