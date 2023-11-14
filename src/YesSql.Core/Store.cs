@@ -163,7 +163,7 @@ namespace YesSql
                         }
                         catch
                         {
-                            await migrationTransaction.RollbackAsync();
+                            // await migrationTransaction.RollbackAsync();
                             // Another thread must have altered it
                         }
                     }
