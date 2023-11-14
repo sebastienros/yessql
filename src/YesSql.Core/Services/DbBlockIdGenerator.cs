@@ -58,17 +58,17 @@ namespace YesSql.Services
                 try
                 {
                     var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
-    
+
                     await localBuilder.CreateTableAsync(TableName, table => table
                         .Column<string>("dimension", column => column.PrimaryKey().NotNull())
                         .Column<long>("nextval")
                         );
-    
+
                     await transaction.CommitAsync();
                 }
                 catch
                 {
-                    await transaction.RollbackAsync();
+                    // await transaction.RollbackAsync();
                 }
             }
         }
