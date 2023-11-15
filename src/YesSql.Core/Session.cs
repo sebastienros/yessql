@@ -54,7 +54,7 @@ namespace YesSql
             {
                 if (indexProvider.CollectionName == null)
                 {
-                    indexProvider.CollectionName = collection ?? "";
+                    indexProvider.CollectionName = collection ?? string.Empty;
                 }
             }
 
@@ -81,7 +81,11 @@ namespace YesSql
             return state;
         }
 
+        [Obsolete]
         public void Save(object entity, bool checkConcurrency = false, string collection = null)
+            => SaveAsync(entity, checkConcurrency, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+
+        public async Task SaveAsync(object entity, bool checkConcurrency = false, string collection = null)
         {
             var state = GetState(collection);
 
@@ -132,7 +136,7 @@ namespace YesSql
             }
 
             // It's a new entity
-            id = _store.GetNextId(collection);
+            id = await _store.GetNextIdAsync(collection);
             state.IdentityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
@@ -204,15 +208,11 @@ namespace YesSql
 
                         return true;
                     }
-                    else
-                    {
-                        throw new InvalidOperationException($"Invalid 'Id' value: {id}");
-                    }
+
+                    throw new InvalidOperationException($"Invalid 'Id' value: {id}");
                 }
-                else
-                {
-                    throw new InvalidOperationException("Objects without an 'Id' property can't be imported if no 'id' argument is provided.");
-                }
+
+                throw new InvalidOperationException("Objects without an 'Id' property can't be imported if no 'id' argument is provided.");
             }
         }
 
@@ -630,7 +630,7 @@ namespace YesSql
             {
                 try
                 {
-                    CommitOrRollbackTransaction();
+                    CommitOrRollbackTransactionAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                 }
                 catch
                 {
@@ -861,26 +861,6 @@ namespace YesSql
             }
         }
 
-        private void CommitOrRollbackTransaction()
-        {
-            // This method is still used in Dispose() when SUPPORTS_ASYNC_TRANSACTIONS is defined
-            try
-            {
-                if (_cancel || !_save)
-                {
-                    _transaction?.Rollback();
-                }
-                else
-                {
-                    _transaction?.Commit();
-                }
-            }
-            finally
-            {
-                ReleaseConnection();
-            }
-        }
-
         public async ValueTask DisposeAsync()
         {
             // Do nothing if Dispose() was already called
@@ -908,19 +888,16 @@ namespace YesSql
         {
             try
             {
-                if (!_cancel)
+                if (_transaction != null)
                 {
-                    if (_transaction != null)
-                    {
-                        await _transaction.CommitAsync();
-                    }
-                }
-                else
-                {
-                    if (_transaction != null)
+                    if (_cancel || !_save)
                     {
                         await _transaction.RollbackAsync();
+
+                        return;
                     }
+
+                    await _transaction.CommitAsync();
                 }
             }
             finally
@@ -936,7 +913,7 @@ namespace YesSql
         {
             foreach (var state in _collectionStates.Values)
             {
-                // IndentityMap is cleared in ReleaseSession()
+                // IdentityMap is cleared in ReleaseSession()
                 state._concurrent?.Clear();
                 state._saved?.Clear();
                 state._updated?.Clear();
@@ -1350,9 +1327,7 @@ namespace YesSql
         public DbTransaction CurrentTransaction => _transaction;
 
         public Task<DbTransaction> BeginTransactionAsync()
-        {
-            return BeginTransactionAsync(Store.Configuration.IsolationLevel);
-        }
+            => BeginTransactionAsync(Store.Configuration.IsolationLevel);
 
         /// <summary>
         /// Begins a new transaction if none has been yet. Use this method when writes need to be done.

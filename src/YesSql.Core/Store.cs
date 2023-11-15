@@ -95,10 +95,11 @@ namespace YesSql
                 {
                     await connection.OpenAsync();
 
-                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+                    await using var transaction = await connection.BeginTransactionAsync(Configuration.IsolationLevel);
+
                     var builder = new SchemaBuilder(Configuration, transaction);
 
-                    builder.CreateSchema(Configuration.Schema);
+                    await builder.CreateSchemaAsync(Configuration.Schema);
 
                     await transaction.CommitAsync();
                 }
@@ -108,97 +109,90 @@ namespace YesSql
             await Configuration.IdGenerator.InitializeAsync(this);
 
             // Pre-initialize the default collection
-            await InitializeCollectionAsync("");
+            await InitializeCollectionAsync(string.Empty);
         }
 
         public async Task InitializeCollectionAsync(string collection)
         {
             var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
-            await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+            await using var connection = Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            try
             {
-                await connection.OpenAsync();
+                var selectCommand = connection.CreateCommand();
 
-                try
+                var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
+                selectBuilder.Select();
+                selectBuilder.AddSelector("*");
+                selectBuilder.Table(documentTable, null, Configuration.Schema);
+                selectBuilder.Take("1");
+
+                selectCommand.CommandText = selectBuilder.ToSqlString();
+
+                Configuration.Logger.LogTrace(selectCommand.CommandText);
+
+                using var result = await selectCommand.ExecuteReaderAsync();
+                if (result != null)
                 {
-                    var selectCommand = connection.CreateCommand();
-
-                    var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
-                    selectBuilder.Select();
-                    selectBuilder.AddSelector("*");
-                    selectBuilder.Table(documentTable, null, Configuration.Schema);
-                    selectBuilder.Take("1");
-
-                    selectCommand.CommandText = selectBuilder.ToSqlString();
-
-                    Configuration.Logger.LogTrace(selectCommand.CommandText);
-
-                    using (var result = await selectCommand.ExecuteReaderAsync())
+                    try
                     {
-                        if (result != null)
-                        {
-                            try
-                            {
-                                // Check if the Version column exists
-                                result.GetOrdinal(nameof(Document.Version));
-                            }
-                            catch
-                            {
-                                await result.CloseAsync();
-                                using var migrationTransaction = connection.BeginTransaction();
-                                var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
-
-                                try
-                                {
-                                    migrationBuilder
-                                        .AlterTable(documentTable, table => table
-                                            .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                        );
-
-                                    await migrationTransaction.CommitAsync();
-                                }
-                                catch
-                                {
-
-                                    // Another thread must have altered it
-                                }
-                            }
-                            return;
-                        }
+                        // Check if the Version column exists
+                        result.GetOrdinal(nameof(Document.Version));
                     }
-                }
-                catch
-                {
-                    await using (var transaction = connection.BeginTransaction())
+                    catch
                     {
-                        var builder = new SchemaBuilder(Configuration, transaction);
+                        await result.CloseAsync();
+                        await using var migrationTransaction = await connection.BeginTransactionAsync();
+                        var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
                         try
                         {
-                            // The table doesn't exist, create it
-                            builder
-                                .CreateTable(documentTable, table => table
-                                .Column(Configuration.IdentityColumnSize, nameof(Document.Id), column => column.PrimaryKey().NotNull())
-                                .Column<string>(nameof(Document.Type), column => column.NotNull())
-                                .Column<string>(nameof(Document.Content), column => column.Unlimited())
-                                .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
-                            )
-                            .AlterTable(documentTable, table => table
-                                .CreateIndex("IX_" + documentTable + "_Type", "Type")
-                            );
+                            await migrationBuilder.AlterTableAsync(documentTable, table => table
+                                    .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                );
 
-                            await transaction.CommitAsync();
+                            await migrationTransaction.CommitAsync();
                         }
                         catch
                         {
-                            // Another thread must have created it
+                            // Another thread must have altered it
+                            await migrationTransaction.RollbackAsync();
                         }
                     }
+                    return;
                 }
-                finally
+            }
+            catch
+            {
+                await using var transaction = await connection.BeginTransactionAsync();
+                var builder = new SchemaBuilder(Configuration, transaction);
+
+                try
                 {
-                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection);
+                    // The table doesn't exist, create it
+                    await builder.CreateTableAsync(documentTable, table => table
+                        .Column(Configuration.IdentityColumnSize, nameof(Document.Id), column => column.PrimaryKey().NotNull())
+                        .Column<string>(nameof(Document.Type), column => column.NotNull())
+                        .Column<string>(nameof(Document.Content), column => column.Unlimited())
+                        .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
+                    );
+
+                    await builder.AlterTableAsync(documentTable, table => table
+                        .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                    );
+
+                    await transaction.CommitAsync();
                 }
+                catch
+                {
+                    // Another thread must have created it
+                }
+            }
+            finally
+            {
+                await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection);
             }
         }
 
@@ -211,24 +205,17 @@ namespace YesSql
         }
 
         public ISession CreateSession()
-        {
-            return new Session(this);
-        }
+            => new Session(this);
 
         public void Dispose()
         {
         }
 
         public IAccessor<long> GetIdAccessor(Type tContainer)
-        {
-            return IdAccessors.GetOrAdd(tContainer, Configuration.IdentifierAccessorFactory.CreateAccessor<long>);
-        }
+        => IdAccessors.GetOrAdd(tContainer, Configuration.IdentifierAccessorFactory.CreateAccessor<long>);
 
         public IAccessor<long> GetVersionAccessor(Type tContainer)
-        {
-            return VersionAccessors.GetOrAdd(tContainer, Configuration.VersionAccessorFactory.CreateAccessor<long>);
-
-        }
+            => VersionAccessors.GetOrAdd(tContainer, Configuration.VersionAccessorFactory.CreateAccessor<long>);
 
         /// <summary>
         /// Returns the available indexers for a specified type
@@ -272,10 +259,12 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
+        [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method. This current method is slated for removal in upcoming releases.")]
         public long GetNextId(string collection)
-        {
-            return Configuration.IdGenerator.GetNextId(collection);
-        }
+            => GetNextIdAsync(collection).ConfigureAwait(false).GetAwaiter().GetResult();
+
+        public Task<long> GetNextIdAsync(string collection)
+            => Configuration.IdGenerator.GetNextIdAsync(collection);
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)
         {
