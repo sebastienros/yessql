@@ -265,67 +265,67 @@ namespace YesSql.Sql
 
         public ISchemaBuilder AlterTable(string name, Action<IAlterTableCommand> table)
         {
-            AlterTableAsync(name, table).ConfigureAwait(false).GetAwaiter().GetResult();
+            AlterTableAsync(name, table).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder AlterIndexTable(Type indexType, Action<IAlterTableCommand> table, string collection)
         {
-            AlterIndexTableAsync(indexType, table, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            AlterIndexTableAsync(indexType, table, collection).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder CreateForeignKey(string name, string srcTable, string[] srcColumns, string destTable, string[] destColumns)
         {
-            CreateForeignKeyAsync(name, srcTable, srcColumns, destTable, destColumns).ConfigureAwait(false).GetAwaiter().GetResult();
+            CreateForeignKeyAsync(name, srcTable, srcColumns, destTable, destColumns).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder CreateMapIndexTable(Type indexType, Action<ICreateTableCommand> table, string collection)
         {
-            CreateMapIndexTableAsync(indexType, table, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            CreateMapIndexTableAsync(indexType, table, collection).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder CreateReduceIndexTable(Type indexType, Action<ICreateTableCommand> table, string collection)
         {
-            CreateReduceIndexTableAsync(indexType, table, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            CreateReduceIndexTableAsync(indexType, table, collection).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder CreateTable(string name, Action<ICreateTableCommand> table)
         {
-            CreateTableAsync(name, table).ConfigureAwait(false).GetAwaiter().GetResult();
+            CreateTableAsync(name, table).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder DropForeignKey(string srcTable, string name)
         {
-            DropForeignKeyAsync(srcTable, name).ConfigureAwait(false).GetAwaiter().GetResult();
+            DropForeignKeyAsync(srcTable, name).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder DropMapIndexTable(Type indexType, string collection = null)
         {
-            DropMapIndexTableAsync(indexType, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            DropMapIndexTableAsync(indexType, collection).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder DropReduceIndexTable(Type indexType, string collection = null)
         {
-            DropReduceIndexTableAsync(indexType, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            DropReduceIndexTableAsync(indexType, collection).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder DropTable(string name)
         {
-            DropTableAsync(name).ConfigureAwait(false).GetAwaiter().GetResult();
+            DropTableAsync(name).GetAwaiter().GetResult();
             return this;
         }
 
         public ISchemaBuilder CreateSchema(string schema)
         {
-            CreateSchemaAsync(schema).ConfigureAwait(false).GetAwaiter().GetResult();
+            CreateSchemaAsync(schema).GetAwaiter().GetResult();
             return this;
         }
 
