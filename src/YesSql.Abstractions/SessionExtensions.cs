@@ -73,7 +73,7 @@ namespace YesSql
         /// <param name="collection">The name of the collection.</param>
         [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method. This current method is slated for removal in upcoming releases.")]
         public static void Save(this ISession session, object obj, string collection = null)
-            => session.SaveAsync(obj, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            => session.SaveAsync(obj, collection).GetAwaiter().GetResult();
 
         public static Task SaveAsync(this ISession session, object obj, string collection = null)
             => session.SaveAsync(obj, false, collection);

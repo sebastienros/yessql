@@ -261,7 +261,7 @@ namespace YesSql
 
         [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method. This current method is slated for removal in upcoming releases.")]
         public long GetNextId(string collection)
-            => GetNextIdAsync(collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            => GetNextIdAsync(collection).GetAwaiter().GetResult();
 
         public Task<long> GetNextIdAsync(string collection)
             => Configuration.IdGenerator.GetNextIdAsync(collection);

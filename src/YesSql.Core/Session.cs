@@ -83,7 +83,7 @@ namespace YesSql
 
         [Obsolete]
         public void Save(object entity, bool checkConcurrency = false, string collection = null)
-            => SaveAsync(entity, checkConcurrency, collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            => SaveAsync(entity, checkConcurrency, collection).GetAwaiter().GetResult();
 
         public async Task SaveAsync(object entity, bool checkConcurrency = false, string collection = null)
         {
@@ -630,7 +630,7 @@ namespace YesSql
             {
                 try
                 {
-                    CommitOrRollbackTransactionAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                    CommitOrRollbackTransactionAsync().GetAwaiter().GetResult();
                 }
                 catch
                 {

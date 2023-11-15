@@ -53,9 +53,9 @@ namespace YesSql.Services
 
             await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
-            
+
             await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
-            
+
             try
             {
                 var localBuilder = new SchemaBuilder(store.Configuration, transaction, true);
@@ -74,7 +74,7 @@ namespace YesSql.Services
         }
 
         public long GetNextId(string collection)
-            => GetNextIdAsync(collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            => GetNextIdAsync(collection).GetAwaiter().GetResult();
 
         public async Task<long> GetNextIdAsync(string collection)
         {

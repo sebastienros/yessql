@@ -18,7 +18,7 @@ namespace YesSql.Services
         private ISqlDialect _dialect;
 
         public long GetNextId(string collection)
-            => GetNextIdAsync(collection).ConfigureAwait(false).GetAwaiter().GetResult();
+            => GetNextIdAsync(collection).GetAwaiter().GetResult();
 
         public async Task<long> GetNextIdAsync(string collection)
         {
