@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="Npgsql" />
     </ItemGroup>
-    <ItemGroup>
-      <PackageReference Update="Microsoft.SourceLink.GitHub">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-      </PackageReference>
-    </ItemGroup>
+
 </Project>

@@ -59,11 +59,17 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
 
+    - name: Test - Sqlite .NET 8.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net8.0
+
     - name: Test - Sqlite .NET 7.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net7.0
 
     - name: Test - Sqlite .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net6.0
+
+    - name: Test - PostgresQL .NET 8.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net8.0
 
     - name: Test - PostgresQL .NET 7.0
       run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net7.0
@@ -71,11 +77,17 @@ jobs:
     - name: Test - PostgresQL .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net6.0
 
+    - name: Test - MySQL .NET 8.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net8.0
+
     - name: Test - MySQL .NET 7.0
       run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net7.0
 
     - name: Test - MySQL .NET 6.0
       run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net6.0
+
+    - name: Test - SQL Server 2019 .NET 8.0
+      run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net8.0
 
     - name: Test - SQL Server 2019 .NET 7.0
       run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net7.0

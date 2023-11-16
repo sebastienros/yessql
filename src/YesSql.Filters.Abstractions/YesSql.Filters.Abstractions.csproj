@@ -4,11 +4,4 @@
         <PackageReference Include="Parlot" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Update="Microsoft.SourceLink.GitHub">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-      </PackageReference>
-    </ItemGroup>
-
 </Project>
