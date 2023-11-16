@@ -24,7 +24,7 @@
     <!-- These versions are used for the NuGet packages that are dependent on the current TFM (default = net7.0) -->
     <PropertyGroup>
         <AspNetCoreTestHostPackagesVersion>7.0.13</AspNetCoreTestHostPackagesVersion>
-        <AspNetCoreTestSdkPackagesVersion>17.7.2</AspNetCoreTestSdkPackagesVersion>
+        <AspNetCoreTestSdkPackagesVersion>17.8.0</AspNetCoreTestSdkPackagesVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(TargetFramework) == 'net6.0'">
@@ -34,7 +34,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="$(AspNetCoreTestHostPackagesVersion)" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(AspNetCoreTestSdkPackagesVersion)" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
