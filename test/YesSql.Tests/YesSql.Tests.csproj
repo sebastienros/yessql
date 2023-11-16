@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+        <TargetFrameworks>net8.0</TargetFrameworks>
         <LangVersion>latest</LangVersion>
         <AssemblyName>YesSql.Tests</AssemblyName>
         <PackageId>YesSql.Tests</PackageId>
@@ -21,26 +21,16 @@
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
-    <!-- These versions are used for the NuGet packages that are dependent on the current TFM (default = net7.0) -->
-    <PropertyGroup>
-        <AspNetCoreTestHostPackagesVersion>7.0.13</AspNetCoreTestHostPackagesVersion>
-        <AspNetCoreTestSdkPackagesVersion>17.7.2</AspNetCoreTestSdkPackagesVersion>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(TargetFramework) == 'net6.0'">
-        <AspNetCoreTestHostPackagesVersion>6.0.24</AspNetCoreTestHostPackagesVersion>
-        <AspNetCoreTestSdkPackagesVersion>16.10.0</AspNetCoreTestSdkPackagesVersion>
-    </PropertyGroup>
-
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="$(AspNetCoreTestHostPackagesVersion)" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(AspNetCoreTestSdkPackagesVersion)" />
+        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
         <PackageReference Include="xunit" Version="2.6.1" />
     </ItemGroup>
+
     <ItemGroup>
         <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.MySql\YesSql.Provider.MySql.csproj" />
@@ -49,12 +39,15 @@
         <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Filters.Query\YesSql.Filters.Query.csproj" />
     </ItemGroup>
+
     <ItemGroup>
         <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
     </ItemGroup>
+
     <ItemGroup>
         <None Update="xunit.runner.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
+
 </Project>

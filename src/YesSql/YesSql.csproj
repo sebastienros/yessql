@@ -13,5 +13,11 @@
         <ProjectReference Include="..\YesSql.Provider.Sqlite\YesSql.Provider.Sqlite.csproj" />
         <ProjectReference Include="..\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
     </ItemGroup>
+    <ItemGroup>
+      <PackageReference Update="Microsoft.SourceLink.GitHub">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
 
 </Project>
