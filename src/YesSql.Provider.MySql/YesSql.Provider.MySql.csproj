@@ -3,7 +3,9 @@
     <ItemGroup>
         <PackageReference Include="MySqlConnector" />
     </ItemGroup>
+
     <ItemGroup>
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>
+
 </Project>
