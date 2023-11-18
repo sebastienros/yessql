@@ -1,4 +1,4 @@
-﻿namespace YesSql
+namespace YesSql
 {
     public static class SqlBuilderExtensions
     {
