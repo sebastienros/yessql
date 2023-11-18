@@ -26,17 +26,17 @@ namespace YesSql.Sql
         protected string _skip;
         protected string _count;
 
-        protected List<string> SelectSegments => _select ??= new List<string>();
-        protected List<string> FromSegments => _from ??= new List<string>();
-        protected List<string> JoinSegments => _join ??= new List<string>();
-        protected List<List<string>> OrSegments => _or ??= new List<List<string>>();
-        protected List<string> WhereSegments => _where ??= new List<string>();
-        protected List<string> GroupSegments => _group ??= new List<string>();
-        protected List<string> HavingSegments => _having ??= new List<string>();
-        protected List<string> OrderSegments => _order ??= new List<string>();
-        protected List<string> TrailSegments => _trail ??= new List<string>();
+        protected List<string> SelectSegments => _select ??= [];
+        protected List<string> FromSegments => _from ??= [];
+        protected List<string> JoinSegments => _join ??= [];
+        protected List<List<string>> OrSegments => _or ??= [];
+        protected List<string> WhereSegments => _where ??= [];
+        protected List<string> GroupSegments => _group ??= [];
+        protected List<string> HavingSegments => _having ??= [];
+        protected List<string> OrderSegments => _order ??= [];
+        protected List<string> TrailSegments => _trail ??= [];
 
-        public Dictionary<string, object> Parameters { get; protected set; } = new Dictionary<string, object>();
+        public Dictionary<string, object> Parameters { get; protected set; } = [];
 
         public SqlBuilder(string tablePrefix, ISqlDialect dialect)
         {
@@ -44,7 +44,8 @@ namespace YesSql.Sql
             _dialect = dialect;
         }
 
-        public string Clause { get { return _clause; } }
+        public string Clause
+            => _clause;
 
         public void Table(string table, string alias, string schema)
         {
@@ -59,9 +60,7 @@ namespace YesSql.Sql
         }
 
         public void From(string from)
-        {
-            FromSegments.Add(from);
-        }
+            => FromSegments.Add(from);
 
         public bool HasPaging => _skip != null || _count != null;
 
@@ -75,7 +74,7 @@ namespace YesSql.Sql
             _count = take;
         }
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null)
+        public virtual void Join(JoinType type, string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null)
         {
             // Don't prefix if alias is used
             if (alias != onTable)
@@ -101,7 +100,19 @@ namespace YesSql.Sql
                 toTable = _dialect.QuoteForAliasName(toAlias);
             }
 
-            JoinSegments.Add(" INNER JOIN ");
+            if (type == JoinType.Left)
+            {
+                JoinSegments.Add(" LEFT JOIN ");
+            }
+            else if (type == JoinType.Right)
+            {
+                JoinSegments.Add(" RIGHT JOIN ");
+            }
+            else
+            {
+                JoinSegments.Add(" INNER JOIN ");
+            }
+
             JoinSegments.Add(FormatTable(table, schema));
 
             if (!string.IsNullOrEmpty(alias))
@@ -138,6 +149,7 @@ namespace YesSql.Sql
 
         public void AddSelector(string select)
         {
+            Select();
             SelectSegments.Add(select);
         }
 
@@ -154,7 +166,7 @@ namespace YesSql.Sql
             }
             else
             {
-                return string.Join("", SelectSegments);
+                return string.Join(string.Empty, SelectSegments);
             }
         }
 
@@ -267,11 +279,11 @@ namespace YesSql.Sql
 
         public virtual void ThenOrderBy(string orderBy)
         {
-            if (HasOrder) 
+            if (HasOrder)
             {
                 OrderSegments.Add(", ");
             }
-            
+
             OrderSegments.Add(orderBy);
         }
 
