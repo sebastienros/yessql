@@ -62,17 +62,14 @@ namespace YesSql.Sql
         public void From(string from)
             => FromSegments.Add(from);
 
-        public bool HasPaging => _skip != null || _count != null;
+        public bool HasPaging
+            => _skip != null || _count != null;
 
         public void Skip(string skip)
-        {
-            _skip = skip;
-        }
+            => _skip = skip;
 
         public void Take(string take)
-        {
-            _count = take;
-        }
+            => _count = take;
 
         public virtual void Join(JoinType type, string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null)
         {
@@ -128,13 +125,13 @@ namespace YesSql.Sql
         }
 
         public void Select()
-        {
-            _clause = "SELECT";
-        }
+            => _clause = "SELECT";
 
-        public IEnumerable<string> GetSelectors() => SelectSegments;
+        public IEnumerable<string> GetSelectors()
+            => SelectSegments;
 
-        public IEnumerable<string> GetOrders() => OrderSegments;
+        public IEnumerable<string> GetOrders()
+            => OrderSegments;
 
         public void Selector(string selector)
         {
@@ -143,9 +140,7 @@ namespace YesSql.Sql
         }
 
         public void Selector(string table, string column, string schema)
-        {
-            Selector(FormatColumn(table, column, schema));
-        }
+            => Selector(FormatColumn(table, column, schema));
 
         public void AddSelector(string select)
         {
@@ -154,9 +149,7 @@ namespace YesSql.Sql
         }
 
         public void InsertSelector(string select)
-        {
-            SelectSegments.Insert(0, select);
-        }
+            => SelectSegments.Insert(0, select);
 
         public string GetSelector()
         {
@@ -164,16 +157,12 @@ namespace YesSql.Sql
             {
                 return SelectSegments[0];
             }
-            else
-            {
-                return string.Join(string.Empty, SelectSegments);
-            }
+
+            return string.Join(string.Empty, SelectSegments);
         }
 
         public void Distinct()
-        {
-            _distinct = true;
-        }
+            => _distinct = true;
 
         public virtual string FormatColumn(string table, string column, string schema, bool isAlias = false)
         {
@@ -243,9 +232,11 @@ namespace YesSql.Sql
             WhereSegments.Add(where);
         }
 
-        public bool HasJoin => _join != null && _join.Count > 0;
+        public bool HasJoin
+            => _join?.Count > 0;
 
-        public bool HasOrder => _order != null && _order.Count > 0;
+        public bool HasOrder
+            => _order?.Count > 0;
 
         public void ClearOrder()
         {
