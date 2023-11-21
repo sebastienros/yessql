@@ -2835,6 +2835,49 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task CanJoinAndOrderByBoolean()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    var person = new Person
+                    {
+                        Firstname = "Bill" + i,
+                        Lastname = "Gates" + i,
+                        Age = i
+                    };
+
+                    session.Save(person);
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                var query = session.Query().For<Person>()
+                    .All(
+                        x => x.With<PersonByName>(x => x.SomeName.Contains("Bill")),
+                        x => x.With<PersonByAge>(x => x.Age >= 0).OrderByDescending(x => x.Adult)
+                    );
+
+                var results = await query.ListAsync();
+
+                Assert.Equal(100, await query.CountAsync());
+                Assert.Equal(100, (results).Count());
+
+                for (int i = 0; i < 82; i++)
+                {
+                    Assert.True(results.ElementAt(i).Age >= 18);
+                }
+            }
+        }
+
+        [Fact]
         public async Task ShouldPageResults()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
