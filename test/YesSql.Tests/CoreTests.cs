@@ -6791,13 +6791,13 @@ namespace YesSql.Tests
 
                 var stevesArticle = new Article
                 {
-                    Title = "Post by steve about cats",
+                    Title = "Post by Steve about cats",
                     PublishedUtc = DateTime.UtcNow
                 };
 
                 var paulsArticle = new Article
                 {
-                    Title = "Blog by paul about chickens",
+                    Title = "Blog by Paul about chickens",
                     PublishedUtc = DateTime.UtcNow
                 };
 
@@ -6810,7 +6810,7 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                var filter = "title:about NOT steve";
+                var filter = "title:about NOT Steve";
                 var filterQuery = session.Query<Article>();
 
                 var parser = new QueryEngineBuilder<Article>()
@@ -6840,13 +6840,14 @@ namespace YesSql.Tests
 
                 // Normal YesSql query
                 Assert.Equal(2, await yesSqlQuery.CountAsync());
-                Assert.Equal("Blog by paul about chickens", (await yesSqlQuery.FirstOrDefaultAsync()).Title);
+                Assert.Equal("Blog by Paul about chickens", (await yesSqlQuery.FirstOrDefaultAsync()).Title);
 
                 // Parsed query
                 Assert.Equal(2, await filterQuery.CountAsync());
-                Assert.Equal("Blog by paul about chickens", (await filterQuery.FirstOrDefaultAsync()).Title);
+                Assert.Equal("Blog by Paul about chickens", (await filterQuery.FirstOrDefaultAsync()).Title);
             }
         }
-        #endregion
     }
+    #endregion
+}
 }
