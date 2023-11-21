@@ -239,9 +239,7 @@ namespace YesSql.Sql
             => _order?.Count > 0;
 
         public void ClearOrder()
-        {
-            _order = null;
-        }
+            => _order = null;
 
         public void ClearGroupBy()
         {
