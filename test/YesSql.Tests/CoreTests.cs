@@ -6167,6 +6167,133 @@ namespace YesSql.Tests
             }
         }
 
+        [Fact]
+        public async Task CanRunLeftJoin()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            var now = DateTime.UtcNow;
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 10; i++)
+                {
+                    await session.SaveAsync(new Article
+                    {
+                        PublishedUtc = now.AddDays(i)
+                    });
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            int result;
+
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                var dialect = _store.Configuration.SqlDialect;
+
+                var sqlBuilder = new SqlBuilder(TablePrefix, dialect);
+
+                sqlBuilder.AddSelector("count(1)");
+                sqlBuilder.Table("document", "d", _store.Configuration.Schema);
+                sqlBuilder.LeftJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", "document", "Id", _store.Configuration.Schema, "a", "d");
+
+                var query = sqlBuilder.ToSqlString();
+
+                result = await connection.QueryFirstOrDefaultAsync<int>(query);
+            }
+
+            Assert.Equal(10, result);
+        }
+
+        [Fact]
+        public async Task CanRunRightJoin()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            var now = DateTime.UtcNow;
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 10; i++)
+                {
+                    await session.SaveAsync(new Article
+                    {
+                        PublishedUtc = now.AddDays(i)
+                    });
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            int result;
+
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                var dialect = _store.Configuration.SqlDialect;
+
+                var sqlBuilder = new SqlBuilder(TablePrefix, dialect);
+
+                sqlBuilder.AddSelector("count(1)");
+                sqlBuilder.Table("document", "d", _store.Configuration.Schema);
+                sqlBuilder.RightJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", "document", "Id", _store.Configuration.Schema, "a", "d");
+
+                var query = sqlBuilder.ToSqlString();
+
+                result = await connection.QueryFirstOrDefaultAsync<int>(query);
+            }
+
+            Assert.Equal(10, result);
+        }
+
+
+        [Fact]
+        public async Task CanRunInnerJoin()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            var now = DateTime.UtcNow;
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 10; i++)
+                {
+                    await session.SaveAsync(new Article
+                    {
+                        PublishedUtc = now.AddDays(i)
+                    });
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            int result;
+
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                var dialect = _store.Configuration.SqlDialect;
+
+                var sqlBuilder = new SqlBuilder(TablePrefix, dialect);
+
+                sqlBuilder.AddSelector("count(1)");
+                sqlBuilder.Table("document", "d", _store.Configuration.Schema);
+                sqlBuilder.InnerJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", "document", "Id", _store.Configuration.Schema, "a", "d");
+
+                var query = sqlBuilder.ToSqlString();
+
+                result = await connection.QueryFirstOrDefaultAsync<int>(query);
+            }
+
+            Assert.Equal(10, result);
+        }
+
         #region FilterTests
 
         [Fact]
