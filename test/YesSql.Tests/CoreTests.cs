@@ -6196,10 +6196,11 @@ namespace YesSql.Tests
                 var dialect = _store.Configuration.SqlDialect;
 
                 var sqlBuilder = new SqlBuilder(TablePrefix, dialect);
+                var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable("");
 
                 sqlBuilder.AddSelector("count(1)");
-                sqlBuilder.Table("document", "d", _store.Configuration.Schema);
-                sqlBuilder.LeftJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", "document", "Id", _store.Configuration.Schema, "a", "d");
+                sqlBuilder.Table(documentTable, "d", _store.Configuration.Schema);
+                sqlBuilder.LeftJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", documentTable, "Id", _store.Configuration.Schema, "a", "d");
 
                 var query = sqlBuilder.ToSqlString();
 
@@ -6238,10 +6239,10 @@ namespace YesSql.Tests
                 var dialect = _store.Configuration.SqlDialect;
 
                 var sqlBuilder = new SqlBuilder(TablePrefix, dialect);
-
+                var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable("");
                 sqlBuilder.AddSelector("count(1)");
-                sqlBuilder.Table("document", "d", _store.Configuration.Schema);
-                sqlBuilder.RightJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", "document", "Id", _store.Configuration.Schema, "a", "d");
+                sqlBuilder.Table(documentTable, "d", _store.Configuration.Schema);
+                sqlBuilder.RightJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", documentTable, "Id", _store.Configuration.Schema, "a", "d");
 
                 var query = sqlBuilder.ToSqlString();
 
@@ -6281,10 +6282,11 @@ namespace YesSql.Tests
                 var dialect = _store.Configuration.SqlDialect;
 
                 var sqlBuilder = new SqlBuilder(TablePrefix, dialect);
+                var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable("");
 
                 sqlBuilder.AddSelector("count(1)");
-                sqlBuilder.Table("document", "d", _store.Configuration.Schema);
-                sqlBuilder.InnerJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", "document", "Id", _store.Configuration.Schema, "a", "d");
+                sqlBuilder.Table(documentTable, "d", _store.Configuration.Schema);
+                sqlBuilder.InnerJoin(nameof(ArticleByPublishedDate), "a", "DocumentId", documentTable, "Id", _store.Configuration.Schema, "a", "d");
 
                 var query = sqlBuilder.ToSqlString();
 
