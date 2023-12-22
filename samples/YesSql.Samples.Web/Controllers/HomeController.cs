@@ -26,49 +26,46 @@ namespace YesSql.Samples.Web.Controllers
         {
             IEnumerable<BlogPost> posts;
 
-            using (var session = _store.CreateSession())
+            await using var session = _store.CreateSession();
+            var query = session.Query<BlogPost>();
+
+            await filterResult.ExecuteAsync(new WebQueryExecutionContext<BlogPost>(HttpContext.RequestServices, query));
+
+            var currentSearchText = filterResult.ToString();
+
+            posts = await query.ListAsync();
+
+            // Map termList to model.
+            // i.e. SelectedFilter needs to be filled with
+            // the selected filter value from the term.
+            var search = new Filter
             {
-                var query = session.Query<BlogPost>();
+                SearchText = currentSearchText,
+                OriginalSearchText = currentSearchText
+            };
 
-                await filterResult.ExecuteAsync(new WebQueryExecutionContext<BlogPost>(HttpContext.RequestServices, query));
+            filterResult.MapTo(search);
 
-                var currentSearchText = filterResult.ToString();
-
-                posts = await query.ListAsync();
-
-                // Map termList to model.
-                // i.e. SelectedFilter needs to be filled with
-                // the selected filter value from the term.
-                var search = new Filter
-                {
-                    SearchText = currentSearchText,
-                    OriginalSearchText = currentSearchText
-                };
-
-                filterResult.MapTo(search);
-
-
-                search.Statuses = new List<SelectListItem>()
+            search.Statuses = new List<SelectListItem>()
                 {
                     new SelectListItem("Select...", "", search.SelectedStatus == BlogPostStatus.Default),
                     new SelectListItem("Published", BlogPostStatus.Published.ToString(), search.SelectedStatus == BlogPostStatus.Published),
                     new SelectListItem("Draft", BlogPostStatus.Draft.ToString(), search.SelectedStatus == BlogPostStatus.Draft)
                 };
 
-                search.Sorts = new List<SelectListItem>()
+            search.Sorts = new List<SelectListItem>()
                 {
                     new SelectListItem("Newest", BlogPostSort.Newest.ToString(), search.SelectedSort == BlogPostSort.Newest),
                     new SelectListItem("Oldest", BlogPostSort.Oldest.ToString(), search.SelectedSort == BlogPostSort.Oldest)
                 };
 
-                var vm = new BlogPostViewModel
-                {
-                    BlogPosts = posts,
-                    Search = search
-                };
+            var vm = new BlogPostViewModel
+            {
+                BlogPosts = posts,
+                Search = search
+            };
 
-                return View(vm);
-            }
+            return View(vm);
         }
 
         [HttpPost("/")]

@@ -25,37 +25,36 @@ namespace YesSql.Samples.FullText
 
             var store = await StoreFactory.CreateAndInitializeAsync(configuration);
 
-            using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
-                {
-                    new SchemaBuilder(store.Configuration, transaction)
-                        .CreateReduceIndexTable<ArticleByWord>(table => table
-                            .Column<int>("Count")
-                            .Column<string>("Word")
-                        );
+                await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(store.Configuration, transaction);
 
-                    transaction.Commit();
-                }
+                await builder.CreateReduceIndexTableAsync<ArticleByWord>(table => table
+                    .Column<int>("Count")
+                    .Column<string>("Word")
+                );
+
+                await transaction.CommitAsync();
             }
 
             // register available indexes
             store.RegisterIndexes<ArticleIndexProvider>();
 
             // creating articles
-            using (var session = store.CreateSession())
+            await using (var session = store.CreateSession())
             {
-                session.Save(new Article { Content = "This is a green fox" });
-                session.Save(new Article { Content = "This is a yellow cat" });
-                session.Save(new Article { Content = "This is a pink elephant" });
-                session.Save(new Article { Content = "This is a green tiger" });
+                await session.SaveAsync(new Article { Content = "This is a green fox" });
+                await session.SaveAsync(new Article { Content = "This is a yellow cat" });
+                await session.SaveAsync(new Article { Content = "This is a pink elephant" });
+                await session.SaveAsync(new Article { Content = "This is a green tiger" });
 
                 await session.SaveChangesAsync();
             }
 
-            using (var session = store.CreateSession())
+            await using (var session = store.CreateSession())
             {
                 Console.WriteLine("Simple term: 'green'");
                 var simple = await session
