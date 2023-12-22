@@ -19,28 +19,26 @@ namespace Bench
                     .UseSqlServer(@"Data Source =.; Initial Catalog = yessql; Integrated Security = True")
                     .SetTablePrefix("Bench");
 
-            using (var connection = configuration.ConnectionFactory.CreateConnection())
+            await using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(configuration, transaction);
+                await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
+                var builder = new SchemaBuilder(configuration, transaction);
 
-                    builder.CreateMapIndexTable<UserByName>(c => c
-                        .Column<string>("Name")
-                        .Column<bool>("Adult")
-                        .Column<int>("Age")
-                    );
+                await builder.CreateMapIndexTableAsync<UserByName>(c => c
+                    .Column<string>("Name")
+                    .Column<bool>("Adult")
+                    .Column<int>("Age")
+                );
 
-                    transaction.Commit();
-                }
+                await transaction.CommitAsync();
             }
 
             var store = await StoreFactory.CreateAndInitializeAsync(configuration);
             store.RegisterIndexes<UserIndexProvider>();
 
-            using (var session = store.CreateSession())
+            await using (var session = store.CreateSession())
             {
                 var user = await session.Query<User>().FirstOrDefaultAsync();
 
@@ -51,13 +49,11 @@ namespace Bench
                     Age = 1
                 };
 
-
-                session.Save(bill);
-
+                await session.SaveAsync(bill);
                 await session.SaveChangesAsync();
             }
 
-            using (var session = store.CreateSession())
+            await using (var session = store.CreateSession())
             {
                 var user = await session.Query<User, UserByName>().Where(x => x.Adult == true).FirstOrDefaultAsync();
 
