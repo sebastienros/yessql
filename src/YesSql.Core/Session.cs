@@ -11,6 +11,7 @@ using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
+using static Dapper.SqlMapper;
 
 namespace YesSql
 {
@@ -18,6 +19,22 @@ namespace YesSql
     {
         private DbConnection _connection;
         private DbTransaction _transaction;
+        public Func<Document, object, Task<IEnumerable<IIndexCommand>>> CreateDocumentHandler { get; set; }
+        public Func<Document, object, Task<IEnumerable<IIndexCommand>>> DeleteDocumentHandler { get; set; }
+        public Func<Document, object, Task<IEnumerable<IIndexCommand>>> UpdateDocumentHandler { get; set; }
+
+        private async Task InvokeHandlerAsync(Func<Document, object, Task<IEnumerable<IIndexCommand>>> handler, Document document, object entity)
+        {
+            if (handler != null)
+            {
+                var commands = await handler.Invoke(document, entity);
+                if (commands != null && commands.Any())
+                {
+                    _commands ??= new List<IIndexCommand>();
+                    _commands.AddRange(commands);
+                }
+            }
+        }
 
         internal List<IIndexCommand> _commands;
         private readonly Dictionary<string, SessionState> _collectionStates;
@@ -370,16 +387,18 @@ namespace YesSql
 
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
 
+            _commands ??= new List<IIndexCommand>();
             // Update map index
             await MapDeleted(oldDoc, oldObj, collection);
 
             await MapNew(oldDoc, entity, collection);
 
+
             await CreateConnectionAsync();
 
             oldDoc.Content = newContent;
 
-            _commands ??= new List<IIndexCommand>();
+            await InvokeHandlerAsync(UpdateDocumentHandler, oldDoc, entity);
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
@@ -1206,6 +1225,8 @@ namespace YesSql
 
         private async Task MapNew(Document document, object obj, string collection)
         {
+            await InvokeHandlerAsync(CreateDocumentHandler, document, obj);
+
             var descriptors = GetDescriptors(obj.GetType(), collection);
 
             var state = GetState(collection);
@@ -1266,6 +1287,8 @@ namespace YesSql
         /// </summary>
         private async Task MapDeleted(Document document, object obj, string collection)
         {
+            await InvokeHandlerAsync(DeleteDocumentHandler, document, obj);
+
             var descriptors = GetDescriptors(obj.GetType(), collection);
 
             var state = GetState(collection);
@@ -1357,6 +1380,9 @@ namespace YesSql
             return ReleaseTransactionAsync();
         }
 
+
         public IStore Store => _store;
+
+
     }
 }

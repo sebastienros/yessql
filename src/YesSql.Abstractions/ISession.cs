@@ -10,7 +10,7 @@ namespace YesSql
     /// <summary>
     /// Represents a connection to the document store.
     /// </summary>
-    public interface ISession : IDisposable, IAsyncDisposable
+    public interface ISession : IDocumentEventHandler, IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// Saves a new or existing object to the store, and updates

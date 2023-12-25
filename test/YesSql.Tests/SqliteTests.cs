@@ -1,6 +1,9 @@
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using YesSql.Commands;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -34,6 +37,7 @@ namespace YesSql.Tests
                 ;
         }
 
+
         public override Task DisposeAsync()
         {
             //SqliteConnection.ClearAllPools();
@@ -54,12 +58,48 @@ namespace YesSql.Tests
         //        {
         //            return Task.CompletedTask;
         //        }
-
         [Fact(Skip = "Sqlite doesn't support concurrent writers")]
         public override Task ShouldReadUncommittedRecords()
         {
             return base.ShouldReadUncommittedRecords();
         }
+
+
+        [Fact]
+        public async Task ShouldHandleCustomHandler()
+        {
+            using (_tempFolder = new TemporaryFolder())
+            {
+                var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
+
+                var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+
+                await using (var session = store1.CreateSession())
+                {
+                    session.CreateDocumentHandler = (doc, obj) =>
+                    {
+                        Console.WriteLine("Create:" + obj.ToString());
+                        return Task.FromResult(new[] {
+                            new ExternalCommand("update "+TablePrefix+"Document set ID=@newId;", new {newId=2}) }
+                        .Select(x => (IIndexCommand)x));
+                    };
+                    //session.DeleteDocumentHandler = (doc, obj) => { Console.WriteLine("Delete:" + obj.ToString()); return null; };
+                    //session.UpdateDocumentHandler = (doc, obj) => { Console.WriteLine("Update:" + obj.ToString()); return null; };
+
+                    var p = new Person { Firstname = "Bill" };
+
+                    await session.SaveAsync(p);
+
+                    Assert.Equal(1, p.Id);
+
+                    await session.SaveChangesAsync();
+
+                    var person = await session.Query<Person>().FirstOrDefaultAsync();
+                    Assert.Equal(2, person.Id);
+                }
+            }
+        }
+
 
         [Fact]
         public async Task ShouldSeedExistingIds()
