@@ -79,9 +79,10 @@ namespace YesSql.Tests
                     session.CreateDocumentHandler = (doc, obj) =>
                     {
                         Console.WriteLine("Create:" + obj.ToString());
-                        return Task.FromResult(new[] {
-                            new ExternalCommand("update "+TablePrefix+"Document set ID=@newId;", new {newId=2}) }
-                        .Select(x => (IIndexCommand)x));
+                        var cmd = new ExternalCommand().SetCommand("update " + TablePrefix + "Document set ID=@newId;", new { newId = 2 });
+                        //var cmd2= new ExternalCommand().SetCommand
+                        return Task.FromResult(new[] { cmd }
+                        .Select(x => (IExternalCommand)x));
                     };
                     //session.DeleteDocumentHandler = (doc, obj) => { Console.WriteLine("Delete:" + obj.ToString()); return null; };
                     //session.UpdateDocumentHandler = (doc, obj) => { Console.WriteLine("Update:" + obj.ToString()); return null; };

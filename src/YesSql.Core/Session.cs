@@ -19,11 +19,11 @@ namespace YesSql
     {
         private DbConnection _connection;
         private DbTransaction _transaction;
-        public Func<Document, object, Task<IEnumerable<IIndexCommand>>> CreateDocumentHandler { get; set; }
-        public Func<Document, object, Task<IEnumerable<IIndexCommand>>> DeleteDocumentHandler { get; set; }
-        public Func<Document, object, Task<IEnumerable<IIndexCommand>>> UpdateDocumentHandler { get; set; }
+        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> CreateDocumentHandler { get; set; }
+        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> DeleteDocumentHandler { get; set; }
+        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> UpdateDocumentHandler { get; set; }
 
-        private async Task InvokeHandlerAsync(Func<Document, object, Task<IEnumerable<IIndexCommand>>> handler, Document document, object entity)
+        private async Task InvokeHandlerAsync(Func<Document, object, Task<IEnumerable<IExternalCommand>>> handler, Document document, object entity)
         {
             if (handler != null)
             {

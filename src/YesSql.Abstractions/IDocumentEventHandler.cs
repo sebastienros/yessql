@@ -7,8 +7,8 @@ namespace YesSql
 {
     public interface IDocumentEventHandler
     {
-        Func<Document, object, Task<IEnumerable<IIndexCommand>>> CreateDocumentHandler { get; set; }
-        Func<Document, object, Task<IEnumerable<IIndexCommand>>> DeleteDocumentHandler { get; set; }
-        Func<Document, object, Task<IEnumerable<IIndexCommand>>> UpdateDocumentHandler { get; set; }
+        Func<Document, object, Task<IEnumerable<IExternalCommand>>> CreateDocumentHandler { get; set; }
+        Func<Document, object, Task<IEnumerable<IExternalCommand>>> DeleteDocumentHandler { get; set; }
+        Func<Document, object, Task<IEnumerable<IExternalCommand>>> UpdateDocumentHandler { get; set; }
     }
 }
