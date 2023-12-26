@@ -17,18 +17,18 @@ namespace YesSql.Commands
         public bool _batchable;
         private IEnumerable<DbParameter> _batchCommandParameters;
 
-        public Task SetBatchCommand(string customBatchSql, IEnumerable<DbParameter> batchCommandParameters = null)
+        public IExternalCommand SetBatchCommand(string customBatchSql, IEnumerable<DbParameter> batchCommandParameters = null)
         {
             _customBatchSql = customBatchSql;
             _batchCommandParameters = batchCommandParameters;
             _batchable = true;
-            return Task.CompletedTask;
+            return this;
         }
-        public Task SetCommand(string customSql, object param = null)
+        public IExternalCommand SetCommand(string customSql, object param = null)
         {
             _customSql = customSql;
             _param = param;
-            return Task.CompletedTask;
+            return this;
         }
         public ExternalCommand(string customSql = null, object param = null, bool batchable = false, string customBatchSql = null, IEnumerable<DbParameter> batchCommandParameters = null)
         {

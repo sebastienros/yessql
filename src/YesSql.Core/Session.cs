@@ -19,10 +19,6 @@ namespace YesSql
     {
         private DbConnection _connection;
         private DbTransaction _transaction;
-        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> CreateDocumentHandler { get; set; }
-        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> DeleteDocumentHandler { get; set; }
-        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> UpdateDocumentHandler { get; set; }
-
         private async Task InvokeHandlerAsync(Func<Document, object, Task<IEnumerable<IExternalCommand>>> handler, Document document, object entity)
         {
             if (handler != null)
@@ -398,7 +394,7 @@ namespace YesSql
 
             oldDoc.Content = newContent;
 
-            await InvokeHandlerAsync(UpdateDocumentHandler, oldDoc, entity);
+            await InvokeHandlerAsync(Store.Configuration.UpdateDocumentHandler, oldDoc, entity);
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
@@ -1225,7 +1221,7 @@ namespace YesSql
 
         private async Task MapNew(Document document, object obj, string collection)
         {
-            await InvokeHandlerAsync(CreateDocumentHandler, document, obj);
+            await InvokeHandlerAsync(Store.Configuration.CreateDocumentHandler, document, obj);
 
             var descriptors = GetDescriptors(obj.GetType(), collection);
 
@@ -1287,7 +1283,7 @@ namespace YesSql
         /// </summary>
         private async Task MapDeleted(Document document, object obj, string collection)
         {
-            await InvokeHandlerAsync(DeleteDocumentHandler, document, obj);
+            await InvokeHandlerAsync(Store.Configuration.DeleteDocumentHandler, document, obj);
 
             var descriptors = GetDescriptors(obj.GetType(), collection);
 

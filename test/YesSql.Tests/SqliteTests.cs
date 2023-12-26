@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -73,19 +74,20 @@ namespace YesSql.Tests
                 var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
                 var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+                store1.Configuration.CreateDocumentHandler = (doc, obj) =>
+                {
+                    Console.WriteLine("Create:" + obj.ToString());
+                    var cmd = new ExternalCommand().SetCommand("update " + TablePrefix + "Document set ID=@newId;", new { newId = 2 });
 
+                    var cmd2 = new ExternalCommand()
+                                    .SetCommand("update " + TablePrefix + "Document set ID=@newId;", new { newId = 5 })
+                                    .SetBatchCommand("update " + TablePrefix + "Document set ID=ID+10;") ;
+                    return Task.FromResult(new[] { cmd, cmd2 }.Select(x => x));
+                };
+                //store1.Configuration.DeleteDocumentHandler = (doc, obj) => { Console.WriteLine("Delete:" + obj.ToString()); return null; };
+                //store1.Configuration.UpdateDocumentHandler = (doc, obj) => { Console.WriteLine("Update:" + obj.ToString()); return null; };
                 await using (var session = store1.CreateSession())
                 {
-                    session.CreateDocumentHandler = (doc, obj) =>
-                    {
-                        Console.WriteLine("Create:" + obj.ToString());
-                        var cmd = new ExternalCommand().SetCommand("update " + TablePrefix + "Document set ID=@newId;", new { newId = 2 });
-                        //var cmd2= new ExternalCommand().SetCommand
-                        return Task.FromResult(new[] { cmd }
-                        .Select(x => (IExternalCommand)x));
-                    };
-                    //session.DeleteDocumentHandler = (doc, obj) => { Console.WriteLine("Delete:" + obj.ToString()); return null; };
-                    //session.UpdateDocumentHandler = (doc, obj) => { Console.WriteLine("Update:" + obj.ToString()); return null; };
 
                     var p = new Person { Firstname = "Bill" };
 
@@ -96,7 +98,8 @@ namespace YesSql.Tests
                     await session.SaveChangesAsync();
 
                     var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.Equal(2, person.Id);
+                    //The command can be executed only once in batches or in a single command
+                    Assert.Equal(12, person.Id);
                 }
             }
         }

@@ -6,7 +6,7 @@ namespace YesSql.Commands
 {
     public interface IExternalCommand : IIndexCommand
     {
-        Task SetBatchCommand(string customBatchSql, IEnumerable<DbParameter> batchCommandParameters = null);
-        Task SetCommand(string customSql, object param = null);
+        IExternalCommand SetBatchCommand(string customBatchSql, IEnumerable<DbParameter> batchCommandParameters = null);
+        IExternalCommand SetCommand(string customSql, object param = null);
     }
 }
