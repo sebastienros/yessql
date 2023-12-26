@@ -19,11 +19,25 @@ namespace YesSql
     {
         private DbConnection _connection;
         private DbTransaction _transaction;
-        private async Task InvokeHandlerAsync(Func<Document, object, Task<IEnumerable<IExternalCommand>>> handler, Document document, object entity)
+
+        private async Task InvokeHandlerAsync(MapStates mapState, Document document, object entity)
         {
-            if (handler != null)
+            if (Store.Configuration.DocumentChangedEventHandler != null)
             {
-                var commands = await handler.Invoke(document, entity);
+                var handler = Store.Configuration.DocumentChangedEventHandler;
+                var commands = new List<IExternalCommand>();
+                switch (mapState)
+                {
+                    case MapStates.New:
+                        commands.AddRange(await handler.CreatedAsync(document, entity));
+                        break;
+                    case MapStates.Update:
+                        commands.AddRange(await handler.UpdatedAsync(document, entity));
+                        break;
+                    case MapStates.Delete:
+                        commands.AddRange(await handler.DeletedAsync(document, entity));
+                        break;
+                }
                 if (commands != null && commands.Any())
                 {
                     _commands ??= new List<IIndexCommand>();
@@ -394,7 +408,7 @@ namespace YesSql
 
             oldDoc.Content = newContent;
 
-            await InvokeHandlerAsync(Store.Configuration.UpdateDocumentHandler, oldDoc, entity);
+            await InvokeHandlerAsync(MapStates.Update, oldDoc, entity);
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
@@ -1221,7 +1235,7 @@ namespace YesSql
 
         private async Task MapNew(Document document, object obj, string collection)
         {
-            await InvokeHandlerAsync(Store.Configuration.CreateDocumentHandler, document, obj);
+            await InvokeHandlerAsync(MapStates.New, document, obj);
 
             var descriptors = GetDescriptors(obj.GetType(), collection);
 
@@ -1283,7 +1297,7 @@ namespace YesSql
         /// </summary>
         private async Task MapDeleted(Document document, object obj, string collection)
         {
-            await InvokeHandlerAsync(Store.Configuration.DeleteDocumentHandler, document, obj);
+            await InvokeHandlerAsync(MapStates.Delete, document, obj);
 
             var descriptors = GetDescriptors(obj.GetType(), collection);
 

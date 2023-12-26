@@ -44,9 +44,6 @@ namespace YesSql
         public ICommandInterpreter CommandInterpreter { get; set; }
         public ISqlDialect SqlDialect { get; set; }
         public IdentityColumnSize IdentityColumnSize { get; set; } = IdentityColumnSize.Int32;
-
-        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> CreateDocumentHandler { get; set; }
-        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> DeleteDocumentHandler { get; set; }
-        public Func<Document, object, Task<IEnumerable<IExternalCommand>>> UpdateDocumentHandler { get; set; }
+        public IDocumentChangedEventHandler DocumentChangedEventHandler { get; set; }
     }
 }

@@ -92,9 +92,10 @@ namespace YesSql
         /// Gets or sets the identity column size. Default is <see cref="IdentityColumnSize.Int32"/>.
         /// </summary>
         IdentityColumnSize IdentityColumnSize { get; set; }
-        Func<Document, object, Task<IEnumerable<IExternalCommand>>> CreateDocumentHandler { get; set; }
-        Func<Document, object, Task<IEnumerable<IExternalCommand>>> DeleteDocumentHandler { get; set; }
-        Func<Document, object, Task<IEnumerable<IExternalCommand>>> UpdateDocumentHandler { get; set; }
+        /// <summary>
+        ///  Gets or sets the <see cref="IDocumentChangedEventHandler" /> instance.
+        /// </summary>
+        IDocumentChangedEventHandler DocumentChangedEventHandler { get; set; }
     }
 
     public static class ConfigurationExtensions

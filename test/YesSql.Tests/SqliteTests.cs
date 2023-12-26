@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 using YesSql.Commands;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
+using YesSql.Tests.Events;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
@@ -74,18 +75,7 @@ namespace YesSql.Tests
                 var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
                 var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
-                store1.Configuration.CreateDocumentHandler = (doc, obj) =>
-                {
-                    Console.WriteLine("Create:" + obj.ToString());
-                    var cmd = new ExternalCommand().SetCommand("update " + TablePrefix + "Document set ID=@newId;", new { newId = 2 });
-
-                    var cmd2 = new ExternalCommand()
-                                    .SetCommand("update " + TablePrefix + "Document set ID=@newId;", new { newId = 5 })
-                                    .SetBatchCommand("update " + TablePrefix + "Document set ID=ID+10;") ;
-                    return Task.FromResult(new[] { cmd, cmd2 }.Select(x => x));
-                };
-                //store1.Configuration.DeleteDocumentHandler = (doc, obj) => { Console.WriteLine("Delete:" + obj.ToString()); return null; };
-                //store1.Configuration.UpdateDocumentHandler = (doc, obj) => { Console.WriteLine("Update:" + obj.ToString()); return null; };
+                store1.Configuration.DocumentChangedEventHandler = new TestDocumentChangeEventHandler(store1);
                 await using (var session = store1.CreateSession())
                 {
 
@@ -98,7 +88,7 @@ namespace YesSql.Tests
                     await session.SaveChangesAsync();
 
                     var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    //The command can be executed only once in batches or in a single command
+                    //The should can be executed only once in batches or in a single command
                     Assert.Equal(12, person.Id);
                 }
             }
