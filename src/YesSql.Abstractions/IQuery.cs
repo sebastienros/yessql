@@ -63,13 +63,13 @@ namespace YesSql
         /// </summary>
         /// <typeparam name="TIndex">The index to filter on.</typeparam>
         IQuery<T, TIndex> With<TIndex>() where TIndex : class, IIndex;
-        
+
         /// <summary>
         /// Filters the documents with a constraint on the specified index.
         /// </summary>
         /// <typeparam name="TIndex">The index to filter on.</typeparam>
         IQuery<T, TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
-        
+
         /// <summary>
         /// Skips the specified number of document.
         /// </summary>
@@ -85,17 +85,17 @@ namespace YesSql
         /// <summary>
         /// Executes the query and returns the first result matching the constraints.
         /// </summary>
-        Task<T> FirstOrDefaultAsync();
+        Task<T> FirstOrDefaultAsync(QueryContext queryContext = null);
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync();
+        Task<IEnumerable<T>> ListAsync(QueryContext queryContext = null);
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        IAsyncEnumerable<T> ToAsyncEnumerable();
+        IAsyncEnumerable<T> ToAsyncEnumerable(QueryContext queryContext = null);
 
         /// <summary>
         /// Executes a that returns the number of documents matching the constraints.
@@ -128,7 +128,7 @@ namespace YesSql
         /// Joins the document table with an index, and filter it with a predicate.
         /// </summary>
         IQueryIndex<TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
-        
+
         /// <summary>
         /// Adds a custom Where clause to the query.
         /// </summary>
@@ -163,7 +163,7 @@ namespace YesSql
         /// Adds an OrderBy clause using a custom lambda expression.
         /// </summary>
         IQueryIndex<T> ThenBy(Expression<Func<T, object>> keySelector);
-        
+
         /// <summary>
         /// Adds a descending OrderBy clause using a custom lambda expression.
         /// </summary>
@@ -184,18 +184,18 @@ namespace YesSql
         /// <summary>
         /// Returns the first result only, if it exists.
         /// </summary>
-        Task<T> FirstOrDefaultAsync();
+        Task<T> FirstOrDefaultAsync(QueryContext queryContext = null);
 
         /// <summary>
         /// Executes the query.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync();
+        Task<IEnumerable<T>> ListAsync(QueryContext queryContext = null);
 
         /// <summary>
         /// Executes the query for asynchronous iteration.
         /// </summary>
         /// <returns></returns>
-        IAsyncEnumerable<T> ToAsyncEnumerable();
+        IAsyncEnumerable<T> ToAsyncEnumerable(QueryContext queryContext = null);
 
         /// <summary>
         /// Returns the number of results only.
@@ -221,7 +221,7 @@ namespace YesSql
         /// Adds a custom Where clause to the query using a specific dialect. 
         /// </summary>
         IQuery<T, TIndex> Where(Func<ISqlDialect, string> sql);
-        
+
         /// <summary>
         /// Adds a named parameter to the query.
         /// </summary>
@@ -236,19 +236,19 @@ namespace YesSql
         /// Sets an OrderBy clause using a custom lambda expression.
         /// </summary>
         IQuery<T, TIndex> OrderBy(Expression<Func<TIndex, object>> keySelector);
-        
+
         /// <summary>
         /// Sets an OrderBy clause using a custom SQL statement.
         /// </summary>
         IQuery<T, TIndex> OrderBy(string sql);
-        
+
         IQuery<T, TIndex> OrderByDescending(Expression<Func<TIndex, object>> keySelector);
-        
+
         /// <summary>
         /// Sets a descending OrderBy clause using a custom SQL statement.
         /// </summary>
         IQuery<T, TIndex> OrderByDescending(string sql);
-        
+
         /// <summary>
         /// Sets a random OrderBy clause.
         /// </summary>

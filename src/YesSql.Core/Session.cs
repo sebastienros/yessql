@@ -44,7 +44,7 @@ namespace YesSql
             _defaultState = new SessionState();
             _collectionStates = new Dictionary<string, SessionState>()
             {
-                [""] = _defaultState
+                [string.Empty] = _defaultState
             };
         }
 
@@ -58,7 +58,7 @@ namespace YesSql
                 }
             }
 
-            _indexes ??= new List<IIndexProvider>();
+            _indexes ??= [];
 
             _indexes.AddRange(indexProviders);
 
@@ -222,6 +222,23 @@ namespace YesSql
 
             var state = GetState(collection);
 
+            DetachInternal(entity, state);
+        }
+
+        public void DetachRange(IEnumerable<object> entries, string collection)
+        {
+            CheckDisposed();
+
+            var state = GetState(collection);
+
+            foreach (var entry in entries)
+            {
+                DetachInternal(entry, state);
+            }
+        }
+
+        private void DetachInternal(object entity, SessionState state)
+        {
             state.Saved.Remove(entity);
             state.Updated.Remove(entity);
             state.Tracked.Remove(entity);
@@ -277,14 +294,11 @@ namespace YesSql
                 doc.Version = 1;
             }
 
-            if (versionAccessor != null)
-            {
-                versionAccessor.Set(entity, doc.Version);
-            }
+            versionAccessor?.Set(entity, doc.Version);
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
-            _commands ??= new List<IIndexCommand>();
+            _commands ??= [];
 
             _commands.Add(new CreateDocumentCommand(doc, Store, collection));
 
@@ -300,14 +314,12 @@ namespace YesSql
                 throw new ArgumentNullException(nameof(entity));
             }
 
-            var index = entity as IIndex;
-
             if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitly");
             }
 
-            if (index != null)
+            if (entity is IIndex index)
             {
                 throw new ArgumentException("An index should not be saved explicitly");
             }
@@ -379,7 +391,7 @@ namespace YesSql
 
             oldDoc.Content = newContent;
 
-            _commands ??= new List<IIndexCommand>();
+            _commands ??= [];
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
@@ -470,7 +482,7 @@ namespace YesSql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, QueryContext queryContext = null) where T : class
         {
             if (ids?.Length == 0)
             {
@@ -509,7 +521,7 @@ namespace YesSql
                     .OrderBy(d => Array.IndexOf(ids, d.Id))
                     .ToList();
 
-                return Get<T>(sortedDocuments, collection);
+                return Get<T>(sortedDocuments, collection, queryContext);
             }
             catch
             {
@@ -519,7 +531,7 @@ namespace YesSql
             }
         }
 
-        public IEnumerable<T> Get<T>(IList<Document> documents, string collection) where T : class
+        public IEnumerable<T> Get<T>(IList<Document> documents, string collection, QueryContext queryContext = null) where T : class
         {
             if (documents?.Count == 0)
             {
@@ -531,6 +543,8 @@ namespace YesSql
             var typeName = Store.TypeNames[typeof(T)];
 
             var state = GetState(collection);
+
+            var trackLoadedObjects = queryContext == null || !queryContext.WithNoTracking;
 
             // Are all the objects already in cache?
             foreach (var d in documents)
@@ -568,9 +582,12 @@ namespace YesSql
 
                     accessor?.Set(item, d.Id);
 
-                    // track the loaded object
-                    state.IdentityMap.AddEntity(d.Id, item);
-                    state.IdentityMap.AddDocument(d);
+                    if (trackLoadedObjects)
+                    {
+                        // track the loaded object.
+                        state.IdentityMap.AddEntity(d.Id, item);
+                        state.IdentityMap.AddDocument(d);
+                    }
 
                     result.Add(item);
                 }
@@ -657,7 +674,7 @@ namespace YesSql
             }
 
             // prevent recursive calls in FlushAsync,
-            // when autoflush is triggered from an IndexProvider
+            // when auto-flush is triggered from an IndexProvider
             // for instance.
 
             if (_flushing)

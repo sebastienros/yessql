@@ -1182,12 +1182,12 @@ namespace YesSql.Services
                 return _query._queryState.GetTypeAlias(type);
             }
 
-            public Task<T> FirstOrDefaultAsync()
+            public Task<T> FirstOrDefaultAsync(QueryContext queryContext = null)
             {
-                return FirstOrDefaultImpl();
+                return FirstOrDefaultImpl(queryContext);
             }
 
-            protected async Task<T> FirstOrDefaultImpl()
+            protected async Task<T> FirstOrDefaultImpl(QueryContext queryContext)
             {
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync();
@@ -1252,7 +1252,7 @@ namespace YesSql.Services
                             return default;
                         }
 
-                        return _query._session.Get<T>(clonedDocuments, _query._collection).FirstOrDefault();
+                        return _query._session.Get<T>(clonedDocuments, _query._collection, queryContext).FirstOrDefault();
                     }
                 }
                 catch
@@ -1262,21 +1262,21 @@ namespace YesSql.Services
                 }
             }
 
-            Task<IEnumerable<T>> IQuery<T>.ListAsync()
+            Task<IEnumerable<T>> IQuery<T>.ListAsync(QueryContext queryContext)
             {
-                return ListImpl();
+                return ListImpl(queryContext);
             }
 
-            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
+            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(QueryContext queryContext)
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl())
+                foreach (var item in await ListImpl(queryContext))
                 {
                     yield return item;
                 }
             }
 
-            internal async Task<IEnumerable<T>> ListImpl()
+            internal async Task<IEnumerable<T>> ListImpl(QueryContext queryContext = null)
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can return it by default, and buffer it in ListAsync instead
 
@@ -1357,7 +1357,7 @@ namespace YesSql.Services
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         documents = documents.Select(x => x.Clone());
 
-                        return _query._session.Get<T>(documents.ToList(), _query._collection);
+                        return _query._session.Get<T>(documents.ToList(), _query._collection, queryContext);
                     }
                 }
                 catch
@@ -1559,20 +1559,20 @@ namespace YesSql.Services
             public QueryIndex(DefaultQuery query) : base(query)
             { }
 
-            Task<T> IQueryIndex<T>.FirstOrDefaultAsync()
+            Task<T> IQueryIndex<T>.FirstOrDefaultAsync(QueryContext queryContext)
             {
-                return FirstOrDefaultImpl();
+                return FirstOrDefaultImpl(queryContext);
             }
 
-            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
+            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(QueryContext queryContext)
             {
-                return ListImpl();
+                return ListImpl(queryContext);
             }
 
-            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable()
+            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable(QueryContext queryContext)
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl())
+                foreach (var item in await ListImpl(queryContext))
                 {
                     yield return item;
                 }
