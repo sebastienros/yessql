@@ -94,6 +94,7 @@ namespace YesSql
         IdentityColumnSize IdentityColumnSize { get; set; }
         /// <summary>
         ///  Gets or sets the <see cref="IDocumentChangedEventHandler" /> instance.
+        ///  Suggest inherited from DocumentChangedEventHandlerBase
         /// </summary>
         IDocumentChangedEventHandler DocumentChangedEventHandler { get; set; }
     }
