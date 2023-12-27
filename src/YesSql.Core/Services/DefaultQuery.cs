@@ -1168,6 +1168,13 @@ namespace YesSql.Services
             return new Query<object>(this);
         }
 
+        public IQuery WithNoTracking(bool noTrack = true)
+        {
+            _noTracking = noTrack;
+
+            return this;
+        }
+
         public class Query<T> : IQuery<T> where T : class
         {
             internal readonly DefaultQuery _query;
