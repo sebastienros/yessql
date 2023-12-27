@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -13,16 +13,17 @@ namespace YesSql
         /// Loads an object by its id.
         /// </summary>
         /// <returns>The object or <c>null</c>.</returns>
-        public async static Task<T> GetAsync<T>(this ISession session, long id, string collection = null) where T : class
-        {
-            return (await session.GetAsync<T>(new[] { id }, collection)).FirstOrDefault();
-        }
+        public async static Task<T> GetAsync<T>(this ISession session, long id, string collection = null, QueryContext queryContext = null)
+            where T : class
+            => (await session.GetAsync<T>([id], collection, queryContext)).FirstOrDefault();
 
         /// <summary>
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        public static Task<IEnumerable<T>> GetAsync<T>(this ISession session, int[] ids, string collection = null) where T : class => session.GetAsync<T>(ids.Select(x => (long)x).ToArray(), collection);
+        public static Task<IEnumerable<T>> GetAsync<T>(this ISession session, int[] ids, string collection = null, QueryContext queryContext = null)
+            where T : class
+            => session.GetAsync<T>(ids.Select(x => (long)x).ToArray(), collection, queryContext);
 
         /// <summary>
         /// Imports an object in the local identity map.
@@ -37,9 +38,7 @@ namespace YesSql
         /// <c>true</c> if the object was imported, <c>false</c> otherwise.
         /// </returns>
         public static bool Import(this ISession session, object item, string collection = null)
-        {
-            return session.Import(item, 0, 0, collection);
-        }
+            => session.Import(item, 0, 0, collection);
 
         /// <summary>
         /// Registers index providers that are used only during the lifetime of this session.
@@ -48,9 +47,7 @@ namespace YesSql
         /// <param name="indexProviders">The index providers to register.</param>
         /// <returns>The <see cref="ISession"/> instance.</returns>
         public static ISession RegisterIndexes(this ISession session, params IIndexProvider[] indexProviders)
-        {
-            return session.RegisterIndexes(indexProviders, null);
-        }
+            => session.RegisterIndexes(indexProviders, null);
 
         /// <summary>
         /// Registers index providers that are used only during the lifetime of this session.
@@ -60,9 +57,7 @@ namespace YesSql
         /// <param name="collection">The name of the collection.</param>
         /// <returns>The <see cref="ISession"/> instance.</returns>
         public static ISession RegisterIndexes(this ISession session, IIndexProvider indexProvider, string collection = null)
-        {
-            return session.RegisterIndexes(new[] { indexProvider }, collection);
-        }
+            => session.RegisterIndexes([indexProvider], collection);
 
         /// <summary>
         /// Saves a new or existing object to the store, and updates

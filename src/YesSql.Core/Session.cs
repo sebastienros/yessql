@@ -549,7 +549,7 @@ namespace YesSql
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
-                if (state.IdentityMap.TryGetEntityById(d.Id, out var entity))
+                if (trackLoadedObjects && state.IdentityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
                 }

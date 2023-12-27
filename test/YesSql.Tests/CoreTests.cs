@@ -936,6 +936,28 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldNotKeepIdentityMapOnCommitAsync()
+        {
+            await using var session = _store.CreateSession();
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            await session.SaveAsync(bill);
+            var newBill = await session.GetAsync<Person>(bill.Id);
+
+            Assert.Equal(bill, newBill);
+
+            await session.SaveChangesAsync();
+
+            newBill = await session.GetAsync<Person>(bill.Id, collection: null, new QueryContext { WithNoTracking = true });
+
+            Assert.NotEqual(bill, newBill);
+        }
+
+        [Fact]
         public async Task ShouldUpdateAutoFlushedIndex()
         {
             // When auto-flush is called on an entity
