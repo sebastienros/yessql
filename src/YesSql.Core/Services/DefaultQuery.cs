@@ -36,7 +36,7 @@ namespace YesSql.Services
         public List<Action<object, ISqlBuilder>> _parameterBindings;
         public string _collection;
         public IStore _store;
-        internal CompositeNode _predicate; // the defaut root predicate is an AND expression
+        internal CompositeNode _predicate; // the default root predicate is an AND expression
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
         public bool _deduplicate = true;
@@ -131,8 +131,7 @@ namespace YesSql.Services
         private readonly object _compiledQuery = null;
         private readonly string _collection;
 
-        public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
-            new();
+        public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings = [];
 
         static DefaultQuery()
         {
@@ -564,7 +563,7 @@ namespace YesSql.Services
                             obj = null;
                         }
 
-                        _queryState._parameterBindings = _queryState._parameterBindings ?? new List<Action<object, ISqlBuilder>>();
+                        _queryState._parameterBindings ??= new List<Action<object, ISqlBuilder>>();
 
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
@@ -624,7 +623,7 @@ namespace YesSql.Services
             return Expression.Constant(Expression.Lambda(expression).Compile().DynamicInvoke());
         }
 
-        private string GetBinaryOperator(Expression expression)
+        private static string GetBinaryOperator(Expression expression)
         {
             switch (expression.NodeType)
             {
@@ -1168,20 +1167,21 @@ namespace YesSql.Services
             return new Query<object>(this);
         }
 
-        public IQuery WithNoTracking(bool noTrack = true)
-        {
-            _noTracking = noTrack;
-
-            return this;
-        }
-
         public class Query<T> : IQuery<T> where T : class
         {
             internal readonly DefaultQuery _query;
+            private bool _noTracking;
 
             public Query(DefaultQuery query)
             {
                 _query = query;
+            }
+
+            public IQuery<T> WithNoTracking()
+            {
+                _noTracking = true;
+
+                return this;
             }
 
             public string GetTypeAlias(Type type)
@@ -1189,12 +1189,12 @@ namespace YesSql.Services
                 return _query._queryState.GetTypeAlias(type);
             }
 
-            public Task<T> FirstOrDefaultAsync(QueryContext queryContext = null)
+            public Task<T> FirstOrDefaultAsync()
             {
-                return FirstOrDefaultImpl(queryContext);
+                return FirstOrDefaultImpl();
             }
 
-            protected async Task<T> FirstOrDefaultImpl(QueryContext queryContext)
+            protected async Task<T> FirstOrDefaultImpl()
             {
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync();
@@ -1259,7 +1259,7 @@ namespace YesSql.Services
                             return default;
                         }
 
-                        return _query._session.Get<T>(clonedDocuments, _query._collection, queryContext).FirstOrDefault();
+                        return _query._session.Get<T>(clonedDocuments, _query._collection, new QueryContext { WithNoTracking = _noTracking }).FirstOrDefault();
                     }
                 }
                 catch
@@ -1269,21 +1269,21 @@ namespace YesSql.Services
                 }
             }
 
-            Task<IEnumerable<T>> IQuery<T>.ListAsync(QueryContext queryContext)
+            Task<IEnumerable<T>> IQuery<T>.ListAsync()
             {
-                return ListImpl(queryContext);
+                return ListImpl();
             }
 
-            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(QueryContext queryContext)
+            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl(queryContext))
+                foreach (var item in await ListImpl())
                 {
                     yield return item;
                 }
             }
 
-            internal async Task<IEnumerable<T>> ListImpl(QueryContext queryContext = null)
+            internal async Task<IEnumerable<T>> ListImpl()
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can return it by default, and buffer it in ListAsync instead
 
@@ -1364,7 +1364,7 @@ namespace YesSql.Services
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         documents = documents.Select(x => x.Clone());
 
-                        return _query._session.Get<T>(documents.ToList(), _query._collection, queryContext);
+                        return _query._session.Get<T>(documents.ToList(), _query._collection, new QueryContext { WithNoTracking = _noTracking });
                     }
                 }
                 catch
@@ -1566,20 +1566,20 @@ namespace YesSql.Services
             public QueryIndex(DefaultQuery query) : base(query)
             { }
 
-            Task<T> IQueryIndex<T>.FirstOrDefaultAsync(QueryContext queryContext)
+            Task<T> IQueryIndex<T>.FirstOrDefaultAsync()
             {
-                return FirstOrDefaultImpl(queryContext);
+                return FirstOrDefaultImpl();
             }
 
-            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(QueryContext queryContext)
+            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
             {
-                return ListImpl(queryContext);
+                return ListImpl();
             }
 
-            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable(QueryContext queryContext)
+            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable()
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl(queryContext))
+                foreach (var item in await ListImpl())
                 {
                     yield return item;
                 }

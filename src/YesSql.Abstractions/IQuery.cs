@@ -85,17 +85,17 @@ namespace YesSql
         /// <summary>
         /// Executes the query and returns the first result matching the constraints.
         /// </summary>
-        Task<T> FirstOrDefaultAsync(QueryContext queryContext = null);
+        Task<T> FirstOrDefaultAsync();
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync(QueryContext queryContext = null);
+        Task<IEnumerable<T>> ListAsync();
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        IAsyncEnumerable<T> ToAsyncEnumerable(QueryContext queryContext = null);
+        IAsyncEnumerable<T> ToAsyncEnumerable();
 
         /// <summary>
         /// Executes a that returns the number of documents matching the constraints.
@@ -111,6 +111,12 @@ namespace YesSql
         /// Adds a Group By clause to the query for fold documents when an index returns multiple records.
         /// </summary>
         IQuery<T> NoDuplicates();
+
+        /// <summary>
+        /// When set, the fetched objects will not be cached internally.
+        /// </summary>
+        /// <returns></returns>
+        IQuery<T> WithNoTracking();
     }
 
     /// <summary>
@@ -184,18 +190,18 @@ namespace YesSql
         /// <summary>
         /// Returns the first result only, if it exists.
         /// </summary>
-        Task<T> FirstOrDefaultAsync(QueryContext queryContext = null);
+        Task<T> FirstOrDefaultAsync();
 
         /// <summary>
         /// Executes the query.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync(QueryContext queryContext = null);
+        Task<IEnumerable<T>> ListAsync();
 
         /// <summary>
         /// Executes the query for asynchronous iteration.
         /// </summary>
         /// <returns></returns>
-        IAsyncEnumerable<T> ToAsyncEnumerable(QueryContext queryContext = null);
+        IAsyncEnumerable<T> ToAsyncEnumerable();
 
         /// <summary>
         /// Returns the number of results only.

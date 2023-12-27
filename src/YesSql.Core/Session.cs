@@ -237,7 +237,7 @@ namespace YesSql
             }
         }
 
-        private void DetachInternal(object entity, SessionState state)
+        private static void DetachInternal(object entity, SessionState state)
         {
             state.Saved.Remove(entity);
             state.Updated.Remove(entity);
