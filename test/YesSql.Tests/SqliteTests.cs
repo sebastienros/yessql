@@ -173,5 +173,49 @@ namespace YesSql.Tests
 
             await session.SaveAsync(property);
         }
+        [Fact]
+        public async Task TestDynamicIndex()
+        {
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                await builder
+                    .DropMapIndexTableAsync<PropertyIndex>();
+
+                await builder
+                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
+                    );
+
+                await builder
+                    .AlterTableAsync(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+
+                await transaction.CommitAsync();
+            }
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            await using var session = _store.CreateSession();
+            var property = new Property
+            {
+                Name = new string('*', 4000),
+                IsOccupied = true,
+                ForRent = true,
+                Location = new string('*', 4000)
+            };
+
+            await session.SaveAsync(property);
+            await session.SaveChangesAsync();
+            var idx = await session.Query<Property, PropertyIndex>().ListAsync();
+            Assert.NotEmpty(idx);
+        }
     }
 }

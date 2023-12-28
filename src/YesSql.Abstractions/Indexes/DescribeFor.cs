@@ -49,7 +49,7 @@ namespace YesSql.Indexes
         private Func<TIndex, IEnumerable<TIndex>, TIndex> _delete;
         private IDescribeFor _reduceDescribeFor;
         private Func<object, bool> _filter;
-
+        
         public PropertyInfo GroupProperty { get; set; }
         public Type IndexType { get { return typeof(TIndex); } }
 

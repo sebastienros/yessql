@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
+      <Compile Remove="Indexes\DynamicIndexDescriptor.cs" />
+    </ItemGroup>
+    <ItemGroup>
         <!-- Latest minimum LTS version. We don't want to force a higher version to applications -->
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     </ItemGroup>

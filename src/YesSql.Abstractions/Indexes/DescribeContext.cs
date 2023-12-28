@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace YesSql.Indexes
 {
@@ -23,6 +24,20 @@ namespace YesSql.Indexes
                     IndexType = kp.IndexType,
                     Filter = kp.Filter
                 });
+        }
+        public void For(Type indexType, Func<T, Task<IEnumerable<IIndex>>> mapfn)
+        {
+            List<IDescribeFor> descriptors;
+
+            if (!_describes.TryGetValue(typeof(T), out descriptors))
+            {
+                descriptors = _describes[typeof(T)] = new List<IDescribeFor>();
+            }
+            var contextType = typeof(IndexDescriptor<,,>).MakeGenericType(typeof(T), indexType, typeof(object));
+            var describeFor = Activator.CreateInstance(contextType);
+            var mapMethod = contextType.GetMethods().Where(x => x.Name == "Map" && x.GetParameters().FirstOrDefault().ParameterType == mapfn.GetType()).FirstOrDefault();
+            mapMethod.Invoke(describeFor, new[] { mapfn });
+            descriptors.Add((IDescribeFor)describeFor);
         }
 
         public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
