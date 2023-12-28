@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace YesSql.Indexes
@@ -25,28 +26,14 @@ namespace YesSql.Indexes
                     Filter = kp.Filter
                 });
         }
-        public void For(Type indexType, Func<T, Task<IEnumerable<IIndex>>> mapfn)
-        {
-            List<IDescribeFor> descriptors;
 
-            if (!_describes.TryGetValue(typeof(T), out descriptors))
-            {
-                descriptors = _describes[typeof(T)] = new List<IDescribeFor>();
-            }
-            var contextType = typeof(IndexDescriptor<,,>).MakeGenericType(typeof(T), indexType, typeof(object));
-            var describeFor = Activator.CreateInstance(contextType);
-            var mapMethod = contextType.GetMethods().Where(x => x.Name == "Map" && x.GetParameters().Length == 1 
-                            && x.GetParameters().FirstOrDefault().ParameterType == typeof(Func<T, Task<IEnumerable<IIndex>>>)).FirstOrDefault();
-            mapMethod.Invoke(describeFor, new[] { mapfn });
-            descriptors.Add((IDescribeFor)describeFor);
+
+        public IMapFor<T, TIndex> For<TIndex>(Type indexType = null) where TIndex : IIndex
+        {
+            return For<TIndex, object>(indexType);
         }
 
-        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
-        {
-            return For<TIndex, object>();
-        }
-
-        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
+        public IMapFor<T, TIndex> For<TIndex, TKey>(Type indexType = null) where TIndex : IIndex
         {
             List<IDescribeFor> descriptors;
 
@@ -56,6 +43,10 @@ namespace YesSql.Indexes
             }
 
             var describeFor = new IndexDescriptor<T, TIndex, TKey>();
+            if (indexType != null)
+            {
+                describeFor.IndexType = indexType;
+            }
             descriptors.Add(describeFor);
 
             return describeFor;

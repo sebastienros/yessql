@@ -21,20 +21,14 @@ namespace YesSql.Tests.Indexes
     {
         public override void Describe(DescribeContext<Property> context)
         {
-            context
-                .For(typeof(PropertyIndex), property =>
-                {
+            context.For<IIndex>(typeof(PropertyIndex)).Map(property => new PropertyIndex
+            {
+                Name = property.Name,
+                ForRent = property.ForRent,
+                IsOccupied = property.IsOccupied,
+                Location = property.Location
 
-                    var idx = new PropertyIndex
-                    {
-                        Name = property.Name,
-                        ForRent = property.ForRent,
-                        IsOccupied = property.IsOccupied,
-                        Location = property.Location
-
-                    };
-                    return Task.FromResult(new[] { (IIndex)idx }.AsEnumerable());
-                });
+            });
         }
     }
 
