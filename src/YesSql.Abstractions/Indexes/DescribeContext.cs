@@ -29,12 +29,15 @@ namespace YesSql.Indexes
         {
             return For<IIndex, object>(indexType);
         }
-        public IMapFor<T, TIndex> For<TIndex>(Type indexType = null) where TIndex : IIndex
+        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
         {
-            return For<TIndex, object>(indexType);
+            return For<TIndex, object>();
         }
-
-        public IMapFor<T, TIndex> For<TIndex, TKey>(Type indexType = null) where TIndex : IIndex
+        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
+        {
+            return For<TIndex, object>(null);
+        }
+        public IMapFor<T, TIndex> For<TIndex, TKey>(Type indexType) where TIndex : IIndex
         {
             List<IDescribeFor> descriptors;
 

@@ -181,7 +181,7 @@ namespace YesSql.Tests
 
             await session.SaveAsync(property);
             await session.SaveChangesAsync();
-            var idx = await session.Query<Property, PropertyIndex>().ListAsync();
+            var idx = await session.Query<Property, PropertyIndex>(x => x.Id == 1).ListAsync();
             Assert.NotEmpty(idx);
         }
     }
