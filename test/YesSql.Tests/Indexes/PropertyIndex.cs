@@ -26,4 +26,20 @@ namespace YesSql.Tests.Indexes
                 });
         }
     }
+    public class PropertyDynamicIndexProvider : IndexProvider<Property>
+    {
+        public override void Describe(DescribeContext<Property> context)
+        {
+            var propertyType = typeof(PropertyIndex);
+            context
+                .For(propertyType)
+                .Map(property => new PropertyIndex
+                {
+                    Name = property.Name,
+                    ForRent = property.ForRent,
+                    IsOccupied = property.IsOccupied,
+                    Location = property.Location
+                });
+        }
+    }
 }

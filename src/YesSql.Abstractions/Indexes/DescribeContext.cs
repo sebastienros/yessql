@@ -25,12 +25,16 @@ namespace YesSql.Indexes
                 });
         }
 
-        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
+        public IMapFor<T, IIndex> For(Type indexType)
         {
-            return For<TIndex, object>();
+            return For<IIndex, object>(indexType);
+        }
+        public IMapFor<T, TIndex> For<TIndex>(Type indexType = null) where TIndex : IIndex
+        {
+            return For<TIndex, object>(indexType);
         }
 
-        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
+        public IMapFor<T, TIndex> For<TIndex, TKey>(Type indexType = null) where TIndex : IIndex
         {
             List<IDescribeFor> descriptors;
 
@@ -40,6 +44,12 @@ namespace YesSql.Indexes
             }
 
             var describeFor = new IndexDescriptor<T, TIndex, TKey>();
+
+            if (indexType != null)
+            {
+                describeFor.IndexType = indexType;
+            }
+
             descriptors.Add(describeFor);
 
             return describeFor;
