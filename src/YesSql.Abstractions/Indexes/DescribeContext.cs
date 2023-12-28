@@ -35,7 +35,8 @@ namespace YesSql.Indexes
             }
             var contextType = typeof(IndexDescriptor<,,>).MakeGenericType(typeof(T), indexType, typeof(object));
             var describeFor = Activator.CreateInstance(contextType);
-            var mapMethod = contextType.GetMethods().Where(x => x.Name == "Map" && x.GetParameters().FirstOrDefault().ParameterType == mapfn.GetType()).FirstOrDefault();
+            var mapMethod = contextType.GetMethods().Where(x => x.Name == "Map" && x.GetParameters().Length == 1 
+                            && x.GetParameters().FirstOrDefault().ParameterType == typeof(Func<T, Task<IEnumerable<IIndex>>>)).FirstOrDefault();
             mapMethod.Invoke(describeFor, new[] { mapfn });
             descriptors.Add((IDescribeFor)describeFor);
         }
