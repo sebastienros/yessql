@@ -20,7 +20,7 @@ namespace YesSql.Commands
         protected readonly IStore _store;
 
         private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
-        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> TypeProperties = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
 
@@ -67,13 +67,18 @@ namespace YesSql.Commands
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
-            if (TypeProperties.TryGetValue(type.FullName, out var pis))
+            if (TypeProperties.TryGetValue(type, out var pis))
             {
                 return pis;
             }
+            //Avoid InvalidCastException
+            var exists = TypeProperties.Keys.FirstOrDefault(x => x.FullName == type.FullName);
+            {
+                TypeProperties.Remove(exists, out _);
+            }
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type.FullName] = properties;
+            TypeProperties[type] = properties;
             return properties;
         }
 
