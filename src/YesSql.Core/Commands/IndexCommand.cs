@@ -71,7 +71,8 @@ namespace YesSql.Commands
             {
                 return pis;
             }
-            //Avoid InvalidCastException
+
+            // Clean up cache entries with the same name and different type
             var exists = TypeProperties.Keys.FirstOrDefault(x => x.FullName == type.FullName);
             if (exists != null)
             {
