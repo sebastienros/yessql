@@ -73,6 +73,7 @@ namespace YesSql.Commands
             }
             //Avoid InvalidCastException
             var exists = TypeProperties.Keys.FirstOrDefault(x => x.FullName == type.FullName);
+            if (exists != null)
             {
                 TypeProperties.Remove(exists, out _);
             }
