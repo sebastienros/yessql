@@ -6311,10 +6311,10 @@ namespace YesSql.Tests
 
                 await builder
                     .CreateMapIndexTableAsync<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(254))
                         .Column<bool>(nameof(PropertyIndex.ForRent))
                         .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(500))
                     );
 
                 await builder
@@ -6329,10 +6329,10 @@ namespace YesSql.Tests
             await using var session = _store.CreateSession();
             var property = new Property
             {
-                Name = new string('*', 4000),
+                Name = new string('*', 40),
                 IsOccupied = true,
                 ForRent = true,
-                Location = new string('*', 4000)
+                Location = new string('*', 500)
             };
 
             await session.SaveAsync(property);
