@@ -6,7 +6,7 @@ namespace YesSql.Indexes
 {
     public class DescribeContext<T> : IDescriptor
     {
-        private readonly Dictionary<Type, List<IDescribeFor>> _describes = new Dictionary<Type, List<IDescribeFor>>();
+        private readonly Dictionary<Type, List<IDescribeFor>> _describes = [];
 
         public IEnumerable<IndexDescriptor> Describe(params Type[] types)
         {
@@ -32,30 +32,29 @@ namespace YesSql.Indexes
 
         public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
         {
-            return For<TIndex, object>();
+            return For<TIndex, object>(typeof(TIndex));
         }
 
         public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
         {
-            return For<TIndex, object>(null);
+            return For<TIndex, object>(typeof(TIndex));
         }
 
         public IMapFor<T, TIndex> For<TIndex, TKey>(Type indexType) where TIndex : IIndex
         {
+            ArgumentNullException.ThrowIfNull(indexType, nameof(indexType));
+
             List<IDescribeFor> descriptors;
 
             if (!_describes.TryGetValue(typeof(T), out descriptors))
             {
-                descriptors = _describes[typeof(T)] = new List<IDescribeFor>();
+                descriptors = _describes[typeof(T)] = [];
             }
 
-            var describeFor = new IndexDescriptor<T, TIndex, TKey>();
-
-            // if indexType is null , use default value :typeof(TIndex)
-            if (indexType != null)
+            var describeFor = new IndexDescriptor<T, TIndex, TKey>()
             {
-                describeFor.IndexType = indexType;
-            }
+                IndexType = indexType,
+            };
 
             descriptors.Add(describeFor);
 

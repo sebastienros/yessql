@@ -31,9 +31,8 @@ namespace YesSql.Tests.Indexes
     {
         public override void Describe(DescribeContext<Property> context)
         {
-            var propertyType = typeof(PropertyIndex);
             context
-                .For(propertyType)
+                .For(typeof(PropertyIndex))
                 .Map(property => new PropertyIndex
                 {
                     Name = property.Name,

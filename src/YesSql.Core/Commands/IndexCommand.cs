@@ -16,15 +16,16 @@ namespace YesSql.Commands
     public abstract class IndexCommand : IIndexCommand
     {
         protected const string ParameterSuffix = "_$$$";
+        private const string _separator = ", ";
 
         protected readonly IStore _store;
 
         private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> TypeProperties = new();
+        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
 
-        protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
+        protected static PropertyInfo[] KeysProperties = [typeof(IIndex).GetProperty("Id")];
 
         public abstract int ExecutionOrder { get; }
 
@@ -67,20 +68,13 @@ namespace YesSql.Commands
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
-            if (TypeProperties.TryGetValue(type, out var pis))
+            if (TypeProperties.TryGetValue(type.FullName, out var pis))
             {
                 return pis;
             }
 
-            // Clean up cache entries with the same name and different type
-            var exists = TypeProperties.Keys.FirstOrDefault(x => x.FullName == type.FullName);
-            if (exists != null)
-            {
-                TypeProperties.Remove(exists, out _);
-            }
-
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type] = properties;
+            TypeProperties[type.FullName] = properties;
             return properties;
         }
 
@@ -109,7 +103,7 @@ namespace YesSql.Commands
                         sbColumnList.Append(dialect.QuoteForColumnName(property.Name));
                         if (i < allProperties.Length - 1)
                         {
-                            sbColumnList.Append(", ");
+                            sbColumnList.Append(_separator);
                         }
                     }
 
@@ -120,14 +114,14 @@ namespace YesSql.Commands
                         sbParameterList.Append("@").Append(property.Name).Append(ParameterSuffix);
                         if (i < allProperties.Length - 1)
                         {
-                            sbParameterList.Append(", ");
+                            sbParameterList.Append(_separator);
                         }
                     }
 
                     if (typeof(MapIndex).IsAssignableFrom(type))
                     {
                         // We can set the document id 
-                        sbColumnList.Append(", ").Append(dialect.QuoteForColumnName("DocumentId"));
+                        sbColumnList.Append(_separator).Append(dialect.QuoteForColumnName("DocumentId"));
                         sbParameterList.Append(", @DocumentId").Append(ParameterSuffix);
                     }
 
@@ -171,7 +165,7 @@ namespace YesSql.Commands
                     values.Append(dialect.QuoteForColumnName(property.Name) + " = @" + property.Name + ParameterSuffix);
                     if (i < allProperties.Length - 1)
                     {
-                        values.Append(", ");
+                        values.Append(_separator);
                     }
                 }
 
