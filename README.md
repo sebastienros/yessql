@@ -29,7 +29,6 @@ Dynamic index type support
     }
 ```
 
-
 How does it work ?
 -------------------
 
