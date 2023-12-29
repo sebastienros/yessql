@@ -15,17 +15,16 @@ namespace YesSql.Commands
 {
     public abstract class IndexCommand : IIndexCommand
     {
-        protected const string ParameterSuffix = "_$$$";
         private const string _separator = ", ";
-
-        protected readonly IStore _store;
+        protected const string ParameterSuffix = "_$$$";
+        protected static PropertyInfo[] KeysProperties = [typeof(IIndex).GetProperty("Id")];
 
         private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
         private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
-
-        protected static PropertyInfo[] KeysProperties = [typeof(IIndex).GetProperty("Id")];
+        
+        protected readonly IStore _store;
 
         public abstract int ExecutionOrder { get; }
 

@@ -51,7 +51,9 @@ namespace YesSql.Indexes
         private Func<object, bool> _filter;
 
         public PropertyInfo GroupProperty { get; set; }
+
         public Type IndexType { get; internal set; } = typeof(TIndex);
+        
         public Func<object, bool> Filter => _filter;
 
         public IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map)
