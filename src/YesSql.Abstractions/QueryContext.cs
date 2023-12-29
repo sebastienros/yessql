@@ -6,4 +6,14 @@ public class QueryContext
     /// When enabled, the retrieved items will not be stored in the internal cache.
     /// </summary>
     public bool WithNoTracking { get; set; }
+
+    public QueryContext()
+    {
+
+    }
+
+    public QueryContext(bool withNoTracking)
+    {
+        WithNoTracking = withNoTracking;
+    }
 }

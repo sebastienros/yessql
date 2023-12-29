@@ -952,7 +952,7 @@ namespace YesSql.Tests
 
             await session.SaveChangesAsync();
 
-            newBill = await session.GetAsync<Person>(bill.Id, collection: null, new QueryContext { WithNoTracking = true });
+            newBill = await session.GetAsync<Person>(bill.Id, collection: null, new QueryContext(true));
 
             Assert.NotEqual(bill, newBill);
         }

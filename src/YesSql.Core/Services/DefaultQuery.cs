@@ -1259,7 +1259,7 @@ namespace YesSql.Services
                             return default;
                         }
 
-                        return _query._session.Get<T>(clonedDocuments, _query._collection, new QueryContext { WithNoTracking = _noTracking }).FirstOrDefault();
+                        return _query._session.Get<T>(clonedDocuments, _query._collection, new QueryContext(_noTracking)).FirstOrDefault();
                     }
                 }
                 catch
@@ -1364,7 +1364,7 @@ namespace YesSql.Services
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         documents = documents.Select(x => x.Clone());
 
-                        return _query._session.Get<T>(documents.ToList(), _query._collection, new QueryContext { WithNoTracking = _noTracking });
+                        return _query._session.Get<T>(documents.ToList(), _query._collection, new QueryContext(_noTracking));
                     }
                 }
                 catch
