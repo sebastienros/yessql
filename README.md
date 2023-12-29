@@ -7,7 +7,7 @@ A .NET document database interface for relational databases, because in SQL we (
 [![NuGet](https://img.shields.io/nuget/v/YesSql.svg)](https://www.nuget.org/packages/YesSql)
 [![MyGet](https://img.shields.io/myget/yessql/vpre/yessql.svg?label=MyGet)](https://www.myget.org/feed/yessql/package/nuget/yessql)
 
-Dynamic Index Type 
+Dynamic index type support
 -------------------
 
 ```c#
