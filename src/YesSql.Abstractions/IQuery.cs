@@ -113,9 +113,8 @@ namespace YesSql
         IQuery<T> NoDuplicates();
 
         /// <summary>
-        /// When set, the fetched objects will not be cached internally.
+        /// When invoked, the retrieved items will not be stored in the internal cache.
         /// </summary>
-        /// <returns></returns>
         IQuery<T> WithNoTracking();
     }
 
