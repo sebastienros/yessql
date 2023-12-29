@@ -26,6 +26,7 @@ namespace YesSql.Tests.Indexes
                 });
         }
     }
+    
     public class PropertyDynamicIndexProvider : IndexProvider<Property>
     {
         public override void Describe(DescribeContext<Property> context)
