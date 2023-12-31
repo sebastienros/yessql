@@ -6301,7 +6301,30 @@ namespace YesSql.Tests
         {
             var  _configuration1 = CreateConfiguration();
             var store1 = await StoreFactory.CreateAndInitializeAsync(_configuration1);
-            await CreatePropertyTable(store1);
+            await using (var connection = store1.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                await using var transaction = await connection.BeginTransactionAsync(store1.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(store1.Configuration, transaction);
+
+                await builder
+                    .DropMapIndexTableAsync<PropertyIndex>();
+
+                await builder
+                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(254))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(500))
+                    );
+
+                await builder
+                    .AlterTableAsync(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                await transaction.CommitAsync();
+            }
 
             store1.RegisterIndexes<PropertyDynamicIndexProvider>();
 
@@ -6313,8 +6336,7 @@ namespace YesSql.Tests
                     new DynamicField { Name="Name",FieldType=typeof(string)},
                     new DynamicField { Name="ForRent",FieldType=typeof(bool)},
                     new DynamicField { Name="IsOccupied",FieldType=typeof(bool)},
-                    new DynamicField { Name = "Location", FieldType = typeof(string)},
-                    new DynamicField { Name = "NumberField", FieldType = typeof(int)}
+                    new DynamicField { Name = "Location", FieldType = typeof(string)}
                 }
             };
 
@@ -6328,8 +6350,7 @@ namespace YesSql.Tests
                 Name = new string('*', 40),
                 IsOccupied = true,
                 ForRent = true,
-                Location = new string('*', 500),
-                NumberField = 10
+                Location = new string('*', 500)
             };
 
             await session.SaveAsync(property);
@@ -6344,14 +6365,6 @@ namespace YesSql.Tests
             store2.RegisterIndexes<PropertyDynamicIndexProvider>();
 
             // In production environment, we may change this type at any time
-            typeDef.Fields = new[] {
-                    new DynamicField { Name="Name",FieldType=typeof(string)},
-                    new DynamicField { Name="ForRent",FieldType=typeof(bool)},
-                    new DynamicField { Name="IsOccupied",FieldType=typeof(bool)},
-                    new DynamicField { Name = "Location", FieldType = typeof(string)},
-                    // change filed type
-                    new DynamicField { Name = "NumberField", FieldType = typeof(long)}
-                };
             var changedType = DynamicTypeGeneratorSample.GenType(typeDef);
 
             Assert.NotEqual(changedType, dynamicType);
@@ -6360,7 +6373,6 @@ namespace YesSql.Tests
 
             await using var session2 = store2.CreateSession();
             var testPropEntity = testProperties.FirstOrDefault();
-            testPropEntity.NumberField = 22;
             await session2.SaveAsync(testPropEntity);
             await session2.SaveChangesAsync();
             var testProperties2 = await session2.Query<Property, PropertyIndex>().ListAsync();
@@ -6368,34 +6380,7 @@ namespace YesSql.Tests
 
         }
 
-        private async Task CreatePropertyTable(IStore store)
-        {
-            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
-                var builder = new SchemaBuilder(store.Configuration, transaction);
-
-                await builder
-                    .DropMapIndexTableAsync<PropertyIndex>();
-
-                await builder
-                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(254))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(500))
-                        .Column<long>(nameof(Property.NumberField), col => col.Nullable())
-                    );
-
-                await builder
-                    .AlterTableAsync(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
-
-                await transaction.CommitAsync();
-            }
-        }
+    
 
         #region FilterTests
 

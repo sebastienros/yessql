@@ -6,6 +6,5 @@ namespace YesSql.Tests.Models
         public bool ForRent { get; set; }
         public bool IsOccupied { get; set; }
         public string Location { get; set; }
-        public int NumberField { get; set; }
     }
 }

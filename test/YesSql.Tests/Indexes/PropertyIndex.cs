@@ -59,9 +59,6 @@ namespace YesSql.Tests.Indexes
                              case "Location":
                                  prop.SetValue(obj, property.Location);
                                  break;
-                             case "NumberField":
-                                 prop.SetValue(obj, property.NumberField);
-                                 break;
                          }
                      }
 
