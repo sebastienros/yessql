@@ -6,7 +6,6 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using YesSql.Indexes;
@@ -21,7 +20,7 @@ namespace YesSql.Commands
         protected static PropertyInfo[] KeysProperties = [typeof(IIndex).GetProperty("Id")];
 
         private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> TypeProperties = new();
+        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
 
@@ -68,26 +67,17 @@ namespace YesSql.Commands
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
-            if (TypeProperties.TryGetValue(type, out var pis))
+            if (TypeProperties.TryGetValue(type.FullName, out var pis))
             {
+                if (!type.Equals(pis))
+                {
+                    throw new InvalidCastException();
+                }
                 return pis;
             }
 
-            // If the same name type is already cached, it should be removed from the cache.
-            var existsingType = TypeProperties.Keys.FirstOrDefault(x => x.FullName == type.FullName);
-            if (existsingType != null)
-            {
-                var existsingProps = TypeProperties[existsingType];
-                foreach (var prop in existsingProps)
-                {
-                    PropertyAccessors.Remove(prop, out _);
-                }
-
-                TypeProperties.Remove(existsingType, out _);
-            }
-
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type] = properties;
+            TypeProperties[type.FullName] = properties;
             return properties;
         }
 

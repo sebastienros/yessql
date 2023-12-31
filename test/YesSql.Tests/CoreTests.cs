@@ -6315,16 +6315,34 @@ namespace YesSql.Tests
                         .Column<bool>(nameof(PropertyIndex.ForRent))
                         .Column<bool>(nameof(PropertyIndex.IsOccupied))
                         .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(500))
+                        .Column<long>(nameof(Property.NumberField), col => col.Nullable())
                     );
 
                 await builder
                     .AlterTableAsync(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
 
                 await transaction.CommitAsync();
             }
 
             _store.RegisterIndexes<PropertyDynamicIndexProvider>();
+
+            var typeDef = new DynamicTypeDef()
+            {
+                NameSpace = "TestDynamicIndexNameSpace",
+                ClassName = "PropertyIndex",
+                Fields = new[] {
+                    new DynamicField { Name="Name",FieldType=typeof(string)},
+                    new DynamicField { Name="ForRent",FieldType=typeof(bool)},
+                    new DynamicField { Name="IsOccupied",FieldType=typeof(bool)},
+                    new DynamicField { Name = "Location", FieldType = typeof(string)},
+                    new DynamicField { Name = "NumberField", FieldType = typeof(int)}
+                }
+            };
+
+            var dynamicType = DynamicTypeGeneratorSample.GenType(typeDef);
+
+            PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = dynamicType;
 
             await using var session = _store.CreateSession();
             var property = new Property
@@ -6332,13 +6350,39 @@ namespace YesSql.Tests
                 Name = new string('*', 40),
                 IsOccupied = true,
                 ForRent = true,
-                Location = new string('*', 500)
+                Location = new string('*', 500),
+                NumberField = 10
             };
 
             await session.SaveAsync(property);
             await session.SaveChangesAsync();
-            var idx = await session.Query<Property, PropertyIndex>(x => x.Id == 1).ListAsync();
-            Assert.NotEmpty(idx);
+            var testProperties = await session.Query<Property, PropertyIndex>(x => x.Id == 1).ListAsync();
+            Assert.NotEmpty(testProperties);
+
+            // In production environment, we may change this type at any time
+
+
+            typeDef.Fields = new[] {
+                    new DynamicField { Name="Name",FieldType=typeof(string)},
+                    new DynamicField { Name="ForRent",FieldType=typeof(bool)},
+                    new DynamicField { Name="IsOccupied",FieldType=typeof(bool)},
+                    new DynamicField { Name = "Location", FieldType = typeof(string)},
+                    new DynamicField { Name = "NumberField", FieldType = typeof(long)}
+                };
+            var changedType = DynamicTypeGeneratorSample.GenType(typeDef);
+
+            Assert.NotEqual(changedType, dynamicType);
+
+            PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
+
+
+            var testPropEntity = testProperties.FirstOrDefault();
+            testPropEntity.NumberField = 22;
+            await session.SaveAsync(testPropEntity);
+            await session.SaveChangesAsync();
+            var testProperties2 = await session.Query<Property, PropertyIndex>().ListAsync();
+            Assert.NotEmpty(testProperties2);
+
         }
 
         #region FilterTests
