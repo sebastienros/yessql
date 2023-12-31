@@ -69,11 +69,10 @@ namespace YesSql.Commands
         {
             if (TypeProperties.TryGetValue(type.FullName, out var pis))
             {
-                if (!type.Equals(pis))
+                if (type.Equals(pis))
                 {
-                    throw new InvalidCastException();
+                    return pis;
                 }
-                return pis;
             }
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
