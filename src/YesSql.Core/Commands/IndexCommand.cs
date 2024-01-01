@@ -18,12 +18,10 @@ namespace YesSql.Commands
         private const string _separator = ", ";
         protected const string ParameterSuffix = "_$$$";
         protected static PropertyInfo[] KeysProperties = [typeof(IIndex).GetProperty("Id")];
+        private static IIndexTypeCacheProvider IndexTypeCacheProvider;
 
-        private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
-        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
-
         protected readonly IStore _store;
 
         public abstract int ExecutionOrder { get; }
@@ -33,6 +31,7 @@ namespace YesSql.Commands
             Index = index;
             _store = store;
             Collection = collection;
+            IndexTypeCacheProvider = store.Configuration.IndexTypeCacheProvider;
         }
 
         public IIndex Index { get; }
@@ -47,13 +46,13 @@ namespace YesSql.Commands
             UpdatesList.Clear();
         }
 
-        protected static void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
+        protected void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
         {
             var type = item.GetType();
 
             foreach (var property in TypePropertiesCache(type))
             {
-                var accessor = PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
+                var accessor = IndexTypeCacheProvider.GetPropertyAccessor(property);
 
                 var value = accessor.Get(item);
 
@@ -65,16 +64,9 @@ namespace YesSql.Commands
             }
         }
 
-        protected static PropertyInfo[] TypePropertiesCache(Type type)
+        protected PropertyInfo[] TypePropertiesCache(Type type)
         {
-            if (TypeProperties.TryGetValue(type.FullName, out var pis))
-            {
-                return pis;
-            }
-
-            var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type.FullName] = properties;
-            return properties;
+            return IndexTypeCacheProvider.GetTypeProperties(type);
         }
 
         protected string Inserts(Type type, ISqlDialect dialect)
@@ -172,16 +164,6 @@ namespace YesSql.Commands
             }
 
             return result;
-        }
-
-        private static bool IsWriteable(PropertyInfo pi)
-        {
-            return
-                pi.Name != nameof(IIndex.Id) &&
-                // don't read DocumentId when on a MapIndex as it might be used to 
-                // read the DocumentId directly from an Index query
-                pi.Name != "DocumentId"
-                ;
         }
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);

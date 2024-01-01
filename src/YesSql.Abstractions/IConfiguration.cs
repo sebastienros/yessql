@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using YesSql.Indexes;
 
 namespace YesSql
 {
@@ -90,6 +91,13 @@ namespace YesSql
         /// Gets or sets the identity column size. Default is <see cref="IdentityColumnSize.Int32"/>.
         /// </summary>
         IdentityColumnSize IdentityColumnSize { get; set; }
+
+        /// <summary>
+        /// Index type cache provider 
+        /// This interface needs to be reimplemented when dynamic type and multi-tenant scenarios are used,
+        /// using tenant separated cache media insteadexTypeCacheProvider 
+        /// </summary>
+        IIndexTypeCacheProvider IndexTypeCacheProvider { get; set; }
     }
 
     public static class ConfigurationExtensions
