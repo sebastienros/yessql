@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using YesSql.Indexes;
 
-namespace YesSql.Tests.Indexes
+namespace YesSql.Tests.Indexes;
 {
     public class DynamicTypeGeneratorSample
     {
