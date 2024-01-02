@@ -6357,6 +6357,7 @@ namespace YesSql.Tests
 
             await session.SaveAsync(property);
             await session.SaveChangesAsync();
+
             var testProperties = await session.Query<Property, PropertyIndex>(x => x.Id == 1).ListAsync();
             Assert.NotEmpty(testProperties);
             session.Dispose();
