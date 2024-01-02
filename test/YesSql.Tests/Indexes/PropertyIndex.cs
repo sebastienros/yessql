@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using YesSql.Indexes;
 using YesSql.Tests.Models;
 
@@ -33,6 +32,7 @@ namespace YesSql.Tests.Indexes
     public class PropertyDynamicIndexProvider : IndexProvider<Property>
     {
         public static Dictionary<string, Type> IndexTypeCache = new Dictionary<string, Type>();
+
         public override void Describe(DescribeContext<Property> context)
         {
             foreach (var dynamicType in IndexTypeCache.Values)

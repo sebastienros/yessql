@@ -6359,7 +6359,6 @@ namespace YesSql.Tests
             Assert.NotEmpty(testProperties);
 
             // Emulating the usage scenario in OrchardCore, the store may be initialized multiple times
-
             var _configuration2 = CreateConfiguration();
             var store2 = await StoreFactory.CreateAndInitializeAsync(_configuration2);
             store2.RegisterIndexes<PropertyDynamicIndexProvider>();
@@ -6377,8 +6376,8 @@ namespace YesSql.Tests
             await session2.SaveChangesAsync();
             var testProperties2 = await session2.Query<Property, PropertyIndex>().ListAsync();
             Assert.NotEmpty(testProperties2);
-
         }
+
         #region FilterTests
 
         [Fact]
