@@ -12,10 +12,7 @@ namespace YesSql.Indexes
         private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> TypeProperties = new();
 
-        public virtual PropertyInfoAccessor GetPropertyAccessor(PropertyInfo property)
-        {
-            return PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
-        }
+        public virtual PropertyInfoAccessor GetPropertyAccessor(PropertyInfo property) => PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
 
         public virtual PropertyInfo[] GetTypeProperties(Type type)
         {
