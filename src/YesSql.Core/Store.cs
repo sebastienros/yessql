@@ -250,7 +250,7 @@ namespace YesSql
                 }
             }
 
-            return context.Describe(new[] { target }).ToList();
+            return context.Describe([target]).ToList();
         }
 
         private static Func<IDescriptor> MakeDescriptorActivator(Type type)

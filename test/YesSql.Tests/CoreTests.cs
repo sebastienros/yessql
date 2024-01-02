@@ -6299,7 +6299,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task PopulateIndexUsingGenericType()
         {
-            var  _configuration1 = CreateConfiguration();
+            var _configuration1 = CreateConfiguration();
             var store1 = await StoreFactory.CreateAndInitializeAsync(_configuration1);
             await using (var connection = store1.Configuration.ConnectionFactory.CreateConnection())
             {
@@ -6326,7 +6326,7 @@ namespace YesSql.Tests
                 await transaction.CommitAsync();
             }
 
-            store1.RegisterIndexes<PropertyDynamicIndexProvider>();
+
 
             var typeDef = new DynamicTypeDef()
             {
@@ -6345,6 +6345,8 @@ namespace YesSql.Tests
             PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = dynamicType;
 
             await using var session = store1.CreateSession();
+            session.RegisterIndexes([new PropertyDynamicIndexProvider()]);
+
             var property = new Property
             {
                 Name = new string('*', 40),
@@ -6357,11 +6359,7 @@ namespace YesSql.Tests
             await session.SaveChangesAsync();
             var testProperties = await session.Query<Property, PropertyIndex>(x => x.Id == 1).ListAsync();
             Assert.NotEmpty(testProperties);
-
-            // Emulating the usage scenario in OrchardCore, the store may be initialized multiple times
-            var _configuration2 = CreateConfiguration();
-            var store2 = await StoreFactory.CreateAndInitializeAsync(_configuration2);
-            store2.RegisterIndexes<PropertyDynamicIndexProvider>();
+            session.Dispose();
 
             // In production environment, we may change this type at any time
             var changedType = DynamicTypeGeneratorSample.GenType(typeDef);
@@ -6370,7 +6368,8 @@ namespace YesSql.Tests
 
             PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
 
-            await using var session2 = store2.CreateSession();
+            await using var session2 = store1.CreateSession();
+            session2.RegisterIndexes([new PropertyDynamicIndexProvider()]);
             var testPropEntity = testProperties.FirstOrDefault();
             await session2.SaveAsync(testPropEntity);
             await session2.SaveChangesAsync();
