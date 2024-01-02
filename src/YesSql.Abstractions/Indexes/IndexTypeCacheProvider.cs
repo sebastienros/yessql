@@ -26,6 +26,7 @@ namespace YesSql.Indexes
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
             TypeProperties[type] = properties;
+
             return properties;
         }
 
