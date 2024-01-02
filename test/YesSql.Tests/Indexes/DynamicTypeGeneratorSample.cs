@@ -59,7 +59,7 @@ namespace YesSql.Tests.Indexes
             MethodBuilder setterBuilder = typeBuilder.DefineMethod("set_" + propertyName,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, null, new[] { propType });
             // Define the setter method
-            ILGenerator setterIL = setterBuilder.GetILGenerator();
+            var setterIL = setterBuilder.GetILGenerator();
             setterIL.Emit(OpCodes.Ldarg_0);
             setterIL.Emit(OpCodes.Ldarg_1);
             setterIL.Emit(OpCodes.Stfld, fieldBuilder);
