@@ -65,10 +65,6 @@ namespace YesSql.Tests.Indexes
                      return (MapIndex)obj;
                  });
             }
-
-
-
-
         }
     }
 }
