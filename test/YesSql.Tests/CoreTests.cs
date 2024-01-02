@@ -6379,9 +6379,6 @@ namespace YesSql.Tests
             Assert.NotEmpty(testProperties2);
 
         }
-
-    
-
         #region FilterTests
 
         [Fact]
