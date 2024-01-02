@@ -45,7 +45,6 @@ namespace YesSql.Tests.Indexes
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.None, propType, null);
             FieldBuilder fieldBuilder = typeBuilder.DefineField("_" + propertyName, propType, FieldAttributes.Private);
 
-            // 使用 IL API 生成类型属性访问器
             // Define the getter method
             MethodBuilder getterBuilder = typeBuilder.DefineMethod("get_" + propertyName,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, propType, Type.EmptyTypes);
