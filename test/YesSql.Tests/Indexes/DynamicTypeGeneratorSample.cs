@@ -18,7 +18,7 @@ namespace YesSql.Tests.Indexes
                 new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);
 
             // Create a dynamic module in the assembly
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(nameSpace);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule(nameSpace);
             // Define the type
             TypeBuilder typeBuilder = moduleBuilder.DefineType(indexTypeFullName, TypeAttributes.Public);
 
