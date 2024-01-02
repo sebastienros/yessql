@@ -97,7 +97,7 @@ namespace YesSql
         /// This interface needs to be reimplemented when dynamic type and multi-tenant scenarios are used,
         /// using tenant separated cache media insteadexTypeCacheProvider 
         /// </summary>
-        IIndexTypeCacheProvider IndexTypeCacheProvider { get; set; }
+        IndexTypeCacheProvider IndexTypeCacheProvider { get; set; }
     }
 
     public static class ConfigurationExtensions

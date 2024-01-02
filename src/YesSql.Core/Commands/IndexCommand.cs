@@ -18,7 +18,7 @@ namespace YesSql.Commands
         private const string _separator = ", ";
         protected const string ParameterSuffix = "_$$$";
         protected static PropertyInfo[] KeysProperties = [typeof(IIndex).GetProperty("Id")];
-        private static IIndexTypeCacheProvider IndexTypeCacheProvider;
+        private static IndexTypeCacheProvider IndexTypeCacheProvider;
 
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
