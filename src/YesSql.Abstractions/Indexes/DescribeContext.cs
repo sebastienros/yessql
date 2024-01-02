@@ -25,10 +25,7 @@ namespace YesSql.Indexes
                 });
         }
 
-        public IMapFor<T, IIndex> For(Type indexType)
-        {
-            return For<IIndex, object>(indexType);
-        }
+        public IMapFor<T, IIndex> For(Type indexType) => For<IIndex, object>(indexType);
 
         public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
         {
