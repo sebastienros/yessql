@@ -6366,8 +6366,10 @@ namespace YesSql.Tests
 
             Assert.NotEqual(changedType, dynamicType);
 
-            PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
+            // update index type cache
+            store1.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
 
+            PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
             await using var session2 = store1.CreateSession();
             session2.RegisterIndexes([new PropertyDynamicIndexProvider()]);
             var testPropEntity = testProperties.FirstOrDefault();

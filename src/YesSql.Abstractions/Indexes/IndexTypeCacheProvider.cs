@@ -29,7 +29,7 @@ namespace YesSql.Indexes
             return properties;
         }
 
-        public virtual Task UpdateTypeCache(Type type)
+        public virtual void UpdateCachedType(Type type)
         {
             if (TypeProperties.TryRemove(type, out var pis))
             {
@@ -41,8 +41,6 @@ namespace YesSql.Indexes
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
             TypeProperties[type] = properties;
-
-            return Task.CompletedTask;
         }
 
         protected bool IsWriteable(PropertyInfo pi)
