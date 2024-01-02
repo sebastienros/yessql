@@ -56,7 +56,7 @@ namespace YesSql.Tests.Indexes
 
 
             // Define the setter method
-            MethodBuilder setterBuilder = typeBuilder.DefineMethod("set_" + propertyName,
+            var setterBuilder = typeBuilder.DefineMethod("set_" + propertyName,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, null, new[] { propType });
             // Define the setter method
             var setterIL = setterBuilder.GetILGenerator();
