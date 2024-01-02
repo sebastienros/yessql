@@ -32,10 +32,7 @@ namespace YesSql.Indexes
             return For<TIndex, object>(typeof(TIndex));
         }
 
-        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
-        {
-            return For<TIndex, object>(typeof(TIndex));
-        }
+        public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex => For<TIndex, object>(typeof(TIndex));
 
         public IMapFor<T, TIndex> For<TIndex, TKey>(Type indexType) where TIndex : IIndex
         {
