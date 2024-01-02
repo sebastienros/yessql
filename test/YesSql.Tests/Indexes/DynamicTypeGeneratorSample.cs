@@ -68,6 +68,7 @@ namespace YesSql.Tests.Indexes
             // Set the getter and setter methods for the property
             propertyBuilder.SetGetMethod(getterBuilder);
             propertyBuilder.SetSetMethod(setterBuilder);
+
             return propertyBuilder;
         }
     }
