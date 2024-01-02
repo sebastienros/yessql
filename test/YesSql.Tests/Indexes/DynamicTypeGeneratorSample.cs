@@ -79,6 +79,7 @@ namespace YesSql.Tests.Indexes
         public string ClassName { get; set; }
         public IEnumerable<DynamicField> Fields { get; set; }
     }
+
     public class DynamicField
     {
         public string Name { get; set; }
