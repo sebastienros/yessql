@@ -6368,7 +6368,7 @@ namespace YesSql.Tests
             Assert.NotEqual(changedType, dynamicType);
 
             // update index type cache
-            store1.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
+            //store1.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
 
             PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
             await using var session2 = store1.CreateSession();
