@@ -6362,13 +6362,15 @@ namespace YesSql.Tests
             Assert.NotEmpty(testProperties);
             session.Dispose();
 
+            
             // In production environment, we may change this type at any time
+            
             var changedType = DynamicTypeGeneratorSample.GenType(typeDef);
 
             Assert.NotEqual(changedType, dynamicType);
 
             // update index type cache
-            //store1.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
+            store1.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
 
             PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
             await using var session2 = store1.CreateSession();
