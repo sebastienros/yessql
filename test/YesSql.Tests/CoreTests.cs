@@ -6362,9 +6362,9 @@ namespace YesSql.Tests
             Assert.NotEmpty(testProperties);
             session.Dispose();
 
-            
+
             // In production environment, we may change this type at any time
-            
+
             var changedType = DynamicTypeGeneratorSample.GenType(typeDef);
 
             Assert.NotEqual(changedType, dynamicType);
@@ -6376,10 +6376,12 @@ namespace YesSql.Tests
             await using var session2 = store.CreateSession();
             session2.RegisterIndexes([new PropertyDynamicIndexProvider()]);
             var testPropEntity = testProperties.FirstOrDefault();
+            testPropEntity.Name = "Tom";
             await session2.SaveAsync(testPropEntity);
             await session2.SaveChangesAsync();
-            var testProperties2 = await session2.Query<Property, PropertyIndex>().ListAsync();
-            Assert.NotEmpty(testProperties2);
+            var result2 = await session2.Query<Property, PropertyIndex>(x=>x.Name=="Tom").ListAsync();
+            Assert.Single(result2);
+            Assert.Equal("Tom", result2.FirstOrDefault().Name);
         }
 
         #region FilterTests
