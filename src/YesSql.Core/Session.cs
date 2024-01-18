@@ -137,12 +137,10 @@ namespace YesSql
 
             // It's a new entity
             id = await _store.GetNextIdAsync(collection);
+            state.IdentityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
-            if (accessor != null)
-            {
-                accessor.Set(entity, id);
-            }
+            accessor?.Set(entity, id);
 
             state.Saved.Add(entity);
         }
