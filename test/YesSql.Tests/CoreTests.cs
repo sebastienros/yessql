@@ -5494,7 +5494,6 @@ namespace YesSql.Tests
             await session.SaveChangesAsync();
         }
 
-
         [Fact]
         public async Task ShouldMultipleDetachEntity()
         {
