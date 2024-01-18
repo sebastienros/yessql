@@ -65,7 +65,7 @@ namespace YesSql
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, QueryContext queryContext = null) where T : class;
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class;
 
         /// <summary>
         /// Creates a new <see cref="IQuery"/> object.

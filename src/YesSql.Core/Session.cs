@@ -33,14 +33,15 @@ namespace YesSql
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
+        private readonly bool _withTracking;
 
-        public Session(Store store)
+        public Session(Store store, bool withTracking = true)
         {
             _store = store;
             _tablePrefix = _store.Configuration.TablePrefix;
             _dialect = store.Dialect;
             _logger = store.Configuration.Logger;
-
+            _withTracking = withTracking;
             _defaultState = new SessionState();
             _collectionStates = new Dictionary<string, SessionState>()
             {
@@ -81,7 +82,6 @@ namespace YesSql
             return state;
         }
 
-        [Obsolete]
         public void Save(object entity, bool checkConcurrency = false, string collection = null)
             => SaveAsync(entity, checkConcurrency, collection).GetAwaiter().GetResult();
 
@@ -137,7 +137,6 @@ namespace YesSql
 
             // It's a new entity
             id = await _store.GetNextIdAsync(collection);
-            state.IdentityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
             if (accessor != null)
@@ -225,7 +224,7 @@ namespace YesSql
             DetachInternal(entity, state);
         }
 
-        public void DetachRange(IEnumerable<object> entries, string collection)
+        public void Detach(IEnumerable<object> entries, string collection)
         {
             CheckDisposed();
 
@@ -475,14 +474,14 @@ namespace YesSql
                 // Update impacted indexes
                 await MapDeleted(doc, obj, collection);
 
-                _commands ??= new List<IIndexCommand>();
+                _commands ??= [];
 
                 // The command needs to come after any index deletion because of the database constraints
                 _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, QueryContext queryContext = null) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class
         {
             if (ids?.Length == 0)
             {
@@ -521,7 +520,7 @@ namespace YesSql
                     .OrderBy(d => Array.IndexOf(ids, d.Id))
                     .ToList();
 
-                return Get<T>(sortedDocuments, collection, queryContext);
+                return Get<T>(sortedDocuments, collection);
             }
             catch
             {
@@ -531,7 +530,7 @@ namespace YesSql
             }
         }
 
-        public IEnumerable<T> Get<T>(IList<Document> documents, string collection, QueryContext queryContext = null) where T : class
+        public IEnumerable<T> Get<T>(IList<Document> documents, string collection) where T : class
         {
             if (documents?.Count == 0)
             {
@@ -544,12 +543,10 @@ namespace YesSql
 
             var state = GetState(collection);
 
-            var trackLoadedObjects = queryContext == null || !queryContext.WithNoTracking;
-
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
-                if (trackLoadedObjects && state.IdentityMap.TryGetEntityById(d.Id, out var entity))
+                if (_withTracking && state.IdentityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
                 }
@@ -582,7 +579,7 @@ namespace YesSql
 
                     accessor?.Set(item, d.Id);
 
-                    if (trackLoadedObjects)
+                    if (_withTracking)
                     {
                         // track the loaded object.
                         state.IdentityMap.AddEntity(d.Id, item);

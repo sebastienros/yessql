@@ -111,11 +111,6 @@ namespace YesSql
         /// Adds a Group By clause to the query for fold documents when an index returns multiple records.
         /// </summary>
         IQuery<T> NoDuplicates();
-
-        /// <summary>
-        /// When invoked, the retrieved items will not be stored in the internal cache.
-        /// </summary>
-        IQuery<T> WithNoTracking();
     }
 
     /// <summary>

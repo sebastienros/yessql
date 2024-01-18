@@ -938,7 +938,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldNotKeepIdentityMapOnCommitAsync()
         {
-            await using var session = _store.CreateSession();
+            await using var session = _store.CreateSession(true);
             var bill = new Person
             {
                 Firstname = "Bill",
@@ -952,7 +952,7 @@ namespace YesSql.Tests
 
             await session.SaveChangesAsync();
 
-            newBill = await session.GetAsync<Person>(bill.Id, collection: null, new QueryContext(true));
+            newBill = await session.GetAsync<Person>(bill.Id);
 
             Assert.NotEqual(bill, newBill);
         }

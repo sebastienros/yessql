@@ -13,17 +13,17 @@ namespace YesSql
         /// Loads an object by its id.
         /// </summary>
         /// <returns>The object or <c>null</c>.</returns>
-        public async static Task<T> GetAsync<T>(this ISession session, long id, string collection = null, QueryContext queryContext = null)
+        public async static Task<T> GetAsync<T>(this ISession session, long id, string collection = null)
             where T : class
-            => (await session.GetAsync<T>([id], collection, queryContext)).FirstOrDefault();
+            => (await session.GetAsync<T>([id], collection)).FirstOrDefault();
 
         /// <summary>
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        public static Task<IEnumerable<T>> GetAsync<T>(this ISession session, int[] ids, string collection = null, QueryContext queryContext = null)
+        public static Task<IEnumerable<T>> GetAsync<T>(this ISession session, int[] ids, string collection = null)
             where T : class
-            => session.GetAsync<T>(ids.Select(x => (long)x).ToArray(), collection, queryContext);
+            => session.GetAsync<T>(ids.Select(x => (long)x).ToArray(), collection);
 
         /// <summary>
         /// Imports an object in the local identity map.

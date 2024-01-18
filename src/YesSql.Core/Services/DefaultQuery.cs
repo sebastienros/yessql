@@ -1170,18 +1170,10 @@ namespace YesSql.Services
         public class Query<T> : IQuery<T> where T : class
         {
             internal readonly DefaultQuery _query;
-            private bool _noTracking;
 
             public Query(DefaultQuery query)
             {
                 _query = query;
-            }
-
-            public IQuery<T> WithNoTracking()
-            {
-                _noTracking = true;
-
-                return this;
             }
 
             public string GetTypeAlias(Type type)
@@ -1259,7 +1251,7 @@ namespace YesSql.Services
                             return default;
                         }
 
-                        return _query._session.Get<T>(clonedDocuments, _query._collection, new QueryContext(_noTracking)).FirstOrDefault();
+                        return _query._session.Get<T>(clonedDocuments, _query._collection).FirstOrDefault();
                     }
                 }
                 catch
@@ -1364,7 +1356,7 @@ namespace YesSql.Services
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         documents = documents.Select(x => x.Clone());
 
-                        return _query._session.Get<T>(documents.ToList(), _query._collection, new QueryContext(_noTracking));
+                        return _query._session.Get<T>(documents.ToList(), _query._collection);
                     }
                 }
                 catch
