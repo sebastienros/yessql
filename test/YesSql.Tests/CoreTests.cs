@@ -5494,6 +5494,47 @@ namespace YesSql.Tests
             await session.SaveChangesAsync();
         }
 
+
+        [Fact]
+        public async Task ShouldMultipleDetachEntity()
+        {
+            await using var session = _store.CreateSession();
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            var john = new Person
+            {
+                Firstname = "John",
+                Lastname = "Smith"
+            };
+
+            await session.SaveAsync(bill);
+            await session.SaveAsync(john);
+
+            var newBill = await session.GetAsync<Person>(bill.Id);
+
+            Assert.Equal(bill, newBill);
+
+            var newJohn = await session.GetAsync<Person>(john.Id);
+
+            Assert.Equal(john, newJohn);
+
+            session.Detach([bill, john]);
+
+            newBill = await session.GetAsync<Person>(bill.Id);
+
+            Assert.NotEqual(bill, newBill);
+
+            newJohn = await session.GetAsync<Person>(john.Id);
+
+            Assert.NotEqual(john, newJohn);
+
+            await session.SaveChangesAsync();
+        }
+
         [Fact]
         public async Task ShouldStoreBinaryInIndex()
         {
