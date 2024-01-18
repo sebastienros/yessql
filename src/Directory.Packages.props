@@ -1,17 +1,17 @@
 <Project>
-    <PropertyGroup>
-        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    </PropertyGroup>
-    <ItemGroup>
-        <PackageVersion Include="Parlot" Version="0.0.24" />
-        <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.1.2" />
-        <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.0" />
-        <PackageVersion Include="Npgsql" Version="7.0.6" />
-        <PackageVersion Include="MySqlConnector" Version="2.3.0" />
-        <PackageVersion Include="Dapper.StrongName" Version="2.1.21" />
-        <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
-        <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
-        <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
-    </ItemGroup>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Parlot" Version="0.0.24" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.1.4" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+    <PackageVersion Include="Npgsql" Version="7.0.6" />
+    <PackageVersion Include="MySqlConnector" Version="2.3.0" />
+    <PackageVersion Include="Dapper.StrongName" Version="2.1.21" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+  </ItemGroup>
 </Project>
