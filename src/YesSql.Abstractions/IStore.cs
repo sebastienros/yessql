@@ -10,7 +10,7 @@ namespace YesSql
         /// <summary>
         /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/>.
         /// </summary>
-        ISession CreateSession();
+        ISession CreateSession(bool withTracking = true);
 
         /// <summary>
         /// Registers index providers.
