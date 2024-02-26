@@ -5,7 +5,6 @@
 
     <ItemGroup>
         <PackageReference Include="Dapper.StrongName" />
-        <PackageReference Include="Newtonsoft.Json" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     </ItemGroup>
 

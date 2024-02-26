@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using YesSql.Data;
+using YesSql.Indexes;
 using YesSql.Serialization;
 using YesSql.Services;
 
@@ -15,7 +16,7 @@ namespace YesSql
         {
             IdentifierAccessorFactory = new PropertyAccessorFactory("Id");
             VersionAccessorFactory = new PropertyAccessorFactory("Version");
-            ContentSerializer = new JsonContentSerializer();
+            ContentSerializer = new DefaultContentSerializer();
             IdGenerator = new DefaultIdGenerator();
             IsolationLevel = IsolationLevel.ReadCommitted;
             TablePrefix = "";
@@ -24,6 +25,7 @@ namespace YesSql
             Logger = NullLogger.Instance;
             ConcurrentTypes = new HashSet<Type>();
             TableNameConvention = new DefaultTableNameConvention();
+            IndexTypeCacheProvider = new IndexTypeCacheProvider();
         }
 
         public IAccessorFactory IdentifierAccessorFactory { get; set; }
@@ -42,5 +44,6 @@ namespace YesSql
         public ICommandInterpreter CommandInterpreter { get; set; }
         public ISqlDialect SqlDialect { get; set; }
         public IdentityColumnSize IdentityColumnSize { get; set; } = IdentityColumnSize.Int32;
+        public IndexTypeCacheProvider IndexTypeCacheProvider { get; set; }
     }
 }

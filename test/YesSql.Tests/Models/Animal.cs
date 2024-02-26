@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace YesSql.Tests.Models
 {
@@ -6,7 +6,7 @@ namespace YesSql.Tests.Models
     {
         public string Name { get; set; }
 
-        [IgnoreDataMember]
+        [JsonIgnore]
         public string Color { get; set; }
     }
 }

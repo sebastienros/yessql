@@ -6354,6 +6354,94 @@ namespace YesSql.Tests
             Assert.Equal(10, result);
         }
 
+        [Fact]
+        public async Task PopulateIndexUsingGenericType()
+        {
+            var _configuration1 = CreateConfiguration();
+            var store = await StoreFactory.CreateAndInitializeAsync(_configuration1);
+            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(store.Configuration, transaction);
+
+                await builder
+                    .DropMapIndexTableAsync<PropertyIndex>();
+
+                await builder
+                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(254))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(500))
+                    );
+
+                await builder
+                    .AlterTableAsync(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied"));
+
+                await transaction.CommitAsync();
+            }
+
+
+
+            var typeDef = new DynamicTypeDef()
+            {
+                NameSpace = "TestDynamicIndexNameSpace",
+                ClassName = "PropertyIndex",
+                Fields = new[] {
+                    new DynamicField { Name="Name",FieldType=typeof(string)},
+                    new DynamicField { Name="ForRent",FieldType=typeof(bool)},
+                    new DynamicField { Name="IsOccupied",FieldType=typeof(bool)},
+                    new DynamicField { Name = "Location", FieldType = typeof(string)}
+                }
+            };
+
+            var dynamicType = DynamicTypeGeneratorSample.GenType(typeDef);
+
+            PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = dynamicType;
+
+            await using var session = store.CreateSession();
+            session.RegisterIndexes([new PropertyDynamicIndexProvider()]);
+
+            var property = new Property
+            {
+                Name = new string('*', 40),
+                IsOccupied = true,
+                ForRent = true,
+                Location = new string('*', 500)
+            };
+
+            await session.SaveAsync(property);
+            await session.SaveChangesAsync();
+
+            var testProperties = await session.Query<Property, PropertyIndex>(x => x.Id == 1).ListAsync();
+            Assert.NotEmpty(testProperties);
+            session.Dispose();
+
+
+            // In production environment, we may change this type at any time
+
+            var changedType = DynamicTypeGeneratorSample.GenType(typeDef);
+
+            Assert.NotEqual(changedType, dynamicType);
+
+            // update index type cache
+            store.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
+
+            PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
+            await using var session2 = store.CreateSession();
+            session2.RegisterIndexes([new PropertyDynamicIndexProvider()]);
+            var testPropEntity = testProperties.FirstOrDefault();
+            testPropEntity.Name = "Tom";
+            await session2.SaveAsync(testPropEntity);
+            await session2.SaveChangesAsync();
+            var result2 = await session2.Query<Property, PropertyIndex>(x=>x.Name=="Tom").ListAsync();
+            Assert.Single(result2);
+            Assert.Equal("Tom", result2.FirstOrDefault().Name);
+        }
+
         #region FilterTests
 
         [Fact]
