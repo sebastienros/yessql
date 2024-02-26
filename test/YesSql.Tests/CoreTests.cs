@@ -6358,13 +6358,13 @@ namespace YesSql.Tests
         public async Task PopulateIndexUsingGenericType()
         {
             var _configuration1 = CreateConfiguration();
-            var store1 = await StoreFactory.CreateAndInitializeAsync(_configuration1);
-            await using (var connection = store1.Configuration.ConnectionFactory.CreateConnection())
+            var store = await StoreFactory.CreateAndInitializeAsync(_configuration1);
+            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                await using var transaction = await connection.BeginTransactionAsync(store1.Configuration.IsolationLevel);
-                var builder = new SchemaBuilder(store1.Configuration, transaction);
+                await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(store.Configuration, transaction);
 
                 await builder
                     .DropMapIndexTableAsync<PropertyIndex>();
@@ -6402,7 +6402,7 @@ namespace YesSql.Tests
 
             PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = dynamicType;
 
-            await using var session = store1.CreateSession();
+            await using var session = store.CreateSession();
             session.RegisterIndexes([new PropertyDynamicIndexProvider()]);
 
             var property = new Property
@@ -6420,22 +6420,26 @@ namespace YesSql.Tests
             Assert.NotEmpty(testProperties);
             session.Dispose();
 
+
             // In production environment, we may change this type at any time
+
             var changedType = DynamicTypeGeneratorSample.GenType(typeDef);
 
             Assert.NotEqual(changedType, dynamicType);
 
             // update index type cache
-            store1.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
+            store.Configuration.IndexTypeCacheProvider?.UpdateCachedType(changedType);
 
             PropertyDynamicIndexProvider.IndexTypeCache[dynamicType.FullName] = changedType;
-            await using var session2 = store1.CreateSession();
+            await using var session2 = store.CreateSession();
             session2.RegisterIndexes([new PropertyDynamicIndexProvider()]);
             var testPropEntity = testProperties.FirstOrDefault();
+            testPropEntity.Name = "Tom";
             await session2.SaveAsync(testPropEntity);
             await session2.SaveChangesAsync();
-            var testProperties2 = await session2.Query<Property, PropertyIndex>().ListAsync();
-            Assert.NotEmpty(testProperties2);
+            var result2 = await session2.Query<Property, PropertyIndex>(x=>x.Name=="Tom").ListAsync();
+            Assert.Single(result2);
+            Assert.Equal("Tom", result2.FirstOrDefault().Name);
         }
 
         #region FilterTests

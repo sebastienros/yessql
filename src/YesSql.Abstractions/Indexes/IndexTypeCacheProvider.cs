@@ -10,26 +10,26 @@ namespace YesSql.Indexes
     public class IndexTypeCacheProvider
     {
         private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> TypeProperties = new();
+        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
 
         public virtual PropertyInfoAccessor GetPropertyAccessor(PropertyInfo property) => PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
 
         public virtual PropertyInfo[] GetTypeProperties(Type type)
         {
-            if (TypeProperties.TryGetValue(type, out var pis))
+            if (TypeProperties.TryGetValue(type.FullName, out var pis))
             {
                 return pis;
             }
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type] = properties;
+            TypeProperties[type.FullName] = properties;
 
             return properties;
         }
 
         public virtual void UpdateCachedType(Type type)
         {
-            if (TypeProperties.TryRemove(type, out var pis))
+            if (TypeProperties.TryRemove(type.FullName, out var pis))
             {
                 foreach (var prop in pis)
                 {
@@ -38,7 +38,7 @@ namespace YesSql.Indexes
             }
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type] = properties;
+            TypeProperties[type.FullName] = properties;
         }
 
         protected bool IsWriteable(PropertyInfo pi)
