@@ -36,7 +36,7 @@ namespace YesSql.Services
         public List<Action<object, ISqlBuilder>> _parameterBindings;
         public string _collection;
         public IStore _store;
-        internal CompositeNode _predicate; // the defaut root predicate is an AND expression
+        internal CompositeNode _predicate; // the default root predicate is an AND expression
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
         public bool _deduplicate = true;
@@ -131,8 +131,7 @@ namespace YesSql.Services
         private readonly object _compiledQuery = null;
         private readonly string _collection;
 
-        public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings =
-            new();
+        public static Dictionary<MethodInfo, Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression>> MethodMappings = [];
 
         static DefaultQuery()
         {
@@ -564,7 +563,7 @@ namespace YesSql.Services
                             obj = null;
                         }
 
-                        _queryState._parameterBindings = _queryState._parameterBindings ?? new List<Action<object, ISqlBuilder>>();
+                        _queryState._parameterBindings ??= new List<Action<object, ISqlBuilder>>();
 
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
@@ -624,7 +623,7 @@ namespace YesSql.Services
             return Expression.Constant(Expression.Lambda(expression).Compile().DynamicInvoke());
         }
 
-        private string GetBinaryOperator(Expression expression)
+        private static string GetBinaryOperator(Expression expression)
         {
             switch (expression.NodeType)
             {

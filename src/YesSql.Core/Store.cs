@@ -57,8 +57,8 @@ namespace YesSql
 
         private Store()
         {
-            Indexes = new List<IIndexProvider>();
-            ScopedIndexes = new List<Type>();
+            Indexes = [];
+            ScopedIndexes = [];
         }
 
         /// <summary>
@@ -204,8 +204,8 @@ namespace YesSql
             }
         }
 
-        public ISession CreateSession()
-            => new Session(this);
+        public ISession CreateSession(bool withTracking = true)
+            => new Session(this, withTracking);
 
         public void Dispose()
         {

@@ -936,6 +936,24 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldNotKeepIdentityMapOnCommitAsync()
+        {
+            await using var session = _store.CreateSession(false);
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            await session.SaveAsync(bill);
+            await session.SaveChangesAsync();
+
+            var newBill = await session.GetAsync<Person>(bill.Id);
+
+            Assert.NotEqual(bill, newBill);
+        }
+
+        [Fact]
         public async Task ShouldUpdateAutoFlushedIndex()
         {
             // When auto-flush is called on an entity
@@ -5472,6 +5490,46 @@ namespace YesSql.Tests
             newBill = await session.GetAsync<Person>(bill.Id);
 
             Assert.NotEqual(bill, newBill);
+
+            await session.SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task ShouldMultipleDetachEntity()
+        {
+            await using var session = _store.CreateSession();
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            var john = new Person
+            {
+                Firstname = "John",
+                Lastname = "Smith"
+            };
+
+            await session.SaveAsync(bill);
+            await session.SaveAsync(john);
+
+            var newBill = await session.GetAsync<Person>(bill.Id);
+
+            Assert.Equal(bill, newBill);
+
+            var newJohn = await session.GetAsync<Person>(john.Id);
+
+            Assert.Equal(john, newJohn);
+
+            session.Detach([bill, john]);
+
+            newBill = await session.GetAsync<Person>(bill.Id);
+
+            Assert.NotEqual(bill, newBill);
+
+            newJohn = await session.GetAsync<Person>(john.Id);
+
+            Assert.NotEqual(john, newJohn);
 
             await session.SaveChangesAsync();
         }

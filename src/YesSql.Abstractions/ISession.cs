@@ -62,6 +62,16 @@ namespace YesSql
         void Detach(object item, string collection = null);
 
         /// <summary>
+        /// Removes multiple items from the identity map.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to remove multiple items that should not be served again from the cache.
+        /// For instance when its state as changed and any subsequent query should not return the 
+        /// modified instance but a fresh one.
+        /// </remarks>
+        void Detach(IEnumerable<object> entries, string collection = null);
+
+        /// <summary>
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
