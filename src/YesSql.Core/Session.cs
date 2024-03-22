@@ -33,18 +33,19 @@ namespace YesSql
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
+        private readonly bool _withTracking;
 
-        public Session(Store store)
+        public Session(Store store, bool withTracking = true)
         {
             _store = store;
             _tablePrefix = _store.Configuration.TablePrefix;
             _dialect = store.Dialect;
             _logger = store.Configuration.Logger;
-
+            _withTracking = withTracking;
             _defaultState = new SessionState();
             _collectionStates = new Dictionary<string, SessionState>()
             {
-                [""] = _defaultState
+                [string.Empty] = _defaultState
             };
         }
 
@@ -58,7 +59,7 @@ namespace YesSql
                 }
             }
 
-            _indexes ??= new List<IIndexProvider>();
+            _indexes ??= [];
 
             _indexes.AddRange(indexProviders);
 
@@ -81,7 +82,6 @@ namespace YesSql
             return state;
         }
 
-        [Obsolete]
         public void Save(object entity, bool checkConcurrency = false, string collection = null)
             => SaveAsync(entity, checkConcurrency, collection).GetAwaiter().GetResult();
 
@@ -140,10 +140,7 @@ namespace YesSql
             state.IdentityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
-            if (accessor != null)
-            {
-                accessor.Set(entity, id);
-            }
+            accessor?.Set(entity, id);
 
             state.Saved.Add(entity);
         }
@@ -222,6 +219,23 @@ namespace YesSql
 
             var state = GetState(collection);
 
+            DetachInternal(entity, state);
+        }
+
+        public void Detach(IEnumerable<object> entries, string collection)
+        {
+            CheckDisposed();
+
+            var state = GetState(collection);
+
+            foreach (var entry in entries)
+            {
+                DetachInternal(entry, state);
+            }
+        }
+
+        private static void DetachInternal(object entity, SessionState state)
+        {
             state.Saved.Remove(entity);
             state.Updated.Remove(entity);
             state.Tracked.Remove(entity);
@@ -277,14 +291,11 @@ namespace YesSql
                 doc.Version = 1;
             }
 
-            if (versionAccessor != null)
-            {
-                versionAccessor.Set(entity, doc.Version);
-            }
+            versionAccessor?.Set(entity, doc.Version);
 
             doc.Content = Store.Configuration.ContentSerializer.Serialize(entity);
 
-            _commands ??= new List<IIndexCommand>();
+            _commands ??= [];
 
             _commands.Add(new CreateDocumentCommand(doc, Store, collection));
 
@@ -300,14 +311,12 @@ namespace YesSql
                 throw new ArgumentNullException(nameof(entity));
             }
 
-            var index = entity as IIndex;
-
             if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitly");
             }
 
-            if (index != null)
+            if (entity is IIndex index)
             {
                 throw new ArgumentException("An index should not be saved explicitly");
             }
@@ -379,7 +388,7 @@ namespace YesSql
 
             oldDoc.Content = newContent;
 
-            _commands ??= new List<IIndexCommand>();
+            _commands ??= [];
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
@@ -463,7 +472,7 @@ namespace YesSql
                 // Update impacted indexes
                 await MapDeleted(doc, obj, collection);
 
-                _commands ??= new List<IIndexCommand>();
+                _commands ??= [];
 
                 // The command needs to come after any index deletion because of the database constraints
                 _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
@@ -535,7 +544,7 @@ namespace YesSql
             // Are all the objects already in cache?
             foreach (var d in documents)
             {
-                if (state.IdentityMap.TryGetEntityById(d.Id, out var entity))
+                if (_withTracking && state.IdentityMap.TryGetEntityById(d.Id, out var entity))
                 {
                     result.Add((T)entity);
                 }
@@ -568,9 +577,12 @@ namespace YesSql
 
                     accessor?.Set(item, d.Id);
 
-                    // track the loaded object
-                    state.IdentityMap.AddEntity(d.Id, item);
-                    state.IdentityMap.AddDocument(d);
+                    if (_withTracking)
+                    {
+                        // track the loaded object.
+                        state.IdentityMap.AddEntity(d.Id, item);
+                        state.IdentityMap.AddDocument(d);
+                    }
 
                     result.Add(item);
                 }
@@ -657,7 +669,7 @@ namespace YesSql
             }
 
             // prevent recursive calls in FlushAsync,
-            // when autoflush is triggered from an IndexProvider
+            // when auto-flush is triggered from an IndexProvider
             // for instance.
 
             if (_flushing)
