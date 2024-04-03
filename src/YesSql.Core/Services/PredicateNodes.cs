@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using YesSql.Utils;
@@ -88,8 +87,10 @@ namespace YesSql.Services
         public override PredicateNode Clone()
         {
             var children = Children.Select(x => x.Clone()).ToList();
-            var clone = new OrNode();
-            clone.Children = children;
+            var clone = new OrNode
+            {
+                Children = children
+            };
 
             return clone;
         }
@@ -106,7 +107,7 @@ namespace YesSql.Services
 
         public override void Build(RentedStringBuilder builder)
         {
-            if (String.IsNullOrEmpty(Filter))
+            if (string.IsNullOrEmpty(Filter))
             {
                 return;
             }

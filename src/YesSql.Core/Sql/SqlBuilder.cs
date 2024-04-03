@@ -26,17 +26,17 @@ namespace YesSql.Sql
         protected string _skip;
         protected string _count;
 
-        protected List<string> SelectSegments => _select ??= new List<string>();
-        protected List<string> FromSegments => _from ??= new List<string>();
-        protected List<string> JoinSegments => _join ??= new List<string>();
-        protected List<List<string>> OrSegments => _or ??= new List<List<string>>();
-        protected List<string> WhereSegments => _where ??= new List<string>();
-        protected List<string> GroupSegments => _group ??= new List<string>();
-        protected List<string> HavingSegments => _having ??= new List<string>();
-        protected List<string> OrderSegments => _order ??= new List<string>();
-        protected List<string> TrailSegments => _trail ??= new List<string>();
+        protected List<string> SelectSegments => _select ??= [];
+        protected List<string> FromSegments => _from ??= [];
+        protected List<string> JoinSegments => _join ??= [];
+        protected List<List<string>> OrSegments => _or ??= [];
+        protected List<string> WhereSegments => _where ??= [];
+        protected List<string> GroupSegments => _group ??= [];
+        protected List<string> HavingSegments => _having ??= [];
+        protected List<string> OrderSegments => _order ??= [];
+        protected List<string> TrailSegments => _trail ??= [];
 
-        public Dictionary<string, object> Parameters { get; protected set; } = new Dictionary<string, object>();
+        public Dictionary<string, object> Parameters { get; protected set; } = [];
 
         public SqlBuilder(string tablePrefix, ISqlDialect dialect)
         {
@@ -44,14 +44,15 @@ namespace YesSql.Sql
             _dialect = dialect;
         }
 
-        public string Clause { get { return _clause; } }
+        public string Clause
+            => _clause;
 
         public void Table(string table, string alias, string schema)
         {
             FromSegments.Clear();
             FromSegments.Add(FormatTable(table, schema));
 
-            if (!String.IsNullOrEmpty(alias))
+            if (!string.IsNullOrEmpty(alias))
             {
                 FromSegments.Add(" AS ");
                 FromSegments.Add(_dialect.QuoteForAliasName(alias));
@@ -59,23 +60,18 @@ namespace YesSql.Sql
         }
 
         public void From(string from)
-        {
-            FromSegments.Add(from);
-        }
+            => FromSegments.Add(from);
 
-        public bool HasPaging => _skip != null || _count != null;
+        public bool HasPaging
+            => _skip != null || _count != null;
 
         public void Skip(string skip)
-        {
-            _skip = skip;
-        }
+            => _skip = skip;
 
         public void Take(string take)
-        {
-            _count = take;
-        }
+            => _count = take;
 
-        public virtual void InnerJoin(string table, string onTable, string onColumn, string toTable, string schema, string toColumn, string alias = null, string toAlias = null)
+        public virtual void Join(JoinType type, string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null)
         {
             // Don't prefix if alias is used
             if (alias != onTable)
@@ -96,15 +92,27 @@ namespace YesSql.Sql
                 toTable = _tablePrefix + toTable;
             }
 
-            if (!String.IsNullOrEmpty(toAlias))
+            if (!string.IsNullOrEmpty(toAlias))
             {
                 toTable = _dialect.QuoteForAliasName(toAlias);
             }
 
-            JoinSegments.Add(" INNER JOIN ");
+            if (type == JoinType.Left)
+            {
+                JoinSegments.Add(" LEFT JOIN ");
+            }
+            else if (type == JoinType.Right)
+            {
+                JoinSegments.Add(" RIGHT JOIN ");
+            }
+            else
+            {
+                JoinSegments.Add(" INNER JOIN ");
+            }
+
             JoinSegments.Add(FormatTable(table, schema));
 
-            if (!String.IsNullOrEmpty(alias))
+            if (!string.IsNullOrEmpty(alias))
             {
                 JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForAliasName(alias) });
             }
@@ -117,13 +125,13 @@ namespace YesSql.Sql
         }
 
         public void Select()
-        {
-            _clause = "SELECT";
-        }
+            => _clause = "SELECT";
 
-        public IEnumerable<string> GetSelectors() => SelectSegments;
+        public IEnumerable<string> GetSelectors()
+            => SelectSegments;
 
-        public IEnumerable<string> GetOrders() => OrderSegments;
+        public IEnumerable<string> GetOrders()
+            => OrderSegments;
 
         public void Selector(string selector)
         {
@@ -132,19 +140,16 @@ namespace YesSql.Sql
         }
 
         public void Selector(string table, string column, string schema)
-        {
-            Selector(FormatColumn(table, column, schema));
-        }
+            => Selector(FormatColumn(table, column, schema));
 
         public void AddSelector(string select)
         {
+            Select();
             SelectSegments.Add(select);
         }
 
         public void InsertSelector(string select)
-        {
-            SelectSegments.Insert(0, select);
-        }
+            => SelectSegments.Insert(0, select);
 
         public string GetSelector()
         {
@@ -152,16 +157,12 @@ namespace YesSql.Sql
             {
                 return SelectSegments[0];
             }
-            else
-            {
-                return string.Join("", SelectSegments);
-            }
+
+            return string.Join(string.Empty, SelectSegments);
         }
 
         public void Distinct()
-        {
-            _distinct = true;
-        }
+            => _distinct = true;
 
         public virtual string FormatColumn(string table, string column, string schema, bool isAlias = false)
         {
@@ -188,7 +189,7 @@ namespace YesSql.Sql
 
         public virtual void AndAlso(string where)
         {
-            if (String.IsNullOrWhiteSpace(where))
+            if (string.IsNullOrWhiteSpace(where))
             {
                 return;
             }
@@ -203,7 +204,7 @@ namespace YesSql.Sql
 
         public virtual void WhereOr(string where)
         {
-            if (String.IsNullOrWhiteSpace(where))
+            if (string.IsNullOrWhiteSpace(where))
             {
                 return;
             }
@@ -218,7 +219,7 @@ namespace YesSql.Sql
 
         public virtual void WhereAnd(string where)
         {
-            if (String.IsNullOrWhiteSpace(where))
+            if (string.IsNullOrWhiteSpace(where))
             {
                 return;
             }
@@ -231,14 +232,14 @@ namespace YesSql.Sql
             WhereSegments.Add(where);
         }
 
-        public bool HasJoin => _join != null && _join.Count > 0;
+        public bool HasJoin
+            => _join?.Count > 0;
 
-        public bool HasOrder => _order != null && _order.Count > 0;
+        public bool HasOrder
+            => _order?.Count > 0;
 
         public void ClearOrder()
-        {
-            _order = null;
-        }
+            => _order = null;
 
         public void ClearGroupBy()
         {
@@ -267,11 +268,11 @@ namespace YesSql.Sql
 
         public virtual void ThenOrderBy(string orderBy)
         {
-            if (HasOrder) 
+            if (HasOrder)
             {
                 OrderSegments.Add(", ");
             }
-            
+
             OrderSegments.Add(orderBy);
         }
 
@@ -318,7 +319,7 @@ namespace YesSql.Sql
 
         public virtual string ToSqlString()
         {
-            if (!String.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(_clause, "SELECT", StringComparison.OrdinalIgnoreCase))
             {
                 return "";
             }

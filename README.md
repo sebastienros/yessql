@@ -48,6 +48,6 @@ Development
 -------------------
 
 - Development and pull-requests are done based on the `main` branch.
-- Every build and pull-request are tested againts Sqlite, ProstresQL, SQL Server and MySql.
+- Every build and pull-request are tested against Sqlite, PostgreSQL, SQL Server and MySql.
 - The latest NuGet release is tagged and available in the [releases](https://github.com/sebastienros/yessql/releases) page.
 - The `main` branch is also published on [MyGet](https://www.myget.org/feed/yessql/package/nuget/yessql) automatically.
