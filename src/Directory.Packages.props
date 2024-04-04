@@ -4,11 +4,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Parlot" Version="0.0.25" />
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.1.4" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.0" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.0" />
-    <PackageVersion Include="Npgsql" Version="7.0.6" />
-    <PackageVersion Include="MySqlConnector" Version="2.3.0" />
-    <PackageVersion Include="Dapper.StrongName" Version="2.1.21" />
+    <PackageVersion Include="Npgsql" Version="8.0.2" />
+    <PackageVersion Include="MySqlConnector" Version="2.3.6" />
+    <PackageVersion Include="Dapper.StrongName" Version="2.1.35" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
