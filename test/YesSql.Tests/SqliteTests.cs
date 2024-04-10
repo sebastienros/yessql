@@ -40,6 +40,12 @@ namespace YesSql.Tests
             return Task.CompletedTask;
         }
 
+        [Fact(Skip = "Alter column is not supported by Sqlite")]
+        public override void ShouldAlterColumn()
+        {
+            base.ShouldAlterColumn();
+        }
+
         [Fact(Skip = "ReadCommitted is not supported by Sqlite")]
         public override Task ShouldReadCommittedRecords()
         {

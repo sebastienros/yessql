@@ -4501,6 +4501,53 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public virtual void ShouldAlterColumn()
+        {
+            var table = "Table1";
+            var column1 = "Column1";
+
+            using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                using var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel);
+
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                builder.DropTable(table);
+
+                transaction.Commit();
+            }
+            catch
+            {
+                // Do nothing if the table can't be dropped
+            }
+
+            using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+            {
+
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                builder.CreateTable(table, table => table.Column<string>(column1));
+
+                transaction.Commit();
+            }
+
+            using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
+            {
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                builder.AlterTable(table, table => table
+                        .AlterColumn(column1, column => column
+                        .WithType(typeof(string), 250)
+                        .WithLength(250)));
+
+                transaction.Commit();
+            }
+        }
+
+        [Fact]
         public virtual async Task ShouldGateQuery()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
