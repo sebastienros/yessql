@@ -15,7 +15,7 @@ namespace YesSql.Tests
         
         protected readonly PostgreSqlContainer PostgreSqlContainer = new PostgreSqlBuilder().Build();
 
-        protected PostgreSqlTests(ITestOutputHelper output) : base(output)
+        public PostgreSqlTests(ITestOutputHelper output) : base(output)
         {
         }
 
