@@ -5,18 +5,22 @@ using YesSql.Provider.PostgreSql;
 
 namespace YesSql.Tests
 {
-    // Docker command
-    // docker run --name postgresql -e POSTGRES_USER=root -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=yessql -d -p 5432:5432 postgres:11
     public class PostgreSqlLegacyIdentityTests : PostgreSqlTests
     {
         public PostgreSqlLegacyIdentityTests(ITestOutputHelper output) : base(output)
         {
         }
 
+        public override async Task InitializeAsync()
+        {
+            await PostgreSqlContainer.StartAsync();
+            await base.InitializeAsync();
+        }
+
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UsePostgreSql(ConnectionStringBuilder.ConnectionString)
+                .UsePostgreSql(PostgreSqlContainer.GetConnectionString())
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 .SetIdentityColumnSize(IdentityColumnSize.Int32)
@@ -28,5 +32,7 @@ namespace YesSql.Tests
         {
             return base.ShouldGateQuery();
         }
+
+        public async override Task DisposeAsync() => await PostgreSqlContainer.DisposeAsync();
     }
 }
