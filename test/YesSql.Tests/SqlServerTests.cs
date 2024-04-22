@@ -14,16 +14,16 @@ namespace YesSql.Tests
 {
     public abstract class SqlServerTests : CoreTests
     {
-        public abstract SqlConnectionStringBuilder ConnectionStringBuilder { get; }
-
         public SqlServerTests(ITestOutputHelper output) : base(output)
         {
         }
 
+        public abstract string ConnectionString { get; }
+
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett")
+                .UseSqlServer(ConnectionString, "BobaFett")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 .SetIdentityColumnSize(IdentityColumnSize.Int64)
@@ -33,7 +33,10 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldSeedExistingIds()
         {
-            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett").SetTablePrefix("Store1").UseBlockIdGenerator();
+            var configuration = new Configuration()
+                .UseSqlServer(ConnectionString, "BobaFett")
+                .SetTablePrefix("Store1")
+                .UseBlockIdGenerator();
 
             await using (var connection = configuration.ConnectionFactory.CreateConnection())
             {
@@ -61,7 +64,10 @@ namespace YesSql.Tests
                 await session1.SaveChangesAsync();
             }
 
-            var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett").SetTablePrefix("Store1").UseBlockIdGenerator());
+            var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration()
+                .UseSqlServer(ConnectionString, "BobaFett")
+                .SetTablePrefix("Store1")
+                .UseBlockIdGenerator());
 
             await using var session2 = store2.CreateSession();
             var p2 = new Person { Firstname = "Bill" };
@@ -76,7 +82,10 @@ namespace YesSql.Tests
         [InlineData("Collection1")]
         public async Task ShouldGenerateIdsWithConcurrentStores(string collection)
         {
-            var configuration = new Configuration().UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett").SetTablePrefix("Store1").UseBlockIdGenerator();
+            var configuration = new Configuration()
+                .UseSqlServer(ConnectionString, "BobaFett")
+                .SetTablePrefix("Store1")
+                .UseBlockIdGenerator();
 
             await using (var connection = configuration.ConnectionFactory.CreateConnection())
             {

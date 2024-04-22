@@ -1,5 +1,5 @@
-using Microsoft.Data.SqlClient;
-using System;
+using System.Threading.Tasks;
+using Testcontainers.MsSql;
 using Xunit.Abstractions;
 using YesSql.Provider.SqlServer;
 
@@ -7,23 +7,30 @@ namespace YesSql.Tests
 {
     public class SqlServer2017Tests : SqlServerTests
     {
-        // Docker command
-        // docker run --name sqlserver2017 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Password12!" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2017-latest
-
-        public override SqlConnectionStringBuilder ConnectionStringBuilder => new(Environment.GetEnvironmentVariable("SQLSERVER_2017_CONNECTION_STRING") ?? @"Server=127.0.0.1;Database=tempdb;User Id=sa;Password=Password12!;Encrypt=False");
+        private readonly MsSqlContainer _sqlServerContainer = new MsSqlBuilder().WithImage("mcr.microsoft.com/mssql/server:2017-latest").Build();
 
         public SqlServer2017Tests(ITestOutputHelper output) : base(output)
         {
         }
 
+        public override string ConnectionString => _sqlServerContainer.GetConnectionString();
+
+        public override async Task InitializeAsync()
+        {
+            await _sqlServerContainer.StartAsync();
+            await base.InitializeAsync();
+        }
+
         protected override IConfiguration CreateConfiguration()
         {
             return new Configuration()
-                .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett")
+                .UseSqlServer(ConnectionString, "BobaFett")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 .SetIdentityColumnSize(IdentityColumnSize.Int64)
                 ;
         }
+
+        public override async Task DisposeAsync() => await _sqlServerContainer.DisposeAsync();
     }
 }
