@@ -1110,7 +1110,7 @@ namespace YesSql.Services
 
             try
             {
-                return await _session._store.ProduceAsync(key, static (state) =>
+                return await _session._store.ProduceAsync(key, static (key, state) =>
                 {
                     var logger = state.Session._store.Configuration.Logger;
 
@@ -1221,7 +1221,7 @@ namespace YesSql.Services
                         _query._queryState._sqlBuilder.Selector("*");
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        return (await _query._session._store.ProduceAsync(key, static (state) =>
+                        return (await _query._session._store.ProduceAsync(key, static (key, state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
 
@@ -1239,7 +1239,7 @@ namespace YesSql.Services
                         _query._queryState._sqlBuilder.Selector(_query._queryState._documentTable, "*", _query._queryState._store.Configuration.Schema);
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        var documents = await _query._session._store.ProduceAsync(key, static (state) =>
+                        var documents = await _query._session._store.ProduceAsync(key, static (key, state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
 
@@ -1326,7 +1326,7 @@ namespace YesSql.Services
                         var sql = sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
 
-                        return await _query._session._store.ProduceAsync(key, static (state) =>
+                        return await _query._session._store.ProduceAsync(key, static (key, state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
 
@@ -1356,7 +1356,7 @@ namespace YesSql.Services
 
                         var key = new WorkerQueryKey(sql, sqlBuilder.Parameters);
 
-                        var documents = await _query._session._store.ProduceAsync(key, static (state) =>
+                        var documents = await _query._session._store.ProduceAsync(key, static (key, state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
 
