@@ -1500,9 +1500,7 @@ namespace YesSql.Services
                 return query;
             }
 
-#pragma warning disable CA1859 // Use concrete types when possible for improved performance
-            private IQuery<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
-#pragma warning restore CA1859 // Use concrete types when possible for improved performance
+            private Query<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
             {
                 _query._queryState._currentPredicate.Children.Add(predicate);
 

@@ -35,6 +35,7 @@ namespace YesSql.Data
             ArgumentNullException.ThrowIfNull(item);
 
             var builder = GetNullableThumbprintBuilder(item.GetType());
+
             return builder.GetNullableThumbprint(item);
         }
     }
