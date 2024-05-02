@@ -21,6 +21,7 @@ namespace YesSql
             TablePrefix = "";
             CommandsPageSize = 500;
             QueryGatingEnabled = true;
+            EnableThreadSafetyChecks = false;
             Logger = NullLogger.Instance;
             ConcurrentTypes = new HashSet<Type>();
             TableNameConvention = new DefaultTableNameConvention();
@@ -35,6 +36,7 @@ namespace YesSql
         public string Schema { get; set; }
         public int CommandsPageSize { get; set; }
         public bool QueryGatingEnabled { get; set; }
+        public bool EnableThreadSafetyChecks { get; set; }
         public IIdGenerator IdGenerator { get; set; }
         public ILogger Logger { get; set; }
         public HashSet<Type> ConcurrentTypes { get; }
