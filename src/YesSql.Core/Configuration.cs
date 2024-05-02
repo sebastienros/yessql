@@ -15,7 +15,7 @@ namespace YesSql
         {
             IdentifierAccessorFactory = new PropertyAccessorFactory("Id");
             VersionAccessorFactory = new PropertyAccessorFactory("Version");
-            ContentSerializer = new JsonContentSerializer();
+            ContentSerializer = new DefaultContentSerializer();
             IdGenerator = new DefaultIdGenerator();
             IsolationLevel = IsolationLevel.ReadCommitted;
             TablePrefix = "";
