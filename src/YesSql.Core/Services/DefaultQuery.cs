@@ -1396,16 +1396,16 @@ namespace YesSql.Services
                 sqlBuilder.Selector(selector);
                 sqlBuilder.GroupBy(selector);
 
-                var aggregates = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList());
+                var results = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList());
 
                 if (sqlBuilder.HasOrder)
                 {
                     sqlBuilder.ClearOrder();
-                    foreach (var aggregate in aggregates)
+                    foreach (var result in results)
                     {
                         sqlBuilder.AddSelector(", ");
-                        sqlBuilder.AddSelector(aggregate.aggregate);
-                        sqlBuilder.ThenOrderBy(aggregate.alias);
+                        sqlBuilder.AddSelector(result.aggregate);
+                        sqlBuilder.ThenOrderBy(result.alias);
                     }
 
                     // Add a 0 offset if not offset was specified as it might be required by the RDBMS
@@ -1423,7 +1423,7 @@ namespace YesSql.Services
 
                 if (sqlBuilder.HasOrder)
                 {
-                    sql += $" ORDER BY {string.Join(", ", aggregates.Select(x => x.alias).ToList())}";
+                    sql += $" ORDER BY {string.Join(", ", results.Select(x => x.alias).ToList())}";
                 }
 
                 return sql;

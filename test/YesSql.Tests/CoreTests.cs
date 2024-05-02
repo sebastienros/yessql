@@ -53,7 +53,7 @@ namespace YesSql.Tests
                 await _store.InitializeCollectionAsync("Col1");
                 _store.TypeNames[typeof(Person)] = "People";
 
-                await CreateTablesAsync(_configuration);
+                await CoreTests.CreateTablesAsync(_configuration);
             }
             else
             {
@@ -204,7 +204,7 @@ namespace YesSql.Tests
         protected virtual Task OnClearTablesAsync(DbConnection connection)
             => Task.CompletedTask;
 
-        public async Task CreateTablesAsync(IConfiguration configuration)
+        public static async Task CreateTablesAsync(IConfiguration configuration)
         {
             await using var connection = configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
@@ -1346,11 +1346,11 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
-                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith('B') || y.SomeName.StartsWith('C'))).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith('B') || y.SomeName.Contains("lo"))).CountAsync());
 
-                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.StartsWith("C"))).CountAsync());
-                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith("B") || y.SomeName.Contains("lo"))).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith('B') || y.SomeName.StartsWith('C'))).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotIn<PersonByName>(y => y.SomeName, y => y.SomeName.StartsWith('B') || y.SomeName.Contains("lo"))).CountAsync());
             }
         }
 
@@ -1966,19 +1966,19 @@ namespace YesSql.Tests
             await using (var session = _store.CreateSession())
             {
                 Assert.Equal(2, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
+                    .With<PersonByName>(x => x.SomeName.StartsWith('S'))
                     .With<PersonByAge>(x => x.Age == 2)
                     .CountAsync());
 
                 Assert.Equal("Scott", (await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
+                    .With<PersonByName>(x => x.SomeName.StartsWith('S'))
                     .OrderBy(x => x.SomeName)
                     .With<PersonByAge>(x => x.Age == 2)
                     .FirstOrDefaultAsync())
                     .Firstname);
 
                 Assert.Equal("Steve", (await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
+                    .With<PersonByName>(x => x.SomeName.StartsWith('S'))
                     .OrderByDescending(x => x.SomeName)
                     .With<PersonByAge>(x => x.Age == 2)
                     .FirstOrDefaultAsync())
@@ -2108,9 +2108,9 @@ namespace YesSql.Tests
             await using (var session = _store.CreateSession())
             {
                 Assert.Equal("Steve", (await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.StartsWith("S"))
+                    .With<PersonByName>(x => x.SomeName.StartsWith('S'))
                     .With<PersonByAge>(x => x.Age == 2)
-                    .With<PersonByName>(x => x.SomeName.EndsWith("e"))
+                    .With<PersonByName>(x => x.SomeName.EndsWith('e'))
                     .FirstOrDefaultAsync()).Firstname);
             }
         }
@@ -4180,9 +4180,9 @@ namespace YesSql.Tests
                 Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Bill", "Col1").CountAsync());
                 Assert.Equal(1, await session.Query<Person, PersonByBothNamesCol>(x => x.Lastname == "Gates", "Col1").CountAsync());
 
-                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G"))).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith('G'))).CountAsync());
 
-                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith("G") || y.Lastname.StartsWith("M"))).CountAsync());
+                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotIn<PersonByBothNamesCol>(y => y.Firstname, y => y.Lastname.StartsWith('G') || y.Lastname.StartsWith('M'))).CountAsync());
 
                 Assert.Equal(2, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
                 Assert.Equal(0, await session.Query<Person, PersonByNameCol>(collection: "Col1").Where(x => x.Name.IsNotInAny<PersonByBothNamesCol>(y => y.Firstname)).CountAsync());
