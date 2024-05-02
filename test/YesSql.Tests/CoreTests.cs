@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -6399,6 +6400,51 @@ namespace YesSql.Tests
             }
 
             Assert.Equal(10, result);
+        }
+
+        [Fact]
+        public virtual async Task ShouldDetectThreadSafetyIssues()
+        {
+            try
+            {
+                _store.Configuration.EnableThreadSafetyChecks = true;
+
+                await using var session = _store.CreateSession();
+
+                _store.Configuration.EnableThreadSafetyChecks = false;
+
+                var person = new Person { Firstname = "Bill" };
+                await session.SaveAsync(person);
+                await session.SaveChangesAsync();
+
+                Task[] tasks = null;
+
+                var throws = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    tasks = Enumerable.Range(0, 10).Select(x => Task.Run(DoWork)).ToArray();
+                    await Task.WhenAll(tasks);
+                });
+
+                var result = Task.WaitAny(throws, Task.Delay(5000));
+
+                Assert.Equal(0, result);
+
+                async Task DoWork()
+                {
+                    while (true)
+                    {
+                        var p = await session.Query<Person>().FirstOrDefaultAsync();
+                        Assert.NotNull(p);
+
+                        person.Firstname = "Bill" + RandomNumberGenerator.GetInt32(100);
+                        await session.FlushAsync();
+                    }
+                }
+            }
+            finally
+            {
+                _store.Configuration.EnableThreadSafetyChecks = false;
+            }
         }
 
         #region FilterTests

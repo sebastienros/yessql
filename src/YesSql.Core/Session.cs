@@ -6,6 +6,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
@@ -35,6 +36,10 @@ namespace YesSql
         private readonly ILogger _logger;
         private readonly bool _withTracking;
 
+        private readonly bool _enableThreadSafetyChecks;
+        private int _asyncOperations = 0;
+        private string _previousStackTrace = null;
+
         public Session(Store store, bool withTracking = true)
         {
             _store = store;
@@ -43,6 +48,7 @@ namespace YesSql
             _logger = store.Configuration.Logger;
             _withTracking = withTracking;
             _defaultState = new SessionState();
+            _enableThreadSafetyChecks = _store.Configuration.EnableThreadSafetyChecks;
             _collectionStates = new Dictionary<string, SessionState>()
             {
                 [string.Empty] = _defaultState
@@ -491,7 +497,7 @@ namespace YesSql
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             try
             {
-                var documents = await _store.ProduceAsync(key, (state) =>
+                var documents = await _store.ProduceAsync(key, static (state) =>
                 {
                     var logger = state.Store.Configuration.Logger;
 
@@ -649,7 +655,12 @@ namespace YesSql
             GC.SuppressFinalize(this);
         }
 
-        public async Task FlushAsync()
+        public Task FlushAsync()
+        {
+            return FlushInternalAsync(false);
+        }
+
+        private async Task FlushInternalAsync(bool saving)
         {
             if (!HasWork())
             {
@@ -672,6 +683,12 @@ namespace YesSql
 
             CheckDisposed();
 
+            // Only check thread-safety if not called from SaveChangesAsync
+            if (!saving)
+            {
+                EnterAsyncExecution();
+            }
+            
             try
             {
                 // saving all tracked entities
@@ -755,6 +772,12 @@ namespace YesSql
 
                 _commands?.Clear();
                 _flushing = false;
+
+                // Only check thread-safety if not called from SaveChangesAsync
+                if (!saving)
+                {
+                    ExitAsyncExecution();
+                }                
             }
         }
 
@@ -844,13 +867,40 @@ namespace YesSql
             _commands.AddRange(batches);
         }
 
+        public void EnterAsyncExecution()
+        {
+            if (!_enableThreadSafetyChecks)
+            {
+                return;
+            }
+
+            if (Interlocked.Increment(ref _asyncOperations) > 1)
+            {
+                throw new InvalidOperationException($"Two concurrent threads have been detected accessing the same ISession instance from: \n{Environment.StackTrace}\nand:\n{_previousStackTrace}\n---");
+            }
+
+            _previousStackTrace = Environment.StackTrace;
+        }
+
+        public void ExitAsyncExecution()
+        {
+            if (!_enableThreadSafetyChecks)
+            {
+                return;
+            }
+
+            Interlocked.Decrement(ref _asyncOperations);
+        }
+
         public async Task SaveChangesAsync()
         {
+            EnterAsyncExecution();
+
             try
             {
                 if (!_cancel)
                 {
-                    await FlushAsync();
+                    await FlushInternalAsync(true);
 
                     _save = true;
                 }
@@ -858,6 +908,7 @@ namespace YesSql
             finally
             {
                 await CommitOrRollbackTransactionAsync();
+                ExitAsyncExecution();
             }
         }
 
@@ -1350,11 +1401,20 @@ namespace YesSql
 
         public Task CancelAsync()
         {
-            CheckDisposed();
+            EnterAsyncExecution();
 
-            _cancel = true;
+            try
+            {
+                CheckDisposed();
 
-            return ReleaseTransactionAsync();
+                _cancel = true;
+
+                return ReleaseTransactionAsync();
+            }
+            finally
+            {
+                ExitAsyncExecution();
+            }
         }
 
         public IStore Store => _store;

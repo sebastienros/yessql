@@ -1108,6 +1108,8 @@ namespace YesSql.Services
             var parameters = localBuilder.Parameters;
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
 
+            _session.EnterAsyncExecution();
+
             try
             {
                 return await _session._store.ProduceAsync(key, static (state) =>
@@ -1128,6 +1130,10 @@ namespace YesSql.Services
                 await _session.CancelAsync();
 
                 throw;
+            }
+            finally
+            {
+                _session.ExitAsyncExecution();
             }
         }
 
@@ -1208,6 +1214,8 @@ namespace YesSql.Services
 
                 _query.Page(1, 0);
 
+                _query._session.EnterAsyncExecution();
+
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
@@ -1261,6 +1269,10 @@ namespace YesSql.Services
                     await _query._session.CancelAsync();
                     throw;
                 }
+                finally
+                {
+                    _query._session.ExitAsyncExecution();
+                }
             }
 
             Task<IEnumerable<T>> IQuery<T>.ListAsync()
@@ -1299,6 +1311,8 @@ namespace YesSql.Services
                     }
                 }
 
+                _query._session.EnterAsyncExecution();
+
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
@@ -1313,6 +1327,7 @@ namespace YesSql.Services
 
                         var sql = sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
+
                         return await _query._session._store.ProduceAsync(key, static (state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
@@ -1366,6 +1381,10 @@ namespace YesSql.Services
                     await _query._session.CancelAsync();
 
                     throw;
+                }
+                finally
+                {
+                    _query._session.ExitAsyncExecution();
                 }
             }
 
