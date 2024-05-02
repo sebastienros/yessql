@@ -27,7 +27,7 @@ namespace YesSql
 
         void ResetTypeHandlers();
 
-        void AddTypeHandler<T, U>(Func<T, U> handler);
+        void AddTypeHandler<T, TU>(Func<T, TU> handler);
 
         /// <summary>
         /// Gets the name of the dialect.
@@ -38,7 +38,7 @@ namespace YesSql
         /// Gets the cascade constraint sql statement.
         /// </summary>
         string CascadeConstraintsString { get; }
-        
+
         /// <summary>
         /// Gets the create table sql statement.
         /// </summary>
@@ -64,7 +64,7 @@ namespace YesSql
         /// Whether the underlying database support batching.
         /// </summary>
         bool SupportsBatching { get; }
-        
+
         /// <summary>
         /// Whether the dialect support unique queries.
         /// </summary>
@@ -94,7 +94,7 @@ namespace YesSql
         /// Gets the Int64 primary key with identity column SQL statement.
         /// </summary>
         string LegacyIdentityColumnString { get; }
-        
+
         /// <summary>
         /// Gets the identity select SQL statement to append to an insert in order to return the last generated identifier.
         /// </summary>

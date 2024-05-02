@@ -207,7 +207,9 @@ namespace YesSql
         public ISession CreateSession(bool withTracking = true)
             => new Session(this, withTracking);
 
+#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
         public void Dispose()
+#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
         {
         }
 
@@ -222,10 +224,7 @@ namespace YesSql
         /// </summary>
         public IEnumerable<IndexDescriptor> Describe(Type target, string collection)
         {
-            if (target == null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
+            ArgumentNullException.ThrowIfNull(target);
 
             var cacheKey = string.IsNullOrEmpty(collection)
                 ? target.FullName

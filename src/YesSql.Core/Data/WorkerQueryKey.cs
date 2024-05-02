@@ -15,15 +15,9 @@ namespace YesSql.Data
 
         public WorkerQueryKey(string prefix, long[] ids)
         {
-            if (prefix == null)
-            {
-                throw new ArgumentNullException(nameof(prefix));
-            }
+            ArgumentNullException.ThrowIfNull(prefix);
 
-            if (ids == null)
-            {
-                throw new ArgumentNullException(nameof(ids));
-            }
+            ArgumentNullException.ThrowIfNull(ids);
 
             _prefix = prefix;
             _parameters = null;
@@ -59,12 +53,12 @@ namespace YesSql.Data
             {
                 return false;
             }
-            
+
             if (_parameters != null || other._parameters != null)
             {
                 return SameParameters(_parameters, other._parameters);
             }
-            
+
             if (_ids != null || other._ids != null)
             {
                 return SameIds(_ids, other._ids);
@@ -180,6 +174,16 @@ namespace YesSql.Data
             }
 
             return true;
+        }
+
+        public static bool operator ==(WorkerQueryKey left, WorkerQueryKey right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(WorkerQueryKey left, WorkerQueryKey right)
+        {
+            return !(left == right);
         }
     }
 }

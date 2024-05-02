@@ -249,10 +249,7 @@ namespace YesSql
 
         private async Task SaveEntityAsync(object entity, string collection)
         {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+            ArgumentNullException.ThrowIfNull(entity);
 
             if (entity is Document)
             {
@@ -306,17 +303,14 @@ namespace YesSql
 
         private async Task UpdateEntityAsync(object entity, bool tracked, string collection)
         {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+            ArgumentNullException.ThrowIfNull(entity);
 
             if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitly");
             }
 
-            if (entity is IIndex index)
+            if (entity is IIndex)
             {
                 throw new ArgumentException("An index should not be saved explicitly");
             }
@@ -343,7 +337,7 @@ namespace YesSql
 
             // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
             // been changed before doing another query
-            if (tracked && string.Equals(newContent, oldDoc.Content))
+            if (tracked && string.Equals(newContent, oldDoc.Content, StringComparison.Ordinal))
             {
                 return;
             }
@@ -439,10 +433,7 @@ namespace YesSql
 
         private async Task DeleteEntityAsync(object obj, string collection)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (obj is IIndex)
             {
@@ -598,10 +589,7 @@ namespace YesSql
 
         public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class
         {
-            if (compiledQuery == null)
-            {
-                throw new ArgumentNullException(nameof(compiledQuery));
-            }
+            ArgumentNullException.ThrowIfNull(compiledQuery);
 
             var compiledQueryType = compiledQuery.GetType();
 

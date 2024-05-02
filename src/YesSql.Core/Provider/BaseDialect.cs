@@ -75,7 +75,7 @@ namespace YesSql.Provider
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {
-            if (values.StartsWith("@") && !values.Contains(','))
+            if (values.StartsWith('@') && !values.Contains(','))
             {
                 return " IN " + values;
             }
@@ -106,7 +106,7 @@ namespace YesSql.Provider
 
         public abstract string IdentitySelectString { get; }
         public abstract string IdentityLastId { get; }
-        
+
         public abstract string IdentityColumnString { get; }
         public abstract string LegacyIdentityColumnString { get; }
 
@@ -286,7 +286,7 @@ namespace YesSql.Provider
             _typeHandlers.Clear();
         }
 
-        public void AddTypeHandler<T, U>(Func<T, U> handler)
+        public void AddTypeHandler<T, TU>(Func<T, TU> handler)
         {
             if (!_typeHandlers.TryGetValue(typeof(T), out var handlers))
             {

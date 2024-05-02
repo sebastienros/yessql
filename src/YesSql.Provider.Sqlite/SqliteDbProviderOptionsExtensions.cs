@@ -11,8 +11,8 @@ namespace YesSql.Provider.Sqlite
             string connectionString)
         {
             return UseSqLite(
-                configuration, 
-                connectionString, 
+                configuration,
+                connectionString,
                 IsolationLevel.Serializable);
         }
 
@@ -21,10 +21,7 @@ namespace YesSql.Provider.Sqlite
             string connectionString,
             IsolationLevel isolationLevel)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {

@@ -11,7 +11,7 @@ namespace YesSql.Data
     /// </summary>
     internal class NullableThumbprintFactory
     {
-        private static Dictionary<Type, NullableThumbprintBuilder> _discriminatorFactories = new();
+        private static readonly Dictionary<Type, NullableThumbprintBuilder> _discriminatorFactories = new();
 
         internal static NullableThumbprintBuilder GetNullableThumbprintBuilder(Type type)
         {
@@ -32,10 +32,7 @@ namespace YesSql.Data
 
         public static long GetNullableThumbprint(object item)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             var builder = GetNullableThumbprintBuilder(item.GetType());
             return builder.GetNullableThumbprint(item);
@@ -44,17 +41,17 @@ namespace YesSql.Data
 
     internal class NullableThumbprintBuilder
     {
-        private Type _type;
+        private readonly Type _type;
         private static int _globalTypeIndex;
-        private long _typeIndex;
+        private readonly long _typeIndex;
         private const int MaxTypeIndex = 1 << 16; // 65536 types max, 16 bits for the type
         private const int MaxProperties = 48;
 
-        private List<INullablePropertyAccessor> _nullableAccessors;
+        private readonly List<INullablePropertyAccessor> _nullableAccessors;
 
 
         public NullableThumbprintBuilder(Type type)
-        { 
+        {
             _type = type;
 
             // Each type gets a unique type index
@@ -122,10 +119,10 @@ namespace YesSql.Data
             {
                 return mask;
             }
-            
+
             const long long1 = 1;
 
-            for (var i= 0; i < _nullableAccessors.Count; i++)
+            for (var i = 0; i < _nullableAccessors.Count; i++)
             {
                 if (_nullableAccessors[i].IsPropertyNull(o))
                 {

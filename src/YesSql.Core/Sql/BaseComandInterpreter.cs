@@ -305,7 +305,7 @@ namespace YesSql.Sql
                                      ? _dialect.NullColumnString
                                      : string.Empty);
 
-            // append unique if handled, otherwise at the end of the satement
+            // append unique if handled, otherwise at the end of the statement
             if (command.IsUnique && _dialect.SupportsUnique)
             {
                 builder.Append(" unique");
@@ -319,7 +319,7 @@ namespace YesSql.Sql
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        private string GetRawColumnName(string name)
+        private static string GetRawColumnName(string name)
         {
             var index = name.IndexOf('(');
 

@@ -655,7 +655,9 @@ namespace YesSql.Services
                     return " / ";
             }
 
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
             throw new ArgumentException(nameof(expression));
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
         }
 
         public void ConvertFragment(IStringBuilder builder, Expression expression)
@@ -874,7 +876,7 @@ namespace YesSql.Services
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
-        private bool IsParameterBased(Expression expression)
+        private static bool IsParameterBased(Expression expression)
         {
             switch (expression.NodeType)
             {
@@ -1382,11 +1384,11 @@ namespace YesSql.Services
                 if (sqlBuilder.HasOrder)
                 {
                     sqlBuilder.ClearOrder();
-                    foreach (var result in aggregates)
+                    foreach (var aggregate in aggregates)
                     {
                         sqlBuilder.AddSelector(", ");
-                        sqlBuilder.AddSelector(result.aggregate);
-                        sqlBuilder.ThenOrderBy(result.alias);
+                        sqlBuilder.AddSelector(aggregate.aggregate);
+                        sqlBuilder.ThenOrderBy(aggregate.alias);
                     }
 
                     // Add a 0 offset if not offset was specified as it might be required by the RDBMS
@@ -1481,7 +1483,7 @@ namespace YesSql.Services
                 return query;
             }
 
-            private IQuery<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
+            private Query<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
             {
                 _query._queryState._currentPredicate.Children.Add(predicate);
 
