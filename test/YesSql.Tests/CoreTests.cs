@@ -6425,9 +6425,9 @@ namespace YesSql.Tests
                     await Task.WhenAll(tasks);
                 });
 
-                var result = Task.WaitAny(throws, Task.Delay(5000));
+                await Task.WhenAny(throws, Task.Delay(5000));
 
-                Assert.Equal(0, result);
+                Assert.True(throws.IsCompleted, "The timeout was reached before the expected exception was thrown");
 
                 async Task DoWork()
                 {
