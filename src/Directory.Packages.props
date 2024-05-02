@@ -13,5 +13,8 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+
+    <!-- For transitive dependencies fix only (YesSql.Provider.SqlServer) -->
+    <PackageVersion Include="Azure.Identity" Version="1.11.2" />
   </ItemGroup>
 </Project>
