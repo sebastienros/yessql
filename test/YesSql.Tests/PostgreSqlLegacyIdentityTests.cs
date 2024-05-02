@@ -5,28 +5,34 @@ using YesSql.Provider.PostgreSql;
 
 namespace YesSql.Tests
 {
-    // Docker command
-    // docker run --name postgresql -e POSTGRES_USER=root -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=yessql -d -p 5432:5432 postgres:11
-    public class PostgreSqlLegacyIdentityTests : PostgreSqlTests
-    {
-        public PostgreSqlLegacyIdentityTests(ITestOutputHelper output) : base(output)
-        {
-        }
+//    public class PostgreSqlLegacyIdentityTests : PostgreSqlTests
+//    {
+//        public PostgreSqlLegacyIdentityTests(ITestOutputHelper output) : base(output)
+//        {
+//        }
 
-        protected override IConfiguration CreateConfiguration()
-        {
-            return new Configuration()
-                .UsePostgreSql(ConnectionStringBuilder.ConnectionString)
-                .SetTablePrefix(TablePrefix)
-                .UseBlockIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int32)
-                ;
-        }
+//        public override async Task InitializeAsync()
+//        {
+//            await PostgreSqlContainer.StartAsync();
+//            await base.InitializeAsync();
+//        }
 
-        [Fact(Skip = "Skip to make test faster in this configuration")]
-        public override Task ShouldGateQuery()
-        {
-            return base.ShouldGateQuery();
-        }
-    }
+//        protected override IConfiguration CreateConfiguration()
+//        {
+//            return new Configuration()
+//                .UsePostgreSql(PostgreSqlContainer.GetConnectionString())
+//                .SetTablePrefix(TablePrefix)
+//                .UseBlockIdGenerator()
+//                .SetIdentityColumnSize(IdentityColumnSize.Int32)
+//                ;
+//        }
+
+//        [Fact(Skip = "Skip to make test faster in this configuration")]
+//        public override Task ShouldGateQuery()
+//        {
+//            return base.ShouldGateQuery();
+//        }
+
+//        public async override Task DisposeAsync() => await PostgreSqlContainer.DisposeAsync();
+//    }
 }

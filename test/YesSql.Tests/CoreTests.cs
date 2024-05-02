@@ -40,7 +40,7 @@ namespace YesSql.Tests
             _output = output;
         }
 
-        public async Task InitializeAsync()
+        public virtual async Task InitializeAsync()
         {
             // Create the tables only once
             if (_configuration == null)
