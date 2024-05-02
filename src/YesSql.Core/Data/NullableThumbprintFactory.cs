@@ -108,7 +108,7 @@ namespace YesSql.Data
             }
         }
 
-        private const long long1 = 1;
+        private const long _long1 = 1;
 
         /// <summary>
         /// Returns an 64 bits integer representing the unique set of nullable fields as a bit mask. The 16 MSB represent the type, and the 48 LSB represent individual fields
@@ -126,7 +126,7 @@ namespace YesSql.Data
             {
                 if (_nullableAccessors[i].IsPropertyNull(o))
                 {
-                    mask = mask | (long1 << i);
+                    mask = mask | (_long1 << i);
                 }
             }
 
