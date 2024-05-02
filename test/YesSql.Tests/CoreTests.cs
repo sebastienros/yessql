@@ -2752,7 +2752,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ChangesAfterAutoflushAreSaved()
+        public async Task ChangesAfterAutoFlushAreSaved()
         {
             _store.RegisterIndexes<ArticleIndexProvider>();
 
@@ -6044,13 +6044,14 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                var index = new TypesIndex();
-
-                index.ValueDateTime = valueDateTime;
-                index.ValueGuid = valueGuid;
-                index.ValueBool = valueBool;
-                index.ValueDateTimeOffset = valueDateTimeOffset;
-                index.ValueTimeSpan = valueTimeSpan;
+                var index = new TypesIndex
+                {
+                    ValueDateTime = valueDateTime,
+                    ValueGuid = valueGuid,
+                    ValueBool = valueBool,
+                    ValueDateTimeOffset = valueDateTimeOffset,
+                    ValueTimeSpan = valueTimeSpan
+                };
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -6108,13 +6109,14 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                var index = new TypesIndex();
-
-                index.ValueDateTime = valueDateTime;
-                index.ValueGuid = valueGuid;
-                index.ValueBool = valueBool;
-                index.ValueDateTimeOffset = valueDateTimeOffset;
-                index.ValueTimeSpan = valueTimeSpan;
+                var index = new TypesIndex
+                {
+                    ValueDateTime = valueDateTime,
+                    ValueGuid = valueGuid,
+                    ValueBool = valueBool,
+                    ValueDateTimeOffset = valueDateTimeOffset,
+                    ValueTimeSpan = valueTimeSpan
+                };
 
                 ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
 
@@ -6425,7 +6427,9 @@ namespace YesSql.Tests
                     await Task.WhenAll(tasks);
                 });
 
+#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
                 var result = Task.WaitAny(throws, Task.Delay(5000));
+#pragma warning restore xUnit1031 // Do not use blocking task operations in test method
 
                 Assert.Equal(0, result);
 

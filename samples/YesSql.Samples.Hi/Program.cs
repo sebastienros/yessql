@@ -7,7 +7,7 @@ using YesSql.Sql;
 
 namespace YesSql.Samples.Hi
 {
-    internal class Program
+    internal sealed class Program
     {
         static void Main(string[] args)
         {

@@ -655,9 +655,7 @@ namespace YesSql.Services
                     return " / ";
             }
 
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
             throw new ArgumentException(nameof(expression));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
         }
 
         public void ConvertFragment(IStringBuilder builder, Expression expression)

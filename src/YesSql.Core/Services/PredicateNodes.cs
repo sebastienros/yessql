@@ -16,7 +16,7 @@ namespace YesSql.Services
         public List<PredicateNode> Children = new();
     }
 
-    internal class AndNode : CompositeNode
+    internal sealed class AndNode : CompositeNode
     {
         public override void Build(RentedStringBuilder builder)
         {
@@ -48,14 +48,16 @@ namespace YesSql.Services
         public override PredicateNode Clone()
         {
             var children = Children.Select(x => x.Clone()).ToList();
-            var clone = new AndNode();
-            clone.Children = children;
+            var clone = new AndNode
+            {
+                Children = children
+            };
 
             return clone;
         }
     }
 
-    internal class OrNode : CompositeNode
+    internal sealed class OrNode : CompositeNode
     {
         public override void Build(RentedStringBuilder builder)
         {
@@ -96,7 +98,7 @@ namespace YesSql.Services
         }
     }
 
-    internal class FilterNode : CompositeNode
+    internal sealed class FilterNode : CompositeNode
     {
         public FilterNode(string filter)
         {

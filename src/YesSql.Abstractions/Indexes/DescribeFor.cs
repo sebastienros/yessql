@@ -88,19 +88,11 @@ namespace YesSql.Indexes
 
         public IReduceFor<TIndex, TKeyG> Group<TKeyG>(Expression<Func<TIndex, TKeyG>> group)
         {
-            var memberExpression = group.Body as MemberExpression;
+            var memberExpression = group.Body as MemberExpression
+                ?? throw new ArgumentException("Group expression is not a valid member of: " + typeof(TIndex).Name);
 
-            if (memberExpression == null)
-            {
-                throw new ArgumentException("Group expression is not a valid member of: " + typeof(TIndex).Name);
-            }
-
-            var property = memberExpression.Member as PropertyInfo;
-
-            if (property == null)
-            {
-                throw new ArgumentException("Group expression is not a valid property of: " + typeof(TIndex).Name);
-            }
+            var property = memberExpression.Member as PropertyInfo
+                ?? throw new ArgumentException("Group expression is not a valid property of: " + typeof(TIndex).Name);
 
             GroupProperty = property;
 

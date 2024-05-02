@@ -450,11 +450,8 @@ namespace YesSql
 
             if (!state.IdentityMap.TryGetDocumentId(obj, out var id))
             {
-                var accessor = _store.GetIdAccessor(obj.GetType());
-                if (accessor == null)
-                {
-                    throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
-                }
+                var accessor = _store.GetIdAccessor(obj.GetType())
+                    ?? throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
 
                 id = accessor.Get(obj);
             }
@@ -615,10 +612,7 @@ namespace YesSql
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Session));
-            }
+            ObjectDisposedException.ThrowIf(true, _disposed);
         }
 
         ~Session()
@@ -688,7 +682,7 @@ namespace YesSql
             {
                 EnterAsyncExecution();
             }
-            
+
             try
             {
                 // saving all tracked entities
@@ -777,7 +771,7 @@ namespace YesSql
                 if (!saving)
                 {
                     ExitAsyncExecution();
-                }                
+                }
             }
         }
 
@@ -1123,13 +1117,8 @@ namespace YesSql
                             // reduce over the two objects
                             var reductions = new[] { dbIndex, index };
 
-                            var groupedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault();
-
-                            if (groupedReductions == null)
-                            {
-                                throw new InvalidOperationException(
-                                    "The grouping on the db and in memory set should have resulted in a unique result");
-                            }
+                            var groupedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault()
+                                ?? throw new InvalidOperationException("The grouping on the db and in memory set should have resulted in a unique result");
 
                             index = descriptor.Reduce(groupedReductions);
 

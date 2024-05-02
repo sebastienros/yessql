@@ -17,10 +17,9 @@ namespace YesSql.Utils
         {
             if (string.IsNullOrEmpty(prefix))
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                 throw new ArgumentNullException("A prefix is required");
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
             }
+
             var bytes = Encoding.UTF8.GetBytes(name);
             var hashed = SHA256.HashData(bytes);
 
