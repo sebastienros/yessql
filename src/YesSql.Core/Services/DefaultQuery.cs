@@ -824,7 +824,7 @@ namespace YesSql.Services
                     var methodInfo = methodCallExpression.Method;
                     Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression> action;
                     if (MethodMappings.TryGetValue(methodInfo, out action)
-                        || MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action))
+                        || (methodInfo.IsGenericMethod && MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action)))
                     {
                         action(this, builder, _dialect, methodCallExpression);
                     }
