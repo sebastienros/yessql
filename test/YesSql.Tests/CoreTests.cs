@@ -1498,7 +1498,7 @@ namespace YesSql.Tests
                 Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsLike("%l%")).CountAsync());
                 Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.IsNotLike("%B%")).CountAsync());
 
-                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.Contains('l', StringComparison.Ordinal)).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>().Where(x => x.Name.Contains('l')).CountAsync());
                 Assert.Equal(1, await session.Query<Person, PersonByAge>().Where(x => x.Name.NotContains("B")).CountAsync());
             }
         }
