@@ -10,8 +10,10 @@ namespace YesSql.Serialization
 
         public DefaultContentSerializer()
         {
-            _options = new();
-            _options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            _options = new()
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
             _options.Converters.Add(UtcDateTimeJsonConverter.Instance);
             _options.Converters.Add(DynamicJsonConverter.Instance);
         }

@@ -255,10 +255,7 @@ namespace YesSql
 
         private async Task SaveEntityAsync(object entity, string collection)
         {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+            ArgumentNullException.ThrowIfNull(entity);
 
             if (entity is Document)
             {
@@ -312,17 +309,14 @@ namespace YesSql
 
         private async Task UpdateEntityAsync(object entity, bool tracked, string collection)
         {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+            ArgumentNullException.ThrowIfNull(entity);
 
             if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitly");
             }
 
-            if (entity is IIndex index)
+            if (entity is IIndex)
             {
                 throw new ArgumentException("An index should not be saved explicitly");
             }
@@ -349,7 +343,7 @@ namespace YesSql
 
             // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
             // been changed before doing another query
-            if (tracked && string.Equals(newContent, oldDoc.Content))
+            if (tracked && string.Equals(newContent, oldDoc.Content, StringComparison.Ordinal))
             {
                 return;
             }
@@ -445,10 +439,7 @@ namespace YesSql
 
         private async Task DeleteEntityAsync(object obj, string collection)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (obj is IIndex)
             {
@@ -459,11 +450,8 @@ namespace YesSql
 
             if (!state.IdentityMap.TryGetDocumentId(obj, out var id))
             {
-                var accessor = _store.GetIdAccessor(obj.GetType());
-                if (accessor == null)
-                {
-                    throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
-                }
+                var accessor = _store.GetIdAccessor(obj.GetType())
+                    ?? throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
 
                 id = accessor.Get(obj);
             }
@@ -604,10 +592,7 @@ namespace YesSql
 
         public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class
         {
-            if (compiledQuery == null)
-            {
-                throw new ArgumentNullException(nameof(compiledQuery));
-            }
+            ArgumentNullException.ThrowIfNull(compiledQuery);
 
             var compiledQueryType = compiledQuery.GetType();
 
@@ -627,10 +612,12 @@ namespace YesSql
 
         private void CheckDisposed()
         {
+#pragma warning disable CA1513 // Use ObjectDisposedException throw helper
             if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(Session));
             }
+#pragma warning restore CA1513 // Use ObjectDisposedException throw helper
         }
 
         ~Session()
@@ -700,7 +687,7 @@ namespace YesSql
             {
                 EnterAsyncExecution();
             }
-            
+
             try
             {
                 // saving all tracked entities
@@ -789,7 +776,7 @@ namespace YesSql
                 if (!saving)
                 {
                     ExitAsyncExecution();
-                }                
+                }
             }
         }
 
@@ -1135,13 +1122,8 @@ namespace YesSql
                             // reduce over the two objects
                             var reductions = new[] { dbIndex, index };
 
-                            var groupedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault();
-
-                            if (groupedReductions == null)
-                            {
-                                throw new InvalidOperationException(
-                                    "The grouping on the db and in memory set should have resulted in a unique result");
-                            }
+                            var groupedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault()
+                                ?? throw new InvalidOperationException("The grouping on the db and in memory set should have resulted in a unique result");
 
                             index = descriptor.Reduce(groupedReductions);
 

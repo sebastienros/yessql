@@ -23,6 +23,9 @@ csharp_new_line_before_members_in_anonymous_types     = true
 # Sort using and Import directives with System.* appearing first
 dotnet_sort_system_directives_first                        = false
 
+## Primary constructors
+dotnet_analyzer_diagnostic.category-Style.severity = none
+
 # Avoid "this." if not necessary
 dotnet_style_qualification_for_field                       = false : suggestion
 dotnet_style_qualification_for_property                    = false : suggestion

@@ -3,7 +3,7 @@ using Xunit;
 namespace YesSql.Tests
 {
 
-    internal class DecimalPrecisionAndScaleDataGenerator : TheoryData<byte?, byte?>
+    internal sealed class DecimalPrecisionAndScaleDataGenerator : TheoryData<byte?, byte?>
     {
         public DecimalPrecisionAndScaleDataGenerator()
         {

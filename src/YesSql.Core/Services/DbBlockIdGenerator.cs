@@ -260,7 +260,7 @@ namespace YesSql.Services
             _ranges[collection] = new Range(collection);
         }
 
-        private class Range
+        private sealed class Range
         {
             public Range(string collection)
             {

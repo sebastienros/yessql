@@ -64,12 +64,12 @@ namespace YesSql.Data
             {
                 return false;
             }
-            
+
             if (_parameters != null || other._parameters != null)
             {
                 return SameParameters(_parameters, other._parameters);
             }
-            
+
             if (_ids != null || other._ids != null)
             {
                 return SameIds(_ids, other._ids);

@@ -169,6 +169,40 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
+            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(char) })] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Object);
+                builder.Append(" like ");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = parameter.ToString() + "%";
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(char) })] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Object);
+                builder.Append(" like ");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = "%" + parameter.ToString();
+                builder.Append(")");
+
+            };
+
+            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(char) })] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Object);
+                builder.Append(" like ");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = "%" + parameter.ToString() + "%";
+                builder.Append(")");
+            };
+
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string[]) })] =
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string) })] =
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
@@ -790,7 +824,7 @@ namespace YesSql.Services
                     var methodInfo = methodCallExpression.Method;
                     Action<DefaultQuery, IStringBuilder, ISqlDialect, MethodCallExpression> action;
                     if (MethodMappings.TryGetValue(methodInfo, out action)
-                        || MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action))
+                        || (methodInfo.IsGenericMethod && MethodMappings.TryGetValue(methodInfo.GetGenericMethodDefinition(), out action)))
                     {
                         action(this, builder, _dialect, methodCallExpression);
                     }
@@ -874,7 +908,7 @@ namespace YesSql.Services
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
-        private bool IsParameterBased(Expression expression)
+        private static bool IsParameterBased(Expression expression)
         {
             switch (expression.NodeType)
             {
@@ -1396,12 +1430,12 @@ namespace YesSql.Services
                 sqlBuilder.Selector(selector);
                 sqlBuilder.GroupBy(selector);
 
-                var aggregates = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList());
+                var results = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList());
 
                 if (sqlBuilder.HasOrder)
                 {
                     sqlBuilder.ClearOrder();
-                    foreach (var result in aggregates)
+                    foreach (var result in results)
                     {
                         sqlBuilder.AddSelector(", ");
                         sqlBuilder.AddSelector(result.aggregate);
@@ -1423,7 +1457,7 @@ namespace YesSql.Services
 
                 if (sqlBuilder.HasOrder)
                 {
-                    sql += $" ORDER BY {string.Join(", ", aggregates.Select(x => x.alias).ToList())}";
+                    sql += $" ORDER BY {string.Join(", ", results.Select(x => x.alias).ToList())}";
                 }
 
                 return sql;
@@ -1500,7 +1534,7 @@ namespace YesSql.Services
                 return query;
             }
 
-            private IQuery<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
+            private Query<T> ComposeQuery(Func<IQuery<T>, IQuery<T>>[] predicates, CompositeNode predicate)
             {
                 _query._queryState._currentPredicate.Children.Add(predicate);
 

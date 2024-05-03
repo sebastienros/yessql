@@ -110,7 +110,11 @@ namespace YesSql.Commands
                     for (var i = 0; i < allProperties.Length; i++)
                     {
                         var property = allProperties.ElementAt(i);
-                        sbParameterList.Append("@").Append(property.Name).Append(ParameterSuffix);
+
+                        sbParameterList.Append('@')
+                            .Append(property.Name)
+                            .Append(ParameterSuffix);
+
                         if (i < allProperties.Length - 1)
                         {
                             sbParameterList.Append(", ");
@@ -186,6 +190,6 @@ namespace YesSql.Commands
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
 
-        private record CompoundKey(string Dialect, string Type, string Schema, string Prefix, string Collection);
+        private sealed record CompoundKey(string Dialect, string Type, string Schema, string Prefix, string Collection);
     }
 }
