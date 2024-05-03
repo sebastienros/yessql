@@ -400,11 +400,11 @@ namespace YesSql
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable, Store.Configuration.Schema) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
-            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
+            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), id);
 
             try
             {
-                var result = await _store.ProduceAsync(key, (state) =>
+                var result = await _store.ProduceAsync(key, (key, state) =>
                 {
                     var logger = state.Store.Configuration.Logger;
 
@@ -494,7 +494,7 @@ namespace YesSql
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             try
             {
-                var documents = await _store.ProduceAsync(key, static (state) =>
+                var documents = await _store.ProduceAsync(key, static (key, state) =>
                 {
                     var logger = state.Store.Configuration.Logger;
 

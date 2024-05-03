@@ -6427,11 +6427,9 @@ namespace YesSql.Tests
                     await Task.WhenAll(tasks);
                 });
 
-#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-                var result = Task.WaitAny(throws, Task.Delay(5000));
-#pragma warning restore xUnit1031 // Do not use blocking task operations in test method
+                await Task.WhenAny(throws, Task.Delay(5000));
 
-                Assert.Equal(0, result);
+                Assert.True(throws.IsCompleted, "The timeout was reached before the expected exception was thrown");
 
                 async Task DoWork()
                 {

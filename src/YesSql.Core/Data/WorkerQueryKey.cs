@@ -6,33 +6,44 @@ namespace YesSql.Data
     /// <summary>
     /// An instance of <see cref="WorkerQueryKey"/> represents the state of <see cref="WorkerQueryKey"/>.
     /// </summary>
-    public readonly struct WorkerQueryKey : IEquatable<WorkerQueryKey>
+    public class WorkerQueryKey : IEquatable<WorkerQueryKey>
     {
         private readonly string _prefix;
+        private readonly long _id;
         private readonly long[] _ids;
         private readonly Dictionary<string, object> _parameters;
-        private readonly int _hashcode;
+        private readonly int _hashCode;
 
         public WorkerQueryKey(string prefix, long[] ids)
         {
             ArgumentNullException.ThrowIfNull(prefix);
-
             ArgumentNullException.ThrowIfNull(ids);
 
             _prefix = prefix;
             _parameters = null;
             _ids = ids;
-            _hashcode = 0;
-            _hashcode = BuildHashCode();
+            _hashCode = BuildHashCode();
+        }
+
+        public WorkerQueryKey(string prefix, long id)
+        {
+            ArgumentNullException.ThrowIfNull(prefix);
+
+            _prefix = prefix;
+            _parameters = null;
+            _id = id;
+            _hashCode = BuildHashCode();
         }
 
         public WorkerQueryKey(string prefix, Dictionary<string, object> parameters)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(parameters);
+
             _prefix = prefix;
             _parameters = parameters;
             _ids = null;
-            _hashcode = 0;
-            _hashcode = BuildHashCode();
+            _hashCode = BuildHashCode();
         }
 
         /// <inheritdoc />
@@ -69,9 +80,9 @@ namespace YesSql.Data
 
         private int BuildHashCode()
         {
-            var combinedHash = 5381;
-            combinedHash = ((combinedHash << 5) + combinedHash) ^ _prefix.GetHashCode();
+            var hashCode = new HashCode();
 
+            hashCode.Add(_prefix);
 
             if (_parameters != null)
             {
@@ -79,35 +90,36 @@ namespace YesSql.Data
                 {
                     if (parameter.Key != null)
                     {
-                        combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Key.GetHashCode();
+                        hashCode.Add(parameter.Key);
                     }
 
                     if (parameter.Value != null)
                     {
-                        combinedHash = ((combinedHash << 5) + combinedHash) ^ parameter.Value.GetHashCode();
+                        hashCode.Add(parameter.Value);
                     }
                 }
-
-                return combinedHash;
             }
 
             if (_ids != null)
             {
                 foreach (var id in _ids)
                 {
-                    combinedHash = ((combinedHash << 5) + combinedHash) ^ (int)id;
+                    hashCode.Add(id);
                 }
-
-                return combinedHash;
             }
 
-            return default;
+            if (_id != 0)
+            {
+                hashCode.Add(_id);
+            }
+
+            return hashCode.ToHashCode();
         }
 
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return _hashcode;
+            return _hashCode;
         }
 
         private static bool SameParameters(Dictionary<string, object> values1, Dictionary<string, object> values2)
