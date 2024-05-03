@@ -169,6 +169,40 @@ namespace YesSql.Services
                 builder.Append(")");
             };
 
+            MethodMappings[typeof(String).GetMethod("StartsWith", new Type[] { typeof(char) })] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Object);
+                builder.Append(" like ");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = parameter.ToString() + "%";
+                builder.Append(")");
+            };
+
+            MethodMappings[typeof(String).GetMethod("EndsWith", new Type[] { typeof(char) })] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Object);
+                builder.Append(" like ");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = "%" + parameter.ToString();
+                builder.Append(")");
+
+            };
+
+            MethodMappings[typeof(String).GetMethod("Contains", new Type[] { typeof(char) })] = static (query, builder, dialect, expression) =>
+            {
+                builder.Append("(");
+                query.ConvertFragment(builder, expression.Object);
+                builder.Append(" like ");
+                query.ConvertFragment(builder, expression.Arguments[0]);
+                var parameter = query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName];
+                query._queryState._sqlBuilder.Parameters[query._queryState._lastParameterName] = "%" + parameter.ToString() + "%";
+                builder.Append(")");
+            };
+
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string[]) })] =
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string) })] =
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
