@@ -15,6 +15,6 @@
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
 
     <!-- For transitive dependencies fix only (YesSql.Provider.SqlServer) -->
-    <PackageVersion Include="Azure.Identity" Version="1.11.2" />
+    <PackageVersion Include="Azure.Identity" Version="1.11.3" />
   </ItemGroup>
 </Project>
