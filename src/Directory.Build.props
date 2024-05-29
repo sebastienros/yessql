@@ -5,6 +5,7 @@
         <Authors>Sebastien Ros</Authors>
         <TargetFrameworks>net7.0</TargetFrameworks>
         <DebugType>portable</DebugType>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <PackageProjectUrl>https://github.com/sebastienros/yessql</PackageProjectUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
