@@ -718,6 +718,25 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldAccessVersion()
+        {
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                var article = new Article { Title = TestConstants.Strings.SomeString, PublishedUtc = new DateTime(2011, 11, 1) };
+                await session.SaveAsync(article);
+                await session.SaveChangesAsync();
+                Assert.Equal(1, article.Version);
+
+                article.Title = "Version2";
+                await session.SaveAsync(article);
+                await session.SaveChangesAsync();
+                Assert.Equal(2, article.Version);
+            }
+        }
+
+        [Fact]
         public async Task ShouldCompareWithConstants()
         {
             _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
