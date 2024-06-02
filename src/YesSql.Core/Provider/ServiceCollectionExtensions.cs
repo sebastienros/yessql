@@ -9,15 +9,9 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             Action<IConfiguration> setupAction)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
+            ArgumentNullException.ThrowIfNull(services);
 
-            if (setupAction == null)
-            {
-                throw new ArgumentNullException(nameof(setupAction));
-            }
+            ArgumentNullException.ThrowIfNull(setupAction);
 
             var config = new Configuration();
             setupAction.Invoke(config);

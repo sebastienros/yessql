@@ -48,7 +48,7 @@ namespace YesSql.Provider.MySql
 
             if (command.Default != null)
             {
-                builder2.Append(" set default ").Append(_dialect.GetSqlValue(command.Default)).Append(" ");
+                builder2.Append(" set default ").Append(_dialect.GetSqlValue(command.Default)).Append(' ');
             }
 
             // result

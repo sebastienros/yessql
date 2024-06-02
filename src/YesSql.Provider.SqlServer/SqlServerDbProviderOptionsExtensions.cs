@@ -1,6 +1,6 @@
+using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
 
 namespace YesSql.Provider.SqlServer
 {
@@ -20,10 +20,7 @@ namespace YesSql.Provider.SqlServer
             IsolationLevel isolationLevel,
             string schema = null)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {

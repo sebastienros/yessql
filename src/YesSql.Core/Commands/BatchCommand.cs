@@ -12,7 +12,7 @@ namespace YesSql.Commands
         public static int DefaultBuilderCapacity = 10 * 1024;
 
         public List<string> Queries { get; set; } = new List<string>();
-        public DbCommand Command { get; set; } 
+        public DbCommand Command { get; set; }
         public List<Action<DbDataReader>> Actions = new();
         public int ExecutionOrder => 0;
 

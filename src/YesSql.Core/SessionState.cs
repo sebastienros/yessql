@@ -4,7 +4,7 @@ using YesSql.Indexes;
 
 namespace YesSql
 {
-    internal class SessionState
+    internal sealed class SessionState
     {
         internal Dictionary<IndexDescriptor, List<MapState>> _maps;
         public Dictionary<IndexDescriptor, List<MapState>> Maps => _maps ??= new Dictionary<IndexDescriptor, List<MapState>>();

@@ -37,6 +37,8 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<long, QueryState> CompiledQueries = new();
 
+        private readonly WorkDispatcher<WorkerQueryKey, object> _dispatcher = new();
+
         internal const int SmallBufferSize = 128;
         internal const int MediumBufferSize = 512;
         internal const int LargeBufferSize = 1024;
@@ -207,7 +209,9 @@ namespace YesSql
         public ISession CreateSession(bool withTracking = true)
             => new Session(this, withTracking);
 
+#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
         public void Dispose()
+#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
         {
         }
 
@@ -222,10 +226,7 @@ namespace YesSql
         /// </summary>
         public IEnumerable<IndexDescriptor> Describe(Type target, string collection)
         {
-            if (target == null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
+            ArgumentNullException.ThrowIfNull(target);
 
             var cacheKey = string.IsNullOrEmpty(collection)
                 ? target.FullName
@@ -289,55 +290,19 @@ namespace YesSql
         /// <param name="key">A key identifying the running work.</param>
         /// <param name="work">A function containing the logic to execute.</param>
         /// <returns>The result of the work.</returns>
-        internal async Task<T> ProduceAsync<T, TState>(WorkerQueryKey key, Func<TState, Task<T>> work, TState state)
+        internal Task<T> ProduceAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState, Task<T>> work, TState state)
         {
             if (!Configuration.QueryGatingEnabled)
             {
-                return await work(state);
+                return work(key, state);
             }
 
-            object content = null;
+            return ProduceAwaitedAsync(key, work, state);
+        }
 
-            while (content == null)
-            {
-                // Is there any query already processing the ?
-                if (!Workers.TryGetValue(key, out var result))
-                {
-                    // Multiple threads can potentially reach this point which is fine
-                    // c.f. https://blogs.msdn.microsoft.com/seteplia/2018/10/01/the-danger-of-taskcompletionsourcet-class/
-                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                    Workers.TryAdd(key, tcs.Task);
-
-                    try
-                    {
-                        // The current worker is processed
-                        content = await work(state);
-                    }
-                    catch
-                    {
-                        // An exception occurred in the main worker, we broadcast the null value
-                        content = null;
-                        throw;
-                    }
-                    finally
-                    {
-                        // Remove the worker task before setting the result.
-                        // If the result is null, other threads would potentially
-                        // acquire it otherwise.
-                        Workers.TryRemove(key, out _);
-
-                        // Notify all other awaiters to return the result
-                        tcs.TrySetResult(content);
-                    }
-                }
-                else
-                {
-                    // Another worker is already running, wait for it to finish and reuse the results.
-                    // This value can be null if the worker failed, in this case the loop will run again.
-                    content = await result;
-                }
-            }
+        internal async Task<T> ProduceAwaitedAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState, Task<T>> work, TState state)
+        {
+            var content = await _dispatcher.ScheduleAsync(key, state, async (key, state) => await work(key, state));
 
             return (T)content;
         }

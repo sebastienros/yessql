@@ -6,6 +6,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
@@ -35,6 +36,10 @@ namespace YesSql
         private readonly ILogger _logger;
         private readonly bool _withTracking;
 
+        private readonly bool _enableThreadSafetyChecks;
+        private int _asyncOperations = 0;
+        private string _previousStackTrace = null;
+
         public Session(Store store, bool withTracking = true)
         {
             _store = store;
@@ -43,6 +48,7 @@ namespace YesSql
             _logger = store.Configuration.Logger;
             _withTracking = withTracking;
             _defaultState = new SessionState();
+            _enableThreadSafetyChecks = _store.Configuration.EnableThreadSafetyChecks;
             _collectionStates = new Dictionary<string, SessionState>()
             {
                 [string.Empty] = _defaultState
@@ -249,10 +255,7 @@ namespace YesSql
 
         private async Task SaveEntityAsync(object entity, string collection)
         {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+            ArgumentNullException.ThrowIfNull(entity);
 
             if (entity is Document)
             {
@@ -306,17 +309,14 @@ namespace YesSql
 
         private async Task UpdateEntityAsync(object entity, bool tracked, string collection)
         {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+            ArgumentNullException.ThrowIfNull(entity);
 
             if (entity is Document)
             {
                 throw new ArgumentException("A document should not be saved explicitly");
             }
 
-            if (entity is IIndex index)
+            if (entity is IIndex)
             {
                 throw new ArgumentException("An index should not be saved explicitly");
             }
@@ -343,7 +343,7 @@ namespace YesSql
 
             // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
             // been changed before doing another query
-            if (tracked && string.Equals(newContent, oldDoc.Content))
+            if (tracked && string.Equals(newContent, oldDoc.Content, StringComparison.Ordinal))
             {
                 return;
             }
@@ -400,11 +400,11 @@ namespace YesSql
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
             var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable, Store.Configuration.Schema) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
-            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
+            var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), id);
 
             try
             {
-                var result = await _store.ProduceAsync(key, (state) =>
+                var result = await _store.ProduceAsync(key, (key, state) =>
                 {
                     var logger = state.Store.Configuration.Logger;
 
@@ -439,10 +439,7 @@ namespace YesSql
 
         private async Task DeleteEntityAsync(object obj, string collection)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (obj is IIndex)
             {
@@ -453,11 +450,8 @@ namespace YesSql
 
             if (!state.IdentityMap.TryGetDocumentId(obj, out var id))
             {
-                var accessor = _store.GetIdAccessor(obj.GetType());
-                if (accessor == null)
-                {
-                    throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
-                }
+                var accessor = _store.GetIdAccessor(obj.GetType())
+                    ?? throw new InvalidOperationException("Could not delete object as it doesn't have an Id property");
 
                 id = accessor.Get(obj);
             }
@@ -500,7 +494,7 @@ namespace YesSql
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             try
             {
-                var documents = await _store.ProduceAsync(key, (state) =>
+                var documents = await _store.ProduceAsync(key, static (key, state) =>
                 {
                     var logger = state.Store.Configuration.Logger;
 
@@ -598,10 +592,7 @@ namespace YesSql
 
         public IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class
         {
-            if (compiledQuery == null)
-            {
-                throw new ArgumentNullException(nameof(compiledQuery));
-            }
+            ArgumentNullException.ThrowIfNull(compiledQuery);
 
             var compiledQueryType = compiledQuery.GetType();
 
@@ -621,10 +612,12 @@ namespace YesSql
 
         private void CheckDisposed()
         {
+#pragma warning disable CA1513 // Use ObjectDisposedException throw helper
             if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(Session));
             }
+#pragma warning restore CA1513 // Use ObjectDisposedException throw helper
         }
 
         ~Session()
@@ -661,7 +654,12 @@ namespace YesSql
             GC.SuppressFinalize(this);
         }
 
-        public async Task FlushAsync()
+        public Task FlushAsync()
+        {
+            return FlushInternalAsync(false);
+        }
+
+        private async Task FlushInternalAsync(bool saving)
         {
             if (!HasWork())
             {
@@ -683,6 +681,12 @@ namespace YesSql
             // there are no commands to commit.
 
             CheckDisposed();
+
+            // Only check thread-safety if not called from SaveChangesAsync
+            if (!saving)
+            {
+                EnterAsyncExecution();
+            }
 
             try
             {
@@ -767,6 +771,12 @@ namespace YesSql
 
                 _commands?.Clear();
                 _flushing = false;
+
+                // Only check thread-safety if not called from SaveChangesAsync
+                if (!saving)
+                {
+                    ExitAsyncExecution();
+                }
             }
         }
 
@@ -856,13 +866,40 @@ namespace YesSql
             _commands.AddRange(batches);
         }
 
+        public void EnterAsyncExecution()
+        {
+            if (!_enableThreadSafetyChecks)
+            {
+                return;
+            }
+
+            if (Interlocked.Increment(ref _asyncOperations) > 1)
+            {
+                throw new InvalidOperationException($"Two concurrent threads have been detected accessing the same ISession instance from: \n{Environment.StackTrace}\nand:\n{_previousStackTrace}\n---");
+            }
+
+            _previousStackTrace = Environment.StackTrace;
+        }
+
+        public void ExitAsyncExecution()
+        {
+            if (!_enableThreadSafetyChecks)
+            {
+                return;
+            }
+
+            Interlocked.Decrement(ref _asyncOperations);
+        }
+
         public async Task SaveChangesAsync()
         {
+            EnterAsyncExecution();
+
             try
             {
                 if (!_cancel)
                 {
-                    await FlushAsync();
+                    await FlushInternalAsync(true);
 
                     _save = true;
                 }
@@ -870,6 +907,7 @@ namespace YesSql
             finally
             {
                 await CommitOrRollbackTransactionAsync();
+                ExitAsyncExecution();
             }
         }
 
@@ -1084,13 +1122,8 @@ namespace YesSql
                             // reduce over the two objects
                             var reductions = new[] { dbIndex, index };
 
-                            var groupedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault();
-
-                            if (groupedReductions == null)
-                            {
-                                throw new InvalidOperationException(
-                                    "The grouping on the db and in memory set should have resulted in a unique result");
-                            }
+                            var groupedReductions = reductions.GroupBy(descriptorGroup).SingleOrDefault()
+                                ?? throw new InvalidOperationException("The grouping on the db and in memory set should have resulted in a unique result");
 
                             index = descriptor.Reduce(groupedReductions);
 
@@ -1362,11 +1395,20 @@ namespace YesSql
 
         public Task CancelAsync()
         {
-            CheckDisposed();
+            EnterAsyncExecution();
 
-            _cancel = true;
+            try
+            {
+                CheckDisposed();
 
-            return ReleaseTransactionAsync();
+                _cancel = true;
+
+                return ReleaseTransactionAsync();
+            }
+            finally
+            {
+                ExitAsyncExecution();
+            }
         }
 
         public IStore Store => _store;
