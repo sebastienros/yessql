@@ -16,7 +16,7 @@ namespace YesSql.Filters.Abstractions.Services
             TermOptions = termOptions;
         }
 
-        public FilterResult(List<TermNode> terms, IReadOnlyDictionary<string, TTermOption> termOptions)
+        public FilterResult(IReadOnlyList<TermNode> terms, IReadOnlyDictionary<string, TTermOption> termOptions)
         {
             TermOptions = termOptions;
 
