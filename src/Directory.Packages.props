@@ -3,18 +3,18 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Parlot" Version="0.0.26" />
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.0" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+    <PackageVersion Include="Parlot" Version="0.0.28" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.6" />
     <PackageVersion Include="Npgsql" Version="8.0.3" />
     <PackageVersion Include="MySqlConnector" Version="2.3.7" />
     <PackageVersion Include="Dapper.StrongName" Version="2.1.35" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
 
     <!-- For transitive dependencies fix only (YesSql.Provider.SqlServer) -->
-    <PackageVersion Include="Azure.Identity" Version="1.11.2" />
+    <PackageVersion Include="Azure.Identity" Version="1.11.3" />
   </ItemGroup>
 </Project>
