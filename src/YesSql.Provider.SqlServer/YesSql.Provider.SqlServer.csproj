@@ -6,9 +6,6 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Data.SqlClient" />
-
-        <!-- For transitive dependency fix only -->
-        <PackageReference Include="Azure.Identity" />
     </ItemGroup>
 
 </Project>

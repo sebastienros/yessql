@@ -11,7 +11,7 @@ namespace YesSql.Filters.Query
     /// </summary>
     public class QueryEngineBuilder<T> where T : class
     {
-        private Dictionary<string, TermEngineBuilder<T, QueryTermOption<T>>> _termBuilders = new Dictionary<string, TermEngineBuilder<T, QueryTermOption<T>>>();
+        private readonly Dictionary<string, TermEngineBuilder<T, QueryTermOption<T>>> _termBuilders = [];
 
         public QueryEngineBuilder<T> SetTermParser(TermEngineBuilder<T, QueryTermOption<T>> builder)
         {

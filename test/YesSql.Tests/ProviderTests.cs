@@ -25,7 +25,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async void AddedDbProviderStoreShouldPresentInDIContainer()
+        public async Task AddedDbProviderStoreShouldPresentInDIContainer()
         {
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
