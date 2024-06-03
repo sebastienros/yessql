@@ -6,6 +6,7 @@ namespace YesSql
     public class ConcurrencyException : Exception
     {
         private readonly string _message;
+
         public Document Document { get; }
 
         public ConcurrencyException(Document document)
@@ -22,7 +23,5 @@ Content: {Document.Content}
         }
         
         public override string Message { get { return _message; } }
-
-
     }
 }
