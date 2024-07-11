@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Parlot" Version="0.0.28" />
+    <PackageVersion Include="Parlot" Version="1.0.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.1" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.6" />
     <PackageVersion Include="Npgsql" Version="8.0.3" />
