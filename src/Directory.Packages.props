@@ -5,7 +5,7 @@
   <ItemGroup>
     <PackageVersion Include="Parlot" Version="1.0.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.1" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.6" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.7" />
     <PackageVersion Include="Npgsql" Version="8.0.3" />
     <PackageVersion Include="MySqlConnector" Version="2.3.7" />
     <PackageVersion Include="Dapper.StrongName" Version="2.1.35" />
