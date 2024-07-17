@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using YesSql.Commands;
 
 namespace YesSql
 {
@@ -103,6 +104,8 @@ namespace YesSql
         /// Gets or sets the identity column size. Default is <see cref="IdentityColumnSize.Int32"/>.
         /// </summary>
         IdentityColumnSize IdentityColumnSize { get; set; }
+
+        public IDocumentCommandBuilder DocumentCommandBuilder { get; set; }
     }
 
     public static class ConfigurationExtensions
