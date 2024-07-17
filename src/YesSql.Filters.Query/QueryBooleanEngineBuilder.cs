@@ -10,9 +10,7 @@ namespace YesSql.Filters.Query
         public QueryBooleanEngineBuilder(
             string name,
             Func<string, IQuery<T>, QueryExecutionContext<T>, ValueTask<IQuery<T>>> matchQuery,
-            Func<string, IQuery<T>, QueryExecutionContext<T>, ValueTask<IQuery<T>>> notMatchQuery)
-        {
-            _termOption = new QueryTermOption<T>(name, matchQuery, notMatchQuery);
-        }
+            Func<string, IQuery<T>, QueryExecutionContext<T>, ValueTask<IQuery<T>>> notMatchQuery) 
+               => _termOption = new QueryTermOption<T>(name, matchQuery, notMatchQuery);
     }
 }

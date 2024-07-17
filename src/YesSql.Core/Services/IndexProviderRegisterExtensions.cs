@@ -8,10 +8,8 @@ namespace YesSql
 {
     public static class IndexProviderRegisterExtensions
     {
-        public static IStore RegisterIndexes<T>(this IStore store, string collection = null) where T : IIndexProvider
-        {
-            return store.RegisterIndexes(typeof(T), collection);
-        }
+        public static IStore RegisterIndexes<T>(this IStore store, string collection = null) where T : IIndexProvider =>
+            store.RegisterIndexes(typeof(T), collection);
 
         public static IStore RegisterIndexes(this IStore store, IIndexProvider indexProvider, string collection = null)
         {

@@ -9,10 +9,7 @@ namespace YesSql.Provider.MySql
         public static IConfiguration UseMySql(
             this IConfiguration configuration,
             string connectionString,
-            string schema = null)
-        {
-            return UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
-        }
+            string schema = null) => UseMySql(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
 
         public static IConfiguration UseMySql(
             this IConfiguration configuration,

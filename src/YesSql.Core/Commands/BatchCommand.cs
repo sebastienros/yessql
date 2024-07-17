@@ -7,19 +7,14 @@ using System.Threading.Tasks;
 
 namespace YesSql.Commands
 {
-    public class BatchCommand : IIndexCommand
+    public class BatchCommand(DbCommand command) : IIndexCommand
     {
         public static int DefaultBuilderCapacity = 10 * 1024;
 
         public List<string> Queries { get; set; } = new List<string>();
-        public DbCommand Command { get; set; }
+        public DbCommand Command { get; set; } = command;
         public List<Action<DbDataReader>> Actions = new();
         public int ExecutionOrder => 0;
-
-        public BatchCommand(DbCommand command)
-        {
-            Command = command;
-        }
 
         public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {

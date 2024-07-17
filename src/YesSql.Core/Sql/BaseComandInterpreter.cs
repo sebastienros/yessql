@@ -234,9 +234,7 @@ namespace YesSql.Sql
         }
 
         public virtual void Run(StringBuilder builder, IDropIndexCommand command)
-        {
-            builder.Append(_dialect.GetDropIndexString(command.IndexName, command.Name, _configuration.Schema));
-        }
+            => builder.Append(_dialect.GetDropIndexString(command.IndexName, command.Name, _configuration.Schema));
 
         public virtual IEnumerable<string> Run(ISqlStatementCommand command)
         {

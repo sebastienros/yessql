@@ -108,15 +108,10 @@ namespace YesSql.Indexes
             return this;
         }
 
-        public void Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null)
-        {
-            _delete = delete;
-        }
+        public void Delete(Func<TIndex, IEnumerable<TIndex>, TIndex> delete = null) => _delete = delete;
 
-        Func<object, Task<IEnumerable<IIndex>>> IDescribeFor.GetMap()
-        {
-            return async x => (await _map((T)x) ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
-        }
+        Func<object, Task<IEnumerable<IIndex>>> IDescribeFor.GetMap() => 
+            async x => (await _map((T)x) ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
 
         Func<IGrouping<object, IIndex>, IIndex> IDescribeFor.GetReduce()
         {
@@ -164,14 +159,8 @@ namespace YesSql.Indexes
             get { return (TKey)_key; }
         }
 
-        public IEnumerator<TIndex> GetEnumerator()
-        {
-            return _enumerable.Cast<TIndex>().GetEnumerator();
-        }
+        public IEnumerator<TIndex> GetEnumerator() => _enumerable.Cast<TIndex>().GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

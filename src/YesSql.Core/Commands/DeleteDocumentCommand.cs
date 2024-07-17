@@ -7,15 +7,10 @@ using System.Threading.Tasks;
 
 namespace YesSql.Commands
 {
-    public sealed class DeleteDocumentCommand : DocumentCommand
+    public sealed class DeleteDocumentCommand(Document document, IStore store, string collection) : DocumentCommand(document, collection)
     {
-        private readonly IStore _store;
+        private readonly IStore _store = store;
         public override int ExecutionOrder { get; } = 4;
-
-        public DeleteDocumentCommand(Document document, IStore store, string collection) : base(document, collection)
-        {
-            _store = store;
-        }
 
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {

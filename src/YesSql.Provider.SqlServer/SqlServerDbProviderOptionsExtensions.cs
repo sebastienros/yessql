@@ -9,10 +9,7 @@ namespace YesSql.Provider.SqlServer
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
             string connectionString,
-            string schema = null)
-        {
-            return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
-        }
+            string schema = null) => UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
 
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,

@@ -6,14 +6,8 @@ namespace YesSql.Sql
     {
         private readonly string _name;
 
-        public MappingFunction(string name)
-        {
-            _name = name;
-        }
+        public MappingFunction(string name) => _name = name;
 
-        public string Render(string[] arguments)
-        {
-            return _name + "(" + string.Join(", ", arguments) + ")";
-        }
+        public string Render(string[] arguments) => _name + "(" + string.Join(", ", arguments) + ")";
     }
 }

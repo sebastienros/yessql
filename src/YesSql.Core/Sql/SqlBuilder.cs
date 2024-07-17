@@ -297,25 +297,13 @@ namespace YesSql.Sql
             OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
-        public virtual void GroupBy(string orderBy)
-        {
-            GroupSegments.Add(orderBy);
-        }
+        public virtual void GroupBy(string orderBy) => GroupSegments.Add(orderBy);
 
-        public virtual void Having(string orderBy)
-        {
-            HavingSegments.Add(orderBy);
-        }
+        public virtual void Having(string orderBy) => HavingSegments.Add(orderBy);
 
-        public virtual void Trail(string segment)
-        {
-            TrailSegments.Add(segment);
-        }
+        public virtual void Trail(string segment) => TrailSegments.Add(segment);
 
-        public virtual void ClearTrail()
-        {
-            TrailSegments.Clear();
-        }
+        public virtual void ClearTrail() => TrailSegments.Clear();
 
         public virtual string ToSqlString()
         {

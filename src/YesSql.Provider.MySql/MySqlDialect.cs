@@ -234,26 +234,15 @@ namespace YesSql.Provider.MySql
             }
         }
 
-        public override string GetDropIndexString(string indexName, string tableName, string schema)
-        {
+        public override string GetDropIndexString(string indexName, string tableName, string schema) =>
             // This is dependent on version of MySql < v10.1.4 does not support IF EXISTS
-            return "drop index " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName, schema);
-        }
+            "drop index " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName, schema);
 
-        public override string QuoteForColumnName(string columnName)
-        {
-            return "`" + columnName + "`";
-        }
+        public override string QuoteForColumnName(string columnName) => "`" + columnName + "`";
 
-        public override string QuoteForTableName(string tableName, string schema)
-        {
-            return "`" + tableName + "`";
-        }
+        public override string QuoteForTableName(string tableName, string schema) => "`" + tableName + "`";
 
-        public override string QuoteForAliasName(string aliasName)
-        {
-            return "`" + aliasName + "`";
-        }
+        public override string QuoteForAliasName(string aliasName) => "`" + aliasName + "`";
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {
@@ -287,11 +276,9 @@ namespace YesSql.Provider.MySql
             return base.GetSqlValue(value);
         }
 
-        public override string GetCreateSchemaString(string schema)
-        {
+        public override string GetCreateSchemaString(string schema) =>
             // MySQL doesn't support schemas
 
-            return null;
-        }
+            null;
     }
 }

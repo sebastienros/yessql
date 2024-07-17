@@ -8,9 +8,8 @@ namespace YesSql.Indexes
     {
         private readonly Dictionary<Type, List<IDescribeFor>> _describes = new Dictionary<Type, List<IDescribeFor>>();
 
-        public IEnumerable<IndexDescriptor> Describe(params Type[] types)
-        {
-            return _describes
+        public IEnumerable<IndexDescriptor> Describe(params Type[] types) =>
+            _describes
                 .Where(kp => types == null || types.Length == 0 || types.Contains(kp.Key))
                 .SelectMany(x => x.Value)
                 .Select(kp => new IndexDescriptor
@@ -23,12 +22,8 @@ namespace YesSql.Indexes
                     IndexType = kp.IndexType,
                     Filter = kp.Filter
                 });
-        }
 
-        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
-        {
-            return For<TIndex, object>();
-        }
+        public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex => For<TIndex, object>();
 
         public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
         {

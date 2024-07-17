@@ -85,20 +85,11 @@ namespace YesSql.Provider
             }
         }
 
-        public virtual string NotInOperator(string values)
-        {
-            return " NOT" + InOperator(values);
-        }
+        public virtual string NotInOperator(string values) => " NOT" + InOperator(values);
 
-        public virtual string InSelectOperator(string values)
-        {
-            return " IN (" + values + ") ";
-        }
+        public virtual string InSelectOperator(string values) => " IN (" + values + ") ";
 
-        public virtual string NotInSelectOperator(string values)
-        {
-            return " NOT IN (" + values + ") ";
-        }
+        public virtual string NotInSelectOperator(string values) => " NOT IN (" + values + ") ";
 
         public virtual string CreateTableString => "create table";
 
@@ -152,10 +143,7 @@ namespace YesSql.Provider
             return res.ToString();
         }
 
-        public virtual string GetDropForeignKeyConstraintString(string name)
-        {
-            return " drop constraint " + name;
-        }
+        public virtual string GetDropForeignKeyConstraintString(string name) => " drop constraint " + name;
 
         public virtual bool SupportsIfExistsBeforeTableName => false;
         public virtual string CascadeConstraintsString => string.Empty;
@@ -199,10 +187,8 @@ namespace YesSql.Provider
 
         public virtual int MaxParametersPerCommand => int.MaxValue;
 
-        protected virtual string Quote(string value)
-        {
-            return SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
-        }
+        protected virtual string Quote(string value) => 
+            SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
 
         public abstract string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale);
 
@@ -242,10 +228,7 @@ namespace YesSql.Provider
         }
 
         public abstract void Page(ISqlBuilder sqlBuilder, string offset, string limit);
-        public virtual ISqlBuilder CreateBuilder(string tablePrefix)
-        {
-            return new SqlBuilder(tablePrefix, this);
-        }
+        public virtual ISqlBuilder CreateBuilder(string tablePrefix) => new SqlBuilder(tablePrefix, this);
 
         public string RenderMethod(string name, string[] args)
         {
@@ -274,17 +257,11 @@ namespace YesSql.Provider
             builder.Append(")");
         }
 
-        public virtual List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy)
-        {
-            return select;
-        }
+        public virtual List<string> GetDistinctOrderBySelectString(List<string> select, List<string> orderBy) => select;
 
         private readonly Dictionary<Type, List<Func<object, object>>> _typeHandlers = new();
 
-        public void ResetTypeHandlers()
-        {
-            _typeHandlers.Clear();
-        }
+        public void ResetTypeHandlers() => _typeHandlers.Clear();
 
         public void AddTypeHandler<T, TU>(Func<T, TU> handler)
         {
@@ -296,10 +273,7 @@ namespace YesSql.Provider
             handlers.Add(i => handler((T)i));
         }
 
-        public virtual string GetCreateSchemaString(string schema)
-        {
-            return $"CREATE SCHEMA {QuoteForColumnName(schema)}";
-        }
+        public virtual string GetCreateSchemaString(string schema) => $"CREATE SCHEMA {QuoteForColumnName(schema)}";
 
         public virtual IEnumerable<(string aggregate, string alias)> GetAggregateOrders(IList<string> select, IList<string> orderBy)
         {

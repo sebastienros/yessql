@@ -100,10 +100,7 @@ namespace YesSql.Services
 
     internal sealed class FilterNode : CompositeNode
     {
-        public FilterNode(string filter)
-        {
-            Filter = filter;
-        }
+        public FilterNode(string filter) => Filter = filter;
 
         public string Filter;
 
@@ -117,9 +114,6 @@ namespace YesSql.Services
             builder.Append(Filter);
         }
 
-        public override PredicateNode Clone()
-        {
-            return new FilterNode(Filter);
-        }
+        public override PredicateNode Clone() => new FilterNode(Filter);
     }
 }

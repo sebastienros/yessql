@@ -21,9 +21,7 @@ namespace YesSql.Sql.Schema
         }
 
         public ICreateTableCommand Column<T>(string columnName, Action<ICreateColumnCommand> column = null)
-        {
-            return Column(columnName, typeof(T), column);
-        }
+            => Column(columnName, typeof(T), column);
 
         public ICreateTableCommand Column(IdentityColumnSize identityColumnSize, string columnName, Action<ICreateColumnCommand> column = null)
             => identityColumnSize == IdentityColumnSize.Int32 ? Column<int>(columnName, column) : Column<long>(columnName, column);

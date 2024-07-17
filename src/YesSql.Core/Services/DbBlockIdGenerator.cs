@@ -35,10 +35,7 @@ namespace YesSql.Services
         {
         }
 
-        public DbBlockIdGenerator(int blockSize)
-        {
-            _blockSize = blockSize;
-        }
+        public DbBlockIdGenerator(int blockSize) => _blockSize = blockSize;
 
         public async Task InitializeAsync(IStore store)
         {

@@ -8,15 +8,9 @@ namespace YesSql.Indexes
 
         public long Id { get; set; }
 
-        void IIndex.AddDocument(Document document)
-        {
-            Document = document;
-        }
+        void IIndex.AddDocument(Document document) => Document = document;
 
-        void IIndex.RemoveDocument(Document document)
-        {
-            Document = null;
-        }
+        void IIndex.RemoveDocument(Document document) => Document = null;
 
         IEnumerable<Document> IIndex.GetAddedDocuments()
         {

@@ -25,9 +25,7 @@ namespace YesSql.Sql.Schema
         }
 
         public void AddColumn<T>(string columnName, Action<IAddColumnCommand> column = null)
-        {
-            AddColumn(columnName, typeof(T), column);
-        }
+            => AddColumn(columnName, typeof(T), column);
 
         public void DropColumn(string columnName)
         {

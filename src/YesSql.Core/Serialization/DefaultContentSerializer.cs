@@ -18,19 +18,10 @@ namespace YesSql.Serialization
             _options.Converters.Add(DynamicJsonConverter.Instance);
         }
 
-        public DefaultContentSerializer(JsonSerializerOptions options)
-        {
-            _options = options;
-        }
+        public DefaultContentSerializer(JsonSerializerOptions options) => _options = options;
 
-        public object Deserialize(string content, Type type)
-        {
-            return JsonSerializer.Deserialize(content, type, _options);
-        }
+        public object Deserialize(string content, Type type) => JsonSerializer.Deserialize(content, type, _options);
 
-        public string Serialize(object item)
-        {
-            return JsonSerializer.Serialize(item, _options);
-        }
+        public string Serialize(object item) => JsonSerializer.Serialize(item, _options);
     }
 }

@@ -193,28 +193,19 @@ namespace YesSql.Provider.SqlServer
             }
         }
 
-        public override string GetDropIndexString(string indexName, string tableName, string schema)
-        {
-            return "drop index if exists " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName, schema);
-        }
+        public override string GetDropIndexString(string indexName, string tableName, string schema) 
+            => "drop index if exists " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName, schema);
 
-        public override string QuoteForColumnName(string columnName)
-        {
-            return "[" + columnName + "]";
-        }
+        public override string QuoteForColumnName(string columnName) => "[" + columnName + "]";
 
         public override string QuoteForTableName(string tableName, string schema)
-        {
-            return string.IsNullOrEmpty(schema)
+            => string.IsNullOrEmpty(schema)
                 ? $"[{tableName}]"
                 : $"[{schema}].[{tableName}]"
                 ;
-        }
 
-        public override string QuoteForAliasName(string aliasName)
-        {
-            return "[" + aliasName + "]";
-        }
+
+        public override string QuoteForAliasName(string aliasName) => "[" + aliasName + "]";
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {
@@ -234,10 +225,8 @@ namespace YesSql.Provider.SqlServer
         }
 
         protected override string Quote(string value)
-        {
-            return "N" + SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
-        }
-        
+            => "N" + SingleQuoteString + value.Replace(SingleQuoteString, DoubleSingleQuoteString) + SingleQuoteString;
+
         public override string GetSqlValue(object value)
         {
             if (value == null)
@@ -257,9 +246,7 @@ namespace YesSql.Provider.SqlServer
 
         public override int MaxParametersPerCommand => 2098;
 
-        public override string GetCreateSchemaString(string schema)
-        {
-            return $"IF NOT EXISTS ( SELECT * FROM sys.schemas WHERE name = N'{schema}' ) EXEC('CREATE SCHEMA [{schema}]');";
-        }
+        public override string GetCreateSchemaString(string schema) 
+            => $"IF NOT EXISTS ( SELECT * FROM sys.schemas WHERE name = N'{schema}' ) EXEC('CREATE SCHEMA [{schema}]');";
     }
 }

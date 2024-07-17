@@ -9,20 +9,17 @@ using YesSql.Indexes;
 
 namespace YesSql.Commands
 {
-    public sealed class CreateIndexCommand : IndexCommand
-    {
-        private readonly long[] _addedDocumentIds;
-
-        public override int ExecutionOrder { get; } = 2;
-
-        public CreateIndexCommand(
+    public sealed class CreateIndexCommand(
             IIndex index,
             IEnumerable<long> addedDocumentIds,
             IStore store,
-            string collection) : base(index, store, collection)
-        {
-            _addedDocumentIds = addedDocumentIds.ToArray();
-        }
+            string collection) : IndexCommand(index, store, collection)
+    {
+        private readonly long[] _addedDocumentIds = addedDocumentIds.ToArray();
+
+        public override int ExecutionOrder { get; } = 2;
+
+
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
@@ -108,7 +105,7 @@ namespace YesSql.Commands
             else
             {
                 var reduceIndex = Index as ReduceIndex;
-                
+
                 var bridgeTableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 queries.Add($"insert into {dialect.QuoteForTableName(bridgeTableName, _store.Configuration.Schema)} ({columnList}) values ({dialect.IdentityLastId}, @DocumentId_{index});");
