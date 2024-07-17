@@ -4,10 +4,7 @@ namespace YesSql.Indexes
 {
     public class ReduceIndex : IIndex
     {
-        public ReduceIndex()
-        {
-            Documents = new List<Document>();
-        }
+        public ReduceIndex() => Documents = new List<Document>();
 
         public long Id { get; set; }
 
@@ -15,10 +12,7 @@ namespace YesSql.Indexes
 
         private List<Document> Documents { get; set; }
 
-        void IIndex.AddDocument(Document document)
-        {
-            Documents.Add(document);
-        }
+        void IIndex.AddDocument(Document document) => Documents.Add(document);
 
         void IIndex.RemoveDocument(Document document)
         {
@@ -26,14 +20,8 @@ namespace YesSql.Indexes
             RemovedDocuments.Add(document);
         }
 
-        IEnumerable<Document> IIndex.GetAddedDocuments()
-        {
-            return Documents;
-        }
+        IEnumerable<Document> IIndex.GetAddedDocuments() => Documents;
 
-        IEnumerable<Document> IIndex.GetRemovedDocuments()
-        {
-            return RemovedDocuments;
-        }
+        IEnumerable<Document> IIndex.GetRemovedDocuments() => RemovedDocuments;
     }
 }

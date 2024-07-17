@@ -7,16 +7,11 @@ using System.Threading.Tasks;
 
 namespace YesSql.Commands
 {
-    public sealed class CreateDocumentCommand : DocumentCommand
+    public sealed class CreateDocumentCommand(Document document, IStore store, string collection) : DocumentCommand(document, collection)
     {
-        private readonly IStore _store;
+        private readonly IStore _store= store;
 
         public override int ExecutionOrder { get; } = 0;
-
-        public CreateDocumentCommand(Document document, IStore store, string collection) : base(document, collection)
-        {
-            _store = store;
-        }
 
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {

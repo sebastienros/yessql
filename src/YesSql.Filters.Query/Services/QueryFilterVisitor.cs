@@ -39,27 +39,24 @@ namespace YesSql.Filters.Query.Services
         }
 
         public Func<IQuery<T>, ValueTask<IQuery<T>>> Visit(NotUnaryNode node, QueryExecutionContext<T> argument)
-        {
-            return result => argument.Item.AllAsync(
+            => result => argument.Item.AllAsync(
                  (q) => node.Operation.Accept(this, argument)(q)
             );
-        }
+        
 
         public Func<IQuery<T>, ValueTask<IQuery<T>>> Visit(OrNode node, QueryExecutionContext<T> argument)
-        {
-            return result => argument.Item.AnyAsync(
+            => result => argument.Item.AnyAsync(
                 (q) => node.Left.Accept(this, argument)(q),
                 (q) => node.Right.Accept(this, argument)(q)
             );
-        }
+        
 
         public Func<IQuery<T>, ValueTask<IQuery<T>>> Visit(AndNode node, QueryExecutionContext<T> argument)
-        {
-            return result => argument.Item.AllAsync(
+           => result => argument.Item.AllAsync(
                 (q) => node.Left.Accept(this, argument)(q),
                 (q) => node.Right.Accept(this, argument)(q)
             );
-        }
+        
 
         public Func<IQuery<T>, ValueTask<IQuery<T>>> Visit(GroupNode node, QueryExecutionContext<T> argument)
             => node.Operation.Accept(this, argument);

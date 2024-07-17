@@ -76,10 +76,7 @@ namespace YesSql.Sql.Schema
             return this;
         }
 
-        public new ICreateColumnCommand Unlimited()
-        {
-            return WithLength(10000);
-        }
+        public new ICreateColumnCommand Unlimited() => WithLength(10000);
 
         public new ICreateColumnCommand WithType(Type dbType)
         {

@@ -8,13 +8,10 @@ namespace YesSql.Provider.Sqlite
     {
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,
-            string connectionString)
-        {
-            return UseSqLite(
+            string connectionString) => UseSqLite(
                 configuration,
                 connectionString,
                 IsolationLevel.Serializable);
-        }
 
         public static IConfiguration UseSqLite(
             this IConfiguration configuration,

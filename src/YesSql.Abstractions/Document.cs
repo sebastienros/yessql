@@ -32,15 +32,13 @@ namespace YesSql
         /// Clones the current document.
         /// </summary>
         /// <returns>A clone of the current document.</returns>
-        public Document Clone()
-        {
-            return new Document
+        public Document Clone() =>
+            new Document
             {
                 Id = Id,
                 Type = Type,
                 Content = Content,
                 Version = Version
             };
-        }
     }
 }

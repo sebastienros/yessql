@@ -16,10 +16,7 @@ namespace YesSql.Serialization
             _invoker = Activator.CreateInstance(invokerType, new object[] { d }) as IInvoker;
         }
 
-        public object Get(object obj)
-        {
-            return _invoker.Invoke(obj);
-        }
+        public object Get(object obj) => _invoker.Invoke(obj);
 
         private interface IInvoker
         {
@@ -35,10 +32,7 @@ namespace YesSql.Serialization
                 _d = (Func<T, TResult>)d;
             }
 
-            public object Invoke(object target)
-            {
-                return _d((T)target);
-            }
+            public object Invoke(object target) => _d((T)target);
         }
     }
 }

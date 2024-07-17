@@ -21,9 +21,7 @@ namespace YesSql.Serialization
             return value;
         }
 
-        public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
-        {
+        public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) =>
             writer.WriteStringValue(value.ToUniversalTime());
-        }
     }
 }

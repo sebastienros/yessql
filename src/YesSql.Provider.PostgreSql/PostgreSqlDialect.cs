@@ -179,11 +179,8 @@ namespace YesSql.Provider.PostgreSql
             }
 
             return name;
-        }  
-        public override string GetDropForeignKeyConstraintString(string name)
-        {
-            return " drop foreign key " + name;
         }
+        public override string GetDropForeignKeyConstraintString(string name) => " drop foreign key " + name;
 
         public override string DefaultValuesInsert => "DEFAULT VALUES";
 
@@ -208,28 +205,20 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
-        public override string GetDropIndexString(string indexName, string tableName, string schema)
-        {
-            return "drop index if exists " + QuoteForColumnName(indexName);
-        }
+        public override string GetDropIndexString(string indexName, string tableName, string schema) 
+            => "drop index if exists " + QuoteForColumnName(indexName);
 
-        public override string QuoteForColumnName(string columnName)
-        {
-            return QuoteString + columnName + QuoteString;
-        }
+        public override string QuoteForColumnName(string columnName) 
+            => QuoteString + columnName + QuoteString;
 
         public override string QuoteForTableName(string tableName, string schema)
-        {
-            return string.IsNullOrEmpty(schema)
+            => string.IsNullOrEmpty(schema)
                 ? $"{QuoteString}{tableName}{QuoteString}"
                 : $"{QuoteString}{schema}{QuoteString}.{QuoteString}{tableName}{QuoteString}"
                 ;
-        }
 
-        public override string QuoteForAliasName(string aliasName)
-        {
-            return QuoteString + aliasName + QuoteString;
-        }
+
+        public override string QuoteForAliasName(string aliasName) => QuoteString + aliasName + QuoteString;
 
         public override string CascadeConstraintsString => " cascade ";
 
@@ -265,9 +254,6 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
-        public override string GetCreateSchemaString(string schema)
-        {
-            return $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";
-        }
+        public override string GetCreateSchemaString(string schema) => $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";
     }
 }

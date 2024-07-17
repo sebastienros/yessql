@@ -35,9 +35,6 @@ namespace YesSql.Sql.Schema
             return this;
         }
 
-        public new IAlterColumnCommand Unlimited()
-        {
-            return WithLength(16385);
-        }
+        public new IAlterColumnCommand Unlimited() => WithLength(16385);
     }
 }

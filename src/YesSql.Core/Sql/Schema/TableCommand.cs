@@ -8,9 +8,6 @@ namespace YesSql.Sql.Schema
 
         public List<ITableCommand> TableCommands { get; private set; }
 
-        public TableCommand(string tableName)
-        {
-            Name = tableName;
-        }
+        public TableCommand(string tableName) => Name = tableName;
     }
 }

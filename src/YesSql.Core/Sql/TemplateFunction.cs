@@ -6,14 +6,8 @@ namespace YesSql.Sql
     {
         private readonly string _template;
 
-        public TemplateFunction(string template)
-        {
-            _template = template;
-        }
+        public TemplateFunction(string template) => _template = template;
 
-        public string Render(string[] arguments)
-        {
-            return string.Format(_template, arguments);
-        }
+        public string Render(string[] arguments) => string.Format(_template, arguments);
     }
 }

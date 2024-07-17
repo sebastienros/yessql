@@ -50,11 +50,9 @@ namespace YesSql.Services
             }
         }
 
-        private static bool IsAnonymousType(TypeInfo type)
-        {
-            return type.IsGenericType && type.Name.Contains("AnonymousType")
+        private static bool IsAnonymousType(TypeInfo type) =>
+            type.IsGenericType && type.Name.Contains("AnonymousType")
                    && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))
                    && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
-        }
     }
 }

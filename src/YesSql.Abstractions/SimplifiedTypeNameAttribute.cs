@@ -10,9 +10,6 @@ namespace YesSql
     {
         public string Name { get; set; }
 
-        public SimplifiedTypeNameAttribute(string name)
-        {
-            Name = name;
-        }
+        public SimplifiedTypeNameAttribute(string name) => Name = name;
     }
 }

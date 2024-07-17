@@ -59,20 +59,11 @@ namespace YesSql.Services
             }
         }
 
-        public string GetTableAlias(string tableName)
-        {
-            return tableName + "_" + _bindingName;
-        }
+        public string GetTableAlias(string tableName) => tableName + "_" + _bindingName;
 
-        public string GetBridgeAlias(Type t)
-        {
-            return GetTableAlias(t.Name + "_Document");
-        }
+        public string GetBridgeAlias(Type t) => GetTableAlias(t.Name + "_Document");
 
-        public string GetTypeAlias(Type t)
-        {
-            return GetTableAlias(t.Name);
-        }
+        public string GetTypeAlias(Type t) => GetTableAlias(t.Name);
 
         public void AddBinding(Type t)
         {
@@ -94,10 +85,7 @@ namespace YesSql.Services
             bindings.RemoveAt(bindings.Count - 1);
         }
 
-        public List<Type> GetBindings()
-        {
-            return _bindings[_bindingName];
-        }
+        public List<Type> GetBindings() => _bindings[_bindingName];
 
         public QueryState Clone()
         {

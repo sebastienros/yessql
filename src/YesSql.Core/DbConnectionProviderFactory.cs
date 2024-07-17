@@ -14,10 +14,7 @@ namespace YesSql
 
         public Type DbConnectionType => typeof(TDbConnection);
 
-        public DbConnectionFactory(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
+        public DbConnectionFactory(string connectionString) => _connectionString = connectionString;
 
         public DbConnection CreateConnection()
         {

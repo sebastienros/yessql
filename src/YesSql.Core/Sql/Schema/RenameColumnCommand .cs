@@ -4,9 +4,7 @@ namespace YesSql.Sql.Schema
     {
         public string NewColumnName { get; }
 
-        public RenameColumnCommand(string tableName, string columnName, string newColumnName): base(tableName, columnName)
-        {
-            NewColumnName = newColumnName;
-        }
+        public RenameColumnCommand(string tableName, string columnName, string newColumnName) : base(tableName, columnName)
+            => NewColumnName = newColumnName;
     }
 }
