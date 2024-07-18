@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace YesSql.Commands
 {
-    public sealed class CreateDocumentCommand : DocumentCommand
+    public class CreateDocumentCommand : DocumentCommand
     {
         private readonly IStore _store;
 

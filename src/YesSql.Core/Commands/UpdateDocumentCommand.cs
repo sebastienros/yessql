@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace YesSql.Commands
 {
-    public sealed class UpdateDocumentCommand : DocumentCommand
+    public class UpdateDocumentCommand : DocumentCommand
     {
         private readonly IStore _store;
         private readonly long _checkVersion;
