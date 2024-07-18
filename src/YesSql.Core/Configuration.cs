@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Serialization;
 using YesSql.Services;
@@ -24,6 +25,7 @@ namespace YesSql
             Logger = NullLogger.Instance;
             ConcurrentTypes = new HashSet<Type>();
             TableNameConvention = new DefaultTableNameConvention();
+            DocumentCommandBuilder = new DefaultDocumentCommandBuilder();
         }
 
         public IAccessorFactory IdentifierAccessorFactory { get; set; }
@@ -42,5 +44,6 @@ namespace YesSql
         public ICommandInterpreter CommandInterpreter { get; set; }
         public ISqlDialect SqlDialect { get; set; }
         public IdentityColumnSize IdentityColumnSize { get; set; } = IdentityColumnSize.Int32;
+        public IDocumentCommandBuilder DocumentCommandBuilder { get; set; }
     }
 }

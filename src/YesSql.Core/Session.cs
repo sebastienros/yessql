@@ -286,7 +286,7 @@ namespace YesSql
 
             _commands ??= new List<IIndexCommand>();
 
-            _commands.Add(new CreateDocumentCommand(doc, Store, collection));
+            _commands.Add(Store.Configuration.DocumentCommandBuilder.BuildCreateDocumentCommand(entity, doc, Store, collection));
 
             state.IdentityMap.AddDocument(doc);
 
@@ -381,7 +381,7 @@ namespace YesSql
 
             _commands ??= new List<IIndexCommand>();
 
-            _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
+            _commands.Add(Store.Configuration.DocumentCommandBuilder.BuildUpdateDocumentCommand(entity, oldDoc, Store, version, collection));
         }
 
         private async Task<Document> GetDocumentByIdAsync(long id, string collection)
@@ -466,7 +466,7 @@ namespace YesSql
                 _commands ??= new List<IIndexCommand>();
 
                 // The command needs to come after any index deletion because of the database constraints
-                _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
+                _commands.Add(Store.Configuration.DocumentCommandBuilder.BuildDeleteDocumentCommand(obj, doc, Store, collection));
             }
         }
 
