@@ -1,5 +1,3 @@
-using System.Reflection.Metadata;
-
 namespace YesSql.Commands
 {
     public class DefaultDocumentCommandBuilder : IDocumentCommandBuilder
