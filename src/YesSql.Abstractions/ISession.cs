@@ -137,5 +137,7 @@ namespace YesSql
         /// Gets the <see cref="Store" /> instance that created this session. 
         /// </summary>
         IStore Store { get; }
+
+        IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; }
     }
 }

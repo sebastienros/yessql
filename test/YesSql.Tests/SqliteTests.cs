@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using YesSql.Indexes;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -138,6 +140,75 @@ namespace YesSql.Tests
             };
 
             await session.SaveAsync(property);
+        }
+
+        [Fact]
+        public async Task ShouldIndexByExtraDescriptors()
+        {
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+                await builder
+                    .DropMapIndexTableAsync<PropertyIndex>();
+
+                await builder
+                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
+                    );
+
+                await builder
+                    .AlterTableAsync(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+
+                await transaction.CommitAsync();
+            }
+
+            //_store.RegisterIndexes<PropertyIndexProvider>();
+            var extraDescriptors = new List<IndexDescriptor>
+            {
+                new IndexDescriptor
+                {
+                    //Type = typeof(Property),
+                    //IndexType = typeof(object),
+                    Filter= (entity) => entity is Property,
+                    Map = (entity) =>
+                    {
+                        var property = (Property)entity;
+                        return Task.FromResult<IEnumerable<IIndex>>([
+                            new PropertyIndex
+                                {
+                                    Name = property.Name,
+                                    ForRent = property.ForRent,
+                                    IsOccupied = property.IsOccupied,
+                                    Location = property.Location
+                                }
+                            ]);
+                    }
+                }
+            };
+            await using var session = _store.CreateSession();
+            session.ExtraIndexDescriptors = extraDescriptors;
+
+
+            var property = new Property
+            {
+                Name = "test",
+                IsOccupied = true,
+                ForRent = true,
+                Location = new string('*', 4000)
+            };
+
+            await session.SaveAsync(property);
+
+            var ls = await session.Query<Property, PropertyIndex>(x => x.Name == "test").ListAsync();
+            Assert.NotEmpty(ls);
         }
     }
 }

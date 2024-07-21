@@ -33,6 +33,7 @@ namespace YesSql
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
+        public IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; } = [];
 
         public Session(Store store)
         {
@@ -1201,9 +1202,8 @@ namespace YesSql
                 _descriptors.Add(cacheKey, typedDescriptors);
             }
 
-            return typedDescriptors;
+            return typedDescriptors.Union(ExtraIndexDescriptors);
         }
-
         private async Task MapNew(Document document, object obj, string collection)
         {
             var descriptors = GetDescriptors(obj.GetType(), collection);
