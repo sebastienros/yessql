@@ -11,6 +11,7 @@ using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
+using static Dapper.SqlMapper;
 
 namespace YesSql
 {
@@ -46,7 +47,10 @@ namespace YesSql
             {
                 [""] = _defaultState
             };
+            DocumentCommandHandler = new DefaultDocumentCommandHandler();
         }
+
+        public IDocumentCommandHandler DocumentCommandHandler { get; set; }
 
         public ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null)
         {
@@ -286,7 +290,7 @@ namespace YesSql
 
             _commands ??= new List<IIndexCommand>();
 
-            _commands.Add(Store.Configuration.DocumentCommandBuilder.BuildCreateDocumentCommand(entity, doc, Store, collection));
+            _commands.Add(new CreateDocumentCommand(entity,doc, Store, collection, this));
 
             state.IdentityMap.AddDocument(doc);
 
@@ -381,7 +385,7 @@ namespace YesSql
 
             _commands ??= new List<IIndexCommand>();
 
-            _commands.Add(Store.Configuration.DocumentCommandBuilder.BuildUpdateDocumentCommand(entity, oldDoc, Store, version, collection));
+            _commands.Add(new UpdateDocumentCommand(entity, oldDoc, Store, version, collection, this));
         }
 
         private async Task<Document> GetDocumentByIdAsync(long id, string collection)
@@ -466,7 +470,7 @@ namespace YesSql
                 _commands ??= new List<IIndexCommand>();
 
                 // The command needs to come after any index deletion because of the database constraints
-                _commands.Add(Store.Configuration.DocumentCommandBuilder.BuildDeleteDocumentCommand(obj, doc, Store, collection));
+                _commands.Add(new DeleteDocumentCommand(obj, doc, Store, collection, this));
             }
         }
 

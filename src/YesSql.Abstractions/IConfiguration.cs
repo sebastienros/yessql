@@ -91,7 +91,6 @@ namespace YesSql
         /// Gets or sets the identity column size. Default is <see cref="IdentityColumnSize.Int32"/>.
         /// </summary>
         IdentityColumnSize IdentityColumnSize { get; set; }
-        IDocumentCommandBuilder DocumentCommandBuilder { get; set; }
     }
 
     public static class ConfigurationExtensions

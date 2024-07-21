@@ -4,21 +4,25 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
+using YesSql.Commands.DocumentChanged;
 
 namespace YesSql.Commands
 {
     public class CreateDocumentCommand : DocumentCommand
     {
         private readonly IStore _store;
-
+        private readonly ISession _session;
+        private readonly object _entity;
         public override int ExecutionOrder { get; } = 0;
 
-        public CreateDocumentCommand(Document document, IStore store, string collection) : base(document, collection)
+        public CreateDocumentCommand(object entity, Document document, IStore store, string collection, ISession session) : base(document, collection)
         {
             _store = store;
+            _session = session;
+            _entity = entity;
         }
 
-        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
@@ -28,8 +32,19 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(insertCmd);
             }
+            await connection.ExecuteAsync(insertCmd, Document, transaction);
 
-            return connection.ExecuteAsync(insertCmd, Document, transaction);
+            var context = new DocumentChangeContext
+            {
+                Session = _session,
+                Entity = _entity,
+                Document = Document,
+                Store = _store,
+                Connection = connection,
+                Transaction = transaction,
+                Dialect = dialect,
+            };
+            await _session.DocumentCommandHandler.CreatedAsync(context);
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
@@ -44,6 +59,16 @@ namespace YesSql.Commands
                 .AddParameter("Type_" + index, Document.Type)
                 .AddParameter("Content_" + index, Document.Content)
                 .AddParameter("Version_" + index, Document.Version);
+
+            var context = new DocumentChangeInBatchContext
+            {
+                Session = _session,
+                Document = Document,
+                Entity = _entity,
+                BatchCommand = batchCommand,
+                Queries = queries,
+            };
+            _session.DocumentCommandHandler.CreatedInBatch(context);
 
             return true;
         }

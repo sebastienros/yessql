@@ -4,21 +4,38 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
+using YesSql.Commands.DocumentChanged;
 
 namespace YesSql.Commands
 {
     public class DeleteDocumentCommand : DocumentCommand
     {
         private readonly IStore _store;
+        private readonly ISession _session;
+        private readonly object _entity;
         public override int ExecutionOrder { get; } = 4;
 
-        public DeleteDocumentCommand(Document document, IStore store, string collection) : base(document, collection)
+        public DeleteDocumentCommand(object entity, Document document, IStore store, string collection, Session session) : base(document, collection)
         {
             _store = store;
+            _session = session;
+            _entity = entity;
         }
 
-        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public async override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
+            var context = new DocumentChangeContext
+            {
+                Session = _session,
+                Entity = _entity,
+                Document = Document,
+                Store = _store,
+                Connection = connection,
+                Transaction = transaction,
+                Dialect = dialect,
+            };
+            await _session.DocumentCommandHandler.RemovingAsync(context);
+
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
             var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} where {dialect.QuoteForColumnName("Id")} = @Id;";
 
@@ -27,11 +44,21 @@ namespace YesSql.Commands
                 logger.LogTrace(deleteCmd);
             }
 
-            return connection.ExecuteAsync(deleteCmd, Document, transaction);
+            await connection.ExecuteAsync(deleteCmd, Document, transaction);
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
         {
+            var context = new DocumentChangeInBatchContext
+            {
+                Session = _session,
+                Document = Document,
+                Entity = _entity,
+                BatchCommand = command,
+                Queries = queries,
+            };
+            _session.DocumentCommandHandler.RemovingInBatch(context);
+
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} where {dialect.QuoteForColumnName("Id")} = @Id_{index};";

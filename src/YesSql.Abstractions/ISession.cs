@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
+using YesSql.Commands;
 using YesSql.Indexes;
 
 namespace YesSql
@@ -137,5 +138,6 @@ namespace YesSql
         /// Gets the <see cref="Store" /> instance that created this session. 
         /// </summary>
         IStore Store { get; }
+        IDocumentCommandHandler DocumentCommandHandler { get; set; }
     }
 }
