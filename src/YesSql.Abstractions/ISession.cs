@@ -139,5 +139,6 @@ namespace YesSql
         IStore Store { get; }
 
         IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; }
+        Func<Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
     }
 }

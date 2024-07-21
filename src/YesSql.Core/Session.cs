@@ -35,6 +35,7 @@ namespace YesSql
         private readonly ILogger _logger;
         public IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; } = [];
 
+        public Func<Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
         public Session(Store store)
         {
             _store = store;
@@ -1200,6 +1201,15 @@ namespace YesSql
                 }
 
                 _descriptors.Add(cacheKey, typedDescriptors);
+            }
+
+            if (BuildExtraIndexDescriptors != null)
+            {
+                var dynamicIndexDes = BuildExtraIndexDescriptors().GetAwaiter().GetResult();
+                if (dynamicIndexDes != null)
+                {
+                    ExtraIndexDescriptors.Union(dynamicIndexDes);
+                }
             }
 
             return typedDescriptors.Union(ExtraIndexDescriptors);
