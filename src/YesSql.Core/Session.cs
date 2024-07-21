@@ -1208,7 +1208,7 @@ namespace YesSql
                 var dynamicIndexDes = BuildExtraIndexDescriptors().GetAwaiter().GetResult();
                 if (dynamicIndexDes != null)
                 {
-                    ExtraIndexDescriptors.Union(dynamicIndexDes);
+                    return typedDescriptors.Union(ExtraIndexDescriptors.Union(dynamicIndexDes));
                 }
             }
 
