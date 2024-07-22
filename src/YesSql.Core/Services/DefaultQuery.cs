@@ -1141,7 +1141,7 @@ namespace YesSql.Services
             if (filterType)
             {
                 _queryState._sqlBuilder.WhereAnd(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type", _queryState._store.Configuration.Schema) + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
-                _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
+                _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeService[typeof(T)];
             }
 
             return new Query<T>(this);

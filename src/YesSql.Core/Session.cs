@@ -164,7 +164,7 @@ namespace YesSql
 
             var doc = new Document
             {
-                Type = Store.TypeNames[entity.GetType()],
+                Type = Store.TypeService[entity.GetType()],
                 Content = Store.Configuration.ContentSerializer.Serialize(entity)
             };
 
@@ -256,7 +256,7 @@ namespace YesSql
 
             var doc = new Document
             {
-                Type = Store.TypeNames[entity.GetType()]
+                Type = Store.TypeService[entity.GetType()]
             };
 
             if (!state.IdentityMap.TryGetDocumentId(entity, out var id))
@@ -530,7 +530,7 @@ namespace YesSql
 
             var result = new List<T>();
             var defaultAccessor = _store.GetIdAccessor(typeof(T));
-            var typeName = Store.TypeNames[typeof(T)];
+            var typeName = Store.TypeService[typeof(T)];
 
             var state = GetState(collection);
 
@@ -549,7 +549,7 @@ namespace YesSql
                     // If the document type doesn't match the requested one, check it's a base type
                     if (!string.Equals(typeName, d.Type, StringComparison.Ordinal))
                     {
-                        var itemType = Store.TypeNames[d.Type];
+                        var itemType = Store.TypeService[d.Type];
 
                         // Ignore the document if it can't be casted to the requested type
                         if (!typeof(T).IsAssignableFrom(itemType))

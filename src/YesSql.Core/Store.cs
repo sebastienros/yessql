@@ -21,7 +21,7 @@ namespace YesSql
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
-        public ITypeService TypeNames { get; private set; }
+        public ITypeService TypeService { get; private set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
@@ -87,7 +87,7 @@ namespace YesSql
             IndexCommand.ResetQueryCache();
             ValidateConfiguration();
 
-            TypeNames = new TypeService();
+            TypeService = new TypeService();
 
             if (!string.IsNullOrEmpty(Configuration.Schema))
             {
