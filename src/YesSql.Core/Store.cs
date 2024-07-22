@@ -21,7 +21,7 @@ namespace YesSql
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
-        public ITypeService TypeService { get; private set; }
+        public ITypeService TypeService { get; set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
