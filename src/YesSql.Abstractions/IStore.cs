@@ -43,6 +43,6 @@ namespace YesSql
         /// <summary>
         /// Returns the <see cref="ITypeService" /> instance used to create this store.
         /// </summary>
-        ITypeService TypeService { get; }
+        ITypeService TypeService { get; set; }
     }
 }
