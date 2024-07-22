@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
+using YesSql.Commands;
 using YesSql.Indexes;
 
 namespace YesSql
@@ -140,5 +141,6 @@ namespace YesSql
 
         IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; }
         Func<Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
+        public IDocumentCommandHandler DocumentCommandHandler { get; set; }
     }
 }

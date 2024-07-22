@@ -34,6 +34,7 @@ namespace YesSql
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
         public IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; } = [];
+        public IDocumentCommandHandler DocumentCommandHandler { get; set; }
 
         public Func<Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
         public Session(Store store)
@@ -48,6 +49,7 @@ namespace YesSql
             {
                 [""] = _defaultState
             };
+            DocumentCommandHandler = new DefaultDocumentCommandHandler();
         }
 
         public ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null)
@@ -288,7 +290,7 @@ namespace YesSql
 
             _commands ??= new List<IIndexCommand>();
 
-            _commands.Add(new CreateDocumentCommand(doc, Store, collection));
+            _commands.Add(new CreateDocumentCommand(entity,doc, Store, collection, this));
 
             state.IdentityMap.AddDocument(doc);
 
@@ -383,7 +385,7 @@ namespace YesSql
 
             _commands ??= new List<IIndexCommand>();
 
-            _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
+            _commands.Add(new UpdateDocumentCommand(entity, oldDoc, Store, version, collection, this));
         }
 
         private async Task<Document> GetDocumentByIdAsync(long id, string collection)
@@ -468,7 +470,7 @@ namespace YesSql
                 _commands ??= new List<IIndexCommand>();
 
                 // The command needs to come after any index deletion because of the database constraints
-                _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
+                _commands.Add(new DeleteDocumentCommand(obj, doc, Store, collection, this));
             }
         }
 
