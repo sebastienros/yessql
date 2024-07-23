@@ -65,7 +65,6 @@ namespace YesSql.Services
         }
 
 
-
         public PropertyInfo[] GetProperties(Type type)
         {
             if (TypeProperties.TryGetValue(type, out var pis))
