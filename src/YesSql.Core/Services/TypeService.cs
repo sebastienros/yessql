@@ -63,8 +63,6 @@ namespace YesSql.Services
                    && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))
                    && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
         }
-
-
         public PropertyInfo[] GetProperties(Type type)
         {
             if (TypeProperties.TryGetValue(type, out var pis))
