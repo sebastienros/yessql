@@ -140,7 +140,7 @@ namespace YesSql
         IStore Store { get; }
 
         IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; }
-        Func<Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
-        public IDocumentCommandHandler DocumentCommandHandler { get; set; }
+        Func<Type, string, Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
+        IDocumentCommandHandler DocumentCommandHandler { get; set; }
     }
 }

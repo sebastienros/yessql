@@ -36,7 +36,7 @@ namespace YesSql
         public IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; } = [];
         public IDocumentCommandHandler DocumentCommandHandler { get; set; }
 
-        public Func<Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
+        public Func<Type, string, Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
         public Session(Store store)
         {
             _store = store;
@@ -290,7 +290,7 @@ namespace YesSql
 
             _commands ??= new List<IIndexCommand>();
 
-            _commands.Add(new CreateDocumentCommand(entity,doc, Store, collection, this));
+            _commands.Add(new CreateDocumentCommand(entity, doc, Store, collection, this));
 
             state.IdentityMap.AddDocument(doc);
 
@@ -1184,7 +1184,7 @@ namespace YesSql
         /// <summary>
         /// Resolves all the descriptors registered on the Store and the Session
         /// </summary>
-        private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collection)
+        private async Task<IEnumerable<IndexDescriptor>> GetDescriptorsAsync(Type t, string collection)
         {
             _descriptors ??= new Dictionary<string, IEnumerable<IndexDescriptor>>();
 
@@ -1207,7 +1207,7 @@ namespace YesSql
 
             if (BuildExtraIndexDescriptors != null)
             {
-                var dynamicIndexDes = BuildExtraIndexDescriptors().GetAwaiter().GetResult();
+                var dynamicIndexDes = await BuildExtraIndexDescriptors(t, collection);
                 if (dynamicIndexDes != null)
                 {
                     return typedDescriptors.Union(ExtraIndexDescriptors.Union(dynamicIndexDes));
@@ -1218,7 +1218,7 @@ namespace YesSql
         }
         private async Task MapNew(Document document, object obj, string collection)
         {
-            var descriptors = GetDescriptors(obj.GetType(), collection);
+            var descriptors = await GetDescriptorsAsync(obj.GetType(), collection);
 
             var state = GetState(collection);
 
@@ -1278,7 +1278,7 @@ namespace YesSql
         /// </summary>
         private async Task MapDeleted(Document document, object obj, string collection)
         {
-            var descriptors = GetDescriptors(obj.GetType(), collection);
+            var descriptors = await GetDescriptorsAsync(obj.GetType(), collection);
 
             var state = GetState(collection);
 
