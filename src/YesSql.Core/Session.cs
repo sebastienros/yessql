@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
+using YesSql.Entites;
 using YesSql.Indexes;
 using YesSql.Services;
 
@@ -567,6 +568,11 @@ namespace YesSql
                         item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, typeof(T));
 
                         accessor = defaultAccessor;
+                    }
+
+                    if (item is IVersionable versionedEntity)
+                    {
+                        versionedEntity.Version = d.Version;
                     }
 
                     accessor?.Set(item, d.Id);
