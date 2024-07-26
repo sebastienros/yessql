@@ -232,6 +232,36 @@ namespace YesSql.Sql
             WhereSegments.Add(where);
         }
 
+        public virtual void HavingAnd(string having)
+        {
+            if (string.IsNullOrWhiteSpace(having))
+            {
+                return;
+            }
+
+            if (HavingSegments.Count > 0)
+            {
+                HavingSegments.Add(" AND ");
+            }
+
+            HavingSegments.Add(having);
+        }
+
+        public virtual void HavingOr(string having)
+        {
+            if (string.IsNullOrWhiteSpace(having))
+            {
+                return;
+            }
+
+            if (HavingSegments.Count > 0)
+            {
+                HavingSegments.Add(" OR ");
+            }
+
+            HavingSegments.Add(having);
+        }
+
         public bool HasJoin
             => _join?.Count > 0;
 
@@ -297,14 +327,14 @@ namespace YesSql.Sql
             OrderSegments.Add(_dialect.RandomOrderByClause);
         }
 
-        public virtual void GroupBy(string orderBy)
+        public virtual void GroupBy(string groupBy)
         {
-            GroupSegments.Add(orderBy);
+            GroupSegments.Add(groupBy);
         }
 
-        public virtual void Having(string orderBy)
+        public virtual void Having(string having)
         {
-            HavingSegments.Add(orderBy);
+            HavingSegments.Add(having);
         }
 
         public virtual void Trail(string segment)
