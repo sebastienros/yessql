@@ -9,6 +9,7 @@ namespace YesSql.Commands
 {
     public class BatchCommand : IIndexCommand
     {
+        [Obsolete("The field is not used anymore since the current batching implementation doesn't need it.")]
         public static int DefaultBuilderCapacity = 10 * 1024;
 
         public List<string> Queries { get; set; } = new List<string>();
@@ -52,14 +53,6 @@ namespace YesSql.Commands
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(command);
-            }
-
-            if (command.Length > DefaultBuilderCapacity)
-            {
-                if (logger.IsEnabled(LogLevel.Warning))
-                {
-                    logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
-                }
             }
 
             Command.Transaction = transaction;
