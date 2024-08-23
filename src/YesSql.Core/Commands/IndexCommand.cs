@@ -19,8 +19,8 @@ namespace YesSql.Commands
 
         protected readonly IStore _store;
 
-        private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
-        private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
+        private readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
+        private readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
 
         protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
@@ -30,6 +30,8 @@ namespace YesSql.Commands
         {
             Index = index;
             _store = store;
+            InsertsList = store.TypeService.InsertsList;
+            UpdatesList = store.TypeService.UpdatesList;
             Collection = collection;
         }
 
@@ -39,12 +41,7 @@ namespace YesSql.Commands
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
 
-        public static void ResetQueryCache()
-        {
-            InsertsList.Clear();
-            UpdatesList.Clear();
-        }
-
+   
         protected void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
         {
             var type = item.GetType();
@@ -169,6 +166,5 @@ namespace YesSql.Commands
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
 
-        private record CompoundKey(string Dialect, string Type, string Schema, string Prefix, string Collection);
     }
 }

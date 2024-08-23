@@ -12,4 +12,5 @@ namespace YesSql.Commands
         bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
         int ExecutionOrder { get; }
     }
+    public record CompoundKey(string Dialect, string Type, string Schema, string Prefix, string Collection);
 }
