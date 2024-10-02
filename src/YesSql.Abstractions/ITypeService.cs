@@ -1,4 +1,6 @@
 using System;
+using System.Reflection;
+using YesSql.Serialization;
 
 namespace YesSql
 {
@@ -16,5 +18,8 @@ namespace YesSql
         /// Gets the type represented by a string.
         /// </summary>
         Type this[string s] { get; }
+
+        PropertyInfo[] GetProperties(Type type);
+        PropertyInfoAccessor GetPropertyAccessors(PropertyInfo property, Func<PropertyInfo, PropertyInfoAccessor> createFactory);
     }
 }
