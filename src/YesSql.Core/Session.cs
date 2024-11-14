@@ -246,15 +246,12 @@ namespace YesSql
 
             var state = GetState(collection);
 
-            foreach (var item in state.IdentityMap.GetAll())
-            {
-                state.Saved.Remove(item);
-                state.Updated.Remove(item);
-                state.Tracked.Remove(item);
-                state.Deleted.Remove(item);
-            }
-
-            state.IdentityMap.Clear();
+            state._concurrent?.Clear();
+            state._saved?.Clear();
+            state._updated?.Clear();
+            state._tracked?.Clear();
+            state._deleted?.Clear();
+            state._identityMap?.Clear();
         }
 
         public async Task ResetAsync()
@@ -988,7 +985,6 @@ namespace YesSql
         {
             foreach (var state in _collectionStates.Values)
             {
-                // IdentityMap is cleared in ReleaseSession()
                 state._concurrent?.Clear();
                 state._saved?.Clear();
                 state._updated?.Clear();
