@@ -3610,7 +3610,12 @@ namespace YesSql.Tests
 
                 await session.SaveAsync(circle);
                 await session.ResetAsync();
-                
+
+                circle = new Circle
+                {
+                    Radius = 10
+                };
+
                 await session.SaveAsync(circle);
                 await session.SaveChangesAsync();
             }
