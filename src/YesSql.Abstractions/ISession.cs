@@ -72,6 +72,11 @@ namespace YesSql
         void Detach(IEnumerable<object> entries, string collection = null);
 
         /// <summary>
+        /// Removes all items from the identity map.
+        /// </summary>
+        void DetachAll(string collection = null);
+
+        /// <summary>
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
@@ -93,9 +98,16 @@ namespace YesSql
         IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class;
 
         /// <summary>
-        /// Cancels any pending commands.
+        /// Marks the current session as "canceled" such that any following calls to <see cref="SaveChangesAsync"/> will be ignored.
+        /// This is useful when multiple components can add operations to the session and one of them fails, making the session invalid.
+        /// To instead rollback the transaction and revert any pending changes, use <see cref="ResetAsync"/>.
         /// </summary>
         Task CancelAsync();
+
+        /// <summary>
+        /// Resets the state of the current <see cref="ISession"/> by canceling any pending operations, closing the transaction, putting it back in a usable default state.
+        /// </summary>
+        Task ResetAsync();
 
         /// <summary>
         /// Flushes pending commands to the database.

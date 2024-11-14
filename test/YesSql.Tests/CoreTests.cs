@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -915,7 +916,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldKeepIdentityMapOnCommitAsync()
+        public async Task IdentityMapShouldBeClearedAfterCommit()
         {
             await using var session = _store.CreateSession();
             var bill = new Person
@@ -933,7 +934,7 @@ namespace YesSql.Tests
 
             newBill = await session.GetAsync<Person>(bill.Id);
 
-            Assert.Equal(bill, newBill);
+            Assert.NotEqual(bill, newBill);
         }
 
         [Fact]
@@ -952,6 +953,65 @@ namespace YesSql.Tests
             var newBill = await session.GetAsync<Person>(bill.Id);
 
             Assert.NotEqual(bill, newBill);
+        }
+
+        [Fact]
+        public async Task DetachAllRemoveAllEntitiesFromIdentityMap()
+        {
+            await using var session = _store.CreateSession();
+            var p1 = new Person();
+            var p2 = new Person();
+            var p3 = new Person();
+
+            await session.SaveAsync(p1);
+            await session.SaveAsync(p2);
+            await session.SaveAsync(p3);
+
+            await session.SaveChangesAsync();
+
+            // SaveChangesAsync should clear the identity mao
+
+            var p1a = await session.GetAsync<Person>(p1.Id);
+            var p2a = await session.GetAsync<Person>(p2.Id);
+            var p3a = await session.GetAsync<Person>(p3.Id);
+
+            Assert.NotEqual(p1, p1a);
+            Assert.NotEqual(p2, p2a);
+            Assert.NotEqual(p3, p3a);
+
+            // The identity should be valid as we do only reads
+            
+            var p1b = await session.GetAsync<Person>(p1.Id);
+            var p2b = await session.GetAsync<Person>(p2.Id);
+            var p3b = await session.GetAsync<Person>(p3.Id);
+
+            Assert.Equal(p1a, p1b);
+            Assert.Equal(p2a, p2b);
+            Assert.Equal(p3a, p3b);
+
+            // Detach should clear specific items
+
+            session.Detach(p1b);
+
+            var p1c = await session.GetAsync<Person>(p1.Id);
+            var p2c = await session.GetAsync<Person>(p2.Id);
+            var p3c = await session.GetAsync<Person>(p3.Id);
+
+            Assert.NotEqual(p1a, p1c);
+            Assert.Equal(p2a, p2c);
+            Assert.Equal(p3a, p3c);
+
+            // DetachAll should clear the identity mao
+
+            session.DetachAll();
+
+            var p1d = await session.GetAsync<Person>(p1.Id);
+            var p2d = await session.GetAsync<Person>(p2.Id);
+            var p3d = await session.GetAsync<Person>(p3.Id);
+
+            Assert.NotEqual(p1a, p1d);
+            Assert.NotEqual(p2a, p2d);
+            Assert.NotEqual(p3a, p3d);
         }
 
         [Fact]
@@ -3248,7 +3308,7 @@ namespace YesSql.Tests
                 var shapes = await session.Query<Shape, ShapeIndex>(filterType: false).ListAsync();
 
                 Assert.Equal(3, shapes.Count());
-                Assert.Single(shapes.Where(x => x is Circle));
+                Assert.Single(shapes, x => x is Circle);
                 Assert.Equal(2, shapes.Where(x => x is Square).Count());
             }
         }
@@ -3516,7 +3576,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public virtual async Task ShouldNotCommitTransaction()
+        public virtual async Task CancelAsyncShouldNotCommitTransaction()
         {
             await using (var session = _store.CreateSession())
             {
@@ -3528,12 +3588,36 @@ namespace YesSql.Tests
                 await session.SaveAsync(circle);
                 await session.CancelAsync();
 
+                await session.SaveAsync(circle);
                 await session.SaveChangesAsync();
             }
 
             await using (var session = _store.CreateSession())
             {
                 Assert.Equal(0, await session.Query().For<Circle>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public virtual async Task ResetAsyncShouldKeepSessionUsable()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var circle = new Circle
+                {
+                    Radius = 10
+                };
+
+                await session.SaveAsync(circle);
+                await session.ResetAsync();
+                
+                await session.SaveAsync(circle);
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query().For<Circle>().CountAsync());
             }
         }
 
