@@ -43,8 +43,26 @@ csharp_style_inlined_variable_declaration             = true : none
 csharp_style_throw_expression                         = true : none
 csharp_style_conditional_delegate_call                = true : none
 
-dotnet_style_object_initializer                            = true : suggestion
-dotnet_style_collection_initializer                        = true : suggestion
+dotnet_style_object_initializer                            = true : silent
+dotnet_style_collection_initializer                        = true 
 dotnet_style_coalesce_expression                           = true : suggestion
 dotnet_style_null_propagation                              = true : suggestion
 dotnet_style_explicit_tuple_names                          = true : suggestion
+
+# IDE0028: Simplify collection initialization
+dotnet_diagnostic.IDE0028.severity = silent
+
+# CA1861: Avoid constant arrays as arguments
+dotnet_diagnostic.CA1861.severity = silent
+
+# IDE0301: Simplify collection initialization
+dotnet_diagnostic.IDE0301.severity = suggestion
+
+# IDE0022: Use block body for method
+dotnet_diagnostic.IDE0022.severity = silent
+
+# IDE0032: Use auto property
+dotnet_diagnostic.IDE0032.severity = suggestion
+
+# IDE0074: Use compound assignment
+dotnet_diagnostic.IDE0074.severity = suggestion

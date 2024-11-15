@@ -240,6 +240,28 @@ namespace YesSql
             }
         }
 
+        public void DetachAll(string collection)
+        {
+            CheckDisposed();
+
+            var state = GetState(collection);
+
+            state._concurrent?.Clear();
+            state._saved?.Clear();
+            state._updated?.Clear();
+            state._tracked?.Clear();
+            state._deleted?.Clear();
+            state._identityMap?.Clear();
+        }
+
+        public async Task ResetAsync()
+        {
+            CheckDisposed();
+
+            await ReleaseTransactionAsync();
+            await ReleaseConnectionAsync();
+        }
+
         private static void DetachInternal(object entity, SessionState state)
         {
             state.Saved.Remove(entity);
@@ -529,7 +551,7 @@ namespace YesSql
                 return Enumerable.Empty<T>();
             }
 
-            var result = new List<T>();
+            var result = new List<T>(documents.Count);
             var defaultAccessor = _store.GetIdAccessor(typeof(T));
             var typeName = Store.TypeNames[typeof(T)];
 
@@ -628,7 +650,7 @@ namespace YesSql
             Dispose(false);
         }
 
-        public void Dispose(bool disposing)
+        public void Dispose(bool _)
         {
             // Do nothing if Dispose() was already called
             if (!_disposed)
@@ -963,13 +985,16 @@ namespace YesSql
         {
             foreach (var state in _collectionStates.Values)
             {
-                // IdentityMap is cleared in ReleaseSession()
                 state._concurrent?.Clear();
                 state._saved?.Clear();
                 state._updated?.Clear();
                 state._tracked?.Clear();
                 state._deleted?.Clear();
                 state._maps?.Clear();
+
+                // Clear the identity map as we don't want to return stale data after committing some changes.
+                // We assume the identity map is part of the unit-of-work.
+                state._identityMap?.Clear();
             }
 
             _commands?.Clear();
@@ -1044,7 +1069,10 @@ namespace YesSql
                     state.Updated.Count +
                     state.Tracked.Count +
                     state.Deleted.Count > 0
-                    ) return true;
+                    )
+                {
+                    return true;
+                }
             }
 
             return false;
