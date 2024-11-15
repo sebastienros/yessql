@@ -1196,7 +1196,7 @@ namespace YesSql.Services
             return new QueryIndex<TIndex>(this);
         }
 
-        IQuery<TIndex> IQuery.ForAdvancedIndex<TIndex>()
+        IQuery<TIndex> IQuery.ForIndexJoined<TIndex>()
         {
             _queryState.GetBindings().Clear();
 
@@ -1214,7 +1214,7 @@ namespace YesSql.Services
 
             if (typeof(MapIndex).IsAssignableFrom(tIndex))
             {
-                _queryState._sqlBuilder.InnerJoin(_queryState._documentTable, indexTableAlias, "DocumentId", _queryState._documentTable, _queryState._store.Configuration.Schema, "Id");
+                _queryState._sqlBuilder.InnerJoin(_queryState._documentTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema);
             }
             else
             {

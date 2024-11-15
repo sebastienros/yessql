@@ -23,11 +23,11 @@ namespace YesSql
         }
 
         /// <summary>
-        /// Creates a query on an index.
+        /// Creates a query on an index and other joined indexes.
         /// </summary>
-        public static IQuery<TIndex> AdvancedQueryIndex<TIndex>(this ISession session, string collection = null) where TIndex : class, IIndex
+        public static IQuery<TIndex> QueryIndexJoined<TIndex>(this ISession session, string collection = null) where TIndex : class, IIndex
         {
-            return session.Query(collection).ForAdvancedIndex<TIndex>();
+            return session.Query(collection).ForIndexJoined<TIndex>();
         }
 
         /// <summary>

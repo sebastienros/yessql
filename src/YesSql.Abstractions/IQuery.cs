@@ -25,7 +25,7 @@ namespace YesSql
         /// Defines what type of index should be returned
         /// </summary>
         /// <typeparam name="T">The type of index to return</typeparam>
-        IQuery<T> ForAdvancedIndex<T>() where T : class, IIndex;
+        IQuery<T> ForIndexJoined<T>() where T : class, IIndex;
 
         /// <summary>
         /// Returns documents from any type
