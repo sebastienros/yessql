@@ -75,7 +75,7 @@ namespace YesSql.Provider
         public abstract string Name { get; }
         public virtual string InOperator(string values)
         {
-            if (values.StartsWith("@") && !values.Contains(','))
+            if (values.StartsWith('@') && !values.Contains(','))
             {
                 return " IN " + values;
             }
@@ -106,11 +106,11 @@ namespace YesSql.Provider
 
         public abstract string IdentitySelectString { get; }
         public abstract string IdentityLastId { get; }
-        
+
         public abstract string IdentityColumnString { get; }
         public abstract string LegacyIdentityColumnString { get; }
 
-        public virtual string NullColumnString => String.Empty;
+        public virtual string NullColumnString => string.Empty;
 
         public virtual string PrimaryKeyString => "primary key";
 
@@ -138,18 +138,14 @@ namespace YesSql.Provider
             res.Append(" constraint ")
                 .Append(name)
                 .Append(" foreign key (")
-#if NETSTANDARD2_1
                 .AppendJoin(", ", srcColumns)
-#else
-                .Append(String.Join(", ", srcColumns))
-#endif
                 .Append(") references ")
                 .Append(destQuotedTable);
 
             if (!primaryKey)
             {
                 res.Append(" (")
-                    .Append(String.Join(", ", destColumns))
+                    .Append(string.Join(", ", destColumns))
                     .Append(')');
             }
 
@@ -162,7 +158,7 @@ namespace YesSql.Provider
         }
 
         public virtual bool SupportsIfExistsBeforeTableName => false;
-        public virtual string CascadeConstraintsString => String.Empty;
+        public virtual string CascadeConstraintsString => string.Empty;
         public virtual bool SupportsIfExistsAfterTableName => false;
         public virtual string GetDropTableString(string tableName, string schema)
         {
@@ -238,7 +234,7 @@ namespace YesSql.Provider
                 case TypeCode.Decimal:
                     return Convert.ToString(value, CultureInfo.InvariantCulture);
                 case TypeCode.DateTime:
-                    return String.Concat("'", Convert.ToString(value, CultureInfo.InvariantCulture), "'");
+                    return string.Concat("'", Convert.ToString(value, CultureInfo.InvariantCulture), "'");
                 default: break;
             }
 
@@ -258,7 +254,7 @@ namespace YesSql.Provider
                 return method.Render(args);
             }
 
-            return name + "(" + String.Join(", ", args) + ")";
+            return name + "(" + string.Join(", ", args) + ")";
         }
 
         public virtual void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
@@ -290,7 +286,7 @@ namespace YesSql.Provider
             _typeHandlers.Clear();
         }
 
-        public void AddTypeHandler<T, U>(Func<T, U> handler)
+        public void AddTypeHandler<T, TU>(Func<T, TU> handler)
         {
             if (!_typeHandlers.TryGetValue(typeof(T), out var handlers))
             {

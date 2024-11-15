@@ -67,6 +67,19 @@ namespace YesSql
         bool QueryGatingEnabled { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the thread-safety checks are enabled.
+        /// </summary>
+        /// <remarks>
+        /// When enabled, YesSql will throw an <see cref="InvalidOperationException" /> if two threads are trying to execute read or write 
+        /// operations on the database concurrently. This can help investigating thread-safety issue where an <see cref="ISession"/>
+        /// instance is shared which is not supported.
+        /// </remarks>
+        /// <value>
+        /// The default value is <see langword="false"/>.
+        /// </value>
+        public bool EnableThreadSafetyChecks { get; set; }
+
+        /// <summary>
         /// Gets the collection of types that must be checked for concurrency.
         /// </summary>
         HashSet<Type> ConcurrentTypes { get; }

@@ -22,8 +22,8 @@ namespace YesSql.Services
                         return "dynamic";
                     }
 
-                    var customName = typeInfo.GetCustomAttribute<SimplifiedTypeName>();
-                    var calculatedName = String.IsNullOrEmpty(customName?.Name) ? $"{type.FullName}, {typeInfo.Assembly.GetName().Name}" : customName.Name;
+                    var customName = typeInfo.GetCustomAttribute<SimplifiedTypeNameAttribute>();
+                    var calculatedName = string.IsNullOrEmpty(customName?.Name) ? $"{type.FullName}, {typeInfo.Assembly.GetName().Name}" : customName.Name;
                     nameTypes[calculatedName] = t;
 
                     return calculatedName;
@@ -50,7 +50,7 @@ namespace YesSql.Services
             }
         }
 
-        private bool IsAnonymousType(TypeInfo type)
+        private static bool IsAnonymousType(TypeInfo type)
         {
             return type.IsGenericType && type.Name.Contains("AnonymousType")
                    && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))

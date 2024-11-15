@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -62,13 +63,13 @@ namespace YesSql.Indexes
 
         public IMapFor<T, TIndex> When(Func<T, bool> predicate)
         {
-            _filter = x => predicate((T) x);
+            _filter = x => predicate((T)x);
             return this;
         }
 
         public IGroupFor<TIndex> Map(Func<T, TIndex> map)
         {
-            _map = x => Task.FromResult((IEnumerable<TIndex>) new[] { map(x) });
+            _map = x => Task.FromResult((IEnumerable<TIndex>)new[] { map(x) });
             return this;
         }
 
@@ -84,28 +85,21 @@ namespace YesSql.Indexes
             return this;
         }
 
+
         public IReduceFor<TIndex, TKeyG> Group<TKeyG>(Expression<Func<TIndex, TKeyG>> group)
         {
-            var memberExpression = group.Body as MemberExpression;
+            var memberExpression = group.Body as MemberExpression
+                ?? throw new ArgumentException("Group expression is not a valid member of: " + typeof(TIndex).Name);
 
-            if (memberExpression == null)
-            {
-                throw new ArgumentException("Group expression is not a valid member of: " + typeof(TIndex).Name);
-            }
-
-            var property = memberExpression.Member as PropertyInfo;
-
-            if (property == null)
-            {
-                throw new ArgumentException("Group expression is not a valid property of: " + typeof(TIndex).Name);
-            }
+            var property = memberExpression.Member as PropertyInfo
+                ?? throw new ArgumentException("Group expression is not a valid property of: " + typeof(TIndex).Name);
 
             GroupProperty = property;
 
-            var reduceDescibeFor = new IndexDescriptor<T, TIndex, TKeyG>();
-            _reduceDescribeFor = reduceDescibeFor;
+            var reduceDescribeFor = new IndexDescriptor<T, TIndex, TKeyG>();
+            _reduceDescribeFor = reduceDescribeFor;
 
-            return reduceDescibeFor;
+            return reduceDescribeFor;
         }
 
         public IDeleteFor<TIndex> Reduce(Func<IGrouping<TKey, TIndex>, TIndex> reduce)
@@ -152,7 +146,6 @@ namespace YesSql.Indexes
 
             return (index, obj) => _delete((TIndex)index, obj.Cast<TIndex>());
         }
-
     }
 
     public class GroupedEnumerable<TKey, TIndex> : IGrouping<TKey, TIndex> where TIndex : IIndex
@@ -176,7 +169,7 @@ namespace YesSql.Indexes
             return _enumerable.Cast<TIndex>().GetEnumerator();
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }

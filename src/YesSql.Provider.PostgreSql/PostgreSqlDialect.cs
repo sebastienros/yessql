@@ -109,8 +109,8 @@ namespace YesSql.Provider.PostgreSql
         public override string NotInOperator(string values) => " <> all(array[" + values + "])";
         public override string IdentitySelectString => "RETURNING";
         public override string IdentityLastId => $"lastval()";
-        public override string IdentityColumnString => "SERIAL PRIMARY KEY";
-        public override string LegacyIdentityColumnString => "SERIAL PRIMARY KEY";
+        public override string IdentityColumnString => "BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY";
+        public override string LegacyIdentityColumnString => "INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY";
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;

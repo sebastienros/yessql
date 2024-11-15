@@ -23,7 +23,6 @@ namespace YesSql.Commands
 
         public DocumentCommand(Document document, string collection)
         {
-
             Document = document;
             Collection = collection;
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace YesSql
@@ -24,6 +25,14 @@ namespace YesSql
         /// </summary>
         /// <param name="collection">The name of the collection to generate the identifier for.</param>
         /// <returns>A unique identifier</returns>
+        [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method. This current method is slated for removal in upcoming releases.")]
         long GetNextId(string collection);
+
+        /// <summary>
+        /// Generates a unique identifier for the store.
+        /// </summary>
+        /// <param name="collection">The name of the collection to generate the identifier for.</param>
+        /// <returns>A unique identifier</returns>
+        Task<long> GetNextIdAsync(string collection);
     }
 }

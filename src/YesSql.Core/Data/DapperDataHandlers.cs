@@ -14,47 +14,44 @@ namespace YesSql.Data
     {
         public override DateTimeOffset Parse(object value)
         {
-            if (value is null)
+            switch (value)
             {
-                return DateTimeOffset.MinValue;
-            }
+                case null:
+                    return DateTimeOffset.MinValue;
 
-            if (value is string s)
-            {
-                return DateTimeOffset.Parse(s);
-            }
-            if (value is DateTime dt)
-            {
-                return dt;
-            }
-            else if (value is DateTimeOffset d)
-            {
-                return d;
-            }
+                case string s:
+                    return DateTimeOffset.Parse(s);
 
-            return DateTimeOffset.MinValue;
-        }            
+                case DateTime dt:
+                    return new DateTimeOffset(dt);
+
+                case DateTimeOffset d:
+                    return d;
+
+                default:
+                    return DateTimeOffset.MinValue;
+            }
+        }
     }
 
     class GuidHandler : DapperTypeHandler<Guid>
     {
         public override Guid Parse(object value)
         {
-            if (value is null)
+            switch (value)
             {
-                return Guid.Empty;
-            }
+                case null:
+                    return Guid.Empty;
 
-            if (value is string s)
-            {
-                return Guid.Parse(s);
-            }
-            else if (value is Guid g)
-            {
-                return g;
-            }
+                case string s:
+                    return Guid.Parse(s);
 
-            return Guid.Empty;
+                case Guid g:
+                    return g;
+
+                default:
+                    return Guid.Empty;
+            }
         }
     }
 
@@ -62,27 +59,23 @@ namespace YesSql.Data
     {
         public override TimeSpan Parse(object value)
         {
-            if (value is null)
+            switch (value)
             {
-                return TimeSpan.Zero;
-            }
+                case null:
+                    return TimeSpan.Zero;
 
-            if (value is string s)
-            {
-                return TimeSpan.Parse(s);
-            }
+                case string s:
+                    return TimeSpan.Parse(s);
 
-            if (value is long l)
-            {
-                return new TimeSpan(l);
-            }
+                case long l:
+                    return TimeSpan.FromTicks(l);
 
-            if (value is TimeSpan t)
-            {
-                return t;
-            }
+                case TimeSpan t:
+                    return t;
 
-            return TimeSpan.Zero;
+                default:
+                    return TimeSpan.Zero;
+            }
         }
     }
 }

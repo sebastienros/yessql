@@ -40,20 +40,26 @@ namespace YesSql.Tests
             return Task.CompletedTask;
         }
 
+        [Fact(Skip = "Alter column is not supported by Sqlite")]
+        public override void ShouldAlterColumn()
+        {
+            base.ShouldAlterColumn();
+        }
+
         [Fact(Skip = "ReadCommitted is not supported by Sqlite")]
         public override Task ShouldReadCommittedRecords()
         {
             return base.ShouldReadCommittedRecords();
         }
 
-//        [Theory(Skip = "Sqlite doesn't use DbBlockIdGenerator")]
-//        [InlineData(100)]
-//#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
-//        public override Task ShouldGenerateLongIds(long id)
-//#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
-//        {
-//            return Task.CompletedTask;
-//        }
+        //        [Theory(Skip = "Sqlite doesn't use DbBlockIdGenerator")]
+        //        [InlineData(100)]
+        //#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
+        //        public override Task ShouldGenerateLongIds(long id)
+        //#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
+        //        {
+        //            return Task.CompletedTask;
+        //        }
 
         [Fact(Skip = "Sqlite doesn't support concurrent writers")]
         public override Task ShouldReadUncommittedRecords()
@@ -70,11 +76,11 @@ namespace YesSql.Tests
 
                 var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
-                using (var session1 = store1.CreateSession())
+                await using (var session1 = store1.CreateSession())
                 {
                     var p1 = new Person { Firstname = "Bill" };
 
-                    session1.Save(p1);
+                    await session1.SaveAsync(p1);
 
                     Assert.Equal(1, p1.Id);
 
@@ -83,14 +89,12 @@ namespace YesSql.Tests
 
                 var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
 
-                using (var session2 = store2.CreateSession())
-                {
-                    var p2 = new Person { Firstname = "Bill" };
+                await using var session2 = store2.CreateSession();
+                var p2 = new Person { Firstname = "Bill" };
 
-                    session2.Save(p2);
+                await session2.SaveAsync(p2);
 
-                    Assert.Equal(2, p2.Id);
-                }
+                Assert.Equal(2, p2.Id);
             }
         }
 
@@ -103,47 +107,43 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldIndexPropertyKeys()
         {
-            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
 
-                using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
-                {
-                    var builder = new SchemaBuilder(_store.Configuration, transaction);
+                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
+                var builder = new SchemaBuilder(_store.Configuration, transaction);
 
-                    builder
-                        .DropMapIndexTable<PropertyIndex>();
+                await builder
+                    .DropMapIndexTableAsync<PropertyIndex>();
 
-                    builder
-                        .CreateMapIndexTable<PropertyIndex>(column => column
-                            .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
-                            .Column<bool>(nameof(PropertyIndex.ForRent))
-                            .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                            .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
-                        );
+                await builder
+                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
+                        .Column<bool>(nameof(PropertyIndex.ForRent))
+                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
+                    );
 
-                    builder
-                        .AlterTable(nameof(PropertyIndex), table => table
-                            .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+                await builder
+                    .AlterTableAsync(nameof(PropertyIndex), table => table
+                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
 
-                    transaction.Commit();
-                }
+                await transaction.CommitAsync();
             }
 
             _store.RegisterIndexes<PropertyIndexProvider>();
 
-            using (var session = _store.CreateSession())
+            await using var session = _store.CreateSession();
+            var property = new Property
             {
-                var property = new Property
-                {
-                    Name = new string('*', 4000),
-                    IsOccupied = true,
-                    ForRent = true,
-                    Location = new string('*', 4000)
-                };
+                Name = new string('*', 4000),
+                IsOccupied = true,
+                ForRent = true,
+                Location = new string('*', 4000)
+            };
 
-                session.Save(property);
-            }
+            await session.SaveAsync(property);
         }
     }
 }
