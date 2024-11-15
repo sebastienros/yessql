@@ -77,6 +77,5 @@ namespace YesSql.Data
                     return TimeSpan.Zero;
             }
         }
-    
     }
 }
