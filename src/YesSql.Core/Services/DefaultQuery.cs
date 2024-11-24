@@ -1214,7 +1214,7 @@ namespace YesSql.Services
 
             if (typeof(MapIndex).IsAssignableFrom(tIndex))
             {
-                _queryState._sqlBuilder.InnerJoin(_queryState._documentTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema);
+                _queryState._sqlBuilder.InnerJoin(_queryState._documentTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, onTableIsAlias: true);
             }
             else
             {
