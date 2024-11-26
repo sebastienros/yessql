@@ -25,7 +25,7 @@ namespace YesSql.Indexes
 
         public void AddEntity(long id, object entity)
         {
-            _entities.Add(entity, id);
+            _entities[entity] = id;
             _documentIds[id] = entity;
         }
 
