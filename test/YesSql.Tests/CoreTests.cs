@@ -52,7 +52,7 @@ namespace YesSql.Tests
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");
-                _store.TypeNames[typeof(Person)] = "People";
+                _store.TypeService[typeof(Person)] = "People";
 
                 await CoreTests.CreateTablesAsync(_configuration);
             }
@@ -60,7 +60,7 @@ namespace YesSql.Tests
             {
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
                 await _store.InitializeCollectionAsync("Col1");
-                _store.TypeNames[typeof(Person)] = "People";
+                _store.TypeService[typeof(Person)] = "People";
             }
 
             // Clear the tables for each new test
