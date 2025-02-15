@@ -4,20 +4,24 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
+using YesSql.Commands.DocumentChanged;
 
 namespace YesSql.Commands
 {
-    public sealed class UpdateDocumentCommand : DocumentCommand
+    public class UpdateDocumentCommand : DocumentCommand
     {
         private readonly IStore _store;
+        private readonly ISession _session;
+        private readonly object _entity;
         private readonly long _checkVersion;
-
         public override int ExecutionOrder { get; } = 2;
 
-        public UpdateDocumentCommand(Document document, IStore store, long checkVersion, string collection) : base(document, collection)
+        public UpdateDocumentCommand(object entity, Document document, IStore store, long checkVersion, string collection, Session session) : base(document, collection)
         {
             _store = store;
             _checkVersion = checkVersion;
+            _session = session;
+            _entity = entity;
         }
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
@@ -46,7 +50,17 @@ namespace YesSql.Commands
                 throw new ConcurrencyException(Document);
             }
 
-            return;
+            var context = new DocumentChangeContext
+            {
+                Session = _session,
+                Entity = _entity,
+                Document = Document,
+                Store = _store,
+                Connection = connection,
+                Transaction = transaction,
+                Dialect = dialect,
+            };
+            await _session.DocumentCommandHandler.UpdatedAsync(context);
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
@@ -74,6 +88,16 @@ namespace YesSql.Commands
                 .AddParameter("Id_" + index, Document.Id)
                 .AddParameter("Content_" + index, Document.Content)
                 .AddParameter("Version_" + index, Document.Version);
+
+            var context = new DocumentChangeInBatchContext
+            {
+                Session = _session,
+                Entity = _entity,
+                Document = Document,
+                BatchCommand = batchCommand,
+                Queries = queries,
+            };
+            _session.DocumentCommandHandler.UpdatedInBatch(context);
 
             return true;
         }
