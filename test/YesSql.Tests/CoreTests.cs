@@ -1015,6 +1015,36 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task SavingRefreshedDocument()
+        {
+            await using var session = _store.CreateSession();
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            await session.SaveAsync(bill);
+            await session.SaveChangesAsync();
+
+            var newBill1 = await session.GetAsync<Person>(bill.Id);
+            await session.SaveAsync(newBill1);
+            await session.SaveChangesAsync();
+
+            // IdentityMap is cleared after SaveChangesAsync so we should get a new instance
+            var newBill2 = await session.GetAsync<Person>(bill.Id);
+
+            // This should be no-op because newBill1 is tracked
+            await session.SaveAsync(newBill2);
+
+            // Saving an object whose id is already in the identity map should throw an exception
+            // since it shows that two objects representing the same document, with potentially
+            // different changes, would be stored, so some changes would be lost.
+            
+            await Assert.ThrowsAsync<InvalidOperationException>(() => session.SaveAsync(newBill1));
+        }
+
+        [Fact]
         public async Task ShouldUpdateAutoFlushedIndex()
         {
             // When auto-flush is called on an entity

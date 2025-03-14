@@ -128,6 +128,15 @@ namespace YesSql
 
                 if (id > 0)
                 {
+                    // If we got an object from a different identity map, without change tracking, the object reference could be different than
+                    // the one in the identity map, and the previous state.IdentityMap.TryGetDocumentId would have returned false.
+                    // In this case we need to assume it's an updated object and not try to "Add" it to the identity map.
+
+                    if (state.IdentityMap.TryGetEntityById(id, out var _))
+                    {
+                        throw new InvalidOperationException("An object with the same identity is already part of this transaction. Reload it before doing any changes on it.");
+                    }
+
                     state.IdentityMap.AddEntity(id, entity);
                     state.Updated.Add(entity);
 
