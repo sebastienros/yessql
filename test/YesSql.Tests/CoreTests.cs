@@ -6539,34 +6539,43 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldDetectThreadSafetyIssues()
         {
-            await using var session = _store.CreateSession();
-
-            var person = new Person { Firstname = "Bill" };
-            await session.SaveAsync(person);
-            await session.SaveChangesAsync();
-
-            Task[] tasks = null;
-
-            var throws = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            try
             {
-                tasks = Enumerable.Range(0, 10).Select(x => Task.Run(DoWork)).ToArray();
-                await Task.WhenAll(tasks);
-            });
+                await using var session = _store.CreateSession();
 
-            await Task.WhenAny(throws, Task.Delay(5000));
+                _store.Configuration.EnableThreadSafetyChecks(false);
 
-            Assert.True(throws.IsCompleted, "The timeout was reached before the expected exception was thrown");
+                var person = new Person { Firstname = "Bill" };
+                await session.SaveAsync(person);
+                await session.SaveChangesAsync();
 
-            async Task DoWork()
-            {
-                while (true)
+                Task[] tasks = null;
+
+                var throws = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
-                    var p = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.NotNull(p);
+                    tasks = Enumerable.Range(0, 10).Select(x => Task.Run(DoWork)).ToArray();
+                    await Task.WhenAll(tasks);
+                });
 
-                    person.Firstname = "Bill" + RandomNumberGenerator.GetInt32(100);
-                    await session.FlushAsync();
+                await Task.WhenAny(throws, Task.Delay(5000));
+
+                Assert.True(throws.IsCompleted, "The timeout was reached before the expected exception was thrown");
+
+                async Task DoWork()
+                {
+                    while (true)
+                    {
+                        var p = await session.Query<Person>().FirstOrDefaultAsync();
+                        Assert.NotNull(p);
+
+                        person.Firstname = "Bill" + RandomNumberGenerator.GetInt32(100);
+                        await session.FlushAsync();
+                    }
                 }
+            }
+            finally
+            {
+                _store.Configuration.EnableThreadSafetyChecks(true);
             }
         }
 
