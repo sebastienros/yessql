@@ -5439,6 +5439,27 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public virtual async Task ShouldNotThrowConcurrencyWhenFails()
+        {
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            _store.Configuration.EnableThreadSafetyChecks = true;
+
+            await using (var session = _store.CreateSession())
+            {
+                var index = new PropertyIndex { Name = "Home" };
+
+                await session.SaveAsync(index);
+
+                await Assert.ThrowsAsync<ArgumentException>(async () =>
+                {
+                    // Try saving an index directly to force an exception which should trigger cancel.
+                    await session.FlushAsync();
+                });
+            }
+        }
+
+        [Fact]
         public virtual async Task ShouldHandleConcurrency()
         {
             await using (var session = _store.CreateSession())
