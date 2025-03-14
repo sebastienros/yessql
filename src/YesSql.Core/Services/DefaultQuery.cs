@@ -208,16 +208,16 @@ namespace YesSql.Services
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) })] =
             MethodMappings[typeof(String).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) })] =
                 static (query, builder, dialect, expression) =>
-            {
-                var generators = new List<Action<IStringBuilder>>();
-
-                foreach (var argument in expression.Arguments)
                 {
-                    generators.Add(sb => query.ConvertFragment(sb, argument));
-                }
+                    var generators = new List<Action<IStringBuilder>>();
 
-                dialect.Concat(builder, generators.ToArray());
-            };
+                    foreach (var argument in expression.Arguments)
+                    {
+                        generators.Add(sb => query.ConvertFragment(sb, argument));
+                    }
+
+                    dialect.Concat(builder, generators.ToArray());
+                };
 
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod(nameof(DefaultQueryExtensions.Min))] = static (query, builder, dialect, expression) =>
             {
@@ -1142,6 +1142,8 @@ namespace YesSql.Services
 
             _session.EnterAsyncExecution();
 
+            var mustExitAsyncExecution = true;
+
             try
             {
                 return await _session._store.ProduceAsync(key, static (key, state) =>
@@ -1159,13 +1161,20 @@ namespace YesSql.Services
             }
             catch
             {
+                _session.ExitAsyncExecution();
+
+                mustExitAsyncExecution = false;
+
                 await _session.CancelAsync();
 
                 throw;
             }
             finally
             {
-                _session.ExitAsyncExecution();
+                if (mustExitAsyncExecution)
+                {
+                    _session.ExitAsyncExecution();
+                }
             }
         }
 
@@ -1248,6 +1257,8 @@ namespace YesSql.Services
 
                 _query._session.EnterAsyncExecution();
 
+                var mustExitAsyncExecution = true;
+
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
@@ -1298,12 +1309,20 @@ namespace YesSql.Services
                 }
                 catch
                 {
+                    _query._session.ExitAsyncExecution();
+
+                    mustExitAsyncExecution = false;
+
                     await _query._session.CancelAsync();
+
                     throw;
                 }
                 finally
                 {
-                    _query._session.ExitAsyncExecution();
+                    if (mustExitAsyncExecution)
+                    {
+                        _query._session.ExitAsyncExecution();
+                    }
                 }
             }
 
@@ -1345,6 +1364,8 @@ namespace YesSql.Services
 
                 _query._session.EnterAsyncExecution();
 
+                var mustExitAsyncExecution = true;
+
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
@@ -1384,7 +1405,7 @@ namespace YesSql.Services
 
                         // Group by document id to de-duplicate records if the index has multiple matches for a single document
 
-                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
+                        // TODO: This could potentially be detected automatically, for instance by creating a MultiMapIndex, but might require breaking changes
 
                         var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
 
@@ -1410,13 +1431,20 @@ namespace YesSql.Services
                 }
                 catch
                 {
+                    _query._session.ExitAsyncExecution();
+
+                    mustExitAsyncExecution = false;
+
                     await _query._session.CancelAsync();
 
                     throw;
                 }
                 finally
                 {
-                    _query._session.ExitAsyncExecution();
+                    if (mustExitAsyncExecution)
+                    {
+                        _query._session.ExitAsyncExecution();
+                    }
                 }
             }
 
