@@ -21,12 +21,15 @@ namespace YesSql.Tests
             _tempFolder = new TemporaryFolder();
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-            return new Configuration()
+            var config = new Configuration()
                 .UseSqLite(connectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseDefaultIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int32)
-                ;
+                .SetIdentityColumnSize(IdentityColumnSize.Int32);
+
+            config.EnableThreadSafetyChecks = true;
+
+            return config;
         }
 
         [Fact(Skip = "Skip to make test faster in this configuration")]

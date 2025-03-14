@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -27,12 +26,15 @@ namespace YesSql.Tests
             _tempFolder = new TemporaryFolder();
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
-            return new Configuration()
+            var config = new Configuration()
                 .UseSqLite(connectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseDefaultIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int64)
-                ;
+                .SetIdentityColumnSize(IdentityColumnSize.Int64);
+
+            config.EnableThreadSafetyChecks = true;
+
+            return config;
         }
 
         public override Task DisposeAsync()

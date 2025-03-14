@@ -24,12 +24,15 @@ namespace YesSql.Tests
 
         protected override IConfiguration CreateConfiguration()
         {
-            return new Configuration()
+            var config = new Configuration()
                 .UsePostgreSql(ConnectionStringBuilder.ConnectionString, "BabyYoda")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int64)
-                ;
+                .SetIdentityColumnSize(IdentityColumnSize.Int64);
+
+            config.EnableThreadSafetyChecks = true;
+
+            return config;
         }
 
         [Fact(Skip = "Postgres locks on the table")]

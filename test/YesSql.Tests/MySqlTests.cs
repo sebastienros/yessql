@@ -26,12 +26,15 @@ namespace YesSql.Tests
 
         protected override IConfiguration CreateConfiguration()
         {
-            return new Configuration()
+            var config = new Configuration()
                 .UseMySql(ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int64)
-                ;
+                .SetIdentityColumnSize(IdentityColumnSize.Int64);
+
+            config.EnableThreadSafetyChecks = true;
+
+            return config;
         }
 
         [Fact]
