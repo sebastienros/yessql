@@ -704,10 +704,13 @@ namespace YesSql
 
             CheckDisposed();
 
+            var mustExitAsyncExecution = false;
+
             // Only check thread-safety if not called from SaveChangesAsync
             if (!saving)
             {
                 EnterAsyncExecution();
+                mustExitAsyncExecution = true;
             }
 
             try
@@ -765,10 +768,10 @@ namespace YesSql
             }
             catch
             {
-                // Only check thread-safety if not called from SaveChangesAsync
-                if (!saving)
+                if (mustExitAsyncExecution)
                 {
                     ExitAsyncExecution();
+                    mustExitAsyncExecution = false;
                 }
 
                 await CancelAsync();
@@ -800,8 +803,7 @@ namespace YesSql
                 _commands?.Clear();
                 _flushing = false;
 
-                // Only check thread-safety if not called from SaveChangesAsync
-                if (!saving)
+                if (mustExitAsyncExecution)
                 {
                     ExitAsyncExecution();
                 }
