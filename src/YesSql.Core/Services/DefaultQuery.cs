@@ -1159,6 +1159,8 @@ namespace YesSql.Services
             }
             catch
             {
+                _session.ExitAsyncExecution();
+
                 await _session.CancelAsync();
 
                 throw;
@@ -1298,7 +1300,10 @@ namespace YesSql.Services
                 }
                 catch
                 {
+                    _query._session.ExitAsyncExecution();
+
                     await _query._session.CancelAsync();
+
                     throw;
                 }
                 finally
@@ -1410,6 +1415,8 @@ namespace YesSql.Services
                 }
                 catch
                 {
+                    _query._session.ExitAsyncExecution();
+
                     await _query._session.CancelAsync();
 
                     throw;

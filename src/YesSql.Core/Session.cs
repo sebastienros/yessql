@@ -765,6 +765,12 @@ namespace YesSql
             }
             catch
             {
+                // Only check thread-safety if not called from SaveChangesAsync
+                if (!saving)
+                {
+                    ExitAsyncExecution();
+                }
+
                 await CancelAsync();
 
                 throw;
