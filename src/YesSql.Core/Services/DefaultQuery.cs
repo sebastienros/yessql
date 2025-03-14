@@ -1140,8 +1140,9 @@ namespace YesSql.Services
             var parameters = localBuilder.Parameters;
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
 
-            var mustExitAsyncExecution = true;
             _session.EnterAsyncExecution();
+
+            var mustExitAsyncExecution = true;
 
             try
             {
@@ -1161,6 +1162,7 @@ namespace YesSql.Services
             catch
             {
                 _session.ExitAsyncExecution();
+
                 mustExitAsyncExecution = false;
 
                 await _session.CancelAsync();
@@ -1254,7 +1256,9 @@ namespace YesSql.Services
                 _query.Page(1, 0);
 
                 _query._session.EnterAsyncExecution();
+
                 var mustExitAsyncExecution = true;
+
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
@@ -1306,6 +1310,7 @@ namespace YesSql.Services
                 catch
                 {
                     _query._session.ExitAsyncExecution();
+
                     mustExitAsyncExecution = false;
 
                     await _query._session.CancelAsync();
@@ -1358,7 +1363,9 @@ namespace YesSql.Services
                 }
 
                 _query._session.EnterAsyncExecution();
+
                 var mustExitAsyncExecution = true;
+
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
