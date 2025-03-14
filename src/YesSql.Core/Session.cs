@@ -774,7 +774,8 @@ namespace YesSql
             }
             catch
             {
-                await CancelAsync();
+                // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
+                await CancelAsyncInternal();
 
                 throw;
             }
@@ -1436,16 +1437,21 @@ namespace YesSql
 
             try
             {
-                CheckDisposed();
-
-                _cancel = true;
-
-                return ReleaseTransactionAsync();
+                return CancelAsyncInternal();
             }
             finally
             {
                 ExitAsyncExecution();
             }
+        }
+
+        private Task CancelAsyncInternal()
+        {
+            CheckDisposed();
+
+            _cancel = true;
+
+            return ReleaseTransactionAsync();
         }
 
         public IStore Store => _store;

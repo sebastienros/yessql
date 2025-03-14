@@ -5468,78 +5468,90 @@ namespace YesSql.Tests
             }
         }
 
-        [Fact]
-        public virtual async Task ShouldHandleConcurrency()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public virtual async Task ShouldHandleConcurrency(bool checkThreadSafety)
         {
-            await using (var session = _store.CreateSession())
-            {
-                var email = new Person { Firstname = "Bill" };
 
-                await session.SaveAsync(email);
+            _store.Configuration.EnableThreadSafetyChecks = checkThreadSafety;
 
-                await session.SaveChangesAsync();
-            }
-
-            var task1Saved = new ManualResetEvent(false);
-            var task2Loaded = new ManualResetEvent(false);
-            var task1Loaded = new ManualResetEvent(false);
-
-            var task1 = Task.Run(async () =>
+            try
             {
                 await using (var session = _store.CreateSession())
                 {
-                    var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.NotNull(person);
+                    var email = new Person { Firstname = "Bill" };
 
-                    task1Loaded.Set();
-
-                    // Wait for the other thread to load the person before updating it
-                    if (!task2Loaded.WaitOne(5000))
-                    {
-                        Assert.Fail("task2Loaded timeout");
-                        await session.CancelAsync();
-                    }
-
-                    person.Lastname = "Gates";
-
-                    await session.SaveAsync(person, true);
-                    Assert.NotNull(person);
+                    await session.SaveAsync(email);
 
                     await session.SaveChangesAsync();
                 }
 
-                // Notify the other thread to save
-                task1Saved.Set();
-            });
+                var task1Saved = new ManualResetEvent(false);
+                var task2Loaded = new ManualResetEvent(false);
+                var task1Loaded = new ManualResetEvent(false);
 
-            var task2 = Task.Run(async () =>
-            {
-                task1Loaded.WaitOne(5000);
-
-                await Assert.ThrowsAsync<ConcurrencyException>(async () =>
+                var task1 = Task.Run(async () =>
                 {
-                    await using var session = _store.CreateSession();
-                    var person = await session.Query<Person>().FirstOrDefaultAsync();
-                    Assert.NotNull(person);
-
-                    task2Loaded.Set();
-
-                    // Wait for the other thread to save the person before updating it
-                    if (!task1Saved.WaitOne(5000))
+                    await using (var session = _store.CreateSession())
                     {
-                        Assert.Fail("task1Saved timeout");
-                        await session.CancelAsync();
+                        var person = await session.Query<Person>().FirstOrDefaultAsync();
+                        Assert.NotNull(person);
+
+                        task1Loaded.Set();
+
+                        // Wait for the other thread to load the person before updating it
+                        if (!task2Loaded.WaitOne(5000))
+                        {
+                            Assert.Fail("task2Loaded timeout");
+                            await session.CancelAsync();
+                        }
+
+                        person.Lastname = "Gates";
+
+                        await session.SaveAsync(person, true);
+                        Assert.NotNull(person);
+
+                        await session.SaveChangesAsync();
                     }
 
-                    person.Lastname = "Doors";
-                    await session.SaveAsync(person, true);
-                    Assert.NotNull(person);
-
-                    await session.SaveChangesAsync();
+                    // Notify the other thread to save
+                    task1Saved.Set();
                 });
-            });
 
-            await Task.WhenAll(task1, task2);
+                var task2 = Task.Run(async () =>
+                {
+                    task1Loaded.WaitOne(5000);
+
+                    await Assert.ThrowsAsync<ConcurrencyException>(async () =>
+                    {
+                        await using var session = _store.CreateSession();
+                        var person = await session.Query<Person>().FirstOrDefaultAsync();
+                        Assert.NotNull(person);
+
+                        task2Loaded.Set();
+
+                        // Wait for the other thread to save the person before updating it
+                        if (!task1Saved.WaitOne(5000))
+                        {
+                            Assert.Fail("task1Saved timeout");
+                            await session.CancelAsync();
+                        }
+
+                        person.Lastname = "Doors";
+                        await session.SaveAsync(person, true);
+                        Assert.NotNull(person);
+
+                        await session.SaveChangesAsync();
+                    });
+                });
+
+                await Task.WhenAll(task1, task2);
+            }
+            finally
+            {
+                _store.Configuration.EnableThreadSafetyChecks = false;
+            }
 
             await using (var session = _store.CreateSession())
             {
@@ -7122,5 +7134,35 @@ namespace YesSql.Tests
             }
         }
         #endregion
+
+        [Fact]
+        public virtual async Task ShouldNotTriggerThreadSafetyOnCancel()
+        {
+            // https://github.com/sebastienros/yessql/issues/618
+
+            _store.RegisterIndexes<PropertyIndexProvider>();
+
+            _store.Configuration.EnableThreadSafetyChecks = true;
+
+            try
+            {
+                await using (var session = _store.CreateSession())
+                {
+                    var index = new PropertyIndex { Name = "Home" };
+
+                    await session.SaveAsync(index);
+
+                    await Assert.ThrowsAsync<ArgumentException>(async () =>
+                    {
+                        // Try saving an index directly to force an exception which should trigger cancel.
+                        await session.FlushAsync();
+                    });
+                }
+            }
+            finally
+            {
+                _store.Configuration.EnableThreadSafetyChecks = false;
+            }
+        }
     }
 }
