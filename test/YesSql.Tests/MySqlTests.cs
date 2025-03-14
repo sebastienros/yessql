@@ -30,8 +30,8 @@ namespace YesSql.Tests
                 .UseMySql(ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int64)
-                ;
+                .UseThreadSafetyChecks()
+                .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
 
         [Fact]

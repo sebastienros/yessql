@@ -980,7 +980,7 @@ namespace YesSql.Tests
             Assert.NotEqual(p3, p3a);
 
             // The identity should be valid as we do only reads
-            
+
             var p1b = await session.GetAsync<Person>(p1.Id);
             var p2b = await session.GetAsync<Person>(p2.Id);
             var p3b = await session.GetAsync<Person>(p3.Id);
@@ -1040,7 +1040,7 @@ namespace YesSql.Tests
             // Saving an object whose id is already in the identity map should throw an exception
             // since it shows that two objects representing the same document, with potentially
             // different changes, would be stored, so some changes would be lost.
-            
+
             await Assert.ThrowsAsync<InvalidOperationException>(() => session.SaveAsync(newBill1));
         }
 
@@ -3325,7 +3325,8 @@ namespace YesSql.Tests
                 await session.SaveAsync(new Circle { Radius = 5 });
 
                 await session.SaveChangesAsync();
-            };
+            }
+            ;
 
             await using (var session = _store.CreateSession())
             {
@@ -6540,11 +6541,9 @@ namespace YesSql.Tests
         {
             try
             {
-                _store.Configuration.EnableThreadSafetyChecks = true;
-
                 await using var session = _store.CreateSession();
 
-                _store.Configuration.EnableThreadSafetyChecks = false;
+                _store.Configuration.UseThreadSafetyChecks(false);
 
                 var person = new Person { Firstname = "Bill" };
                 await session.SaveAsync(person);
@@ -6576,7 +6575,7 @@ namespace YesSql.Tests
             }
             finally
             {
-                _store.Configuration.EnableThreadSafetyChecks = false;
+                _store.Configuration.UseThreadSafetyChecks(true);
             }
         }
 
@@ -7140,26 +7139,17 @@ namespace YesSql.Tests
         {
             // https://github.com/sebastienros/yessql/issues/618
 
-            _store.Configuration.EnableThreadSafetyChecks = true;
-
-            try
+            await using (var session = _store.CreateSession())
             {
-                await using (var session = _store.CreateSession())
+                var index = new PropertyIndex { Name = "Home" };
+
+                await session.SaveAsync(index);
+
+                await Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
-                    var index = new PropertyIndex { Name = "Home" };
-
-                    await session.SaveAsync(index);
-
-                    await Assert.ThrowsAsync<ArgumentException>(async () =>
-                    {
-                        // Try saving an index directly to force an exception which should trigger cancel.
-                        await session.FlushAsync();
-                    });
-                }
-            }
-            finally
-            {
-                _store.Configuration.EnableThreadSafetyChecks = false;
+                    // Try saving an index directly to force an exception which should trigger cancel.
+                    await session.FlushAsync();
+                });
             }
         }
     }
