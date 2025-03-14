@@ -17,5 +17,12 @@ namespace YesSql
 
             return configuration;
         }
+
+        public static IConfiguration EnableThreadSafetyChecks(this IConfiguration configuration, bool enable = true)
+        {
+            configuration.EnableThreadSafetyChecks = enable;
+
+            return configuration;
+        }
     }
 }

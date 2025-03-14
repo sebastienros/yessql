@@ -15,15 +15,12 @@ namespace YesSql.Tests
 
         protected override IConfiguration CreateConfiguration()
         {
-            var config = new Configuration()
+            return new Configuration()
                 .UsePostgreSql(ConnectionStringBuilder.ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
+                .EnableThreadSafetyChecks()
                 .SetIdentityColumnSize(IdentityColumnSize.Int32);
-
-            config.EnableThreadSafetyChecks = true;
-
-            return config;
         }
 
         [Fact(Skip = "Skip to make test faster in this configuration")]

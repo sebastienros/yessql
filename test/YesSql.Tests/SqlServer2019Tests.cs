@@ -17,15 +17,12 @@ namespace YesSql.Tests
 
         protected override IConfiguration CreateConfiguration()
         {
-            var config = new Configuration()
+            return new Configuration()
                 .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
+                .EnableThreadSafetyChecks()
                 .SetIdentityColumnSize(IdentityColumnSize.Int64);
-
-            config.EnableThreadSafetyChecks = true;
-
-            return config;
         }
     }
 }
