@@ -26,7 +26,7 @@ namespace YesSql.Tests
                 .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
-                .EnableThreadSafetyChecks()
+                .UseThreadSafetyChecks()
                 .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
 

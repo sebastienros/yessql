@@ -6543,7 +6543,7 @@ namespace YesSql.Tests
             {
                 await using var session = _store.CreateSession();
 
-                _store.Configuration.EnableThreadSafetyChecks(false);
+                _store.Configuration.UseThreadSafetyChecks(false);
 
                 var person = new Person { Firstname = "Bill" };
                 await session.SaveAsync(person);
@@ -6575,7 +6575,7 @@ namespace YesSql.Tests
             }
             finally
             {
-                _store.Configuration.EnableThreadSafetyChecks(true);
+                _store.Configuration.UseThreadSafetyChecks(true);
             }
         }
 
