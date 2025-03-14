@@ -128,6 +128,15 @@ namespace YesSql
 
                 if (id > 0)
                 {
+                    // If we got an object from a different identity map, without change tracking, the object reference could be different than
+                    // the one in the identity map, and the previous state.IdentityMap.TryGetDocumentId would have returned false.
+                    // In this case we need to assume it's an updated object and not try to "Add" it to the identity map.
+
+                    if (state.IdentityMap.TryGetEntityById(id, out var _))
+                    {
+                        throw new InvalidOperationException("An object with the same identity is already part of this transaction. Reload it before doing any changes on it.");
+                    }
+
                     state.IdentityMap.AddEntity(id, entity);
                     state.Updated.Add(entity);
 
@@ -704,13 +713,10 @@ namespace YesSql
 
             CheckDisposed();
 
-            var mustExitAsyncExecution = false;
-
             // Only check thread-safety if not called from SaveChangesAsync
             if (!saving)
             {
                 EnterAsyncExecution();
-                mustExitAsyncExecution = true;
             }
 
             try
@@ -768,12 +774,6 @@ namespace YesSql
             }
             catch
             {
-                if (mustExitAsyncExecution)
-                {
-                    ExitAsyncExecution();
-                    mustExitAsyncExecution = false;
-                }
-
                 await CancelAsync();
 
                 throw;
@@ -803,7 +803,8 @@ namespace YesSql
                 _commands?.Clear();
                 _flushing = false;
 
-                if (mustExitAsyncExecution)
+                // Only check thread-safety if not called from SaveChangesAsync
+                if (!saving)
                 {
                     ExitAsyncExecution();
                 }

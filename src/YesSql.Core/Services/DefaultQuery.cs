@@ -1142,8 +1142,6 @@ namespace YesSql.Services
 
             _session.EnterAsyncExecution();
 
-            var mustExitAsyncExecution = true;
-
             try
             {
                 return await _session._store.ProduceAsync(key, static (key, state) =>
@@ -1161,20 +1159,13 @@ namespace YesSql.Services
             }
             catch
             {
-                _session.ExitAsyncExecution();
-
-                mustExitAsyncExecution = false;
-
                 await _session.CancelAsync();
 
                 throw;
             }
             finally
             {
-                if (mustExitAsyncExecution)
-                {
-                    _session.ExitAsyncExecution();
-                }
+                _session.ExitAsyncExecution();
             }
         }
 
@@ -1257,8 +1248,6 @@ namespace YesSql.Services
 
                 _query._session.EnterAsyncExecution();
 
-                var mustExitAsyncExecution = true;
-
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
@@ -1309,20 +1298,12 @@ namespace YesSql.Services
                 }
                 catch
                 {
-                    _query._session.ExitAsyncExecution();
-
-                    mustExitAsyncExecution = false;
-
                     await _query._session.CancelAsync();
-
                     throw;
                 }
                 finally
                 {
-                    if (mustExitAsyncExecution)
-                    {
-                        _query._session.ExitAsyncExecution();
-                    }
+                    _query._session.ExitAsyncExecution();
                 }
             }
 
@@ -1364,8 +1345,6 @@ namespace YesSql.Services
 
                 _query._session.EnterAsyncExecution();
 
-                var mustExitAsyncExecution = true;
-
                 try
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
@@ -1405,7 +1384,7 @@ namespace YesSql.Services
 
                         // Group by document id to de-duplicate records if the index has multiple matches for a single document
 
-                        // TODO: This could potentially be detected automatically, for instance by creating a MultiMapIndex, but might require breaking changes
+                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
 
                         var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
 
@@ -1431,20 +1410,13 @@ namespace YesSql.Services
                 }
                 catch
                 {
-                    _query._session.ExitAsyncExecution();
-
-                    mustExitAsyncExecution = false;
-
                     await _query._session.CancelAsync();
 
                     throw;
                 }
                 finally
                 {
-                    if (mustExitAsyncExecution)
-                    {
-                        _query._session.ExitAsyncExecution();
-                    }
+                    _query._session.ExitAsyncExecution();
                 }
             }
 
