@@ -1445,7 +1445,7 @@ namespace YesSql
             }
         }
 
-        private Task CancelAsyncInternal()
+        internal Task CancelAsyncInternal()
         {
             CheckDisposed();
 

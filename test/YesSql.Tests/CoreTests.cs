@@ -7140,8 +7140,6 @@ namespace YesSql.Tests
         {
             // https://github.com/sebastienros/yessql/issues/618
 
-            _store.RegisterIndexes<PropertyIndexProvider>();
-
             _store.Configuration.EnableThreadSafetyChecks = true;
 
             try

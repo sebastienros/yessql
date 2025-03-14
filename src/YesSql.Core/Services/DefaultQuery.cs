@@ -1159,7 +1159,8 @@ namespace YesSql.Services
             }
             catch
             {
-                await _session.CancelAsync();
+                // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
+                await _session.CancelAsyncInternal();
 
                 throw;
             }
@@ -1298,7 +1299,9 @@ namespace YesSql.Services
                 }
                 catch
                 {
-                    await _query._session.CancelAsync();
+                    // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
+                    await _query._session.CancelAsyncInternal();
+                    
                     throw;
                 }
                 finally
@@ -1410,7 +1413,8 @@ namespace YesSql.Services
                 }
                 catch
                 {
-                    await _query._session.CancelAsync();
+                    // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
+                    await _query._session.CancelAsyncInternal();
 
                     throw;
                 }
