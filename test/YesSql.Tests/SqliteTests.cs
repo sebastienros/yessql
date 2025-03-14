@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -98,10 +99,12 @@ namespace YesSql.Tests
             }
         }
 
-        [Fact(Skip = "Locking prevents Sqlite from concurrency issues")]
-        public override Task ShouldHandleConcurrency()
+        [Theory(Skip = "Locking prevents Sqlite from concurrency issues")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public override Task ShouldHandleConcurrency(bool checkThreadSafety)
         {
-            return base.ShouldHandleConcurrency();
+            return base.ShouldHandleConcurrency(checkThreadSafety);
         }
 
         [Fact]
