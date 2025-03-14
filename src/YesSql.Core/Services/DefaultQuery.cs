@@ -1405,7 +1405,7 @@ namespace YesSql.Services
 
                         // Group by document id to de-duplicate records if the index has multiple matches for a single document
 
-                        // TODO: This could potentially be detected atomically, for instance by creating a MultiMapIndex, but might require breaking changes
+                        // TODO: This could potentially be detected automatically, for instance by creating a MultiMapIndex, but might require breaking changes
 
                         var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
 
