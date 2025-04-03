@@ -19,8 +19,8 @@ namespace YesSql.Tests
                 .UsePostgreSql(ConnectionStringBuilder.ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int32)
-                ;
+                .UseThreadSafetyChecks()
+                .SetIdentityColumnSize(IdentityColumnSize.Int32);
         }
 
         [Fact(Skip = "Skip to make test faster in this configuration")]
