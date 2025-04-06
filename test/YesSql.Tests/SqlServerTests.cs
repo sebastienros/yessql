@@ -16,7 +16,7 @@ namespace YesSql.Tests
     {
         public abstract SqlConnectionStringBuilder ConnectionStringBuilder { get; }
 
-        public SqlServerTests(ITestOutputHelper output) : base(output)
+        protected SqlServerTests(ITestOutputHelper output) : base(output)
         {
         }
 

@@ -23,7 +23,7 @@ namespace YesSql.Tests.Commands
 
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
         {
-            throw new ApplicationException();
+            throw new NotImplementedException();
         }
     }
 }

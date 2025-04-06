@@ -24,11 +24,11 @@ namespace YesSql.Commands
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
 
-        protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
+        protected static readonly PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, IStore store, string collection)
+        protected IndexCommand(IIndex index, IStore store, string collection)
         {
             Index = index;
             _store = store;

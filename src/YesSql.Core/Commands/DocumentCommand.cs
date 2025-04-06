@@ -21,7 +21,7 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public DocumentCommand(Document document, string collection)
+        protected DocumentCommand(Document document, string collection)
         {
             Document = document;
             Collection = collection;

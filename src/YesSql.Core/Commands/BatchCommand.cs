@@ -10,7 +10,7 @@ namespace YesSql.Commands
     public class BatchCommand : IIndexCommand
     {
         [Obsolete("The field is not used anymore since the current batching implementation doesn't need it.")]
-        public static int DefaultBuilderCapacity = 10 * 1024;
+        public static readonly int DefaultBuilderCapacity = 10 * 1024;
 
         public List<string> Queries { get; set; } = new List<string>();
         public DbCommand Command { get; set; }
