@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -32,7 +33,7 @@ namespace YesSql.Commands
             return true;
         }
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
         {
             var type = Index.GetType();
             var name = type.Name;
@@ -44,7 +45,7 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(bridgeSql);
             }
-            await connection.ExecuteAsync(bridgeSql, new { Id = Index.Id }, transaction);
+            await connection.ExecuteAsync(new CommandDefinition(bridgeSql, new { Id = Index.Id }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
             var command = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
             if (logger.IsEnabled(LogLevel.Trace))
             {

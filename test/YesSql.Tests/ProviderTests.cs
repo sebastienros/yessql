@@ -10,7 +10,7 @@ using YesSql.Provider.Sqlite;
 
 namespace YesSql.Tests
 {
-    public class ProviderTests : IDisposable
+    public sealed class ProviderTests : IDisposable
     {
         private readonly TemporaryFolder _tempFolder;
 

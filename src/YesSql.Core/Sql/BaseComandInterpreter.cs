@@ -13,7 +13,7 @@ namespace YesSql.Sql
         protected readonly IConfiguration _configuration;
         private const char Space = ' ';
 
-        public BaseCommandInterpreter(IConfiguration configuration)
+        protected BaseCommandInterpreter(IConfiguration configuration)
         {
             _dialect = configuration.SqlDialect;
             _configuration = configuration;
