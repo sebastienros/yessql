@@ -5235,7 +5235,7 @@ namespace YesSql.Tests
                     new FailingCommand(new Document())
                 };
 
-            await Assert.ThrowsAnyAsync<Exception>(session.SaveChangesAsync);
+            await Assert.ThrowsAnyAsync<Exception>(async () => await session.SaveChangesAsync());
 
             Assert.Null(session._commands);
         }
