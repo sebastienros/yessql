@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 
@@ -21,7 +22,7 @@ namespace YesSql.Tests.Commands
             throw new NotImplementedException();
         }
 
-        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

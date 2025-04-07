@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YesSql.Commands
@@ -36,7 +37,7 @@ namespace YesSql.Commands
             return true;
         }
 
-        public async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
         {
             if (!dialect.SupportsBatching)
             {
@@ -58,7 +59,8 @@ namespace YesSql.Commands
             Command.Transaction = transaction;
             Command.CommandText = command;
 
-            using (var dr = await Command.ExecuteReaderAsync())
+            // This should propigate the cancellation token to any of the actions.
+            await using (var dr = await Command.ExecuteReaderAsync(cancellationToken))
             {
                 foreach (var action in Actions)
                 {

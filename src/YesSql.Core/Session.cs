@@ -768,7 +768,7 @@ namespace YesSql
                 {
                     foreach (var command in _commands)
                     {
-                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger); // TODO cancel
+                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger, cancellationToken);
                     }
                 }
             }

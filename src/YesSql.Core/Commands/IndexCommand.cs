@@ -7,6 +7,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 using YesSql.Serialization;
@@ -39,7 +40,7 @@ namespace YesSql.Commands
         public Document Document { get; }
         public string Collection { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
 
         public static void ResetQueryCache()
         {
