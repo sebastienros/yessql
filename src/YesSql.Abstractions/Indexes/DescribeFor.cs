@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YesSql.Indexes
 {
     public interface IDescribeFor
     {
-        Func<object, Task<IEnumerable<IIndex>>> GetMap();
+        Func<object, CancellationToken, Task<IEnumerable<IIndex>>> GetMap();
         Func<IGrouping<object, IIndex>, IIndex> GetReduce();
         Func<IIndex, IEnumerable<IIndex>, IIndex> GetDelete();
         PropertyInfo GroupProperty { get; set; }
@@ -23,7 +24,9 @@ namespace YesSql.Indexes
         IGroupFor<TIndex> Map(Func<T, TIndex> map);
         IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map);
         IGroupFor<TIndex> Map(Func<T, Task<TIndex>> map);
+        IGroupFor<TIndex> Map(Func<T, CancellationToken, Task<TIndex>> map);
         IGroupFor<TIndex> Map(Func<T, Task<IEnumerable<TIndex>>> map);
+        IGroupFor<TIndex> Map(Func<T, CancellationToken, Task<IEnumerable<TIndex>>> map);
         IMapFor<T, TIndex> When(Func<T, bool> predicate);
     }
 
@@ -44,7 +47,7 @@ namespace YesSql.Indexes
 
     public class IndexDescriptor<T, TIndex, TKey> : IDescribeFor, IMapFor<T, TIndex>, IGroupFor<TIndex>, IReduceFor<TIndex, TKey>, IDeleteFor<TIndex> where TIndex : IIndex
     {
-        private Func<T, Task<IEnumerable<TIndex>>> _map;
+        private Func<T, CancellationToken, Task<IEnumerable<TIndex>>> _map;
         private Func<IGrouping<TKey, TIndex>, TIndex> _reduce;
         private Func<TIndex, IEnumerable<TIndex>, TIndex> _delete;
         private IDescribeFor _reduceDescribeFor;
@@ -57,7 +60,7 @@ namespace YesSql.Indexes
 
         public IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map)
         {
-            _map = x => Task.FromResult(map(x));
+            _map = (x, token) => Task.FromResult(map(x));
             return this;
         }
 
@@ -69,19 +72,31 @@ namespace YesSql.Indexes
 
         public IGroupFor<TIndex> Map(Func<T, TIndex> map)
         {
-            _map = x => Task.FromResult((IEnumerable<TIndex>)new[] { map(x) });
+            _map = (x, token) => Task.FromResult((IEnumerable<TIndex>)new[] { map(x) });
             return this;
         }
 
         public IGroupFor<TIndex> Map(Func<T, Task<IEnumerable<TIndex>>> map)
         {
+            _map = async (x,token) => await map(x);
+            return this;
+        }
+
+        public IGroupFor<TIndex> Map(Func<T, CancellationToken, Task<IEnumerable<TIndex>>> map)
+        {
             _map = map;
             return this;
         }
 
-        public IGroupFor<TIndex> Map(Func<T, Task<TIndex>> map)
+        public IGroupFor<TIndex> Map(Func<T,  Task<TIndex>> map)
         {
-            _map = async x => new[] { await map(x) };
+            _map = async (x, token) => new[] { await map(x) };
+            return this;
+        }
+
+        public IGroupFor<TIndex> Map(Func<T, CancellationToken, Task<TIndex>> map)
+        {
+            _map = async (x, token) => new[] { await map(x, token) };
             return this;
         }
 
@@ -113,9 +128,9 @@ namespace YesSql.Indexes
             _delete = delete;
         }
 
-        Func<object, Task<IEnumerable<IIndex>>> IDescribeFor.GetMap()
+        Func<object, CancellationToken, Task<IEnumerable<IIndex>>> IDescribeFor.GetMap()
         {
-            return async x => (await _map((T)x) ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
+            return async (x, token) => (await _map((T)x, token) ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
         }
 
         Func<IGrouping<object, IIndex>, IIndex> IDescribeFor.GetReduce()

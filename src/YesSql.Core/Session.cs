@@ -91,7 +91,7 @@ namespace YesSql
         public void Save(object entity, bool checkConcurrency = false, string collection = null)
             => SaveAsync(entity, checkConcurrency, collection).GetAwaiter().GetResult();
 
-        public async Task SaveAsync(object entity, bool checkConcurrency = false, string collection = null)
+        public async Task SaveAsync(object entity, bool checkConcurrency = false, string collection = null, CancellationToken cancellationToken = default)
         {
             var state = GetState(collection);
 
@@ -151,7 +151,7 @@ namespace YesSql
             }
 
             // It's a new entity
-            id = await _store.GetNextIdAsync(collection);
+            id = await _store.GetNextIdAsync(collection, cancellationToken);
             state.IdentityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
@@ -263,7 +263,7 @@ namespace YesSql
             state._identityMap?.Clear();
         }
 
-        public async Task ResetAsync()
+        public async Task ResetAsync( )
         {
             CheckDisposed();
 
@@ -284,7 +284,7 @@ namespace YesSql
             }
         }
 
-        private async Task SaveEntityAsync(object entity, string collection)
+        private async Task SaveEntityAsync(object entity, string collection, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(entity);
 
@@ -312,7 +312,7 @@ namespace YesSql
 
             doc.Id = id;
 
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var versionAccessor = _store.GetVersionAccessor(entity.GetType());
             if (versionAccessor != null)
@@ -335,10 +335,10 @@ namespace YesSql
 
             state.IdentityMap.AddDocument(doc);
 
-            await MapNew(doc, entity, collection);
+            await MapNew(doc, entity, collection, cancellationToken);
         }
 
-        private async Task UpdateEntityAsync(object entity, bool tracked, string collection)
+        private async Task UpdateEntityAsync(object entity, bool tracked, string collection, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(entity);
 
@@ -362,7 +362,7 @@ namespace YesSql
 
             if (!state.IdentityMap.TryGetDocument(id, out var oldDoc))
             {
-                oldDoc = await GetDocumentByIdAsync(id, collection);
+                oldDoc = await GetDocumentByIdAsync(id, collection, cancellationToken);
 
                 if (oldDoc == null)
                 {
@@ -411,11 +411,11 @@ namespace YesSql
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
 
             // Update map index
-            await MapDeleted(oldDoc, oldObj, collection);
+            await MapDeleted(oldDoc, oldObj, collection, cancellationToken);
 
-            await MapNew(oldDoc, entity, collection);
+            await MapNew(oldDoc, entity, collection, cancellationToken);
 
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             oldDoc.Content = newContent;
 
@@ -424,9 +424,9 @@ namespace YesSql
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
         }
 
-        private async Task<Document> GetDocumentByIdAsync(long id, string collection)
+        private async Task<Document> GetDocumentByIdAsync(long id, string collection, CancellationToken cancellationToken = default)
         {
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -435,7 +435,7 @@ namespace YesSql
 
             try
             {
-                var result = await _store.ProduceAsync(key, (key, state) =>
+                var result = await _store.ProduceAsync(key, static (key, state) =>
                 {
                     var logger = state.Store.Configuration.Logger;
 
@@ -443,10 +443,10 @@ namespace YesSql
                     {
                         logger.LogTrace(state.Command);
                     }
-
-                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
+                    
+                    return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
-                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id } });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id }, CancellationToken = cancellationToken });
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
                 return result.FirstOrDefault()?.Clone();
@@ -468,7 +468,7 @@ namespace YesSql
             state.Deleted.Add(obj);
         }
 
-        private async Task DeleteEntityAsync(object obj, string collection)
+        private async Task DeleteEntityAsync(object obj, string collection, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
@@ -487,7 +487,7 @@ namespace YesSql
                 id = accessor.Get(obj);
             }
 
-            var doc = await GetDocumentByIdAsync(id, collection);
+            var doc = await GetDocumentByIdAsync(id, collection, cancellationToken);
 
             if (doc != null)
             {
@@ -495,7 +495,7 @@ namespace YesSql
                 state.IdentityMap.Remove(id, obj);
 
                 // Update impacted indexes
-                await MapDeleted(doc, obj, collection);
+                await MapDeleted(doc, obj, collection, cancellationToken);
 
                 _commands ??= [];
 
@@ -504,7 +504,7 @@ namespace YesSql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, CancellationToken cancellationToken = default) where T : class
         {
             if (ids?.Length == 0)
             {
@@ -514,9 +514,9 @@ namespace YesSql
             CheckDisposed();
 
             // Auto-flush
-            await FlushAsync();
+            await FlushAsync(cancellationToken);
 
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -533,10 +533,10 @@ namespace YesSql
                     {
                         logger.LogTrace(state.Command);
                     }
-
-                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
+                    
+                    return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
-                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids } });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids }, CancellationToken = cancellationToken });
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
                 var sortedDocuments = documents.Select(x => x.Clone())
@@ -685,12 +685,12 @@ namespace YesSql
             GC.SuppressFinalize(this);
         }
 
-        public Task FlushAsync()
+        public Task FlushAsync(CancellationToken cancellationToken = default)
         {
-            return FlushInternalAsync(false);
+            return FlushInternalAsync(false, cancellationToken);
         }
 
-        private async Task FlushInternalAsync(bool saving)
+        private async Task FlushInternalAsync(bool saving, CancellationToken cancellationToken)
         {
             if (!HasWork())
             {
@@ -731,7 +731,7 @@ namespace YesSql
                     {
                         if (!state.Deleted.Contains(obj))
                         {
-                            await UpdateEntityAsync(obj, true, collection);
+                            await UpdateEntityAsync(obj, true, collection, cancellationToken);
                         }
                     }
 
@@ -740,27 +740,27 @@ namespace YesSql
                     {
                         if (!state.Deleted.Contains(obj))
                         {
-                            await UpdateEntityAsync(obj, false, collection);
+                            await UpdateEntityAsync(obj, false, collection, cancellationToken);
                         }
                     }
 
                     // saving all pending entities
                     foreach (var obj in state.Saved)
                     {
-                        await SaveEntityAsync(obj, collection);
+                        await SaveEntityAsync(obj, collection, cancellationToken);
                     }
 
                     // deleting all pending entities
                     foreach (var obj in state.Deleted)
                     {
-                        await DeleteEntityAsync(obj, collection);
+                        await DeleteEntityAsync(obj, collection, cancellationToken);
                     }
                 }
 
                 // compute all reduce indexes
-                await ReduceAsync();
+                await ReduceAsync(cancellationToken);
 
-                await BeginTransactionAsync();
+                await BeginTransactionAsync(cancellationToken);
 
                 BatchCommands();
 
@@ -768,7 +768,7 @@ namespace YesSql
                 {
                     foreach (var command in _commands)
                     {
-                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger);
+                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger); // TODO cancel
                     }
                 }
             }
@@ -923,7 +923,7 @@ namespace YesSql
             Interlocked.Decrement(ref _asyncOperations);
         }
 
-        public async Task SaveChangesAsync()
+        public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             EnterAsyncExecution();
 
@@ -931,14 +931,14 @@ namespace YesSql
             {
                 if (!_cancel)
                 {
-                    await FlushInternalAsync(true);
+                    await FlushInternalAsync(true, cancellationToken);
 
                     _save = true;
                 }
             }
             finally
             {
-                await CommitOrRollbackTransactionAsync();
+                await CommitOrRollbackTransactionAsync(cancellationToken);
                 ExitAsyncExecution();
             }
         }
@@ -955,7 +955,7 @@ namespace YesSql
 
             try
             {
-                await CommitOrRollbackTransactionAsync();
+                await CommitOrRollbackTransactionAsync(CancellationToken.None);
             }
             catch
             {
@@ -966,7 +966,7 @@ namespace YesSql
             GC.SuppressFinalize(this);
         }
 
-        private async Task CommitOrRollbackTransactionAsync()
+        private async Task CommitOrRollbackTransactionAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -974,12 +974,12 @@ namespace YesSql
                 {
                     if (_cancel || !_save)
                     {
-                        await _transaction.RollbackAsync();
+                        await _transaction.RollbackAsync(cancellationToken);
 
                         return;
                     }
 
-                    await _transaction.CommitAsync();
+                    await _transaction.CommitAsync(cancellationToken);
                 }
             }
             finally
@@ -991,7 +991,7 @@ namespace YesSql
         /// <summary>
         /// Clears all the resources associated to the transaction.
         /// </summary>
-        private async Task ReleaseTransactionAsync()
+        private async Task ReleaseTransactionAsync( )
         {
             foreach (var state in _collectionStates.Values)
             {
@@ -1017,7 +1017,7 @@ namespace YesSql
             }
         }
 
-        private async Task ReleaseConnectionAsync()
+        private async Task ReleaseConnectionAsync(  )
         {
             await ReleaseTransactionAsync();
 
@@ -1088,7 +1088,7 @@ namespace YesSql
             return false;
         }
 
-        private async Task ReduceAsync()
+        private async Task ReduceAsync(CancellationToken cancellationToken = default)
         {
             foreach (var collectionState in _collectionStates)
             {
@@ -1152,7 +1152,7 @@ namespace YesSql
                             }
                         }
 
-                        var dbIndex = await ReduceForAsync(descriptor, currentKey, collection);
+                        var dbIndex = await ReduceForAsync(descriptor, currentKey, collection, cancellationToken);
 
                         // if index present in db and new objects, reduce them
                         if (dbIndex != null && index != null)
@@ -1228,14 +1228,14 @@ namespace YesSql
             }
         }
 
-        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection)
+        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection, CancellationToken cancellationToken )
         {
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name, _store.Configuration.Schema) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
-            var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);
+            var index = await _connection.QueryAsync(descriptor.IndexType, new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken)); 
             return index.FirstOrDefault() as ReduceIndex;
         }
 
@@ -1287,7 +1287,7 @@ namespace YesSql
             return typedDescriptors;
         }
 
-        private async Task MapNew(Document document, object obj, string collection)
+        private async Task MapNew(Document document, object obj, string collection, CancellationToken cancellationToken)
         {
             var descriptors = GetDescriptors(obj.GetType(), collection);
 
@@ -1301,7 +1301,7 @@ namespace YesSql
                     continue;
                 }
 
-                var mapped = await descriptor.Map(obj);
+                var mapped = await descriptor.Map(obj, cancellationToken);
 
                 if (mapped != null)
                 {
@@ -1347,7 +1347,7 @@ namespace YesSql
         /// <summary>
         /// Update map and reduce indexes when an entity is deleted.
         /// </summary>
-        private async Task MapDeleted(Document document, object obj, string collection)
+        private async Task MapDeleted(Document document, object obj, string collection, CancellationToken cancellationToken)
         {
             var descriptors = GetDescriptors(obj.GetType(), collection);
 
@@ -1370,7 +1370,7 @@ namespace YesSql
                 }
                 else
                 {
-                    var mapped = await descriptor.Map(obj);
+                    var mapped = await descriptor.Map(obj, cancellationToken);
 
                     if (mapped != null)
                     {
@@ -1393,7 +1393,7 @@ namespace YesSql
         /// <summary>
         /// Initializes a new connection if none has been yet. Use this method when reads need to be done.
         /// </summary>
-        public async Task<DbConnection> CreateConnectionAsync()
+        public async Task<DbConnection> CreateConnectionAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
@@ -1401,7 +1401,7 @@ namespace YesSql
 
             if (_connection.State == ConnectionState.Closed)
             {
-                await _connection.OpenAsync();
+                await _connection.OpenAsync(cancellationToken);
             }
 
             return _connection;
@@ -1409,23 +1409,23 @@ namespace YesSql
 
         public DbTransaction CurrentTransaction => _transaction;
 
-        public Task<DbTransaction> BeginTransactionAsync()
-            => BeginTransactionAsync(Store.Configuration.IsolationLevel);
+        public Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+            => BeginTransactionAsync(Store.Configuration.IsolationLevel, cancellationToken);
 
         /// <summary>
         /// Begins a new transaction if none has been yet. Use this method when writes need to be done.
         /// </summary>
-        public async Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
+        public async Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
             if (_transaction == null)
             {
-                await CreateConnectionAsync();
+                await CreateConnectionAsync(cancellationToken);
 
                 // In the case of shared connections (InMemory) this can throw as the transaction
                 // might already be set by a concurrent thread on the same shared connection.
-                _transaction = await _connection.BeginTransactionAsync(isolationLevel);
+                _transaction = await _connection.BeginTransactionAsync(isolationLevel, cancellationToken);
             }
 
             return _transaction;
