@@ -5,6 +5,7 @@
 
     <ItemGroup>
         <PackageReference Include="Dapper.StrongName" />
+        <PackageReference Include="Meziantou.Analyzer" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     </ItemGroup>
 

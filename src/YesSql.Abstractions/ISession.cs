@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -30,7 +31,8 @@ namespace YesSql
         /// <param name="obj">The entity to save.</param>
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
         /// <param name="collection">The name of the collection to store the object in.</param>
-        Task SaveAsync(object obj, bool checkConcurrency = false, string collection = null);
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task SaveAsync(object obj, bool checkConcurrency = false, string collection = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Deletes an object and its indexes from the store.
@@ -80,7 +82,7 @@ namespace YesSql
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class;
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, CancellationToken cancellationToken = default) where T : class;
 
         /// <summary>
         /// Creates a new <see cref="IQuery"/> object.
@@ -116,7 +118,7 @@ namespace YesSql
         /// This doesn't commit or dispose of the transaction. A call to <see cref="SaveChangesAsync"/>
         /// is still necessary for the changes to be visible from other transactions.
         /// </remarks>
-        Task FlushAsync();
+        Task FlushAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Flushes any changes, commits the transaction, and disposes the transaction.
@@ -125,22 +127,22 @@ namespace YesSql
         /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync"/>
         /// must be called before disposing the <see cref="ISession"/>
         /// </remarks>
-        Task SaveChangesAsync();
+        Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates or returns a <see cref="DbConnection"/>.
         /// </summary>
-        Task<DbConnection> CreateConnectionAsync();
+        Task<DbConnection> CreateConnectionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
         /// </summary>
-        Task<DbTransaction> BeginTransactionAsync();
+        Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
         /// </summary>
-        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel);
+        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns the current <see cref="DbTransaction"/> if it exists.

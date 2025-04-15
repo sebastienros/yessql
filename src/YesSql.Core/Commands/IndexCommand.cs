@@ -7,6 +7,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 using YesSql.Serialization;
@@ -24,11 +25,11 @@ namespace YesSql.Commands
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
 
-        protected static PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
+        protected static readonly PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
         public abstract int ExecutionOrder { get; }
 
-        public IndexCommand(IIndex index, IStore store, string collection)
+        protected IndexCommand(IIndex index, IStore store, string collection)
         {
             Index = index;
             _store = store;
@@ -39,7 +40,7 @@ namespace YesSql.Commands
         public Document Document { get; }
         public string Collection { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
 
         public static void ResetQueryCache()
         {
