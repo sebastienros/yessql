@@ -7162,5 +7162,109 @@ namespace YesSql.Tests
                 _store.Configuration.EnableThreadSafetyChecks = false;
             }
         }
+
+        [Fact]
+        public async Task ShouldThrowTaskWasCancelledDuringSaveChangesAsync()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            cancellationTokenSource.Cancel();
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                {
+                    await session.SaveChangesAsync(cancellationToken);
+                });
+            }
+        }
+
+
+        [Fact]
+        public async Task ShouldThrowTaskWasCancelledOnListAsync()
+        {
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                {
+                    await session.Query<Person>().ListAsync(cancellationToken);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowTaskWasCancelledOnFirstOrDefaultAsync()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                {
+                    await session.Query<Person>().FirstOrDefaultAsync(cancellationToken);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowTaskWasCancelledOnCountAsync()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                {
+                    await session.Query<Person>().CountAsync(cancellationToken);
+                });
+            }
+        }
     }
 }
