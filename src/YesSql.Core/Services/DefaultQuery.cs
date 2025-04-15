@@ -1153,8 +1153,7 @@ namespace YesSql.Services
                     {
                         logger.LogDebug(state.Sql);
                     }
-
-                    return state.Connection.ExecuteScalarAsync<int>(new CommandDefinition(state.Sql, state.Parameters, state.Transaction, cancellationToken: state.CancellationToken));
+                    return state.Connection.ExecuteScalarAsync<int>(new CommandDefinition(state.Sql, state.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
                 new { Session = _session, Sql = sql, Parameters = parameters, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
             }
@@ -1265,9 +1264,7 @@ namespace YesSql.Services
                             {
                                 logger.LogDebug(state.Sql);
                             }
-
-                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, cancellationToken: state.CancellationToken));
-
+                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken })).FirstOrDefault();
                     }
                     else
@@ -1284,7 +1281,7 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, cancellationToken: state.CancellationToken));
+                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
@@ -1375,7 +1372,7 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, cancellationToken: state.CancellationToken));
+                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
                     }
                     else
@@ -1405,7 +1402,7 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, cancellationToken: state.CancellationToken));
+                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
                         // Clone documents returned from ProduceAsync as they might be shared across sessions

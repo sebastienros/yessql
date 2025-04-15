@@ -7164,7 +7164,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldThrowTaskWasCancelledDuringSaveChangesAsync()
+        public async Task ShouldThrowWhenCanceledOnSaveChangesAsync()
         {
             var cancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = cancellationTokenSource.Token;
@@ -7180,7 +7180,8 @@ namespace YesSql.Tests
 
                 await session.SaveAsync(bill);
 
-                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                // Postgres uses OperationCanceled, other providers use TaskCanceled
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
                     await session.SaveChangesAsync(cancellationToken);
                 });
@@ -7189,7 +7190,7 @@ namespace YesSql.Tests
 
 
         [Fact]
-        public async Task ShouldThrowTaskWasCancelledOnListAsync()
+        public async Task ShouldThrowWhenCanceledOnListAsync()
         {
 
             await using (var session = _store.CreateSession())
@@ -7208,7 +7209,7 @@ namespace YesSql.Tests
                 var cancellationToken = cancellationTokenSource.Token;
                 cancellationTokenSource.Cancel();
 
-                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
                     await session.Query<Person>().ListAsync(cancellationToken);
                 });
@@ -7216,7 +7217,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldThrowTaskWasCancelledOnFirstOrDefaultAsync()
+        public async Task ShouldThrowWhenCancelledOnFirstOrDefaultAsync()
         {
             await using (var session = _store.CreateSession())
             {
@@ -7234,7 +7235,7 @@ namespace YesSql.Tests
                 var cancellationToken = cancellationTokenSource.Token;
                 cancellationTokenSource.Cancel();
 
-                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
                     await session.Query<Person>().FirstOrDefaultAsync(cancellationToken);
                 });
@@ -7242,7 +7243,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldThrowTaskWasCancelledOnCountAsync()
+        public async Task ShouldThrowWhenCanceledOnCountAsync()
         {
             await using (var session = _store.CreateSession())
             {
@@ -7260,7 +7261,7 @@ namespace YesSql.Tests
                 var cancellationToken = cancellationTokenSource.Token;
                 cancellationTokenSource.Cancel();
 
-                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
                     await session.Query<Person>().CountAsync(cancellationToken);
                 });
