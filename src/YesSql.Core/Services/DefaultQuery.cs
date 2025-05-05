@@ -7,6 +7,7 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Indexes;
@@ -1101,12 +1102,12 @@ namespace YesSql.Services
             _queryState._sqlBuilder.ThenOrderByRandom();
         }
 
-        public async Task<int> CountAsync()
+        public async Task<int> CountAsync(CancellationToken cancellationToken = default)
         {
             // Commit any pending changes before doing a query (auto-flush)
-            await _session.FlushAsync();
+            await _session.FlushAsync(cancellationToken);
 
-            var connection = await _session.CreateConnectionAsync();
+            var connection = await _session.CreateConnectionAsync(cancellationToken);
             var transaction = _session.CurrentTransaction;
 
             _queryState.FlushFilters();
@@ -1152,10 +1153,9 @@ namespace YesSql.Services
                     {
                         logger.LogDebug(state.Sql);
                     }
-
-                    return state.Connection.ExecuteScalarAsync<int>(state.Sql, state.Parameters, state.Transaction);
+                    return state.Connection.ExecuteScalarAsync<int>(new CommandDefinition(state.Sql, state.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
-                new { Session = _session, Sql = sql, Parameters = parameters, Connection = connection, Transaction = transaction });
+                new { Session = _session, Sql = sql, Parameters = parameters, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
             }
             catch
             {
@@ -1222,17 +1222,17 @@ namespace YesSql.Services
                 return _query._queryState.GetTypeAlias(type);
             }
 
-            public Task<T> FirstOrDefaultAsync()
+            public Task<T> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
             {
-                return FirstOrDefaultImpl();
+                return FirstOrDefaultImpl(cancellationToken);
             }
 
-            protected async Task<T> FirstOrDefaultImpl()
+            protected async Task<T> FirstOrDefaultImpl(CancellationToken cancellationToken = default)
             {
                 // Flush any pending changes before doing a query (auto-flush)
-                await _query._session.FlushAsync();
+                await _query._session.FlushAsync(cancellationToken);
 
-                var connection = await _query._session.CreateConnectionAsync();
+                var connection = await _query._session.CreateConnectionAsync(cancellationToken);
                 var transaction = _query._session.CurrentTransaction;
 
                 _query._queryState.FlushFilters();
@@ -1264,10 +1264,8 @@ namespace YesSql.Services
                             {
                                 logger.LogDebug(state.Sql);
                             }
-
-                            return state.Connection.QueryAsync<T>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
-
-                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction })).FirstOrDefault();
+                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken })).FirstOrDefault();
                     }
                     else
                     {
@@ -1283,8 +1281,8 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<Document>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
-                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
+                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         var clonedDocuments = documents.Select(x => x.Clone()).ToList();
@@ -1310,28 +1308,30 @@ namespace YesSql.Services
                 }
             }
 
-            Task<IEnumerable<T>> IQuery<T>.ListAsync()
+            Task<IEnumerable<T>> IQuery<T>.ListAsync(CancellationToken cancellationToken)
             {
-                return ListImpl();
+                return ListImpl(cancellationToken);
             }
 
-            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
+#pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
+            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
+#pragma warning restore CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl())
+                foreach (var item in await ListImpl(cancellationToken))
                 {
                     yield return item;
                 }
             }
 
-            internal async Task<IEnumerable<T>> ListImpl()
+            internal async Task<IEnumerable<T>> ListImpl(CancellationToken cancellationToken)
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can return it by default, and buffer it in ListAsync instead
 
                 // Flush any pending changes before doing a query (auto-flush)
-                await _query._session.FlushAsync();
+                await _query._session.FlushAsync(cancellationToken);
 
-                var connection = await _query._session.CreateConnectionAsync();
+                var connection = await _query._session.CreateConnectionAsync(cancellationToken);
                 var transaction = _query._session.CurrentTransaction;
                 var schema = _query._queryState._store.Configuration.Schema;
                 var sqlBuilder = _query._queryState._sqlBuilder;
@@ -1372,8 +1372,8 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<T>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
-                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
+                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
                     }
                     else
                     {
@@ -1402,8 +1402,8 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<Document>(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction);
-                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction });
+                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         documents = documents.Select(x => x.Clone());
@@ -1489,9 +1489,9 @@ namespace YesSql.Services
                 return this;
             }
 
-            Task<int> IQuery<T>.CountAsync()
+            Task<int> IQuery<T>.CountAsync(CancellationToken cancellationToken)
             {
-                return _query.CountAsync();
+                return _query.CountAsync(cancellationToken);
             }
 
             IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)
@@ -1615,20 +1615,22 @@ namespace YesSql.Services
             public QueryIndex(DefaultQuery query) : base(query)
             { }
 
-            Task<T> IQueryIndex<T>.FirstOrDefaultAsync()
+            Task<T> IQueryIndex<T>.FirstOrDefaultAsync(CancellationToken cancellationToken)
             {
-                return FirstOrDefaultImpl();
+                return FirstOrDefaultImpl(cancellationToken);
             }
 
-            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
+            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
             {
-                return ListImpl();
+                return ListImpl(cancellationToken);
             }
 
-            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable()
+#pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
+            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
+#pragma warning restore CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
             {
                 // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl())
+                foreach (var item in await ListImpl(cancellationToken))
                 {
                     yield return item;
                 }
@@ -1662,9 +1664,9 @@ namespace YesSql.Services
                 return this;
             }
 
-            async Task<int> IQueryIndex<T>.CountAsync()
+            async Task<int> IQueryIndex<T>.CountAsync(CancellationToken cancellationToken)
             {
-                return await _query.CountAsync();
+                return await _query.CountAsync(cancellationToken);
             }
 
             IQueryIndex<TIndex> IQueryIndex<T>.With<TIndex>()

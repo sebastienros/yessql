@@ -20,10 +20,10 @@ namespace YesSql.Tests
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            return IsLevelEnabled(logLevel);
+            return ConsoleLogger.IsLevelEnabled(logLevel);
         }
 
-        public bool IsLevelEnabled(LogLevel logLevel)
+        public static bool IsLevelEnabled(LogLevel logLevel)
         {
             return true;
         }

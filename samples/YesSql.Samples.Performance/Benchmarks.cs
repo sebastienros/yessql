@@ -254,7 +254,10 @@ namespace YesSql.Samples.Performance
 
                 if (batch % batchSize == 0)
                 {
-                    users.ForEach(async u => await session.SaveAsync(u));
+                    foreach(var user in users)
+                    {
+                        await session.SaveAsync(user);
+                    }
                     await session.SaveChangesAsync();
                     await session.DisposeAsync();
                     session = _store.CreateSession();
@@ -262,7 +265,10 @@ namespace YesSql.Samples.Performance
                 }
             }
 
-            users.ForEach(async u => await session.SaveAsync(u));
+            foreach(var user in users)
+            {
+                await session.SaveAsync(user);
+            }
             await session.SaveChangesAsync();
             await session.DisposeAsync();
             session = _store.CreateSession();

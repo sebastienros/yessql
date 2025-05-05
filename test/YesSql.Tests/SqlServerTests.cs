@@ -16,7 +16,7 @@ namespace YesSql.Tests
     {
         public abstract SqlConnectionStringBuilder ConnectionStringBuilder { get; }
 
-        public SqlServerTests(ITestOutputHelper output) : base(output)
+        protected SqlServerTests(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -171,7 +171,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                     await session.DisposeAsync();
                 }
             }
@@ -223,7 +223,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                     await session.DisposeAsync();
                 }
             }
@@ -275,7 +275,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                     await session.DisposeAsync();
                 }
             }

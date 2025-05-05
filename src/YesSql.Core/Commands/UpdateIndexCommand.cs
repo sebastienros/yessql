@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -27,7 +28,7 @@ namespace YesSql.Commands
             _deletedDocumentIds = deletedDocumentIds.ToArray();
         }
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
             var type = Index.GetType();
 
@@ -37,7 +38,7 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(sql);
             }
-            await connection.ExecuteAsync(sql, Index, transaction);
+            await connection.ExecuteAsync(new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
 
             // Update the documents list
             if (Index is ReduceIndex)
