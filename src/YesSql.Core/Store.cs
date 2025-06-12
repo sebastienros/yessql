@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
@@ -84,7 +85,7 @@ namespace YesSql
             Dialect = Configuration.SqlDialect;
         }
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             IndexCommand.ResetQueryCache();
             ValidateConfiguration();
@@ -95,31 +96,31 @@ namespace YesSql
             {
                 await using (var connection = Configuration.ConnectionFactory.CreateConnection())
                 {
-                    await connection.OpenAsync();
+                    await connection.OpenAsync(cancellationToken);
 
-                    await using var transaction = await connection.BeginTransactionAsync(Configuration.IsolationLevel);
+                    await using var transaction = await connection.BeginTransactionAsync(Configuration.IsolationLevel, cancellationToken);
 
                     var builder = new SchemaBuilder(Configuration, transaction);
 
                     await builder.CreateSchemaAsync(Configuration.Schema);
 
-                    await transaction.CommitAsync();
+                    await transaction.CommitAsync(cancellationToken);
                 }
             }
 
             // Initialize the Id generator
-            await Configuration.IdGenerator.InitializeAsync(this);
+            await Configuration.IdGenerator.InitializeAsync(this, cancellationToken);
 
             // Pre-initialize the default collection
-            await InitializeCollectionAsync(string.Empty);
+            await InitializeCollectionAsync(string.Empty, cancellationToken);
         }
 
-        public async Task InitializeCollectionAsync(string collection)
+        public async Task InitializeCollectionAsync(string collection, CancellationToken cancellationToken = default)
         {
             var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
             await using var connection = Configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
             try
             {
@@ -135,7 +136,7 @@ namespace YesSql
 
                 Configuration.Logger.LogTrace(selectCommand.CommandText);
 
-                using var result = await selectCommand.ExecuteReaderAsync();
+                using var result = await selectCommand.ExecuteReaderAsync(cancellationToken);
                 if (result != null)
                 {
                     try
@@ -146,7 +147,7 @@ namespace YesSql
                     catch
                     {
                         await result.CloseAsync();
-                        await using var migrationTransaction = await connection.BeginTransactionAsync();
+                        await using var migrationTransaction = await connection.BeginTransactionAsync(cancellationToken);
                         var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
                         try
@@ -155,12 +156,12 @@ namespace YesSql
                                     .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
                                 );
 
-                            await migrationTransaction.CommitAsync();
+                            await migrationTransaction.CommitAsync(cancellationToken);
                         }
                         catch
                         {
                             // Another thread must have altered it
-                            await migrationTransaction.RollbackAsync();
+                            await migrationTransaction.RollbackAsync(cancellationToken);
                         }
                     }
                     return;
@@ -168,7 +169,7 @@ namespace YesSql
             }
             catch
             {
-                await using var transaction = await connection.BeginTransactionAsync();
+                await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
                 var builder = new SchemaBuilder(Configuration, transaction);
 
                 try
@@ -185,7 +186,7 @@ namespace YesSql
                         .CreateIndex("IX_" + documentTable + "_Type", "Type")
                     );
 
-                    await transaction.CommitAsync();
+                    await transaction.CommitAsync(cancellationToken);
                 }
                 catch
                 {
@@ -194,7 +195,7 @@ namespace YesSql
             }
             finally
             {
-                await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection);
+                await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection, cancellationToken);
             }
         }
 
@@ -264,8 +265,8 @@ namespace YesSql
         public long GetNextId(string collection)
             => GetNextIdAsync(collection).GetAwaiter().GetResult();
 
-        public Task<long> GetNextIdAsync(string collection)
-            => Configuration.IdGenerator.GetNextIdAsync(collection);
+        public Task<long> GetNextIdAsync(string collection, CancellationToken cancellationToken = default)
+            => Configuration.IdGenerator.GetNextIdAsync(collection, cancellationToken);
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)
         {
@@ -290,7 +291,7 @@ namespace YesSql
         /// <param name="key">A key identifying the running work.</param>
         /// <param name="work">A function containing the logic to execute.</param>
         /// <returns>The result of the work.</returns>
-        internal Task<T> ProduceAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState, Task<T>> work, TState state)
+        internal Task<T> ProduceAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState,  Task< T>> work, TState state)
         {
             if (!Configuration.QueryGatingEnabled)
             {
@@ -300,9 +301,9 @@ namespace YesSql
             return ProduceAwaitedAsync(key, work, state);
         }
 
-        internal async Task<T> ProduceAwaitedAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState, Task<T>> work, TState state)
+        internal async Task<T> ProduceAwaitedAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState,  Task<T>> work, TState state)
         {
-            var content = await _dispatcher.ScheduleAsync(key, state, async (key, state) => await work(key, state));
+            var content = await _dispatcher.ScheduleAsync(key, state, async (key, state) => await work(key, state)); // TODO cancellation token into dispatcher?
 
             return (T)content;
         }
