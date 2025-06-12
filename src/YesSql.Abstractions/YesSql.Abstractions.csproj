@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
         <PackageReference Include="Meziantou.Analyzer" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
         <!-- Latest minimum LTS version. We don't want to force a higher version to applications -->
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     </ItemGroup>

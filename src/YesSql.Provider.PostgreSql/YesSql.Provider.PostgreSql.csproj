@@ -2,6 +2,7 @@
 
     <ItemGroup>
         <PackageReference Include="Meziantou.Analyzer" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
         <ProjectReference Include="..\YesSql.Core\YesSql.Core.csproj" />
     </ItemGroup>
 
