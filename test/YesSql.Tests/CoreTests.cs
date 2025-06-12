@@ -36,7 +36,7 @@ namespace YesSql.Tests
         protected abstract IConfiguration CreateConfiguration();
 
 
-        public CoreTests(ITestOutputHelper output)
+        protected CoreTests(ITestOutputHelper output)
         {
             _output = output;
         }
@@ -1126,7 +1126,7 @@ namespace YesSql.Tests
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Name == firstname && x.Adult == true).FirstOrDefaultAsync());
 
                 // bool && IsIn
-                Assert.Null(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new string[0])).FirstOrDefaultAsync());
+                Assert.Null(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(Array.Empty<string>())).FirstOrDefaultAsync());
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill" })).FirstOrDefaultAsync());
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill", "Steve" })).FirstOrDefaultAsync());
 
@@ -2975,7 +2975,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName, StringComparison.Ordinal));
                 }
             }
 
@@ -2991,7 +2991,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(-1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(-1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName, StringComparison.Ordinal));
                 }
             }
 
@@ -3007,7 +3007,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName, StringComparison.Ordinal));
                 }
             }
         }
@@ -3325,7 +3325,7 @@ namespace YesSql.Tests
                 await session.SaveAsync(new Circle { Radius = 5 });
 
                 await session.SaveChangesAsync();
-            };
+            }
 
             await using (var session = _store.CreateSession())
             {
@@ -3890,7 +3890,7 @@ namespace YesSql.Tests
                     .CountAsync());
 
                 Assert.Equal(0, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.IsIn(new string[0]))
+                    .With<PersonByName>(x => x.SomeName.IsIn(Array.Empty<string>()))
                     .CountAsync());
             }
         }
@@ -3931,7 +3931,7 @@ namespace YesSql.Tests
                     .CountAsync());
 
                 Assert.Equal(3, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.IsNotIn(new string[0]))
+                    .With<PersonByName>(x => x.SomeName.IsNotIn(Array.Empty<string>()))
                     .CountAsync());
             }
         }
@@ -5235,7 +5235,7 @@ namespace YesSql.Tests
                     new FailingCommand(new Document())
                 };
 
-            await Assert.ThrowsAnyAsync<Exception>(session.SaveChangesAsync);
+            await Assert.ThrowsAnyAsync<Exception>(async () => await session.SaveChangesAsync());
 
             Assert.Null(session._commands);
         }
@@ -7160,6 +7160,111 @@ namespace YesSql.Tests
             finally
             {
                 _store.Configuration.EnableThreadSafetyChecks = false;
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowWhenCanceledOnSaveChangesAsync()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            cancellationTokenSource.Cancel();
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                // Postgres uses OperationCanceled, other providers use TaskCanceled
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.SaveChangesAsync(cancellationToken);
+                });
+            }
+        }
+
+
+        [Fact]
+        public async Task ShouldThrowWhenCanceledOnListAsync()
+        {
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.Query<Person>().ListAsync(cancellationToken);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowWhenCancelledOnFirstOrDefaultAsync()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.Query<Person>().FirstOrDefaultAsync(cancellationToken);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowWhenCanceledOnCountAsync()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.Query<Person>().CountAsync(cancellationToken);
+                });
             }
         }
     }

@@ -22,10 +22,10 @@ namespace YesSql.Tests
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            return IsLevelEnabled(logLevel);
+            return TestLogger.IsLevelEnabled(logLevel);
         }
 
-        public bool IsLevelEnabled(LogLevel logLevel)
+        public static bool IsLevelEnabled(LogLevel logLevel)
         {
             return true;
         }
@@ -52,7 +52,7 @@ namespace YesSql.Tests
         }
     }
 
-    public class FakeScope : IDisposable
+    public sealed class FakeScope : IDisposable
     {
         public void Dispose()
         {

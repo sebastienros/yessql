@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
+        <PackageReference Include="Meziantou.Analyzer" />
         <ProjectReference Include="..\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj" />
         <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
     </ItemGroup>

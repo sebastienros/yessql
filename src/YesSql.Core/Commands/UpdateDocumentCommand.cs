@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YesSql.Commands
@@ -20,7 +21,7 @@ namespace YesSql.Commands
             _checkVersion = checkVersion;
         }
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
@@ -39,7 +40,7 @@ namespace YesSql.Commands
                 logger.LogTrace(updateCmd);
             }
 
-            var updatedCount = await connection.ExecuteAsync(updateCmd, Document, transaction);
+            var updatedCount = await connection.ExecuteAsync(new CommandDefinition(updateCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
 
             if (_checkVersion > -1 && updatedCount != 1)
             {
