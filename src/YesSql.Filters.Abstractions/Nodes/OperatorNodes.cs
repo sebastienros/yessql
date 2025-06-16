@@ -41,7 +41,7 @@ namespace YesSql.Filters.Abstractions.Nodes
                     OperateNodeQuotes.None => Value,
                     OperateNodeQuotes.Double => $"\"{Value}\"",
                     OperateNodeQuotes.Single => $"\'{Value}\'",
-                    _ => throw new NotImplementedException()
+                    _ => throw new NotSupportedException()
                 };
             }
             else
