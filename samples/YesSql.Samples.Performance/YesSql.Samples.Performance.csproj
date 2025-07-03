@@ -11,7 +11,7 @@
         <None Remove="Properties\**" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+        <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
