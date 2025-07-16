@@ -35,6 +35,33 @@ namespace YesSql
         Task SaveAsync(object obj, bool checkConcurrency = false, string collection = null, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Saves a new or existing object to the store, and updates
+        /// the corresponding indexes.
+        /// </summary>
+        /// <param name="obj">The entity to save.</param>
+        /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
+        /// <param name="collection">The name of the collection to store the object in.</param>
+        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task SaveAsync(object obj, bool checkConcurrency, string collection);
+
+        /// <summary>
+        /// Saves a new or existing object to the store, and updates
+        /// the corresponding indexes.
+        /// </summary>
+        /// <param name="obj">The entity to save.</param>
+        /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
+        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task SaveAsync(object obj, bool checkConcurrency);
+
+        /// <summary>
+        /// Saves a new or existing object to the store, and updates
+        /// the corresponding indexes.
+        /// </summary>
+        /// <param name="obj">The entity to save.</param>
+        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task SaveAsync(object obj);
+
+        /// <summary>
         /// Deletes an object and its indexes from the store.
         /// </summary>
         void Delete(object item, string collection = null);
@@ -85,6 +112,20 @@ namespace YesSql
         Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, CancellationToken cancellationToken = default) where T : class;
 
         /// <summary>
+        /// Loads objects by id.
+        /// </summary>
+        /// <returns>A collection of objects in the same order they were defined.</returns>
+        [Obsolete($"Instead, utilize the {nameof(GetAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection) where T : class;
+
+        /// <summary>
+        /// Loads objects by id.
+        /// </summary>
+        /// <returns>A collection of objects in the same order they were defined.</returns>
+        [Obsolete($"Instead, utilize the {nameof(GetAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids) where T : class;
+
+        /// <summary>
         /// Creates a new <see cref="IQuery"/> object.
         /// </summary>
         IQuery Query(string collection = null);
@@ -100,7 +141,7 @@ namespace YesSql
         IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class;
 
         /// <summary>
-        /// Marks the current session as "canceled" such that any following calls to <see cref="SaveChangesAsync"/> will be ignored.
+        /// Marks the current session as "canceled" such that any following calls to <see cref="SaveChangesAsync(CancellationToken)"/> will be ignored.
         /// This is useful when multiple components can add operations to the session and one of them fails, making the session invalid.
         /// To instead rollback the transaction and revert any pending changes, use <see cref="ResetAsync"/>.
         /// </summary>
@@ -115,19 +156,39 @@ namespace YesSql
         /// Flushes pending commands to the database.
         /// </summary>
         /// <remarks>
-        /// This doesn't commit or dispose of the transaction. A call to <see cref="SaveChangesAsync"/>
+        /// This doesn't commit or dispose of the transaction. A call to <see cref="SaveChangesAsync(CancellationToken)"/>
         /// is still necessary for the changes to be visible from other transactions.
         /// </remarks>
         Task FlushAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Flushes pending commands to the database.
+        /// </summary>
+        /// <remarks>
+        /// This doesn't commit or dispose of the transaction. A call to <see cref="SaveChangesAsync(CancellationToken)"/>
+        /// is still necessary for the changes to be visible from other transactions.
+        /// </remarks>
+        [Obsolete($"Instead, utilize the {nameof(FlushAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task FlushAsync();
+
+        /// <summary>
         /// Flushes any changes, commits the transaction, and disposes the transaction.
         /// </summary>
         /// <remarks>
-        /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync"/>
+        /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync(CancellationToken)"/>
         /// must be called before disposing the <see cref="ISession"/>
         /// </remarks>
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Flushes any changes, commits the transaction, and disposes the transaction.
+        /// </summary>
+        /// <remarks>
+        /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync(CancellationToken)"/>
+        /// must be called before disposing the <see cref="ISession"/>
+        /// </remarks>
+        [Obsolete($"Instead, utilize the {nameof(SaveChangesAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task SaveChangesAsync();
 
         /// <summary>
         /// Creates or returns a <see cref="DbConnection"/>.
@@ -135,14 +196,32 @@ namespace YesSql
         Task<DbConnection> CreateConnectionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Creates or returns a <see cref="DbConnection"/>.
+        /// </summary>
+        [Obsolete($"Instead, utilize the {nameof(CreateConnectionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task<DbConnection> CreateConnectionAsync();
+
+        /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
         /// </summary>
         Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
+        /// </summary>
+        [Obsolete($"Instead, utilize the {nameof(BeginTransactionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task<DbTransaction> BeginTransactionAsync();
+
+        /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
         /// </summary>
         Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
+        /// </summary>
+        [Obsolete($"Instead, utilize the {nameof(BeginTransactionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
+        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel);
 
         /// <summary>
         /// Returns the current <see cref="DbTransaction"/> if it exists.
