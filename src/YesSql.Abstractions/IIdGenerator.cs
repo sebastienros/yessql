@@ -21,7 +21,7 @@ namespace YesSql
         /// </summary>
         /// <param name="store">The store that this <see cref="IIdGenerator"/> instance is assigned to.</param>
         [Obsolete($"Instead, utilize the {nameof(InitializeAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task InitializeAsync(IStore store);
+        Task InitializeAsync(IStore store) => InitializeAsync(store, CancellationToken.None);
 
         /// <summary>
         /// Initializes a document collection.
@@ -32,7 +32,7 @@ namespace YesSql
         /// Initializes a document collection.
         /// </summary>
         [Obsolete($"Instead, utilize the {nameof(InitializeCollectionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task InitializeCollectionAsync(IConfiguration configuration, string collection);
+        Task InitializeCollectionAsync(IConfiguration configuration, string collection) => InitializeCollectionAsync(configuration, collection, CancellationToken.None);
 
         /// <summary>
         /// Generates a unique identifier for the store.
@@ -56,6 +56,6 @@ namespace YesSql
         /// <param name="collection">The name of the collection to generate the identifier for.</param>
         /// <returns>A unique identifier</returns>
         [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task<long> GetNextIdAsync(string collection);
+        Task<long> GetNextIdAsync(string collection) => GetNextIdAsync(collection, CancellationToken.None);
     }
 }
