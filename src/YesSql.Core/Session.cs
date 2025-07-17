@@ -160,6 +160,15 @@ namespace YesSql
             state.Saved.Add(entity);
         }
 
+        public Task SaveAsync(object entity, bool checkConcurrency, string collection)
+            => SaveAsync(entity, checkConcurrency, collection, CancellationToken.None);
+
+        public Task SaveAsync(object entity, bool checkConcurrency)
+            => SaveAsync(entity, checkConcurrency, null, CancellationToken.None);
+
+        public Task SaveAsync(object entity)
+            => SaveAsync(entity, false, null, CancellationToken.None);
+
         public bool Import(object entity, long id = 0, long version = 0, string collection = null)
         {
             CheckDisposed();
@@ -616,6 +625,12 @@ namespace YesSql
             return result;
         }
 
+        public Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection) where T : class
+            => GetAsync<T>(ids, collection, CancellationToken.None);
+
+        public Task<IEnumerable<T>> GetAsync<T>(long[] ids) where T : class
+            => GetAsync<T>(ids, null, CancellationToken.None);
+
         public IQuery Query(string collection = null)
         {
             return new DefaultQuery(this, _tablePrefix, collection);
@@ -689,6 +704,9 @@ namespace YesSql
         {
             return FlushInternalAsync(false, cancellationToken);
         }
+
+        public Task FlushAsync()
+            => FlushAsync(CancellationToken.None);
 
         private async Task FlushInternalAsync(bool saving, CancellationToken cancellationToken)
         {
@@ -942,6 +960,9 @@ namespace YesSql
                 ExitAsyncExecution();
             }
         }
+
+        public Task SaveChangesAsync()
+            => SaveChangesAsync(CancellationToken.None);
 
         public async ValueTask DisposeAsync()
         {
@@ -1407,10 +1428,16 @@ namespace YesSql
             return _connection;
         }
 
+        public Task<DbConnection> CreateConnectionAsync()
+            => CreateConnectionAsync(CancellationToken.None);
+
         public DbTransaction CurrentTransaction => _transaction;
 
         public Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
             => BeginTransactionAsync(Store.Configuration.IsolationLevel, cancellationToken);
+
+        public Task<DbTransaction> BeginTransactionAsync()
+            => BeginTransactionAsync(CancellationToken.None);
 
         /// <summary>
         /// Begins a new transaction if none has been yet. Use this method when writes need to be done.
@@ -1430,6 +1457,9 @@ namespace YesSql
 
             return _transaction;
         }
+
+        public Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
+            => BeginTransactionAsync(isolationLevel, CancellationToken.None);
 
         public Task CancelAsync()
         {
