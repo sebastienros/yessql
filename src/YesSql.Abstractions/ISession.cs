@@ -42,7 +42,7 @@ namespace YesSql
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
         /// <param name="collection">The name of the collection to store the object in.</param>
         [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task SaveAsync(object obj, bool checkConcurrency, string collection) => SaveAsync(obj, checkConcurrency, collection, CancellationToken.None);
+        Task SaveAsync(object obj, bool checkConcurrency, string collection);
 
         /// <summary>
         /// Saves a new or existing object to the store, and updates
@@ -51,7 +51,7 @@ namespace YesSql
         /// <param name="obj">The entity to save.</param>
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
         [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task SaveAsync(object obj, bool checkConcurrency) => SaveAsync(obj, checkConcurrency, null, CancellationToken.None);
+        Task SaveAsync(object obj, bool checkConcurrency);
 
         /// <summary>
         /// Saves a new or existing object to the store, and updates
@@ -59,7 +59,7 @@ namespace YesSql
         /// </summary>
         /// <param name="obj">The entity to save.</param>
         [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task SaveAsync(object obj) => SaveAsync(obj, false, null, CancellationToken.None);
+        Task SaveAsync(object obj);
 
         /// <summary>
         /// Deletes an object and its indexes from the store.
@@ -116,14 +116,14 @@ namespace YesSql
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
         [Obsolete($"Instead, utilize the {nameof(GetAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection) where T : class => GetAsync<T>(ids, collection, CancellationToken.None);
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection) where T : class;
 
         /// <summary>
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
         [Obsolete($"Instead, utilize the {nameof(GetAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task<IEnumerable<T>> GetAsync<T>(long[] ids) where T : class => GetAsync<T>(ids, null, CancellationToken.None);
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids) where T : class;
 
         /// <summary>
         /// Creates a new <see cref="IQuery"/> object.
@@ -169,7 +169,7 @@ namespace YesSql
         /// is still necessary for the changes to be visible from other transactions.
         /// </remarks>
         [Obsolete($"Instead, utilize the {nameof(FlushAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task FlushAsync() => FlushAsync(CancellationToken.None);
+        Task FlushAsync();
 
         /// <summary>
         /// Flushes any changes, commits the transaction, and disposes the transaction.
@@ -188,7 +188,7 @@ namespace YesSql
         /// must be called before disposing the <see cref="ISession"/>
         /// </remarks>
         [Obsolete($"Instead, utilize the {nameof(SaveChangesAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task SaveChangesAsync() => SaveChangesAsync(CancellationToken.None);
+        Task SaveChangesAsync();
 
         /// <summary>
         /// Creates or returns a <see cref="DbConnection"/>.
@@ -199,7 +199,7 @@ namespace YesSql
         /// Creates or returns a <see cref="DbConnection"/>.
         /// </summary>
         [Obsolete($"Instead, utilize the {nameof(CreateConnectionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task<DbConnection> CreateConnectionAsync() => CreateConnectionAsync(CancellationToken.None);
+        Task<DbConnection> CreateConnectionAsync();
 
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
@@ -210,7 +210,7 @@ namespace YesSql
         /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
         /// </summary>
         [Obsolete($"Instead, utilize the {nameof(BeginTransactionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task<DbTransaction> BeginTransactionAsync() => BeginTransactionAsync(CancellationToken.None);
+        Task<DbTransaction> BeginTransactionAsync();
 
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
@@ -221,7 +221,7 @@ namespace YesSql
         /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
         /// </summary>
         [Obsolete($"Instead, utilize the {nameof(BeginTransactionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel) => BeginTransactionAsync(isolationLevel, CancellationToken.None);
+        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel);
 
         /// <summary>
         /// Returns the current <see cref="DbTransaction"/> if it exists.

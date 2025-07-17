@@ -1170,6 +1170,9 @@ namespace YesSql.Services
             }
         }
 
+        public Task<int> CountAsync()
+            => CountAsync(CancellationToken.None);
+
         IQuery<T> IQuery.For<T>(bool filterType)
         {
             _queryState.GetBindings().Clear();
@@ -1308,10 +1311,16 @@ namespace YesSql.Services
                 }
             }
 
+            public Task<T> FirstOrDefaultAsync()
+                => FirstOrDefaultAsync(CancellationToken.None);
+
             Task<IEnumerable<T>> IQuery<T>.ListAsync(CancellationToken cancellationToken)
             {
                 return ListImpl(cancellationToken);
             }
+
+            Task<IEnumerable<T>> IQuery<T>.ListAsync()
+                => ((IQuery<T>)this).ListAsync(CancellationToken.None);
 
 #pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
             async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
@@ -1323,6 +1332,9 @@ namespace YesSql.Services
                     yield return item;
                 }
             }
+
+            IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
+                => ((IQuery<T>)this).ToAsyncEnumerable(CancellationToken.None);
 
             internal async Task<IEnumerable<T>> ListImpl(CancellationToken cancellationToken)
             {
@@ -1494,6 +1506,9 @@ namespace YesSql.Services
                 return _query.CountAsync(cancellationToken);
             }
 
+            Task<int> IQuery<T>.CountAsync()
+                => ((IQuery<T>)this).CountAsync(CancellationToken.None);
+
             IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)
             {
                 // Scope the currentPredicate so multiple calls will not act on the new predicate.
@@ -1620,10 +1635,16 @@ namespace YesSql.Services
                 return FirstOrDefaultImpl(cancellationToken);
             }
 
+            Task<T> IQueryIndex<T>.FirstOrDefaultAsync()
+                => ((IQueryIndex<T>)this).FirstOrDefaultAsync(CancellationToken.None);
+
             Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
             {
                 return ListImpl(cancellationToken);
             }
+
+            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
+                => ((IQueryIndex<T>)this).ListAsync(CancellationToken.None);
 
 #pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
             async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
@@ -1635,6 +1656,9 @@ namespace YesSql.Services
                     yield return item;
                 }
             }
+
+            IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable()
+                => ((IQueryIndex<T>)this).ToAsyncEnumerable(CancellationToken.None);
 
             IQueryIndex<T> IQueryIndex<T>.Skip(int count)
             {
@@ -1668,6 +1692,9 @@ namespace YesSql.Services
             {
                 return await _query.CountAsync(cancellationToken);
             }
+
+            Task<int> IQueryIndex<T>.CountAsync()
+                => ((IQueryIndex<T>)this).CountAsync(CancellationToken.None);
 
             IQueryIndex<TIndex> IQueryIndex<T>.With<TIndex>()
             {

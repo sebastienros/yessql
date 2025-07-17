@@ -46,6 +46,9 @@ namespace YesSql.Services
             return Task.CompletedTask;
         }
 
+        public Task InitializeAsync(IStore store)
+            => InitializeAsync(store, CancellationToken.None);
+
         public async Task InitializeCollectionAsync(IConfiguration configuration, string collection, CancellationToken cancellationToken = default)
         {
             // Extract the current max value from the database
@@ -72,5 +75,11 @@ namespace YesSql.Services
 
             _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
         }
+
+        public Task InitializeCollectionAsync(IConfiguration configuration, string collection)
+            => InitializeCollectionAsync(configuration, collection, CancellationToken.None);
+
+        public Task<long> GetNextIdAsync(string collection)
+            => GetNextIdAsync(collection, CancellationToken.None);
     }
 }

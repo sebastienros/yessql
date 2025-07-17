@@ -115,6 +115,9 @@ namespace YesSql
             await InitializeCollectionAsync(string.Empty, cancellationToken);
         }
 
+        public Task InitializeAsync()
+            => InitializeAsync(CancellationToken.None);
+
         public async Task InitializeCollectionAsync(string collection, CancellationToken cancellationToken = default)
         {
             var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
@@ -198,6 +201,9 @@ namespace YesSql
                 await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection, cancellationToken);
             }
         }
+
+        public Task InitializeCollectionAsync(string collection)
+            => InitializeCollectionAsync(collection, CancellationToken.None);
 
         private void ValidateConfiguration()
         {

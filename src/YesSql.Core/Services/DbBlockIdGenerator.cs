@@ -74,6 +74,9 @@ namespace YesSql.Services
             }
         }
 
+        public Task InitializeAsync(IStore store)
+            => InitializeAsync(store, CancellationToken.None);
+
         public long GetNextId(string collection)
             => GetNextIdAsync(collection).GetAwaiter().GetResult();
 
@@ -105,6 +108,9 @@ namespace YesSql.Services
                 _semaphoreSlim.Release();
             }
         }
+
+        public Task<long> GetNextIdAsync(string collection)
+            => GetNextIdAsync(collection, CancellationToken.None);
 
         private async Task LeaseRangeAsync(Range range, CancellationToken cancellationToken )
         {
@@ -260,6 +266,9 @@ namespace YesSql.Services
 
             _ranges[collection] = new Range(collection);
         }
+
+        public Task InitializeCollectionAsync(IConfiguration configuration, string collection)
+            => InitializeCollectionAsync(configuration, collection, CancellationToken.None);
 
         private sealed class Range
         {
