@@ -59,10 +59,7 @@ namespace YesSql
         {
             foreach (var indexProvider in indexProviders)
             {
-                if (indexProvider.CollectionName == null)
-                {
-                    indexProvider.CollectionName = collection ?? string.Empty;
-                }
+                indexProvider.CollectionName ??= collection ?? string.Empty;
             }
 
             _indexes ??= [];
@@ -272,7 +269,7 @@ namespace YesSql
             state._identityMap?.Clear();
         }
 
-        public async Task ResetAsync( )
+        public async Task ResetAsync()
         {
             CheckDisposed();
 
@@ -452,7 +449,7 @@ namespace YesSql
                     {
                         logger.LogTrace(state.Command);
                     }
-                    
+
                     return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
                 new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id }, CancellationToken = cancellationToken });
@@ -473,6 +470,10 @@ namespace YesSql
             CheckDisposed();
 
             var state = GetState(collection);
+
+            // First detach the object from the session incase it was previously added by other
+            // methods like SaveAsync or UpdateEntityAsync.
+            DetachInternal(obj, state);
 
             state.Deleted.Add(obj);
         }
@@ -542,7 +543,7 @@ namespace YesSql
                     {
                         logger.LogTrace(state.Command);
                     }
-                    
+
                     return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
                 new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids }, CancellationToken = cancellationToken });
@@ -832,7 +833,7 @@ namespace YesSql
 
         private void BatchCommands()
         {
-            if (_commands?.Count == 0)
+            if (_commands is null || _commands.Count == 0)
             {
                 return;
             }
@@ -1012,7 +1013,7 @@ namespace YesSql
         /// <summary>
         /// Clears all the resources associated to the transaction.
         /// </summary>
-        private async Task ReleaseTransactionAsync( )
+        private async Task ReleaseTransactionAsync()
         {
             foreach (var state in _collectionStates.Values)
             {
@@ -1038,7 +1039,7 @@ namespace YesSql
             }
         }
 
-        private async Task ReleaseConnectionAsync(  )
+        private async Task ReleaseConnectionAsync()
         {
             await ReleaseTransactionAsync();
 
@@ -1249,14 +1250,14 @@ namespace YesSql
             }
         }
 
-        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection, CancellationToken cancellationToken )
+        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection, CancellationToken cancellationToken)
         {
             await CreateConnectionAsync(cancellationToken);
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name, _store.Configuration.Schema) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
-            var index = await _connection.QueryAsync(descriptor.IndexType, new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken)); 
+            var index = await _connection.QueryAsync(descriptor.IndexType, new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken));
             return index.FirstOrDefault() as ReduceIndex;
         }
 

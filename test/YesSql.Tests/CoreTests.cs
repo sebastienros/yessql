@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -980,7 +979,7 @@ namespace YesSql.Tests
             Assert.NotEqual(p3, p3a);
 
             // The identity should be valid as we do only reads
-            
+
             var p1b = await session.GetAsync<Person>(p1.Id);
             var p2b = await session.GetAsync<Person>(p2.Id);
             var p3b = await session.GetAsync<Person>(p3.Id);
@@ -1040,7 +1039,7 @@ namespace YesSql.Tests
             // Saving an object whose id is already in the identity map should throw an exception
             // since it shows that two objects representing the same document, with potentially
             // different changes, would be stored, so some changes would be lost.
-            
+
             await Assert.ThrowsAsync<InvalidOperationException>(() => session.SaveAsync(newBill1));
         }
 
@@ -2499,6 +2498,33 @@ namespace YesSql.Tests
                 Assert.NotNull(person);
 
                 session.Delete(person);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var person = await session.Query().For<Person>().FirstOrDefaultAsync();
+                Assert.Null(person);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldDeleteInSessionObject()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(bill);
+
+                session.Delete(bill);
 
                 await session.SaveChangesAsync();
             }
