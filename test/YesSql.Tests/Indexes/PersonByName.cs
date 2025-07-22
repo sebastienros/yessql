@@ -68,5 +68,4 @@ namespace YesSql.Tests.Indexes
                 });
         }
     }
-
 }

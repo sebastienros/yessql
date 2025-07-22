@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -59,10 +60,7 @@ namespace YesSql
         {
             foreach (var indexProvider in indexProviders)
             {
-                if (indexProvider.CollectionName == null)
-                {
-                    indexProvider.CollectionName = collection ?? string.Empty;
-                }
+                indexProvider.CollectionName ??= collection ?? string.Empty;
             }
 
             _indexes ??= [];
@@ -272,7 +270,7 @@ namespace YesSql
             state._identityMap?.Clear();
         }
 
-        public async Task ResetAsync( )
+        public async Task ResetAsync()
         {
             CheckDisposed();
 
@@ -452,7 +450,7 @@ namespace YesSql
                     {
                         logger.LogTrace(state.Command);
                     }
-                    
+
                     return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
                 new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id }, CancellationToken = cancellationToken });
@@ -473,6 +471,29 @@ namespace YesSql
             CheckDisposed();
 
             var state = GetState(collection);
+
+            if (state.Saved.Remove(obj))
+            {
+                Debug.Assert(!state.Updated.Contains(obj));
+
+                // If the item is in the Saved, this means its a brand new object.
+                // Remove it from the memory and don't add it to the Deleted collection.
+
+                if (state.IdentityMap.TryGetDocumentId(obj, out var id))
+                {
+                    state.IdentityMap.Remove(id, obj);
+                }
+
+                // Ensure we reset the Id of the object to allow it to be added later if needed.
+                var accessor = _store.GetIdAccessor(obj.GetType());
+
+                if (accessor is not null)
+                {
+                    accessor.Set(obj, 0);
+                }
+
+                return;
+            }
 
             state.Deleted.Add(obj);
         }
@@ -542,7 +563,7 @@ namespace YesSql
                     {
                         logger.LogTrace(state.Command);
                     }
-                    
+
                     return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
                 new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids }, CancellationToken = cancellationToken });
@@ -832,7 +853,7 @@ namespace YesSql
 
         private void BatchCommands()
         {
-            if (_commands?.Count == 0)
+            if (_commands is null || _commands.Count == 0)
             {
                 return;
             }
@@ -1012,7 +1033,7 @@ namespace YesSql
         /// <summary>
         /// Clears all the resources associated to the transaction.
         /// </summary>
-        private async Task ReleaseTransactionAsync( )
+        private async Task ReleaseTransactionAsync()
         {
             foreach (var state in _collectionStates.Values)
             {
@@ -1038,7 +1059,7 @@ namespace YesSql
             }
         }
 
-        private async Task ReleaseConnectionAsync(  )
+        private async Task ReleaseConnectionAsync()
         {
             await ReleaseTransactionAsync();
 
@@ -1249,14 +1270,14 @@ namespace YesSql
             }
         }
 
-        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection, CancellationToken cancellationToken )
+        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection, CancellationToken cancellationToken)
         {
             await CreateConnectionAsync(cancellationToken);
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name, _store.Configuration.Schema) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
-            var index = await _connection.QueryAsync(descriptor.IndexType, new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken)); 
+            var index = await _connection.QueryAsync(descriptor.IndexType, new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken));
             return index.FirstOrDefault() as ReduceIndex;
         }
 
