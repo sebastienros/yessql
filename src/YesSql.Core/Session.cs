@@ -472,7 +472,7 @@ namespace YesSql
 
             var state = GetState(collection);
 
-            if (state.Saved.Remove(obj))
+            if (state.Saved.Remove(obj) && !state.Updated.Contains(obj))
             {
                 // If the item is in the Saved, this means its a brand new object.
                 // Remove it from the memory and don't add it to the Deleted collection.
