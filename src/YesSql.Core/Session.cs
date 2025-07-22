@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -471,8 +472,10 @@ namespace YesSql
 
             var state = GetState(collection);
 
-            if (state.Saved.Remove(obj) && !state.Updated.Contains(obj))
+            if (state.Saved.Remove(obj))
             {
+                Debug.Assert(!state.Updated.Contains(obj));
+
                 // If the item is in the Saved, this means its a brand new object.
                 // Remove it from the memory and don't add it to the Deleted collection.
 

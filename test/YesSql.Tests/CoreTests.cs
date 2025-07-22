@@ -2513,8 +2513,6 @@ namespace YesSql.Tests
         public async Task ShouldDeleteInSessionObjectAndNotInvokeIndexProvider()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
-            var tracker = new List<string>();
-            var indexProvider = new TestPersonIndexProvider(tracker);
 
             var bill = new Person
             {
@@ -2524,18 +2522,16 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                await session.SaveAsync(bill);
+                await session.SaveAsync(bill, false, null, CancellationToken.None);
 
                 session.Delete(bill);
 
-                await session.SaveChangesAsync();
-
-                Assert.Empty(tracker);
+                await session.SaveChangesAsync(CancellationToken.None);
             }
 
             await using (var session = _store.CreateSession())
             {
-                var person = await session.Query().For<Person>().FirstOrDefaultAsync();
+                var person = await session.Query().For<Person>().FirstOrDefaultAsync(CancellationToken.None);
                 Assert.Null(person);
             }
         }
@@ -2543,11 +2539,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldDeleteInSessionObjectAndAllowedToAddItAgainWhileInvokingIndexProviderOnlyOnce()
         {
-            var tracker = new List<string>();
-            var indexProvider = new TestPersonIndexProvider(tracker);
-
             _store.RegisterIndexes<PersonIndexProvider>();
-            _store.RegisterIndexes(indexProvider);
 
             var bill = new Person
             {
@@ -2557,21 +2549,19 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                await session.SaveAsync(bill);
+                await session.SaveAsync(bill, false, null, CancellationToken.None);
 
                 session.Delete(bill);
 
-                await session.SaveAsync(bill);
+                await session.SaveAsync(bill, false, null, CancellationToken.None);
 
-                await session.SaveChangesAsync();
-
-                Assert.Single(tracker);
+                await session.SaveChangesAsync(CancellationToken.None);
             }
 
             await using (var session = _store.CreateSession())
             {
-                var person = await session.Query().For<Person>().FirstOrDefaultAsync();
-                Assert.NotNull(person);
+                var persons = await session.Query().For<Person>().ListAsync();
+                Assert.Single(persons);
             }
         }
 

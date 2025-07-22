@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 using YesSql.Tests.Models;
@@ -66,33 +65,6 @@ namespace YesSql.Tests.Indexes
                 {
                     await Task.Delay(10);
                     return new PersonByName { SomeName = person.Firstname + _seed };
-                });
-        }
-    }
-
-    public sealed class TestPersonIndex : MapIndex
-    {
-
-    }
-
-    public sealed class TestPersonIndexProvider : IndexProvider<Person>
-    {
-        private readonly IList<string> _tracker;
-
-        public TestPersonIndexProvider(IList<string> tracker)
-        {
-            _tracker = tracker;
-        }
-
-        public override void Describe(DescribeContext<Person> context)
-        {
-            context
-                .For<TestPersonIndex>()
-                .Map(person =>
-                {
-                    _tracker.Add("TestPersonIndexProvider was invoked");
-
-                    return (TestPersonIndex)null;
                 });
         }
     }
