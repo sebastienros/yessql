@@ -2510,9 +2510,11 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task ShouldDeleteInSessionObject()
+        public async Task ShouldDeleteInSessionObjectAndNotInvokeIndexProvider()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
+            var tracker = new List<string>();
+            var indexProvider = new TestPersonIndexProvider(tracker);
 
             var bill = new Person
             {
@@ -2527,12 +2529,49 @@ namespace YesSql.Tests
                 session.Delete(bill);
 
                 await session.SaveChangesAsync();
+
+                Assert.Empty(tracker);
             }
 
             await using (var session = _store.CreateSession())
             {
                 var person = await session.Query().For<Person>().FirstOrDefaultAsync();
                 Assert.Null(person);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldDeleteInSessionObjectAndAllowedToAddItAgainWhileInvokingIndexProviderOnlyOnce()
+        {
+            var tracker = new List<string>();
+            var indexProvider = new TestPersonIndexProvider(tracker);
+
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes(indexProvider);
+
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(bill);
+
+                session.Delete(bill);
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                Assert.Single(tracker);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var person = await session.Query().For<Person>().FirstOrDefaultAsync();
+                Assert.NotNull(person);
             }
         }
 

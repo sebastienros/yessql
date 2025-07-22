@@ -12,6 +12,7 @@ using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
+using static Dapper.SqlMapper;
 
 namespace YesSql
 {
@@ -471,9 +472,26 @@ namespace YesSql
 
             var state = GetState(collection);
 
-            // First detach the object from the session incase it was previously added by other
-            // methods like SaveAsync or UpdateEntityAsync.
-            DetachInternal(obj, state);
+            if (state.Saved.Remove(obj))
+            {
+                // If the item is in the Saved, this means its a brand new object.
+                // Remove it from the memory and don't add it to the Deleted collection.
+
+                if (state.IdentityMap.TryGetDocumentId(obj, out var id))
+                {
+                    state.IdentityMap.Remove(id, obj);
+                }
+
+                // Ensure we reset the Id of the object to allow it to be added later if needed.
+                var accessor = _store.GetIdAccessor(obj.GetType());
+
+                if (accessor is not null)
+                {
+                    accessor.Set(obj, 0);
+                }
+
+                return;
+            }
 
             state.Deleted.Add(obj);
         }

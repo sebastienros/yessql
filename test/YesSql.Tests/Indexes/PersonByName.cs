@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 using YesSql.Tests.Models;
@@ -69,4 +70,30 @@ namespace YesSql.Tests.Indexes
         }
     }
 
+    public sealed class TestPersonIndex : MapIndex
+    {
+
+    }
+
+    public sealed class TestPersonIndexProvider : IndexProvider<Person>
+    {
+        private readonly List<string> _tracker;
+
+        public TestPersonIndexProvider(List<string> tracker)
+        {
+            _tracker = tracker;
+        }
+
+        public override void Describe(DescribeContext<Person> context)
+        {
+            context
+                .For<TestPersonIndex>()
+                .Map(person =>
+                {
+                    _tracker.Add("TestIndexProvider was invoked");
+
+                    return (TestPersonIndex)null;
+                });
+        }
+    }
 }
