@@ -77,9 +77,9 @@ namespace YesSql.Tests.Indexes
 
     public sealed class TestPersonIndexProvider : IndexProvider<Person>
     {
-        private readonly List<string> _tracker;
+        private readonly IList<string> _tracker;
 
-        public TestPersonIndexProvider(List<string> tracker)
+        public TestPersonIndexProvider(IList<string> tracker)
         {
             _tracker = tracker;
         }
@@ -90,7 +90,7 @@ namespace YesSql.Tests.Indexes
                 .For<TestPersonIndex>()
                 .Map(person =>
                 {
-                    _tracker.Add("TestIndexProvider was invoked");
+                    _tracker.Add("TestPersonIndexProvider was invoked");
 
                     return (TestPersonIndex)null;
                 });
