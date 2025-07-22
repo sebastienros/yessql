@@ -12,7 +12,6 @@ using YesSql.Commands;
 using YesSql.Data;
 using YesSql.Indexes;
 using YesSql.Services;
-using static Dapper.SqlMapper;
 
 namespace YesSql
 {
