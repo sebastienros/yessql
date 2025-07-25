@@ -71,10 +71,10 @@ namespace YesSql.Sql
         public void Take(string take)
             => _count = take;
 
-        public virtual void Join(JoinType type, string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null)
+        public virtual void Join(JoinType type, string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null, bool onTableIsAlias = false)
         {
             // Don't prefix if alias is used
-            if (alias != onTable)
+            if (alias != onTable && !onTableIsAlias)
             {
                 onTable = _dialect.QuoteForTableName(onTable, schema);
             }
@@ -92,7 +92,7 @@ namespace YesSql.Sql
                 toTable = _tablePrefix + toTable;
             }
 
-            if (!string.IsNullOrEmpty(toAlias))
+            if (!string.IsNullOrEmpty(toAlias) && !onTableIsAlias)
             {
                 toTable = _dialect.QuoteForAliasName(toAlias);
             }

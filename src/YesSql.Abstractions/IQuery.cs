@@ -23,6 +23,12 @@ namespace YesSql
         IQueryIndex<T> ForIndex<T>() where T : class, IIndex;
 
         /// <summary>
+        /// Defines what type of index should be returned
+        /// </summary>
+        /// <typeparam name="T">The type of index to return</typeparam>
+        IQuery<T> ForIndexJoined<T>() where T : class, IIndex;
+
+        /// <summary>
         /// Returns documents from any type
         /// </summary>
         IQuery<object> Any();
