@@ -26,3 +26,4 @@ project.lock.json
 .testPublish/ 
 .idea
 yessql.db
+test-results-*.json

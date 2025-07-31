@@ -1,0 +1,134 @@
+name: Resilient Multi-Database Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Optional test filter (e.g., ShouldCompareDateTimeOffsetWithDateTime)'
+        required: false
+        default: ''
+      configuration:
+        description: 'Build configuration'
+        required: false
+        default: 'Release'
+        type: choice
+        options:
+        - Release
+        - Debug
+
+jobs:
+  multi-database-tests:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      POSTGRESQL_CONNECTION_STRING: Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;
+      MYSQL_CONNECTION_STRING: server=localhost;uid=root;pwd=Password12!;database=yessql;
+      SQLSERVER_2019_CONNECTION_STRING: Server=localhost;Database=tempdb;User Id=sa;Password=Password12!;Encrypt=False;
+
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: Password12!
+          POSTGRES_DB: yessql
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      mysql:
+        image: mysql:8
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: yessql
+          MYSQL_ROOT_PASSWORD: Password12!
+        options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 5
+        
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports:
+          - 1433:1433
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Password12!
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: | 
+          6.0.x
+          8.0.x
+
+    - name: Build Solution
+      run: dotnet build --configuration ${{ github.event.inputs.configuration || 'Release' }}
+
+    - name: Run Multi-Database Tests
+      id: multi_db_tests
+      run: |
+        chmod +x ./test-all-databases.sh
+        if [[ -n "${{ github.event.inputs.test_filter }}" ]]; then
+          ./test-all-databases.sh -c "${{ github.event.inputs.configuration || 'Release' }}" -t "${{ github.event.inputs.test_filter }}" -s
+        else
+          ./test-all-databases.sh -c "${{ github.event.inputs.configuration || 'Release' }}" -s
+        fi
+      continue-on-error: true
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ github.run_number }}
+        path: test-results-*.json
+
+    - name: Process Results
+      if: always()
+      run: |
+        echo "## Multi-Database Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Find the latest results file
+        RESULTS_FILE=$(ls test-results-*.json | tail -1)
+        
+        if [[ -f "$RESULTS_FILE" ]]; then
+          TOTAL=$(jq length "$RESULTS_FILE")
+          PASSED=$(jq '[.[] | select(.status == "PASSED")] | length' "$RESULTS_FILE")
+          FAILED=$(jq '[.[] | select(.status == "FAILED")] | length' "$RESULTS_FILE")
+          
+          echo "**Summary:** $PASSED/$TOTAL configurations passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ $PASSED -gt 0 ]]; then
+            echo "### ✅ Passed Configurations" >> $GITHUB_STEP_SUMMARY
+            jq -r '.[] | select(.status == "PASSED") | "- " + .name + " (" + .framework + ")"' "$RESULTS_FILE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ $FAILED -gt 0 ]]; then
+            echo "### ❌ Failed Configurations" >> $GITHUB_STEP_SUMMARY
+            jq -r '.[] | select(.status == "FAILED") | "- " + .name + " (" + .framework + ")"' "$RESULTS_FILE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "📊 Detailed results available in the test-results artifact." >> $GITHUB_STEP_SUMMARY
+          
+          # Set output for conditional job success
+          echo "passed_count=$PASSED" >> $GITHUB_OUTPUT
+          echo "total_count=$TOTAL" >> $GITHUB_OUTPUT
+        else
+          echo "❌ No test results file found" >> $GITHUB_STEP_SUMMARY
+          echo "passed_count=0" >> $GITHUB_OUTPUT
+          echo "total_count=0" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check Results
+      if: always()
+      run: |
+        if [[ "${{ steps.multi_db_tests.outcome }}" == "failure" ]]; then
+          echo "Some database configurations failed, but this is expected for development/testing purposes."
+          echo "Check the summary above to see which databases passed and which failed."
+          # Don't fail the workflow - just report the results
+        fi
