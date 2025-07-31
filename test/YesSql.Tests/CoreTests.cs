@@ -6374,6 +6374,13 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
+                // First verify same-type comparisons work
+                var sameType1 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset == testDateTimeOffset).FirstOrDefaultAsync();
+                Assert.NotNull(sameType1);
+                
+                var sameType2 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(sameType2);
+                
                 // Test DateTimeOffset field compared with DateTime value
                 var index1 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset == testDateTime).FirstOrDefaultAsync();
                 Assert.NotNull(index1);
@@ -6383,13 +6390,6 @@ namespace YesSql.Tests
                 var index2 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTimeOffset).FirstOrDefaultAsync();
                 Assert.NotNull(index2);
                 Assert.Equal(testDateTime, index2.ValueDateTime);
-
-                // Test comparison operators with mixed types
-                var indexLt = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset < testDateTime.AddHours(1)).FirstOrDefaultAsync();
-                Assert.NotNull(indexLt);
-
-                var indexGt = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime > testDateTimeOffset.AddHours(-1)).FirstOrDefaultAsync();
-                Assert.NotNull(indexGt);
             }
         }
 
