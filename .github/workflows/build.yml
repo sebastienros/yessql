@@ -6,6 +6,11 @@ on:
     paths-ignore:
     - '**.md'
 
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+    - '**.md'
+
 jobs:
   build:
 
@@ -46,50 +51,39 @@ jobs:
           MSSQL_SA_PASSWORD: Password12!
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     # Required if the .NET version is not available on the GH Actions images
     - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: | 
-          6.0.x
           8.0.x
 
     - name: Build
       run: dotnet build --configuration Release
 
     - name: Test - Sqlite .NET 8.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net8.0
-
-    - name: Test - Sqlite .NET 6.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net6.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - PostgresQL .NET 8.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net8.0
-
-    - name: Test - PostgresQL .NET 6.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net6.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - MySQL .NET 8.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net8.0
-
-    - name: Test - MySQL .NET 6.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net6.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - SQL Server 2019 .NET 8.0
-      run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net8.0
-
-    - name: Test - SQL Server 2019 .NET 6.0
-      run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net6.0
+      run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - PostgresQL Legacy Identity - No Schema
-      run: dotnet test --configuration release --filter YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net6.0
+      run: dotnet test --configuration release --filter YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - Sqlite Legacy Identity
-      run: dotnet test --configuration release --filter YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net6.0
+      run: dotnet test --configuration release --filter YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Pack with dotnet
+      if: needs.pr-check.outputs.number == null
       run: dotnet pack --output artifacts --configuration Release --no-restore --no-build -p:PackageVersion=$GITHUB_RUN_NUMBER
 
     - name: Push with dotnet on MyGet
+      if: needs.pr-check.outputs.number == null
       run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.MYGET_API_KEY }} --skip-duplicate --source https://www.myget.org/F/yessql/api/v2/package

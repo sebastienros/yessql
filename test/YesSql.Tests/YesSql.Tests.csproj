@@ -30,6 +30,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
     </ItemGroup>
 
     <ItemGroup>
