@@ -6341,6 +6341,59 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldCompareDateTimeOffsetWithDateTime()
+        {
+            var testDateTime = new DateTime(2021, 6, 15, 14, 30, 0, DateTimeKind.Utc);
+            var testDateTimeOffset = new DateTimeOffset(testDateTime, TimeSpan.Zero);
+            var dummy = new Person();
+
+            // Create fake document to associate to index
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(dummy);
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex
+                {
+                    ValueDateTime = testDateTime,
+                    ValueDateTimeOffset = testDateTimeOffset,
+                };
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var connection = await session.CreateConnectionAsync();
+                var transaction = await session.BeginTransactionAsync();
+
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // Test DateTimeOffset field compared with DateTime value
+                var index1 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset == testDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(index1);
+                Assert.Equal(testDateTimeOffset, index1.ValueDateTimeOffset);
+
+                // Test DateTime field compared with DateTimeOffset value  
+                var index2 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTimeOffset).FirstOrDefaultAsync();
+                Assert.NotNull(index2);
+                Assert.Equal(testDateTime, index2.ValueDateTime);
+
+                // Test comparison operators with mixed types
+                var indexLt = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset < testDateTime.AddHours(1)).FirstOrDefaultAsync();
+                Assert.NotNull(indexLt);
+
+                var indexGt = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime > testDateTimeOffset.AddHours(-1)).FirstOrDefaultAsync();
+                Assert.NotNull(indexGt);
+            }
+        }
+
+        [Fact]
         public async Task NullValuesShouldBeStoredInNullableFields()
         {
             var dummy = new Person();
