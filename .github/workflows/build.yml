@@ -66,18 +66,23 @@ jobs:
       run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - PostgresQL .NET 8.0
+      if: '!cancelled()'
       run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - MySQL .NET 8.0
+      if: '!cancelled()'
       run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - SQL Server 2019 .NET 8.0
+      if: '!cancelled()'
       run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - PostgresQL Legacy Identity - No Schema
+      if: '!cancelled()'
       run: dotnet test --configuration release --filter YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Test - Sqlite Legacy Identity
+      if: '!cancelled()'
       run: dotnet test --configuration release --filter YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net8.0 --logger GitHubActions 
 
     - name: Pack with dotnet
