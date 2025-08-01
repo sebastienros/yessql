@@ -6390,6 +6390,16 @@ namespace YesSql.Tests
                 var index2 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTimeOffset).FirstOrDefaultAsync();
                 Assert.NotNull(index2);
                 Assert.Equal(testDateTime, index2.ValueDateTime);
+                
+                // Test DateTimeOffset field compared with DateTimeOffset.UtcDateTime 
+                var index3 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset == testDateTimeOffset.UtcDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(index3);
+                Assert.Equal(testDateTimeOffset, index3.ValueDateTimeOffset);
+                
+                // Test DateTime field compared with DateTimeOffset.UtcDateTime  
+                var index4 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTimeOffset.UtcDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(index4);
+                Assert.Equal(testDateTime, index4.ValueDateTime);
             }
         }
 
