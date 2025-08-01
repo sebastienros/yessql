@@ -84,6 +84,10 @@ namespace YesSql.Provider.Sqlite
 
         public SqliteDialect()
         {
+            // Add type handlers for cross-type DateTime/DateTimeOffset compatibility
+            // Convert DateTimeOffset to DateTime for consistent storage and comparison
+            AddTypeHandler<DateTimeOffset, DateTime>(x => x.UtcDateTime);
+
             Methods.Add("second", new TemplateFunction("cast(strftime('%S', {0}) as int)"));
             Methods.Add("minute", new TemplateFunction("cast(strftime('%M', {0}) as int)"));
             Methods.Add("hour", new TemplateFunction("cast(strftime('%H', {0}) as int)"));

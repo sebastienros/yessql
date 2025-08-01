@@ -549,7 +549,7 @@ namespace YesSql.Services
         /// <summary>
         /// Converts an expression that is not based on a lambda parameter to its atomic constant value.
         /// </summary>
-        private ConstantExpression Evaluate(Expression expression)
+        private ConstantExpression Evaluate(Expression expression, bool convertValue = true)
         {
             switch (expression.NodeType)
             {
@@ -583,9 +583,12 @@ namespace YesSql.Services
 
                     if (memberExpression.Member.MemberType == MemberTypes.Field)
                     {
+                        // Evaluate the containing object of the Field
+                        // i.e. if the expression is "x.Field", then x is evaluated
+                        // Don't convert the intermediate expressions, only the final result
                         if (memberExpression.Expression != null)
                         {
-                            obj = Evaluate(memberExpression.Expression).Value;
+                            obj = Evaluate(memberExpression.Expression, false).Value;
 
                             if (obj == null)
                             {
@@ -608,18 +611,21 @@ namespace YesSql.Services
                         {
                             var localValue = ((FieldInfo)memberExpression.Member).GetValue(o);
 
-                            sqlBuilder.Parameters[_parameterName] = _dialect.TryConvert(localValue);
+                            sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
                         });
 
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
 
-                        return Expression.Constant(_dialect.TryConvert(value));
+                        return Expression.Constant(convertValue ? _dialect.TryConvert(value) : value);
                     }
                     else if (memberExpression.Member.MemberType == MemberTypes.Property)
                     {
+                        // Evaluate the containing object of the property
+                        // i.e. if the expression is "x.Property", then x is evaluated
+                        // Don't convert the intermediate expressions, only the final result
                         if (memberExpression.Expression != null)
                         {
-                            obj = Evaluate(memberExpression.Expression).Value;
+                            obj = Evaluate(memberExpression.Expression, false).Value;
 
                             if (obj == null)
                             {
@@ -642,12 +648,12 @@ namespace YesSql.Services
                         {
                             var localValue = ((PropertyInfo)memberExpression.Member).GetValue(o);
 
-                            sqlBuilder.Parameters[_parameterName] = _dialect.TryConvert(localValue);
+                            sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
                         });
 
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
 
-                        return Expression.Constant(_dialect.TryConvert(value));
+                        return Expression.Constant(convertValue ? _dialect.TryConvert(value) : value);
                     }
                     break;
             }
