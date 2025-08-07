@@ -34,7 +34,6 @@ namespace YesSql
         /// <summary>
         /// Initializes the database by creating the required tables and the default collection if necessary.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(InitializeAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task InitializeAsync();
 
         /// <summary>
@@ -45,7 +44,6 @@ namespace YesSql
         /// <summary>
         /// Initializes a collection in the database by creating the required tables if necessary.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(InitializeCollectionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task InitializeCollectionAsync(string collection);
 
         /// <summary>

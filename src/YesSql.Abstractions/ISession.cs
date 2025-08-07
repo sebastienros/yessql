@@ -20,7 +20,6 @@ namespace YesSql
         /// <param name="obj">The entity to save.</param>
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
         /// <param name="collection">The name of the collection to store the object in.</param>
-        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method. This current method is slated for removal in upcoming releases.")]
         void Save(object obj, bool checkConcurrency = false, string collection = null);
 
 
@@ -41,7 +40,6 @@ namespace YesSql
         /// <param name="obj">The entity to save.</param>
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
         /// <param name="collection">The name of the collection to store the object in.</param>
-        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task SaveAsync(object obj, bool checkConcurrency, string collection);
 
         /// <summary>
@@ -50,7 +48,6 @@ namespace YesSql
         /// </summary>
         /// <param name="obj">The entity to save.</param>
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
-        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task SaveAsync(object obj, bool checkConcurrency);
 
         /// <summary>
@@ -58,7 +55,6 @@ namespace YesSql
         /// the corresponding indexes.
         /// </summary>
         /// <param name="obj">The entity to save.</param>
-        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task SaveAsync(object obj);
 
         /// <summary>
@@ -115,14 +111,12 @@ namespace YesSql
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        [Obsolete($"Instead, utilize the {nameof(GetAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection) where T : class;
 
         /// <summary>
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        [Obsolete($"Instead, utilize the {nameof(GetAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<IEnumerable<T>> GetAsync<T>(long[] ids) where T : class;
 
         /// <summary>
@@ -168,7 +162,6 @@ namespace YesSql
         /// This doesn't commit or dispose of the transaction. A call to <see cref="SaveChangesAsync(CancellationToken)"/>
         /// is still necessary for the changes to be visible from other transactions.
         /// </remarks>
-        [Obsolete($"Instead, utilize the {nameof(FlushAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task FlushAsync();
 
         /// <summary>
@@ -187,7 +180,6 @@ namespace YesSql
         /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync(CancellationToken)"/>
         /// must be called before disposing the <see cref="ISession"/>
         /// </remarks>
-        [Obsolete($"Instead, utilize the {nameof(SaveChangesAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task SaveChangesAsync();
 
         /// <summary>
@@ -198,7 +190,6 @@ namespace YesSql
         /// <summary>
         /// Creates or returns a <see cref="DbConnection"/>.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(CreateConnectionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<DbConnection> CreateConnectionAsync();
 
         /// <summary>
@@ -209,7 +200,6 @@ namespace YesSql
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(BeginTransactionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<DbTransaction> BeginTransactionAsync();
 
         /// <summary>
@@ -220,7 +210,6 @@ namespace YesSql
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(BeginTransactionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel);
 
         /// <summary>

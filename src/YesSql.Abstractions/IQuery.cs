@@ -91,7 +91,6 @@ namespace YesSql
         /// <summary>
         /// Executes the query and returns the first result matching the constraints.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(FirstOrDefaultAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<T> FirstOrDefaultAsync();
 
         /// <summary>
@@ -102,7 +101,6 @@ namespace YesSql
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(ListAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<IEnumerable<T>> ListAsync();
 
         /// <summary>
@@ -113,7 +111,6 @@ namespace YesSql
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(ToAsyncEnumerable)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         IAsyncEnumerable<T> ToAsyncEnumerable();
 
         /// <summary>
@@ -124,7 +121,6 @@ namespace YesSql
         /// <summary>
         /// Executes a that returns the number of documents matching the constraints.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(CountAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<int> CountAsync();
 
         /// <summary>
@@ -214,7 +210,6 @@ namespace YesSql
         /// <summary>
         /// Returns the first result only, if it exists.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(FirstOrDefaultAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<T> FirstOrDefaultAsync();
 
         /// <summary>
@@ -225,7 +220,6 @@ namespace YesSql
         /// <summary>
         /// Executes the query.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(ListAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<IEnumerable<T>> ListAsync();
 
         /// <summary>
@@ -238,7 +232,6 @@ namespace YesSql
         /// Executes the query for asynchronous iteration.
         /// </summary>
         /// <returns></returns>
-        [Obsolete($"Instead, utilize the {nameof(ToAsyncEnumerable)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         IAsyncEnumerable<T> ToAsyncEnumerable();
 
         /// <summary>
@@ -249,7 +242,6 @@ namespace YesSql
         /// <summary>
         /// Returns the number of results only.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(CountAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<int> CountAsync();
     }
 
