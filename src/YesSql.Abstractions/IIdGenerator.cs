@@ -20,7 +20,6 @@ namespace YesSql
         /// Invoked when the underlying store is created.
         /// </summary>
         /// <param name="store">The store that this <see cref="IIdGenerator"/> instance is assigned to.</param>
-        [Obsolete($"Instead, utilize the {nameof(InitializeAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task InitializeAsync(IStore store);
 
         /// <summary>
@@ -31,7 +30,6 @@ namespace YesSql
         /// <summary>
         /// Initializes a document collection.
         /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(InitializeCollectionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task InitializeCollectionAsync(IConfiguration configuration, string collection);
 
         /// <summary>
@@ -39,7 +37,6 @@ namespace YesSql
         /// </summary>
         /// <param name="collection">The name of the collection to generate the identifier for.</param>
         /// <returns>A unique identifier</returns>
-        [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method. This current method is slated for removal in upcoming releases.")]
         long GetNextId(string collection);
 
         /// <summary>
@@ -55,7 +52,6 @@ namespace YesSql
         /// </summary>
         /// <param name="collection">The name of the collection to generate the identifier for.</param>
         /// <returns>A unique identifier</returns>
-        [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
         Task<long> GetNextIdAsync(string collection);
     }
 }
