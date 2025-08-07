@@ -86,9 +86,6 @@ namespace YesSql
             return state;
         }
 
-        public void Save(object entity, bool checkConcurrency = false, string collection = null)
-            => SaveAsync(entity, checkConcurrency, collection).GetAwaiter().GetResult();
-
         public async Task SaveAsync(object entity, bool checkConcurrency = false, string collection = null, CancellationToken cancellationToken = default)
         {
             var state = GetState(collection);

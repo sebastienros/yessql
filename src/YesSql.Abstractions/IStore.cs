@@ -32,21 +32,9 @@ namespace YesSql
         Task InitializeAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Initializes the database by creating the required tables and the default collection if necessary.
-        /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(InitializeAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task InitializeAsync();
-
-        /// <summary>
         /// Initializes a collection in the database by creating the required tables if necessary.
         /// </summary>
         Task InitializeCollectionAsync(string collection, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Initializes a collection in the database by creating the required tables if necessary.
-        /// </summary>
-        [Obsolete($"Instead, utilize the {nameof(InitializeCollectionAsync)} method with a CancellationToken parameter. This current method is slated for removal in upcoming releases.")]
-        Task InitializeCollectionAsync(string collection);
 
         /// <summary>
         /// Create an instance of <see cref="IEnumerable&lt;IndexDescriptor&gt;" /> containing descriptors for all indexes associated to a type and a collection.
