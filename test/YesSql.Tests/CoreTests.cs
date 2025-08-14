@@ -4226,7 +4226,7 @@ namespace YesSql.Tests
                     Lastname = "Balmer"
                 };
 
-                await session.SaveAsync(steve, "Col1");
+                await session.SaveAsync(steve, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4256,8 +4256,8 @@ namespace YesSql.Tests
                     Lastname = "Balmer"
                 };
 
-                await session.SaveAsync(bill, "Col1");
-                await session.SaveAsync(steve, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
+                await session.SaveAsync(steve, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4309,8 +4309,8 @@ namespace YesSql.Tests
                     Firstname = "Bill"
                 };
 
-                await session.SaveAsync(bill, "Col1");
-                await session.SaveAsync(bill2, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
+                await session.SaveAsync(bill2, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4343,8 +4343,8 @@ namespace YesSql.Tests
                     Age = 12
                 };
 
-                await session.SaveAsync(bill, "Col1");
-                await session.SaveAsync(elon, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
+                await session.SaveAsync(elon, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4377,7 +4377,7 @@ namespace YesSql.Tests
                     Lastname = "Gates",
                 };
 
-                await session.SaveAsync(bill, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -5852,7 +5852,7 @@ namespace YesSql.Tests
                 };
 
 
-                await session.SaveAsync(bill, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -5888,7 +5888,7 @@ namespace YesSql.Tests
                     Lastname = "Gates"
                 };
 
-                await session.SaveAsync(bill, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }

@@ -267,10 +267,6 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method. This current method is slated for removal in upcoming releases.")]
-        public long GetNextId(string collection)
-            => GetNextIdAsync(collection).GetAwaiter().GetResult();
-
         public Task<long> GetNextIdAsync(string collection, CancellationToken cancellationToken = default)
             => Configuration.IdGenerator.GetNextIdAsync(collection, cancellationToken);
 
