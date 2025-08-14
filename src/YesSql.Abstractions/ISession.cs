@@ -134,6 +134,7 @@ namespace YesSql
         Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
 
         /// <summary>
+
         /// Returns the current <see cref="DbTransaction"/> if it exists.
         /// </summary>
         DbTransaction CurrentTransaction { get; }
