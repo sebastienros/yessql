@@ -3,9 +3,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Parlot" Version="1.4.0" />
+    <PackageVersion Include="Parlot" Version="1.4.2" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="$(MicrosoftDataSqlClientPackageVersion)" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.8" />
     <PackageVersion Include="Npgsql" Version="9.0.3" />
     <PackageVersion Include="MySqlConnector" Version="2.4.0" />
     <PackageVersion Include="Dapper.StrongName" Version="$(DapperStrongNamePackageVersion)" />
@@ -15,6 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <GlobalPackageReference Include="Meziantou.Analyzer" Version="2.0.210" />
+    <GlobalPackageReference Include="Meziantou.Analyzer" Version="2.0.212" />
   </ItemGroup>
 </Project>
