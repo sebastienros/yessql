@@ -92,7 +92,7 @@ namespace YesSql.Utils
                 Grow(count);
             }
 
-            int remaining = _pos - index;
+            var remaining = _pos - index;
             _chars.AsSpan(index, remaining).CopyTo(_chars.AsSpan(index + count));
             _chars.AsSpan(index, count).Fill(value);
             _pos += count;
@@ -105,14 +105,14 @@ namespace YesSql.Utils
                 return;
             }
 
-            int count = s.Length;
+            var count = s.Length;
 
             if (_pos > (_chars.Length - count))
             {
                 Grow(count);
             }
 
-            int remaining = _pos - index;
+            var remaining = _pos - index;
             _chars.AsSpan(index, remaining).CopyTo(_chars.AsSpan(index + count));
             s.AsSpan().CopyTo(_chars.AsSpan(index));
             _pos += count;
@@ -121,7 +121,7 @@ namespace YesSql.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(char c)
         {
-            int pos = _pos;
+            var pos = _pos;
             if ((uint)pos < (uint)_chars.Length)
             {
                 _chars[pos] = c;
@@ -141,7 +141,7 @@ namespace YesSql.Utils
                 return;
             }
 
-            int pos = _pos;
+            var pos = _pos;
             if (s.Length == 1 && (uint)pos < (uint)_chars.Length) // very common case, e.g. appending strings from NumberFormatInfo like separators, percent symbols, etc.
             {
                 _chars[pos] = s[0];
@@ -155,7 +155,7 @@ namespace YesSql.Utils
 
         private void AppendSlow(string s)
         {
-            int pos = _pos;
+            var pos = _pos;
             if (pos > _chars.Length - s.Length)
             {
                 Grow(s.Length);
@@ -167,7 +167,7 @@ namespace YesSql.Utils
 
         public void Append(ReadOnlySpan<char> value)
         {
-            int pos = _pos;
+            var pos = _pos;
             if (pos > _chars.Length - value.Length)
             {
                 Grow(value.Length);
@@ -199,11 +199,11 @@ namespace YesSql.Utils
             Debug.Assert(_pos > _chars.Length - additionalCapacityBeyondPos, "Grow called incorrectly, no resize is needed.");
 
             // Make sure to let Rent throw an exception if the caller has a bug and the desired capacity is negative
-            char[] poolArray = ArrayPool<char>.Shared.Rent((int)Math.Max((uint)(_pos + additionalCapacityBeyondPos), (uint)_chars.Length * 2));
+            var poolArray = ArrayPool<char>.Shared.Rent((int)Math.Max((uint)(_pos + additionalCapacityBeyondPos), (uint)_chars.Length * 2));
 
             _chars.AsSpan(0, _pos).CopyTo(poolArray);
 
-            char[] toReturn = _arrayToReturnToPool;
+            var toReturn = _arrayToReturnToPool;
             _chars = _arrayToReturnToPool = poolArray;
             if (toReturn != null)
             {
@@ -219,8 +219,8 @@ namespace YesSql.Utils
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
-        {   
-            char[] toReturn = _arrayToReturnToPool;
+        {
+            var toReturn = _arrayToReturnToPool;
             if (toReturn != null)
             {
                 ArrayPool<char>.Shared.Return(toReturn);

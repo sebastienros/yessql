@@ -1,0 +1,125 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <PropertyGroup Label="Analysis rules">
+
+        <AnalysisLevel>latest-Recommended</AnalysisLevel>
+
+        <!-- Member is explicitly initialized to its default value -->
+        <NoWarn>$(NoWarn);CA1805</NoWarn>
+
+        <!-- The behavior could vary based on the current user's locale setting -->
+        <NoWarn>$(NoWarn);CA1304;CA1305;CA1310</NoWarn>
+
+        <!-- Specify a culture or use an invariant version to avoid implicit dependency on current culture -->
+        <NoWarn>$(NoWarn);CA1311</NoWarn>
+
+        <!-- Do not declare static members on generic types -->
+        <NoWarn>$(NoWarn);CA1000</NoWarn>
+
+        <!-- For improved performance, use the LoggerMessage delegates -->
+        <NoWarn>$(NoWarn);CA1848</NoWarn>
+
+        <!-- Identifier contains type name -->
+        <NoWarn>$(NoWarn);CA1720</NoWarn>
+
+        <!-- Do not declare visible instance fields -->
+        <NoWarn>$(NoWarn);CA1051</NoWarn>
+
+        <!-- Avoid using cref tags with a prefix -->
+        <NoWarn>$(NoWarn);CA1200</NoWarn>
+
+        <!-- Rename type name X so that it does not end in 'Delegate', 'EventHandler', 'Permission' etc -->
+        <NoWarn>$(NoWarn);CA1711</NoWarn>
+
+        <!-- Parameter name differs from original overriden implemented name -->
+        <NoWarn>$(NoWarn);CA1725</NoWarn>
+
+        <!-- Reserved keyword -->
+        <NoWarn>$(NoWarn);CA1716</NoWarn>
+
+        <!-- Type owns disposable field(s) -->
+        <NoWarn>$(NoWarn);CA1001</NoWarn>
+
+        <!-- Exception type is not sufficiently specific -->
+        <NoWarn>$(NoWarn);CA2201</NoWarn>
+
+        <!-- Remove the underscores from member name -->
+        <NoWarn>$(NoWarn);CA1707</NoWarn>
+
+        <!-- Use PascalCase for named placeholders in the logging message template -->
+        <NoWarn>$(NoWarn);CA1727</NoWarn>
+
+        <!-- CA1861: Prefer 'static readonly' fields over constant array arguments if the called method is called repeatedly and is not mutating the passed array -->
+        <NoWarn>$(NoWarn);CA1861</NoWarn>
+
+        <!-- NU1603: 'PackageA' 4.0.0 depends on 'PackageB' (>= 4.0.0) but 4.0.0 was not found. An approximate best match of 5.0.0 was resolved. -->
+        <NoWarn>$(NoWarn);NU1603</NoWarn>
+
+        <NoWarn>$(NoWarn);612</NoWarn>
+
+        <NoWarn>$(NoWarn);618</NoWarn>
+
+        <NoWarn>$(NoWarn);CA2211</NoWarn>
+
+        <!-- CA1016: Mark assemblies with AssemblyVersionAttribute -->
+        <NoWarn>$(NoWarn);CA1016</NoWarn>
+
+        <!-- CA1016: Mark assemblies with AssemblyVersionAttribute -->
+        <NoWarn>$(NoWarn);CA2254</NoWarn>
+
+        <NoWarn>$(NoWarn);CA2208</NoWarn>
+
+        <!-- SA0001: All diagnostics of XML documentation comments has been disabled due to the current project configuration. -->
+        <NoWarn>$(NoWarn),1573,1591,1712</NoWarn>
+
+        <!-- NETSDK1206: Found version-specific or distribution-specific runtime identifier(s). -->
+        <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+
+        <!-- MA0004: Use an overload that has a IEqualityComparer<string> or IComparer<string> parameter -->
+        <NoWarn>$(NoWarn);MA0002</NoWarn>
+
+        <!-- MA0004: Use Task.ConfigureAwait(false) if the current SynchronizationContext is not needed -->
+        <NoWarn>$(NoWarn);MA0004</NoWarn>
+
+        <!-- MA0006: Use string.Equals instead of Equals operator  -->
+        <NoWarn>$(NoWarn);MA0006</NoWarn>
+
+        <!-- MA0011: Use an overload of 'Parse' that has a 'System.IFormatProvider' parameter -->
+        <NoWarn>$(NoWarn);MA0011</NoWarn>
+
+        <!-- MA0015: Use an overload of 'System.ArgumentException' with the parameter name -->
+        <NoWarn>$(NoWarn);MA0015</NoWarn>
+
+        <!-- MA0016: Prefer using collection abstraction instead of implementation -->
+        <NoWarn>$(NoWarn);MA0016</NoWarn>
+
+        <!-- MA0025: Implement the functionality (or raise NotSupportedException or PlatformNotSupportedException) -->
+        <NoWarn>$(NoWarn);MA0025</NoWarn>
+
+        <!-- MA0026: Fix TODO's -->
+        <NoWarn>$(NoWarn);MA0026</NoWarn>
+
+        <!-- MA0048: File name must match type name -->
+        <NoWarn>$(NoWarn);MA0048</NoWarn>
+
+        <!-- MA0051: NMethod is too long (65 lines; maximum allowed: 60) -->
+        <NoWarn>$(NoWarn);MA0051</NoWarn>
+
+        <!-- MA0055: Do not use finalizer -->
+        <NoWarn>$(NoWarn);MA0055</NoWarn>
+        
+        <!-- MA0061: Method overrides should not change default values -->
+        <NoWarn>$(NoWarn);MA0061</NoWarn>
+
+        <!-- MA0069: Non-constant static fields should not be visible -->
+        <NoWarn>$(NoWarn);MA0069</NoWarn>
+
+        <!-- MA0074: Use an overload of 'StartsWith' that has a StringComparison parameter -->
+        <NoWarn>$(NoWarn);MA0074</NoWarn>
+
+        <!-- MA0081: Method overrides should not omit params keyword -->
+        <NoWarn>$(NoWarn);MA0081</NoWarn>
+        
+    </PropertyGroup>
+
+</Project>

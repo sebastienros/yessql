@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -10,7 +11,7 @@ namespace YesSql
         /// <summary>
         /// Creates a new <see cref="ISession"/> to communicate with the <see cref="IStore"/>.
         /// </summary>
-        ISession CreateSession();
+        ISession CreateSession(bool withTracking = true);
 
         /// <summary>
         /// Registers index providers.
@@ -28,7 +29,17 @@ namespace YesSql
         /// <summary>
         /// Initializes the database by creating the required tables and the default collection if necessary.
         /// </summary>
+        Task InitializeAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Initializes the database by creating the required tables and the default collection if necessary.
+        /// </summary>
         Task InitializeAsync();
+
+        /// <summary>
+        /// Initializes a collection in the database by creating the required tables if necessary.
+        /// </summary>
+        Task InitializeCollectionAsync(string collection, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Initializes a collection in the database by creating the required tables if necessary.

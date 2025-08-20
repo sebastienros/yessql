@@ -12,7 +12,6 @@ namespace YesSql
         string FormatColumn(string table, string column, string schema, bool isAlias = false);
         string FormatTable(string table, string schema);
         string GetSelector();
-        void InnerJoin(string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null);
         bool HasJoin { get; }
         bool HasOrder { get; }
         void ClearGroupBy();
@@ -44,5 +43,8 @@ namespace YesSql
         ISqlBuilder Clone();
         IEnumerable<string> GetSelectors();
         IEnumerable<string> GetOrders();
+        void Join(JoinType type, string table, string onTable, string onColumn, string toTable, string toColumn, string schema, string alias = null, string toAlias = null);
+        void HavingAnd(string having);
+        void HavingOr(string having);
     }
 }

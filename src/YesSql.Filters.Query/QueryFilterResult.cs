@@ -12,7 +12,7 @@ namespace YesSql.Filters.Query
         public QueryFilterResult(IReadOnlyDictionary<string, QueryTermOption<T>> termOptions) : base(termOptions)
         { }
 
-        public QueryFilterResult(List<TermNode> terms, IReadOnlyDictionary<string, QueryTermOption<T>> termOptions) : base(terms, termOptions)
+        public QueryFilterResult(IReadOnlyList<TermNode> terms, IReadOnlyDictionary<string, QueryTermOption<T>> termOptions) : base(terms, termOptions)
         { }
 
         public void MapFrom<TModel>(TModel model)
@@ -49,11 +49,11 @@ namespace YesSql.Filters.Query
 
                 if (!_terms.ContainsKey(termOption.Key))
                 {
-                    var alwaysRunNode = new NamedTermNode(termOption.Key, new UnaryNode(String.Empty, OperateNodeQuotes.None));
+                    var alwaysRunNode = new NamedTermNode(termOption.Key, new UnaryNode(string.Empty, OperateNodeQuotes.None));
                     await VisitTerm(TermOptions, context, visitor, alwaysRunNode);
                 }
             }
-            
+
             return context.Item;
         }
 

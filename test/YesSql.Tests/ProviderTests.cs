@@ -10,9 +10,9 @@ using YesSql.Provider.Sqlite;
 
 namespace YesSql.Tests
 {
-    public class ProviderTests : IDisposable
+    public sealed class ProviderTests : IDisposable
     {
-        private TemporaryFolder _tempFolder;
+        private readonly TemporaryFolder _tempFolder;
 
         public ProviderTests()
         {
@@ -25,7 +25,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async void AddedDbProviderStoreShouldPresentInDIContainer()
+        public async Task AddedDbProviderStoreShouldPresentInDIContainer()
         {
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
@@ -44,17 +44,15 @@ namespace YesSql.Tests
 
                         // Assert
                         Assert.NotNull(store);
-                        return Task.FromResult(0);
+                        return Task.CompletedTask;
                     });
                 });
 
-            using (var server = new TestServer(builder))
-            {
-                var client = server.CreateClient();
-                var response = await client.GetAsync("/");
+            using var server = new TestServer(builder);
+            var client = server.CreateClient();
+            var response = await client.GetAsync("/");
 
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            }
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
     }
 }

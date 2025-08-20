@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
@@ -37,6 +38,8 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<long, QueryState> CompiledQueries = new();
 
+        private readonly WorkDispatcher<WorkerQueryKey, object> _dispatcher = new();
+
         internal const int SmallBufferSize = 128;
         internal const int MediumBufferSize = 512;
         internal const int LargeBufferSize = 1024;
@@ -47,7 +50,7 @@ namespace YesSql
 
             // Databases that don't support DateTimeOffset natively will store these in string columns.
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
-            
+
             // Required by Sqlite. Guids are stored as text (uniqueidentifier) and are converted back to Guid with this handler.
             SqlMapper.AddTypeHandler(new GuidHandler());
 
@@ -57,8 +60,8 @@ namespace YesSql
 
         private Store()
         {
-            Indexes = new List<IIndexProvider>();
-            ScopedIndexes = new List<Type>();
+            Indexes = [];
+            ScopedIndexes = [];
         }
 
         /// <summary>
@@ -82,7 +85,7 @@ namespace YesSql
             Dialect = Configuration.SqlDialect;
         }
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             IndexCommand.ResetQueryCache();
             ValidateConfiguration();
@@ -93,113 +96,114 @@ namespace YesSql
             {
                 await using (var connection = Configuration.ConnectionFactory.CreateConnection())
                 {
-                    await connection.OpenAsync();
+                    await connection.OpenAsync(cancellationToken);
 
-                    await using var transaction = connection.BeginTransaction(Configuration.IsolationLevel);
+                    await using var transaction = await connection.BeginTransactionAsync(Configuration.IsolationLevel, cancellationToken);
+
                     var builder = new SchemaBuilder(Configuration, transaction);
 
-                    builder.CreateSchema(Configuration.Schema);
+                    await builder.CreateSchemaAsync(Configuration.Schema);
 
-                    await transaction.CommitAsync();
+                    await transaction.CommitAsync(cancellationToken);
                 }
             }
 
             // Initialize the Id generator
-            await Configuration.IdGenerator.InitializeAsync(this);
+            await Configuration.IdGenerator.InitializeAsync(this, cancellationToken);
 
             // Pre-initialize the default collection
-            await InitializeCollectionAsync("");
+            await InitializeCollectionAsync(string.Empty, cancellationToken);
         }
 
-        public async Task InitializeCollectionAsync(string collection)
+        public Task InitializeAsync()
+            => InitializeAsync(CancellationToken.None);
+
+        public async Task InitializeCollectionAsync(string collection, CancellationToken cancellationToken = default)
         {
             var documentTable = Configuration.TableNameConvention.GetDocumentTable(collection);
 
-            await using (var connection = Configuration.ConnectionFactory.CreateConnection())
+            await using var connection = Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            try
             {
-                await connection.OpenAsync();
+                var selectCommand = connection.CreateCommand();
 
-                try
+                var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
+                selectBuilder.Select();
+                selectBuilder.AddSelector("*");
+                selectBuilder.Table(documentTable, null, Configuration.Schema);
+                selectBuilder.Take("1");
+
+                selectCommand.CommandText = selectBuilder.ToSqlString();
+
+                Configuration.Logger.LogTrace(selectCommand.CommandText);
+
+                using var result = await selectCommand.ExecuteReaderAsync(cancellationToken);
+                if (result != null)
                 {
-                    var selectCommand = connection.CreateCommand();
-
-                    var selectBuilder = Dialect.CreateBuilder(Configuration.TablePrefix);
-                    selectBuilder.Select();
-                    selectBuilder.AddSelector("*");
-                    selectBuilder.Table(documentTable, null, Configuration.Schema);
-                    selectBuilder.Take("1");
-
-                    selectCommand.CommandText = selectBuilder.ToSqlString();
-                    Configuration.Logger.LogTrace(selectCommand.CommandText);
-
-                    using (var result = await selectCommand.ExecuteReaderAsync())
+                    try
                     {
-                        if (result != null)
-                        {
-                            try
-                            {
-                                // Check if the Version column exists
-                                result.GetOrdinal(nameof(Document.Version));
-                            }
-                            catch
-                            {
-                                await result.CloseAsync();
-                                using var migrationTransaction = connection.BeginTransaction();
-                                var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
-
-                                try
-                                {
-                                    migrationBuilder
-                                        .AlterTable(documentTable, table => table
-                                            .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
-                                        );
-
-                                    await migrationTransaction.CommitAsync();
-                                }
-                                catch
-                                {
-
-                                    // Another thread must have altered it
-                                }
-                            }
-                            return;
-                        }
+                        // Check if the Version column exists
+                        result.GetOrdinal(nameof(Document.Version));
                     }
-                }
-                catch
-                {
-                    await using (var transaction = connection.BeginTransaction())
+                    catch
                     {
-                        var builder = new SchemaBuilder(Configuration, transaction);
+                        await result.CloseAsync();
+                        await using var migrationTransaction = await connection.BeginTransactionAsync(cancellationToken);
+                        var migrationBuilder = new SchemaBuilder(Configuration, migrationTransaction);
 
                         try
                         {
-                            // The table doesn't exist, create it
-                            builder
-                                .CreateTable(documentTable, table => table
-                                .Column(Configuration.IdentityColumnSize, nameof(Document.Id), column => column.PrimaryKey().NotNull())
-                                .Column<string>(nameof(Document.Type), column => column.NotNull())
-                                .Column<string>(nameof(Document.Content), column => column.Unlimited())
-                                .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
-                            )
-                            .AlterTable(documentTable, table => table
-                                .CreateIndex("IX_" + documentTable + "_Type", "Type")
-                            );
+                            await migrationBuilder.AlterTableAsync(documentTable, table => table
+                                    .AddColumn<long>(nameof(Document.Version), column => column.WithDefault(0))
+                                );
 
-                            await transaction.CommitAsync();
+                            await migrationTransaction.CommitAsync(cancellationToken);
                         }
                         catch
                         {
-                            // Another thread must have created it
+                            // Another thread must have altered it
+                            await migrationTransaction.RollbackAsync(cancellationToken);
                         }
                     }
-                }
-                finally
-                {
-                    await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection);
+                    return;
                 }
             }
+            catch
+            {
+                await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+                var builder = new SchemaBuilder(Configuration, transaction);
+
+                try
+                {
+                    // The table doesn't exist, create it
+                    await builder.CreateTableAsync(documentTable, table => table
+                        .Column(Configuration.IdentityColumnSize, nameof(Document.Id), column => column.PrimaryKey().NotNull())
+                        .Column<string>(nameof(Document.Type), column => column.NotNull())
+                        .Column<string>(nameof(Document.Content), column => column.Unlimited())
+                        .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
+                    );
+
+                    await builder.AlterTableAsync(documentTable, table => table
+                        .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                    );
+
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                catch
+                {
+                    // Another thread must have created it
+                }
+            }
+            finally
+            {
+                await Configuration.IdGenerator.InitializeCollectionAsync(Configuration, collection, cancellationToken);
+            }
         }
+
+        public Task InitializeCollectionAsync(string collection)
+            => InitializeCollectionAsync(collection, CancellationToken.None);
 
         private void ValidateConfiguration()
         {
@@ -209,37 +213,29 @@ namespace YesSql
             }
         }
 
-        public ISession CreateSession()
-        {
-            return new Session(this);
-        }
+        public ISession CreateSession(bool withTracking = true)
+            => new Session(this, withTracking);
 
+#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
         public void Dispose()
+#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
         {
         }
 
         public IAccessor<long> GetIdAccessor(Type tContainer)
-        {
-            return IdAccessors.GetOrAdd(tContainer, type => Configuration.IdentifierAccessorFactory.CreateAccessor<long>(type));
-        }
+        => IdAccessors.GetOrAdd(tContainer, Configuration.IdentifierAccessorFactory.CreateAccessor<long>);
 
         public IAccessor<long> GetVersionAccessor(Type tContainer)
-        {
-            return VersionAccessors.GetOrAdd(tContainer, type => Configuration.VersionAccessorFactory.CreateAccessor<long>(type));
-
-        }
+            => VersionAccessors.GetOrAdd(tContainer, Configuration.VersionAccessorFactory.CreateAccessor<long>);
 
         /// <summary>
         /// Returns the available indexers for a specified type
         /// </summary>
         public IEnumerable<IndexDescriptor> Describe(Type target, string collection)
         {
-            if (target == null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
+            ArgumentNullException.ThrowIfNull(target);
 
-            var cacheKey = String.IsNullOrEmpty(collection)
+            var cacheKey = string.IsNullOrEmpty(collection)
                 ? target.FullName
                 : target.FullName + ":" + collection
                 ;
@@ -249,14 +245,14 @@ namespace YesSql
 
         internal IEnumerable<IndexDescriptor> CreateDescriptors(Type target, string collection, IEnumerable<IIndexProvider> indexProviders)
         {
-            var activator = DescriptorActivators.GetOrAdd(target, type => MakeDescriptorActivator(type));
+            var activator = DescriptorActivators.GetOrAdd(target, MakeDescriptorActivator);
 
             var context = activator();
 
             foreach (var provider in indexProviders)
             {
                 if (provider.ForType().IsAssignableFrom(target) &&
-                    String.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(collection, provider.CollectionName, StringComparison.OrdinalIgnoreCase))
                 {
                     provider.Describe(context);
                 }
@@ -271,10 +267,12 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(string collection)
-        {
-            return (int)Configuration.IdGenerator.GetNextId(collection);
-        }
+        [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method. This current method is slated for removal in upcoming releases.")]
+        public long GetNextId(string collection)
+            => GetNextIdAsync(collection).GetAwaiter().GetResult();
+
+        public Task<long> GetNextIdAsync(string collection, CancellationToken cancellationToken = default)
+            => Configuration.IdGenerator.GetNextIdAsync(collection, cancellationToken);
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)
         {
@@ -299,55 +297,19 @@ namespace YesSql
         /// <param name="key">A key identifying the running work.</param>
         /// <param name="work">A function containing the logic to execute.</param>
         /// <returns>The result of the work.</returns>
-        internal async Task<T> ProduceAsync<T, TState>(WorkerQueryKey key, Func<TState, Task<T>> work, TState state)
+        internal Task<T> ProduceAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState,  Task< T>> work, TState state)
         {
             if (!Configuration.QueryGatingEnabled)
             {
-                return await work(state);
+                return work(key, state);
             }
 
-            object content = null;
+            return ProduceAwaitedAsync(key, work, state);
+        }
 
-            while (content == null)
-            {
-                // Is there any query already processing the ?
-                if (!Workers.TryGetValue(key, out var result))
-                {
-                    // Multiple threads can potentially reach this point which is fine
-                    // c.f. https://blogs.msdn.microsoft.com/seteplia/2018/10/01/the-danger-of-taskcompletionsourcet-class/
-                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                    Workers.TryAdd(key, tcs.Task);
-
-                    try
-                    {
-                        // The current worker is processed
-                        content = await work(state);
-                    }
-                    catch
-                    {
-                        // An exception occurred in the main worker, we broadcast the null value
-                        content = null;
-                        throw;
-                    }
-                    finally
-                    {
-                        // Remove the worker task before setting the result.
-                        // If the result is null, other threads would potentially
-                        // acquire it otherwise.
-                        Workers.TryRemove(key, out result);
-
-                        // Notify all other awaiters to return the result
-                        tcs.TrySetResult(content);
-                    }
-                }
-                else
-                {
-                    // Another worker is already running, wait for it to finish and reuse the results.
-                    // This value can be null if the worker failed, in this case the loop will run again.
-                    content = await result;
-                }
-            }
+        internal async Task<T> ProduceAwaitedAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState,  Task<T>> work, TState state)
+        {
+            var content = await _dispatcher.ScheduleAsync(key, state, async (key, state) => await work(key, state)); // TODO cancellation token into dispatcher?
 
             return (T)content;
         }

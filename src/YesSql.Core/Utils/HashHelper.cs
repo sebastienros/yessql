@@ -20,25 +20,22 @@ namespace YesSql.Utils
                 throw new ArgumentNullException("A prefix is required");
             }
 
-            using (var hash = SHA256.Create())
-            {
-                var bytes = Encoding.UTF8.GetBytes(name);
-                var hashed = hash.ComputeHash(bytes);
+            var bytes = Encoding.UTF8.GetBytes(name);
+            var hashed = SHA256.HashData(bytes);
 
-                var long1 = BitConverter.ToInt64(hashed, 0);
-                var long2 = BitConverter.ToInt64(hashed, 8);
-                var long3 = BitConverter.ToInt64(hashed, 16);
-                var long4 = BitConverter.ToInt64(hashed, 24);
+            var long1 = BitConverter.ToInt64(hashed, 0);
+            var long2 = BitConverter.ToInt64(hashed, 8);
+            var long3 = BitConverter.ToInt64(hashed, 16);
+            var long4 = BitConverter.ToInt64(hashed, 24);
 
-                return prefix + ToBase32(long1, long2, long3, long4);
-            }
+            return prefix + ToBase32(long1, long2, long3, long4);
         }
 
         private static string ToBase32(long long1, long long2, long long3, long long4)
         {
             var charBuffer = new char[52];
 
-            int i = 0;
+            var i = 0;
 
             i = EncodeSegment(charBuffer, i, long1);
 
@@ -49,7 +46,7 @@ namespace YesSql.Utils
             EncodeSegment(charBuffer, i, long4);
 
             return new string(charBuffer);
-        }        
+        }
 
         private static int EncodeSegment(char[] charBuffer, int startIndex, long lng)
         {

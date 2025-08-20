@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YesSql.Commands
@@ -21,9 +22,8 @@ namespace YesSql.Commands
 
         public abstract int ExecutionOrder { get; }
 
-        public DocumentCommand(Document document, string collection)
+        protected DocumentCommand(Document document, string collection)
         {
-
             Document = document;
             Collection = collection;
         }
@@ -32,7 +32,7 @@ namespace YesSql.Commands
 
         public string Collection { get; }
 
-        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger);
+        public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand parameters, List<Action<DbDataReader>> actions, int index);
     }

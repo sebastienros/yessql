@@ -3,16 +3,18 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YesSql.Commands
 {
     public class BatchCommand : IIndexCommand
     {
-        public static int DefaultBuilderCapacity = 10 * 1024;
+        [Obsolete("The field is not used anymore since the current batching implementation doesn't need it.")]
+        public static readonly int DefaultBuilderCapacity = 10 * 1024;
 
         public List<string> Queries { get; set; } = new List<string>();
-        public DbCommand Command { get; set; } 
+        public DbCommand Command { get; set; }
         public List<Action<DbDataReader>> Actions = new();
         public int ExecutionOrder => 0;
 
@@ -35,7 +37,7 @@ namespace YesSql.Commands
             return true;
         }
 
-        public async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
         {
             if (!dialect.SupportsBatching)
             {
@@ -47,25 +49,18 @@ namespace YesSql.Commands
                 return;
             }
 
-            var command = String.Concat(Queries);
+            var command = string.Concat(Queries);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(command);
             }
 
-            if (command.Length > DefaultBuilderCapacity)
-            {
-                if (logger.IsEnabled(LogLevel.Warning))
-                {
-                    logger.LogWarning("The default capacity of the BatchCommand StringBuilder {Default} might not be sufficient. It can be increased with BatchCommand.DefaultBuilderCapacity to at least {Suggested}", DefaultBuilderCapacity, command.Length);
-                }
-            }
-
             Command.Transaction = transaction;
             Command.CommandText = command;
 
-            using (var dr = await Command.ExecuteReaderAsync())
+            // This should propigate the cancellation token to any of the actions.
+            await using (var dr = await Command.ExecuteReaderAsync(cancellationToken))
             {
                 foreach (var action in Actions)
                 {

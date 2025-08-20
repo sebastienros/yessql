@@ -5,7 +5,7 @@ namespace YesSql.Filters.Abstractions.Services
 {
     public abstract class TermOption
     {
-        public TermOption(string name)
+        protected TermOption(string name)
         {
             Name = name;
         }

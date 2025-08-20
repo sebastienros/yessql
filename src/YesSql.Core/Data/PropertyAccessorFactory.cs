@@ -9,11 +9,11 @@ namespace YesSql.Data
     /// </summary>
     public class PropertyAccessorFactory : IAccessorFactory
     {
-        const BindingFlags DefaultBindingFlags = BindingFlags.IgnoreCase 
-            | BindingFlags.Public  
-            | BindingFlags.Instance 
-            | BindingFlags.GetProperty 
-            | BindingFlags.SetProperty 
+        const BindingFlags DefaultBindingFlags = BindingFlags.IgnoreCase
+            | BindingFlags.Public
+            | BindingFlags.Instance
+            | BindingFlags.GetProperty
+            | BindingFlags.SetProperty
             ;
 
         private readonly string _propertyName;
@@ -41,7 +41,7 @@ namespace YesSql.Data
             var setter = propertyInfo.GetSetMethod(true).CreateDelegate(setType);
 
             Type accessorType = null;
-            
+
             if (tProperty == typeof(int))
             {
                 accessorType = typeof(IntAccessor<>);
@@ -66,7 +66,7 @@ namespace YesSql.Data
         /// An accessor to an Int32 Id property
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        internal class IntAccessor<T> : IAccessor<long>
+        internal sealed class IntAccessor<T> : IAccessor<long>
         {
             private readonly Func<T, int> _getter;
             private readonly Action<T, int> _setter;
@@ -92,7 +92,7 @@ namespace YesSql.Data
         /// An accessor to an Int64 Id property
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        internal class LongAccessor<T> : IAccessor<long>
+        internal sealed class LongAccessor<T> : IAccessor<long>
         {
             private readonly Func<T, long> _getter;
             private readonly Action<T, long> _setter;

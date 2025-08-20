@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace YesSql.Tests.Models
 {
@@ -12,6 +13,9 @@ namespace YesSql.Tests.Models
         public IList<Shape> Shapes { get; set; }
     }
 
+    [JsonPolymorphic]
+    [JsonDerivedType(typeof(Square), nameof(Square))]
+    [JsonDerivedType(typeof(Circle), nameof(Circle))]
     public abstract class Shape
     {
         public long Id { get; set; }

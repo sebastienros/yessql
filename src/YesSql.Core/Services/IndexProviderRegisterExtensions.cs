@@ -17,10 +17,10 @@ namespace YesSql
         {
             if (indexProvider != null)
             {
-                return store.RegisterIndexes(new[] { indexProvider }, collection);
+                return store.RegisterIndexes([indexProvider], collection);
             }
 
-            return store.RegisterIndexes(new IIndexProvider[0], collection);
+            return store.RegisterIndexes([], collection);
         }
 
         public static IStore RegisterIndexes(this IStore store, Type type, string collection = null)
@@ -37,7 +37,7 @@ namespace YesSql
                 store.RegisterIndexes(type, collection);
             }
 
-            return store.RegisterIndexes(new IIndexProvider[0], collection);
+            return store.RegisterIndexes([], collection);
         }
 
         public static IStore RegisterIndexes(this IStore store, Assembly assembly, string collection = null)
@@ -46,6 +46,5 @@ namespace YesSql
             var indexes = exportedTypes.Where(x => typeof(IIndexProvider).IsAssignableFrom(x));
             return store.RegisterIndexes(indexes, collection);
         }
-
     }
 }

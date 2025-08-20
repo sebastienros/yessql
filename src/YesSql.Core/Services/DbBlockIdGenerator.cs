@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Sql;
 
@@ -13,7 +14,7 @@ namespace YesSql.Services
     public class DbBlockIdGenerator : IIdGenerator
     {
         internal long _initialValue = 1;
-        private readonly object _synLock = new();
+        private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 
         public static string TableName => "Identifiers";
         public readonly int MaxRetries = 20;
@@ -39,7 +40,7 @@ namespace YesSql.Services
             _blockSize = blockSize;
         }
 
-        public async Task InitializeAsync(IStore store)
+        public async Task InitializeAsync(IStore store, CancellationToken cancellationToken = default)
         {
             _store = store;
             _dialect = store.Configuration.SqlDialect;
@@ -50,36 +51,42 @@ namespace YesSql.Services
             UpdateCommand = "UPDATE " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " SET " + _dialect.QuoteForColumnName("nextval") + "=@new WHERE " + _dialect.QuoteForColumnName("nextval") + " = @previous AND " + _dialect.QuoteForColumnName("dimension") + " = @dimension;";
             InsertCommand = "INSERT INTO " + _dialect.QuoteForTableName(_tablePrefix + TableName, _schema) + " (" + _dialect.QuoteForColumnName("dimension") + ", " + _dialect.QuoteForColumnName("nextval") + ") VALUES(@dimension, @nextval);";
 
-            await using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
+            await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            await using var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel, cancellationToken);
+
+            try
             {
-                await connection.OpenAsync();
+                var localBuilder = new SchemaBuilder(store.Configuration, transaction, true);
 
-                try
-                {
-                    await using (var transaction = connection.BeginTransaction(store.Configuration.IsolationLevel))
-                    {
-                        var localBuilder = new SchemaBuilder(store.Configuration, transaction, false);
+                await localBuilder.CreateTableAsync(TableName, table => table
+                    .Column<string>("dimension", column => column.PrimaryKey().NotNull())
+                    .Column<long>("nextval")
+                    );
 
-                        localBuilder.CreateTable(TableName, table => table
-                            .Column<string>("dimension", column => column.PrimaryKey().NotNull())
-                            .Column<long>("nextval")
-                            );
-
-                        await transaction.CommitAsync();
-                    }
-                }
-                catch
-                {
-
-                }
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                // TODO should rollback not take CancellationToken.None?
+                await transaction.RollbackAsync(cancellationToken);
             }
         }
 
-        public long GetNextId(string collection)
-        {
-            collection ??= "";
+        public Task InitializeAsync(IStore store)
+            => InitializeAsync(store, CancellationToken.None);
 
-            lock (_synLock)
+        public long GetNextId(string collection)
+            => GetNextIdAsync(collection).GetAwaiter().GetResult();
+
+        public async Task<long> GetNextIdAsync(string collection, CancellationToken cancellationToken = default)
+        {
+            collection ??= string.Empty;
+
+            await _semaphoreSlim.WaitAsync(cancellationToken);
+
+            try
             {
                 if (!_ranges.TryGetValue(collection, out var range))
                 {
@@ -90,35 +97,42 @@ namespace YesSql.Services
 
                 if (nextId > range.End)
                 {
-                    LeaseRange(range);
+                    await LeaseRangeAsync(range, cancellationToken);
                     nextId = range.Next();
                 }
 
                 return nextId;
             }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
 
-        private void LeaseRange(Range range)
+        public Task<long> GetNextIdAsync(string collection)
+            => GetNextIdAsync(collection, CancellationToken.None);
+
+        private async Task LeaseRangeAsync(Range range, CancellationToken cancellationToken )
         {
             var affectedRows = 0;
-            long nextval = 0;
+            long nextValue = 0;
             var retries = 0;
 
-            using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
-            connection.Open();
+            await using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
 
             do
             {
                 // Ensure we overwrite the value that has been read by this
                 // instance in case another client is trying to lease a range
                 // at the same time
-                using (var transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                await using (var transaction = await connection.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted, cancellationToken))
                 {
                     try
                     {
                         var selectCommand = connection.CreateCommand();
                         selectCommand.CommandText = SelectCommand;
-
+                        
                         var selectDimension = selectCommand.CreateParameter();
                         selectDimension.Value = range.Collection;
                         selectDimension.ParameterName = "@dimension";
@@ -131,7 +145,7 @@ namespace YesSql.Services
                             _store.Configuration.Logger.LogTrace(SelectCommand);
                         }
 
-                        nextval = Convert.ToInt64(selectCommand.ExecuteScalar());
+                        nextValue = Convert.ToInt64(await selectCommand.ExecuteScalarAsync(cancellationToken));
 
                         var updateCommand = connection.CreateCommand();
                         updateCommand.CommandText = UpdateCommand;
@@ -142,12 +156,12 @@ namespace YesSql.Services
                         updateCommand.Parameters.Add(updateDimension);
 
                         var newValue = updateCommand.CreateParameter();
-                        newValue.Value = nextval + _blockSize;
+                        newValue.Value = nextValue + _blockSize;
                         newValue.ParameterName = "@new";
                         updateCommand.Parameters.Add(newValue);
 
                         var previousValue = updateCommand.CreateParameter();
-                        previousValue.Value = nextval;
+                        previousValue.Value = nextValue;
                         previousValue.ParameterName = "@previous";
                         updateCommand.Parameters.Add(previousValue);
 
@@ -157,14 +171,14 @@ namespace YesSql.Services
                         {
                             _store.Configuration.Logger.LogTrace(UpdateCommand);
                         }
-                        affectedRows = updateCommand.ExecuteNonQuery();
+                        affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
 
-                        transaction.Commit();
+                        await transaction.CommitAsync(cancellationToken);
                     }
                     catch
                     {
                         affectedRows = 0;
-                        transaction.Rollback();
+                        await transaction.RollbackAsync(cancellationToken);
                     }
                 }
 
@@ -175,10 +189,10 @@ namespace YesSql.Services
 
             } while (affectedRows == 0);
 
-            range.SetBlock(nextval, _blockSize);
+            range.SetBlock(nextValue, _blockSize);
         }
 
-        public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
+        public async Task InitializeCollectionAsync(IConfiguration configuration, string collection, CancellationToken cancellationToken = default)
         {
             if (_ranges.ContainsKey(collection))
             {
@@ -187,78 +201,76 @@ namespace YesSql.Services
 
             object nextval;
 
-            await using (var connection = configuration.ConnectionFactory.CreateConnection())
+            await using var connection = configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel, cancellationToken))
             {
-                await connection.OpenAsync();
+                // Does the record already exist?
+                var selectCommand = transaction.Connection.CreateCommand();
+                selectCommand.CommandText = SelectCommand;
 
-                await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
+                var selectDimension = selectCommand.CreateParameter();
+                selectDimension.Value = collection;
+                selectDimension.ParameterName = "@dimension";
+                selectCommand.Parameters.Add(selectDimension);
+
+                selectCommand.Transaction = transaction;
+
+                if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
                 {
-                    // Does the record already exist?
-                    var selectCommand = transaction.Connection.CreateCommand();
-                    selectCommand.CommandText = SelectCommand;
+                    _store.Configuration.Logger.LogTrace(SelectCommand);
+                }
 
-                    var selectDimension = selectCommand.CreateParameter();
-                    selectDimension.Value = collection;
-                    selectDimension.ParameterName = "@dimension";
-                    selectCommand.Parameters.Add(selectDimension);
+                nextval = await selectCommand.ExecuteScalarAsync(cancellationToken);
 
-                    selectCommand.Transaction = transaction;
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            if (nextval == null)
+            {
+                // Try to create a new record. If it fails, retry reading the record.
+                try
+                {
+                    await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel, cancellationToken);
+                    // To prevent concurrency issues when creating this record (it must be unique)
+                    // we generate a random collection name, then update it safely
+
+                    var command = transaction.Connection.CreateCommand();
+                    command.CommandText = InsertCommand;
+                    command.Transaction = transaction;
+
+                    var dimensionParameter = command.CreateParameter();
+                    dimensionParameter.Value = collection;
+                    dimensionParameter.ParameterName = "@dimension";
+                    command.Parameters.Add(dimensionParameter);
+
+                    var nextValParameter = command.CreateParameter();
+                    nextValParameter.Value = _initialValue;
+                    nextValParameter.ParameterName = "@nextval";
+                    command.Parameters.Add(nextValParameter);
 
                     if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
                     {
-                        _store.Configuration.Logger.LogTrace(SelectCommand);
+                        _store.Configuration.Logger.LogTrace(InsertCommand);
                     }
 
-                    nextval = await selectCommand.ExecuteScalarAsync();
-
-                    await transaction.CommitAsync();
+                    await command.ExecuteNonQueryAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
                 }
-
-                if (nextval == null)
+                catch
                 {
-                    // Try to create a new record. If it fails, retry reading the record.
-                    try
-                    {
-                        await using (var transaction = connection.BeginTransaction(configuration.IsolationLevel))
-                        {
-                            // To prevent concurrency issues when creating this record (it must be unique)
-                            // we generate a random collection name, then update it safely
-
-                            var command = transaction.Connection.CreateCommand();
-                            command.CommandText = InsertCommand;
-                            command.Transaction = transaction;
-
-                            var dimensionParameter = command.CreateParameter();
-                            dimensionParameter.Value = collection;
-                            dimensionParameter.ParameterName = "@dimension";
-                            command.Parameters.Add(dimensionParameter);
-
-                            var nextValParameter = command.CreateParameter();
-                            nextValParameter.Value = _initialValue;
-                            nextValParameter.ParameterName = "@nextval";
-                            command.Parameters.Add(nextValParameter);
-
-                            if (_store.Configuration.Logger.IsEnabled(LogLevel.Trace))
-                            {
-                                _store.Configuration.Logger.LogTrace(InsertCommand);
-                            }
-
-                            await command.ExecuteNonQueryAsync();
-
-                            await transaction.CommitAsync();
-                        }
-                    }
-                    catch
-                    {
-                        await InitializeCollectionAsync(configuration, collection);
-                    }
+                    await InitializeCollectionAsync(configuration, collection, cancellationToken);
                 }
+            }
 
-                _ranges[collection] = new Range(collection);
-            }                
+            _ranges[collection] = new Range(collection);
         }
 
-        private class Range
+        public Task InitializeCollectionAsync(IConfiguration configuration, string collection)
+            => InitializeCollectionAsync(configuration, collection, CancellationToken.None);
+
+        private sealed class Range
         {
             public Range(string collection)
             {

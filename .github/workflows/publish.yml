@@ -46,6 +46,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+  
+    # Required if the .NET version is not available on the GH Actions images
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: | 
+          6.0.x
+          8.0.x
 
     - name: Get the version
       id: get_version
@@ -60,23 +67,20 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release -p:Version=${{ steps.get_version.outputs.VERSION }}
 
-    - name: Test - Sqlite .NET 7.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net7.0
+    - name: Test - Sqlite .NET 8.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net8.0
 
-    - name: Test - PostgresQL .NET 7.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net7.0
-    
-    - name: Test - MySQL .NET 7.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net7.0
+    - name: Test - MySQL .NET 8.0
+      run: dotnet test --configuration Release --filter YesSql.Tests.MySqlTests --no-restore --no-build --framework net8.0
 
-    - name: Test - SQL Server 2019 .NET 7.0
-      run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net7.0
+    - name: Test - SQL Server 2019 .NET 8.0
+      run: dotnet test --configuration release --filter YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net8.0
 
     - name: Test - PostgresQL Legacy Identity - No Schema
-      run: dotnet test --configuration release --filter YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net7.0
+      run: dotnet test --configuration release --filter YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net8.0
 
     - name: Test - Sqlite Legacy Identity
-      run: dotnet test --configuration release --filter YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net7.0
+      run: dotnet test --configuration release --filter YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net8.0
 
     - name: Pack
       run: dotnet pack --output artifacts --configuration Release --no-restore --no-build -p:Version=${{ steps.get_version.outputs.VERSION }}
