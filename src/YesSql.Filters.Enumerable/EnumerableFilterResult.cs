@@ -12,7 +12,7 @@ namespace YesSql.Filters.Enumerable
         public EnumerableFilterResult(IReadOnlyDictionary<string, EnumerableTermOption<T>> termOptions) : base(termOptions)
         { }
 
-        public EnumerableFilterResult(List<TermNode> terms, IReadOnlyDictionary<string, EnumerableTermOption<T>> termOptions) : base(terms, termOptions)
+        public EnumerableFilterResult(IReadOnlyList<TermNode> terms, IReadOnlyDictionary<string, EnumerableTermOption<T>> termOptions) : base(terms, termOptions)
         { }
 
         public void MapFrom<TModel>(TModel model)
@@ -53,7 +53,7 @@ namespace YesSql.Filters.Enumerable
                     await VisitTerm(TermOptions, context, visitor, alwaysRunNode);
                 }
             }
-            
+
             return context.Item;
         }
 
