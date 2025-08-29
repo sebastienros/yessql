@@ -582,7 +582,7 @@ namespace YesSql
                 }
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
-                return Get<T>(documents.Select(x => x.Clone()), collection);
+                return Get<T>(documents.Select(x => x.Clone()), collection).ToArray();
             }
             catch
             {

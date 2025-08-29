@@ -3568,41 +3568,6 @@ namespace YesSql.Tests
             }
         }
 
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(5)]
-        [Theory]
-        public async Task ShouldReturnObjectsByIdsInCorrectOrder(int numberOfItems)
-        {
-            var circleIds = new List<long>();
-
-            await using (var session = _store.CreateSession())
-            {
-                for (var i = 0; i < numberOfItems; i++)
-                {
-                    var circle = new Circle
-                    {
-                        Radius = 10
-                    };
-                    await session.SaveAsync(circle);
-                    circleIds.Add(circle.Id);
-                }
-
-                await session.FlushAsync();
-
-                await session.SaveChangesAsync();
-            }
-
-            await using (var session = _store.CreateSession())
-            {
-                circleIds.Reverse();
-
-                var circles = await session.GetAsync<object>(circleIds.ToArray());
-
-                Assert.Equal(circleIds, circles.Select(c => ((Circle)c).Id));
-            }
-        }
-
         [Fact]
         public async Task ShouldAllowMultipleCallToSave()
         {

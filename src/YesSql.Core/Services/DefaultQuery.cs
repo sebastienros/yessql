@@ -1427,7 +1427,7 @@ namespace YesSql.Services
                         }
 
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        return _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection);
+                        return _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection).ToArray();
                     }
                 }
                 catch
