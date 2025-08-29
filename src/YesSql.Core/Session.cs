@@ -589,6 +589,66 @@ namespace YesSql
             }
         }
 
+        internal IEnumerable<T> Get<T>(IEnumerable<Document> documents, string collection) where T : class
+        {
+            if (documents?.Any() == false)
+            {
+                yield break;
+            }
+
+            var defaultAccessor = _store.GetIdAccessor(typeof(T));
+            var typeName = Store.TypeNames[typeof(T)];
+
+            var state = GetState(collection);
+
+            // Are all the objects already in cache?
+            foreach (var document in documents)
+            {
+                if (_withTracking && state.IdentityMap.TryGetEntityById(document.Id, out var entity))
+                {
+                    yield return (T)entity;
+                }
+                else
+                {
+                    T item;
+
+                    IAccessor<long> accessor;
+                    // If the document type doesn't match the requested one, check it's a base type
+                    if (!string.Equals(typeName, document.Type, StringComparison.Ordinal))
+                    {
+                        var itemType = Store.TypeNames[document.Type];
+
+                        // Ignore the document if it can't be casted to the requested type
+                        if (!typeof(T).IsAssignableFrom(itemType))
+                        {
+                            continue;
+                        }
+
+                        accessor = _store.GetIdAccessor(itemType);
+
+                        item = (T)Store.Configuration.ContentSerializer.Deserialize(document.Content, itemType);
+                    }
+                    else
+                    {
+                        item = (T)Store.Configuration.ContentSerializer.Deserialize(document.Content, typeof(T));
+
+                        accessor = defaultAccessor;
+                    }
+
+                    accessor?.Set(item, document.Id);
+
+                    if (_withTracking)
+                    {
+                        // track the loaded object.
+                        state.IdentityMap.AddEntity(document.Id, item);
+                        state.IdentityMap.AddDocument(document);
+                    }
+
+                    yield return item;
+                }
+            }
+        }
+
         public Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection) where T : class
             => GetAsync<T>(ids, collection, CancellationToken.None);
 
@@ -671,66 +731,6 @@ namespace YesSql
 
         public Task FlushAsync()
             => FlushAsync(CancellationToken.None);
-
-        internal IEnumerable<T> Get<T>(IEnumerable<Document> documents, string collection) where T : class
-        {
-            if (documents?.Any() == false)
-            {
-                yield break;
-            }
-
-            var defaultAccessor = _store.GetIdAccessor(typeof(T));
-            var typeName = Store.TypeNames[typeof(T)];
-
-            var state = GetState(collection);
-
-            // Are all the objects already in cache?
-            foreach (var document in documents)
-            {
-                if (_withTracking && state.IdentityMap.TryGetEntityById(document.Id, out var entity))
-                {
-                    yield return (T)entity;
-                }
-                else
-                {
-                    T item;
-
-                    IAccessor<long> accessor;
-                    // If the document type doesn't match the requested one, check it's a base type
-                    if (!string.Equals(typeName, document.Type, StringComparison.Ordinal))
-                    {
-                        var itemType = Store.TypeNames[document.Type];
-
-                        // Ignore the document if it can't be casted to the requested type
-                        if (!typeof(T).IsAssignableFrom(itemType))
-                        {
-                            continue;
-                        }
-
-                        accessor = _store.GetIdAccessor(itemType);
-
-                        item = (T)Store.Configuration.ContentSerializer.Deserialize(document.Content, itemType);
-                    }
-                    else
-                    {
-                        item = (T)Store.Configuration.ContentSerializer.Deserialize(document.Content, typeof(T));
-
-                        accessor = defaultAccessor;
-                    }
-
-                    accessor?.Set(item, document.Id);
-
-                    if (_withTracking)
-                    {
-                        // track the loaded object.
-                        state.IdentityMap.AddEntity(document.Id, item);
-                        state.IdentityMap.AddDocument(document);
-                    }
-
-                    yield return item;
-                }
-            }
-        }
 
         private async Task FlushInternalAsync(bool saving, CancellationToken cancellationToken)
         {
