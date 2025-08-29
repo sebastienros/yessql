@@ -1308,7 +1308,7 @@ namespace YesSql.Services
                 {
                     // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
                     await _query._session.CancelAsyncInternal();
-                    
+
                     throw;
                 }
                 finally
@@ -1426,7 +1426,7 @@ namespace YesSql.Services
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
                         documents = documents.Select(x => x.Clone());
 
-                        return _query._session.Get<T>(documents.ToList(), _query._collection);
+                        return _query._session.Get<T>(documents, _query._collection);
                     }
                 }
                 catch
