@@ -1293,15 +1293,13 @@ namespace YesSql.Services
                             return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
-                        // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        var clonedDocuments = documents.Select(x => x.Clone()).ToList();
-
-                        if (clonedDocuments.Count == 0)
+                        if (!documents.Any())
                         {
                             return default;
                         }
 
-                        return _query._session.Get<T>(clonedDocuments, _query._collection).FirstOrDefault();
+                        // Clone documents returned from ProduceAsync as they might be shared across sessions
+                        return _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection).FirstOrDefault();
                     }
                 }
                 catch
@@ -1423,10 +1421,13 @@ namespace YesSql.Services
                             return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
-                        // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        documents = documents.Select(x => x.Clone());
+                        if (!documents.Any())
+                        {
+                            return [];
+                        }
 
-                        return _query._session.Get<T>(documents, _query._collection);
+                        // Clone documents returned from ProduceAsync as they might be shared across sessions
+                        return _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection);
                     }
                 }
                 catch

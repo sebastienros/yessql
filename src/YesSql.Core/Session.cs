@@ -576,10 +576,13 @@ namespace YesSql
                     CancellationToken = cancellationToken,
                 });
 
-                // Clone documents returned from ProduceAsync as they might be shared across sessions
-                var sortedDocuments = documents.Select(x => x.Clone());
+                if (!documents.Any())
+                {
+                    return [];
+                }
 
-                return Get<T>(sortedDocuments, collection);
+                // Clone documents returned from ProduceAsync as they might be shared across sessions
+                return Get<T>(documents.Select(x => x.Clone()), collection);
             }
             catch
             {
@@ -591,11 +594,6 @@ namespace YesSql
 
         internal IEnumerable<T> Get<T>(IEnumerable<Document> documents, string collection) where T : class
         {
-            if (documents?.Any() == false)
-            {
-                yield break;
-            }
-
             var defaultAccessor = _store.GetIdAccessor(typeof(T));
             var typeName = Store.TypeNames[typeof(T)];
 
