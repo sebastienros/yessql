@@ -74,12 +74,6 @@ namespace YesSql.Services
             }
         }
 
-        public Task InitializeAsync(IStore store)
-            => InitializeAsync(store, CancellationToken.None);
-
-        public long GetNextId(string collection)
-            => GetNextIdAsync(collection).GetAwaiter().GetResult();
-
         public async Task<long> GetNextIdAsync(string collection, CancellationToken cancellationToken = default)
         {
             collection ??= string.Empty;
@@ -266,9 +260,6 @@ namespace YesSql.Services
 
             _ranges[collection] = new Range(collection);
         }
-
-        public Task InitializeCollectionAsync(IConfiguration configuration, string collection)
-            => InitializeCollectionAsync(configuration, collection, CancellationToken.None);
 
         private sealed class Range
         {
