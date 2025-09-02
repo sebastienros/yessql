@@ -582,7 +582,11 @@ namespace YesSql
                 }
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
-                return Get<T>(documents.Select(x => x.Clone()), collection).ToArray();
+                var sortedDocuments = documents.Select(x => x.Clone())
+                    .OrderBy(d => Array.IndexOf(ids, d.Id));
+
+                return Get<T>(sortedDocuments, collection)
+                    .ToArray();
             }
             catch
             {
