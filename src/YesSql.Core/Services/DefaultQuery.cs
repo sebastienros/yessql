@@ -1281,7 +1281,7 @@ namespace YesSql.Services
                         _query._queryState._sqlBuilder.Selector(_query._queryState._documentTable, "*", _query._queryState._store.Configuration.Schema);
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        var documents = await _query._session._store.ProduceAsync(key, static (key, state) =>
+                        var document = await _query._session._store.ProduceAsync(key, static (key, state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
 
@@ -1290,16 +1290,16 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                            return state.Connection.QueryFirstOrDefaultAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
-                        if (!documents.Any())
+                        if (document is null)
                         {
                             return default;
                         }
 
                         // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        return _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection).FirstOrDefault();
+                        return _query._session.Get<T>([document.Clone()], _query._collection).FirstOrDefault();
                     }
                 }
                 catch
