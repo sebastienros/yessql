@@ -1281,7 +1281,7 @@ namespace YesSql.Services
                         _query._queryState._sqlBuilder.Selector(_query._queryState._documentTable, "*", _query._queryState._store.Configuration.Schema);
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-                        var documents = await _query._session._store.ProduceAsync(key, static (key, state) =>
+                        var document = await _query._session._store.ProduceAsync(key, static (key, state) =>
                         {
                             var logger = state.Query._session._store.Configuration.Logger;
 
@@ -1290,25 +1290,23 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                            return state.Connection.QueryFirstOrDefaultAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
-                        // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        var clonedDocuments = documents.Select(x => x.Clone()).ToList();
-
-                        if (clonedDocuments.Count == 0)
+                        if (document is null)
                         {
                             return default;
                         }
 
-                        return _query._session.Get<T>(clonedDocuments, _query._collection).FirstOrDefault();
+                        // Clone documents returned from ProduceAsync as they might be shared across sessions
+                        return _query._session.Get<T>([document.Clone()], _query._collection).FirstOrDefault();
                     }
                 }
                 catch
                 {
                     // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
                     await _query._session.CancelAsyncInternal();
-                    
+
                     throw;
                 }
                 finally
@@ -1414,10 +1412,13 @@ namespace YesSql.Services
                             return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
-                        // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        documents = documents.Select(x => x.Clone());
+                        if (!documents.Any())
+                        {
+                            return [];
+                        }
 
-                        return _query._session.Get<T>(documents.ToList(), _query._collection);
+                        // Clone documents returned from ProduceAsync as they might be shared across sessions
+                        return _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection).ToArray();
                     }
                 }
                 catch
