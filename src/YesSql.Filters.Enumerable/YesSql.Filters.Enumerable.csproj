@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+      <ProjectReference Include="..\YesSql.Filters.Abstractions\YesSql.Filters.Abstractions.csproj" />
+      <ProjectReference Include="..\YesSql.Abstractions\YesSql.Abstractions.csproj" />
+    </ItemGroup>
+
+</Project>
