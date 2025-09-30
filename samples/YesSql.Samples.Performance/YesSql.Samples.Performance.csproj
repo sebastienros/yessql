@@ -11,9 +11,10 @@
         <None Remove="Properties\**" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
+        <PackageReference Include="BenchmarkDotNet" Version="0.15.4" />
     </ItemGroup>
     <ItemGroup>
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
         <ProjectReference Include="..\..\src\YesSql.Core\YesSql.Core.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.PostgreSql\YesSql.Provider.PostgreSql.csproj" />
         <ProjectReference Include="..\..\src\YesSql.Provider.SqlServer\YesSql.Provider.SqlServer.csproj" />
