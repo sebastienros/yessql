@@ -1132,6 +1132,7 @@ namespace YesSql.Services
             // Clear paging and order when counting 
             localBuilder.ClearOrder();
             localBuilder.ClearGroupBy();
+            localBuilder.ClearTrail();
             localBuilder.Skip(null);
             localBuilder.Take(null);
 
