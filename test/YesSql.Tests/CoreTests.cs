@@ -1044,6 +1044,42 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task CountAsync_WhenCalledAfterListAsync_ReturnCorrectTotal()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                var mike = new Person
+                {
+                    Firstname = "Mike",
+                    Lastname = "Alhayek"
+                };
+
+                await session.SaveAsync(bill);
+                await session.SaveAsync(mike);
+
+                await session.SaveChangesAsync();
+
+                var query = session.Query<Person, PersonByName>().OrderBy(x => x.DocumentId).Skip(1).Take(1);
+
+                var records = await query.ListAsync();
+
+                Assert.Equal(2, await query.CountAsync());
+
+                Assert.Single(records);
+
+                Assert.Equal("Mike", records.First().Firstname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldUpdateAutoFlushedIndex()
         {
             // When auto-flush is called on an entity
