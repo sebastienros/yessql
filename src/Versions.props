@@ -2,7 +2,7 @@
   <!-- This file define constants that can be changed per TFM -->
   <PropertyGroup>
       <DapperStrongNamePackageVersion>2.1.66</DapperStrongNamePackageVersion>
-      <MicrosoftDataSqlClientPackageVersion>6.1.0</MicrosoftDataSqlClientPackageVersion>
+      <MicrosoftDataSqlClientPackageVersion>6.1.2</MicrosoftDataSqlClientPackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
