@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net10.0</TargetFrameworks>
+        <TargetFrameworks>net8.0</TargetFrameworks>
         <DebugType>portable</DebugType>
         <PreserveCompilationContext>true</PreserveCompilationContext>
         <AssemblyName>YesSql.Samples.Hi</AssemblyName>
