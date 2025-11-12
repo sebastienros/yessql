@@ -118,5 +118,42 @@ namespace YesSql.Tests
                 await transaction.CommitAsync();
             }
         }
+
+        [Fact]
+        public async Task ShouldQuoteForeignKeyConstraintsWithNumericPrefix()
+        {
+            // Test that foreign key constraints are properly quoted when table prefix starts with a digit
+            // This addresses: https://github.com/sebastienros/yessql/issues/XXX
+            var numericPrefixConfig = new Configuration()
+                .UsePostgreSql(ConnectionStringBuilder.ConnectionString, "BabyYoda")
+                .SetTablePrefix("1abcd_") // Prefix starting with a digit
+                .UseBlockIdGenerator()
+                .SetIdentityColumnSize(IdentityColumnSize.Int64);
+
+            using var store = await StoreFactory.CreateAndInitializeAsync(numericPrefixConfig);
+
+            await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            await using (var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel))
+            {
+                var builder = new SchemaBuilder(store.Configuration, transaction);
+
+                // This should not throw even with a numeric prefix
+                await builder.CreateMapIndexTableAsync<PersonByName>(column => column
+                    .Column<string>(nameof(PersonByName.SomeName))
+                );
+
+                await transaction.CommitAsync();
+            }
+
+            // Clean up
+            await using (var transaction = await connection.BeginTransactionAsync(store.Configuration.IsolationLevel))
+            {
+                var builder = new SchemaBuilder(store.Configuration, transaction);
+                await builder.DropMapIndexTableAsync<PersonByName>();
+                await transaction.CommitAsync();
+            }
+        }
     }
 }

@@ -191,7 +191,7 @@ namespace YesSql.Provider.MySql
 
         public override string GetDropForeignKeyConstraintString(string name)
         {
-            return " drop foreign key " + FormatKeyName(name);
+            return " drop foreign key " + QuoteForColumnName(FormatKeyName(name));
         }
 
         public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destQuotedTable, string[] destColumns, bool primaryKey)
