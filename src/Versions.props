@@ -5,11 +5,5 @@
       <MicrosoftDataSqlClientPackageVersion>6.1.2</MicrosoftDataSqlClientPackageVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
-      <!-- New versions depend on Microsoft.Bcl.AsyncInterfaces 9.0.* which doesn't support net6.0 -->
-      <DapperStrongNamePackageVersion>2.1.35</DapperStrongNamePackageVersion>
 
-      <!-- New versions don't support net6.0 -->
-      <MicrosoftDataSqlClientPackageVersion>5.2.3</MicrosoftDataSqlClientPackageVersion>
-  </PropertyGroup>
 </Project>
