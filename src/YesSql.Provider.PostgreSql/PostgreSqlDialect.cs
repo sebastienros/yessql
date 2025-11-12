@@ -59,6 +59,8 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(decimal), DbType.Decimal },
                 { typeof(DateTime), DbType.DateTime },
                 { typeof(DateTimeOffset), DbType.DateTimeOffset },
+                { typeof(DateOnly), DbType.Date },
+                { typeof(TimeOnly), DbType.Time },
                 { typeof(Guid), DbType.Guid },
                 { typeof(TimeSpan), DbType.Int64 }, // stored as ticks
 
@@ -78,6 +80,8 @@ namespace YesSql.Provider.PostgreSql
                 { typeof(decimal?), DbType.Decimal },
                 { typeof(DateTime?), DbType.DateTime },
                 { typeof(DateTimeOffset?), DbType.DateTimeOffset },
+                { typeof(DateOnly?), DbType.Date },
+                { typeof(TimeOnly?), DbType.Time },
                 { typeof(Guid?), DbType.Guid },
                 { typeof(TimeSpan?), DbType.Int64 }
             };

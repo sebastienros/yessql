@@ -78,4 +78,55 @@ namespace YesSql.Data
             }
         }
     }
+
+    class DateOnlyHandler : DapperTypeHandler<DateOnly>
+    {
+        public override DateOnly Parse(object value)
+        {
+            switch (value)
+            {
+                case null:
+                    return DateOnly.MinValue;
+
+                case string s:
+                    return DateOnly.Parse(s);
+
+                case DateTime dt:
+                    return DateOnly.FromDateTime(dt);
+
+                case DateOnly d:
+                    return d;
+
+                default:
+                    return DateOnly.MinValue;
+            }
+        }
+    }
+
+    class TimeOnlyHandler : DapperTypeHandler<TimeOnly>
+    {
+        public override TimeOnly Parse(object value)
+        {
+            switch (value)
+            {
+                case null:
+                    return TimeOnly.MinValue;
+
+                case string s:
+                    return TimeOnly.Parse(s);
+
+                case TimeSpan ts:
+                    return TimeOnly.FromTimeSpan(ts);
+
+                case DateTime dt:
+                    return TimeOnly.FromDateTime(dt);
+
+                case TimeOnly t:
+                    return t;
+
+                default:
+                    return TimeOnly.MinValue;
+            }
+        }
+    }
 }

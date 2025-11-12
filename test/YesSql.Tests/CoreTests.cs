@@ -289,6 +289,8 @@ namespace YesSql.Tests
                 //.Column<char>(nameof(TypesIndex.ValueChar))
                 .Column<DateTime>(nameof(TypesIndex.ValueDateTime))
                 .Column<DateTimeOffset>(nameof(TypesIndex.ValueDateTimeOffset))
+                .Column<DateOnly>(nameof(TypesIndex.ValueDateOnly))
+                .Column<TimeOnly>(nameof(TypesIndex.ValueTimeOnly))
                 .Column<decimal>(nameof(TypesIndex.ValueDecimal))
                 .Column<double>(nameof(TypesIndex.ValueDouble))
                 .Column<float>(nameof(TypesIndex.ValueFloat))
@@ -305,6 +307,8 @@ namespace YesSql.Tests
                 //.Column<char?>(nameof(TypesIndex.NullableChar), c => c.Nullable())
                 .Column<DateTime?>(nameof(TypesIndex.NullableDateTime), c => c.Nullable())
                 .Column<DateTimeOffset?>(nameof(TypesIndex.NullableDateTimeOffset), c => c.Nullable())
+                .Column<DateOnly?>(nameof(TypesIndex.NullableDateOnly), c => c.Nullable())
+                .Column<TimeOnly?>(nameof(TypesIndex.NullableTimeOnly), c => c.Nullable())
                 .Column<decimal?>(nameof(TypesIndex.NullableDecimal), c => c.Nullable())
                 .Column<double?>(nameof(TypesIndex.NullableDouble), c => c.Nullable())
                 .Column<float?>(nameof(TypesIndex.NullableFloat), c => c.Nullable())
@@ -6424,6 +6428,99 @@ namespace YesSql.Tests
                 Assert.Null(index.NullableShort);
                 Assert.Null(index.NullableDateTimeOffset);
                 Assert.Null(index.NullableTimeSpan);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldStoreDateOnlyAndTimeOnly()
+        {
+            var dummy = new Person();
+
+            var valueDateOnly = new DateOnly(2024, 3, 15);
+            var valueTimeOnly = new TimeOnly(14, 30, 45);
+            var nullableDateOnly = new DateOnly(2023, 12, 25);
+            var nullableTimeOnly = new TimeOnly(9, 15, 30);
+
+            // Create fake document to associate to index
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(dummy);
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex
+                {
+                    ValueDateOnly = valueDateOnly,
+                    ValueTimeOnly = valueTimeOnly,
+                    NullableDateOnly = nullableDateOnly,
+                    NullableTimeOnly = nullableTimeOnly
+                };
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var connection = await session.CreateConnectionAsync();
+                var transaction = await session.BeginTransactionAsync();
+
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var index = await session.QueryIndex<TypesIndex>().FirstOrDefaultAsync();
+
+                Assert.Equal(valueDateOnly, index.ValueDateOnly);
+                Assert.Equal(valueTimeOnly, index.ValueTimeOnly);
+                Assert.Equal(nullableDateOnly, index.NullableDateOnly);
+                Assert.Equal(nullableTimeOnly, index.NullableTimeOnly);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryDateOnlyAndTimeOnly()
+        {
+            var dummy = new Person();
+
+            var valueDateOnly = new DateOnly(2024, 3, 15);
+            var valueTimeOnly = new TimeOnly(14, 30, 45);
+
+            // Create fake document to associate to index
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(dummy);
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex
+                {
+                    ValueDateOnly = valueDateOnly,
+                    ValueTimeOnly = valueTimeOnly
+                };
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var connection = await session.CreateConnectionAsync();
+                var transaction = await session.BeginTransactionAsync();
+
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var dateOnlyQuery = await session.QueryIndex<TypesIndex>(x => x.ValueDateOnly == valueDateOnly).FirstOrDefaultAsync();
+                var timeOnlyQuery = await session.QueryIndex<TypesIndex>(x => x.ValueTimeOnly == valueTimeOnly).FirstOrDefaultAsync();
+
+                Assert.NotNull(dateOnlyQuery);
+                Assert.NotNull(timeOnlyQuery);
+                Assert.Equal(valueDateOnly, dateOnlyQuery.ValueDateOnly);
+                Assert.Equal(valueTimeOnly, timeOnlyQuery.ValueTimeOnly);
             }
         }
 

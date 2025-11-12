@@ -56,6 +56,10 @@ namespace YesSql
 
             // Databases that don't support TimeSpan natively will store these in int columns as ticks.
             SqlMapper.AddTypeHandler(new TimeSpanHandler());
+
+            // Support for DateOnly and TimeOnly types introduced in .NET 6
+            SqlMapper.AddTypeHandler(new DateOnlyHandler());
+            SqlMapper.AddTypeHandler(new TimeOnlyHandler());
         }
 
         private Store()
