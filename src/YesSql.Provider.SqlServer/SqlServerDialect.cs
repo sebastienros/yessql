@@ -89,6 +89,8 @@ namespace YesSql.Provider.SqlServer
         public SqlServerDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
+            AddTypeHandler<DateOnly, DateTime>(x => x.ToDateTime(TimeOnly.MinValue));
+            AddTypeHandler<TimeOnly, TimeSpan>(x => x.ToTimeSpan());
 
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));

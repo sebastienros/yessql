@@ -81,6 +81,12 @@ namespace YesSql.Data
 
     class DateOnlyHandler : DapperTypeHandler<DateOnly>
     {
+        public override void SetValue(IDbDataParameter parameter, DateOnly value)
+        {
+            // Convert DateOnly to DateTime for database storage
+            parameter.Value = value.ToDateTime(TimeOnly.MinValue);
+        }
+
         public override DateOnly Parse(object value)
         {
             switch (value)
@@ -89,6 +95,11 @@ namespace YesSql.Data
                     return DateOnly.MinValue;
 
                 case string s:
+                    // Try parsing as DateTime first to handle formats like "2024-03-15 00:00:00"
+                    if (DateTime.TryParse(s, out var dateTime))
+                    {
+                        return DateOnly.FromDateTime(dateTime);
+                    }
                     return DateOnly.Parse(s);
 
                 case DateTime dt:
@@ -105,6 +116,12 @@ namespace YesSql.Data
 
     class TimeOnlyHandler : DapperTypeHandler<TimeOnly>
     {
+        public override void SetValue(IDbDataParameter parameter, TimeOnly value)
+        {
+            // Convert TimeOnly to TimeSpan for database storage
+            parameter.Value = value.ToTimeSpan();
+        }
+
         public override TimeOnly Parse(object value)
         {
             switch (value)

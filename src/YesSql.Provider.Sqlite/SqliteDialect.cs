@@ -92,6 +92,10 @@ namespace YesSql.Provider.Sqlite
             // Convert DateTimeOffset to DateTime for consistent storage and comparison
             AddTypeHandler<DateTimeOffset, DateTime>(x => x.UtcDateTime);
 
+            // DateOnly and TimeOnly types from .NET 6+
+            AddTypeHandler<DateOnly, DateTime>(x => x.ToDateTime(TimeOnly.MinValue));
+            AddTypeHandler<TimeOnly, TimeSpan>(x => x.ToTimeSpan());
+
             Methods.Add("second", new TemplateFunction("cast(strftime('%S', {0}) as int)"));
             Methods.Add("minute", new TemplateFunction("cast(strftime('%M', {0}) as int)"));
             Methods.Add("hour", new TemplateFunction("cast(strftime('%H', {0}) as int)"));

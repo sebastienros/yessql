@@ -99,6 +99,10 @@ namespace YesSql.Provider.PostgreSql
             // Represents a moment in time
             AddTypeHandler<DateTimeOffset, DateTime>(x => x.UtcDateTime);
 
+            // DateOnly and TimeOnly types from .NET 6+
+            AddTypeHandler<DateOnly, DateTime>(x => x.ToDateTime(TimeOnly.MinValue));
+            AddTypeHandler<TimeOnly, TimeSpan>(x => x.ToTimeSpan());
+
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
             Methods.Add("hour", new TemplateFunction("extract(hour from {0})"));

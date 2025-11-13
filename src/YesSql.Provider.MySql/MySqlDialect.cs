@@ -91,6 +91,8 @@ namespace YesSql.Provider.MySql
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
             AddTypeHandler<DateTimeOffset, string>(x => x.ToString("O"));
+            AddTypeHandler<DateOnly, DateTime>(x => x.ToDateTime(TimeOnly.MinValue));
+            AddTypeHandler<TimeOnly, TimeSpan>(x => x.ToTimeSpan());
             Methods.Add("now", new TemplateFunction("UTC_TIMESTAMP()"));
         }
 
