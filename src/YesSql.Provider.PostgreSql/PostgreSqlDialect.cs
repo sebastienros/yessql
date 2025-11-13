@@ -100,7 +100,8 @@ namespace YesSql.Provider.PostgreSql
             AddTypeHandler<DateTimeOffset, DateTime>(x => x.UtcDateTime);
 
             // DateOnly and TimeOnly types from .NET 6+
-            AddTypeHandler<DateOnly, DateTime>(x => x.ToDateTime(TimeOnly.MinValue));
+            // Convert DateOnly to UTC DateTime to avoid timezone conversion issues
+            AddTypeHandler<DateOnly, DateTime>(x => DateTime.SpecifyKind(x.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc));
             AddTypeHandler<TimeOnly, TimeSpan>(x => x.ToTimeSpan());
 
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
