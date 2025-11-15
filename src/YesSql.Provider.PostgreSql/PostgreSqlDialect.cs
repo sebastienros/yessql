@@ -102,7 +102,7 @@ namespace YesSql.Provider.PostgreSql
             // DateOnly and TimeOnly types from .NET 6+
             // Convert DateOnly to UTC DateTime to avoid timezone conversion issues
             AddTypeHandler<DateOnly, DateTime>(x => DateTime.SpecifyKind(x.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc));
-            AddTypeHandler<TimeOnly, TimeSpan>(x => x.ToTimeSpan());
+            // TimeOnly is natively supported by PostgreSQL as 'time' type, no conversion needed
 
             Methods.Add("second", new TemplateFunction("extract(second from {0})"));
             Methods.Add("minute", new TemplateFunction("extract(minute from {0})"));
