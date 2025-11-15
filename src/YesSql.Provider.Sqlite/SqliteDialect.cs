@@ -94,7 +94,7 @@ namespace YesSql.Provider.Sqlite
 
             // DateOnly and TimeOnly types from .NET 6+
             AddTypeHandler<DateOnly, DateTime>(x => x.ToDateTime(TimeOnly.MinValue));
-            AddTypeHandler<TimeOnly, TimeSpan>(x => x.ToTimeSpan());
+            // TimeOnly is natively supported by SQLite provider as 'time' type, no conversion needed
 
             Methods.Add("second", new TemplateFunction("cast(strftime('%S', {0}) as int)"));
             Methods.Add("minute", new TemplateFunction("cast(strftime('%M', {0}) as int)"));
