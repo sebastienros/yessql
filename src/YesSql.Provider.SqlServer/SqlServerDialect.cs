@@ -88,10 +88,9 @@ namespace YesSql.Provider.SqlServer
 
         public SqlServerDialect()
         {
-            // Note: TimeSpan is NOT converted to ticks for SQL Server to allow proper DATETIME storage
+            AddTypeHandler<TimeSpan, long>(x => x.Ticks);
             AddTypeHandler<DateOnly, DateTime>(x => x.ToDateTime(TimeOnly.MinValue));
-            // TimeOnly: Convert to DateTime (1900-01-01 + time) for DATETIME column compatibility
-            AddTypeHandler<TimeOnly, DateTime>(x => new DateOnly(1900, 1, 1).ToDateTime(x));
+            // TimeOnly: Already converted to TimeSpan by Dapper handler, then to ticks by TimeSpan handler above
 
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
             Methods.Add("minute", new TemplateFunction("datepart(minute, {0})"));

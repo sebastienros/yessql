@@ -119,7 +119,20 @@ namespace YesSql.Data
         public override void SetValue(IDbDataParameter parameter, TimeOnly value)
         {
             // Convert TimeOnly to TimeSpan for database storage
-            parameter.Value = value.ToTimeSpan();
+            var timeSpan = value.ToTimeSpan();
+            
+            // For parameters that will be stored in DateTime columns (like SQL Server's DATETIME),
+            // convert to DateTime to avoid overflow issues with ticks
+            if (parameter.DbType == DbType.DateTime || parameter.DbType == DbType.DateTime2 || 
+                parameter.DbType == DbType.Date || parameter.DbType == DbType.Time)
+            {
+                // Use 1900-01-01 as base date for SQL Server compatibility
+                parameter.Value = new DateOnly(1900, 1, 1).ToDateTime(value);
+            }
+            else
+            {
+                parameter.Value = timeSpan;
+            }
         }
 
         public override TimeOnly Parse(object value)
