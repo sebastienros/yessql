@@ -7,6 +7,7 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Data;
@@ -1325,8 +1326,7 @@ namespace YesSql.Services
             async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
 #pragma warning restore CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
             {
-                // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl(cancellationToken))
+                await foreach (var item in ListImplAsync(cancellationToken))
                 {
                     yield return item;
                 }
@@ -1334,8 +1334,6 @@ namespace YesSql.Services
 
             internal async Task<IEnumerable<T>> ListImpl(CancellationToken cancellationToken)
             {
-                // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can return it by default, and buffer it in ListAsync instead
-
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync(cancellationToken);
 
@@ -1428,6 +1426,96 @@ namespace YesSql.Services
                     await _query._session.CancelAsyncInternal();
 
                     throw;
+                }
+                finally
+                {
+                    _query._session.ExitAsyncExecution();
+                }
+            }
+
+            internal async IAsyncEnumerable<T> ListImplAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                // Flush any pending changes before doing a query (auto-flush)
+                await _query._session.FlushAsync(cancellationToken);
+
+                var connection = await _query._session.CreateConnectionAsync(cancellationToken);
+                var transaction = _query._session.CurrentTransaction;
+                var schema = _query._queryState._store.Configuration.Schema;
+                var sqlBuilder = _query._queryState._sqlBuilder;
+
+                _query._queryState.FlushFilters();
+
+                if (_query._compiledQuery != null && _query._queryState._parameterBindings != null)
+                {
+                    foreach (var binding in _query._queryState._parameterBindings)
+                    {
+                        binding(_query._compiledQuery, sqlBuilder);
+                    }
+                }
+
+                _query._session.EnterAsyncExecution();
+
+                try
+                {
+                    if (typeof(IIndex).IsAssignableFrom(typeof(T)))
+                    {
+                        sqlBuilder.Selector("*");
+
+                        // If a page is requested without order add a default one
+                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
+                        {
+                            sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState.GetTypeAlias(typeof(T)), "Id", schema, true));
+                        }
+
+                        var sql = sqlBuilder.ToSqlString();
+                        var logger = _query._session._store.Configuration.Logger;
+
+                        if (logger.IsEnabled(LogLevel.Debug))
+                        {
+                            logger.LogDebug(sql);
+                        }
+
+                        await foreach (var item in connection.QueryUnbufferedAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
+                        {
+                            yield return item;
+                        }
+                    }
+                    else
+                    {
+                        // If a page is requested without order add a default one
+                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
+                        {
+                            sqlBuilder.OrderBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
+                        }
+
+                        sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
+
+                        var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
+                        var logger = _query._session._store.Configuration.Logger;
+
+                        if (logger.IsEnabled(LogLevel.Debug))
+                        {
+                            logger.LogDebug(sql);
+                        }
+
+                        var documents = new List<Document>();
+                        
+                        await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
+                        {
+                            documents.Add(document);
+                        }
+
+                        if (documents.Count == 0)
+                        {
+                            yield break;
+                        }
+
+                        // Clone documents as they might be shared across sessions
+                        foreach (var item in _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection))
+                        {
+                            yield return item;
+                        }
+                    }
                 }
                 finally
                 {
