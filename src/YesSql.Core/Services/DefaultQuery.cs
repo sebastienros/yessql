@@ -1317,123 +1317,22 @@ namespace YesSql.Services
                 }
             }
 
-            Task<IEnumerable<T>> IQuery<T>.ListAsync(CancellationToken cancellationToken)
+            async Task<IEnumerable<T>> IQuery<T>.ListAsync(CancellationToken cancellationToken)
+            {
+                var results = new List<T>();
+                await foreach (var item in ListImpl(cancellationToken))
+                {
+                    results.Add(item);
+                }
+                return results;
+            }
+
+            IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
             {
                 return ListImpl(cancellationToken);
             }
 
-#pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
-            async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
-#pragma warning restore CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
-            {
-                await foreach (var item in ListImplAsync(cancellationToken))
-                {
-                    yield return item;
-                }
-            }
-
-            internal async Task<IEnumerable<T>> ListImpl(CancellationToken cancellationToken)
-            {
-                // Flush any pending changes before doing a query (auto-flush)
-                await _query._session.FlushAsync(cancellationToken);
-
-                var connection = await _query._session.CreateConnectionAsync(cancellationToken);
-                var transaction = _query._session.CurrentTransaction;
-                var schema = _query._queryState._store.Configuration.Schema;
-                var sqlBuilder = _query._queryState._sqlBuilder;
-
-                _query._queryState.FlushFilters();
-
-                if (_query._compiledQuery != null && _query._queryState._parameterBindings != null)
-                {
-                    foreach (var binding in _query._queryState._parameterBindings)
-                    {
-                        binding(_query._compiledQuery, sqlBuilder);
-                    }
-                }
-
-                _query._session.EnterAsyncExecution();
-
-                try
-                {
-                    if (typeof(IIndex).IsAssignableFrom(typeof(T)))
-                    {
-                        sqlBuilder.Selector("*");
-
-                        // If a page is requested without order add a default one
-                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
-                        {
-                            sqlBuilder.OrderBy(_query._queryState._sqlBuilder.FormatColumn(_query._queryState.GetTypeAlias(typeof(T)), "Id", schema, true));
-                        }
-
-                        var sql = sqlBuilder.ToSqlString();
-                        var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
-
-                        return await _query._session._store.ProduceAsync(key, static (key, state) =>
-                        {
-                            var logger = state.Query._session._store.Configuration.Logger;
-
-                            if (logger.IsEnabled(LogLevel.Debug))
-                            {
-                                logger.LogDebug(state.Sql);
-                            }
-
-                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
-                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
-                    }
-                    else
-                    {
-                        // If a page is requested without order add a default one
-                        if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)
-                        {
-                            sqlBuilder.OrderBy(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema));
-                        }
-
-                        sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
-
-                        // Group by document id to de-duplicate records if the index has multiple matches for a single document
-
-                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
-
-                        var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
-
-                        var key = new WorkerQueryKey(sql, sqlBuilder.Parameters);
-
-                        var documents = await _query._session._store.ProduceAsync(key, static (key, state) =>
-                        {
-                            var logger = state.Query._session._store.Configuration.Logger;
-
-                            if (logger.IsEnabled(LogLevel.Debug))
-                            {
-                                logger.LogDebug(state.Sql);
-                            }
-
-                            return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
-                        }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
-
-                        if (!documents.Any())
-                        {
-                            return [];
-                        }
-
-                        // Clone documents returned from ProduceAsync as they might be shared across sessions
-                        return _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection).ToArray();
-                    }
-                }
-                catch
-                {
-                    // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
-                    await _query._session.CancelAsyncInternal();
-
-                    throw;
-                }
-                finally
-                {
-                    _query._session.ExitAsyncExecution();
-                }
-            }
-
-            internal async IAsyncEnumerable<T> ListImplAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+            internal async IAsyncEnumerable<T> ListImpl([EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 // Flush any pending changes before doing a query (auto-flush)
                 await _query._session.FlushAsync(cancellationToken);
@@ -1489,6 +1388,10 @@ namespace YesSql.Services
                         }
 
                         sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
+
+                        // Group by document id to de-duplicate records if the index has multiple matches for a single document
+
+                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
 
                         var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
                         var logger = _query._session._store.Configuration.Logger;
@@ -1719,20 +1622,19 @@ namespace YesSql.Services
                 return FirstOrDefaultImpl(cancellationToken);
             }
 
-            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
+            async Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
             {
-                return ListImpl(cancellationToken);
+                var results = new List<T>();
+                await foreach (var item in ListImpl(cancellationToken))
+                {
+                    results.Add(item);
+                }
+                return results;
             }
 
-#pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
-            async IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
-#pragma warning restore CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
+            IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
             {
-                // TODO: [IAsyncEnumerable] Once Dapper supports IAsyncEnumerable we can replace this call by a non-buffered one
-                foreach (var item in await ListImpl(cancellationToken))
-                {
-                    yield return item;
-                }
+                return ListImpl(cancellationToken);
             }
 
             IQueryIndex<T> IQueryIndex<T>.Skip(int count)
