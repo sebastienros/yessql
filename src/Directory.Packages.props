@@ -3,14 +3,14 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Parlot" Version="1.5.2" />
+    <PackageVersion Include="Parlot" Version="$(ParlotPackageVersion)" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="$(MicrosoftDataSqlClientPackageVersion)" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.10" />
-    <PackageVersion Include="Npgsql" Version="9.0.4" />
-    <PackageVersion Include="MySqlConnector" Version="2.4.0" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="$(MicrosoftDataSqlitePackageVersion)" />
+    <PackageVersion Include="Npgsql" Version="$(NpgsqlPackageVersion)" />
+    <PackageVersion Include="MySqlConnector" Version="$(MySqlConnectorPackageVersion)" />
     <PackageVersion Include="Dapper.StrongName" Version="$(DapperStrongNamePackageVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MicrosoftExtensionsLoggingAbstractionsPackageVersion)" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
   </ItemGroup>
 
