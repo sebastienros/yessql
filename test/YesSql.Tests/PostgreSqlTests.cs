@@ -1,25 +1,29 @@
 using Npgsql;
-using System;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Provider.PostgreSql;
 using YesSql.Sql;
+using YesSql.Tests.Fixtures;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
-    // Docker command
-    // docker run --name postgresql -e POSTGRES_USER=root -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=yessql -d -p 5432:5432 postgres:11
+    /// <summary>
+    /// Run all tests with a PostgreSQL document storage using Testcontainers.
+    /// </summary>
+    [Collection("PostgreSql")]
     public class PostgreSqlTests : CoreTests
     {
-        public static NpgsqlConnectionStringBuilder ConnectionStringBuilder => new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("POSTGRESQL_CONNECTION_STRING") ?? @"Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;");
+        private readonly PostgreSqlContainerFixture _fixture;
+
+        public NpgsqlConnectionStringBuilder ConnectionStringBuilder => new NpgsqlConnectionStringBuilder(_fixture.ConnectionString);
 
         protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
 
-        public PostgreSqlTests(ITestOutputHelper output) : base(output)
+        public PostgreSqlTests(PostgreSqlContainerFixture fixture, ITestOutputHelper output) : base(output)
         {
+            _fixture = fixture;
         }
 
         protected override IConfiguration CreateConfiguration()

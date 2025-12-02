@@ -16,6 +16,8 @@
         <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../../src/YesSqlKey.snk</AssemblyOriginatorKeyFile>
+        <OutputType>Exe</OutputType>
+        <NoWarn>$(NoWarn);xUnit1051</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,12 +26,10 @@
     
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.22" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-        <PackageReference Include="xunit" Version="2.9.3" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-        </PackageReference>
+        <PackageReference Include="Testcontainers.MySql" Version="4.3.0" />
+        <PackageReference Include="Testcontainers.PostgreSql" Version="4.3.0" />
+        <PackageReference Include="Testcontainers.MsSql" Version="4.3.0" />
+        <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,12 +43,6 @@
 
     <ItemGroup>
         <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Update="xunit.runner.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
 </Project>

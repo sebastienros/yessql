@@ -2,26 +2,29 @@ using MySqlConnector;
 using System;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Provider.MySql;
 using YesSql.Sql;
+using YesSql.Tests.Fixtures;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
     /// <summary>
-    /// To run MySQL inside Docker, use this command:
-    /// docker run --name mysql -e MYSQL_DATABASE=yessql -e MYSQL_USER=user1 -e MYSQL_PASSWORD=Password12! -e MYSQL_ALLOW_EMPTY_PASSWORD=1 -d -p 3306:3306 mysql:8
+    /// Run all tests with a MySQL document storage using Testcontainers.
     /// </summary>
+    [Collection("MySql")]
     public class MySqlTests : CoreTests
     {
-        public static string ConnectionString => Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ?? @"server=localhost;uid=user1;pwd=Password12!;database=yessql;";
+        private readonly MySqlContainerFixture _fixture;
+
+        public string ConnectionString => _fixture.ConnectionString;
 
         protected override string DecimalColumnDefinitionFormatString => "decimal({0}, {1})";
 
-        public MySqlTests(ITestOutputHelper output) : base(output)
+        public MySqlTests(MySqlContainerFixture fixture, ITestOutputHelper output) : base(output)
         {
+            _fixture = fixture;
         }
 
         protected override IConfiguration CreateConfiguration()

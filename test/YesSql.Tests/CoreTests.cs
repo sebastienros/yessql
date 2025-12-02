@@ -9,7 +9,6 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Commands;
 using YesSql.Filters.Query;
 using YesSql.Indexes;
@@ -40,7 +39,7 @@ namespace YesSql.Tests
             _output = output;
         }
 
-        public async Task InitializeAsync()
+        public virtual async ValueTask InitializeAsync()
         {
             // Create the tables only once
             if (_configuration == null)
@@ -66,8 +65,11 @@ namespace YesSql.Tests
             await ClearTablesAsync(_configuration);
         }
 
-        public virtual Task DisposeAsync()
-            => Task.CompletedTask;
+        public virtual ValueTask DisposeAsync()
+        {
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
+        }
 
         protected void EnableLogging()
         {
