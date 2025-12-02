@@ -63,7 +63,7 @@ jobs:
       run: dotnet test --configuration Release --filter-class YesSql.Tests.SqliteTests --no-restore --no-build --framework net8.0
 
     - name: Test - Sqlite .NET 10.0
-      run: dotnet test --configuration Release --filter YesSql.Tests.SqliteTests --no-restore --no-build --framework net10.0
+      run: dotnet test --configuration Release --filter-class YesSql.Tests.SqliteTests --no-restore --no-build --framework net10.0
 
     - name: Test - PostgresQL .NET 8.0
       run: dotnet test --configuration Release --filter-class YesSql.Tests.PostgreSqlTests --no-restore --no-build --framework net8.0
