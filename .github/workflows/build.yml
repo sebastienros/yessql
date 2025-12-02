@@ -46,10 +46,10 @@ jobs:
           MSSQL_SA_PASSWORD: Password12!
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     # Required if the .NET version is not available on the GH Actions images
-    - uses: actions/setup-dotnet@v4
+    - uses: actions/setup-dotnet@v5
       with:
         dotnet-version: | 
           8.0.x
