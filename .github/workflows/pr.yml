@@ -78,13 +78,13 @@ jobs:
       run: dotnet test --configuration Release --filter-class YesSql.Tests.MySqlTests --no-restore --no-build --framework net10.0
 
     - name: Test - SQL Server 2019 .NET 8.0
-      run: dotnet test --configuration release --filter-class YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net8.0
+      run: dotnet test --configuration Release --filter-class YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net8.0
 
     - name: Test - SQL Server 2019 .NET 10.0
-      run: dotnet test --configuration release --filter-class YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net10.0
+      run: dotnet test --configuration Release --filter-class YesSql.Tests.SqlServer2019Tests --no-restore --no-build --framework net10.0
 
     - name: Test - PostgresQL Legacy Identity - No Schema
-      run: dotnet test --configuration release --filter-class YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net8.0
+      run: dotnet test --configuration Release --filter-class YesSql.Tests.PostgreSqlLegacyIdentityTests --no-restore --no-build --framework net8.0
 
     - name: Test - Sqlite Legacy Identity
-      run: dotnet test --configuration release --filter-class YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net8.0
+      run: dotnet test --configuration Release --filter-class YesSql.Tests.SqliteLegacyIdentityTests --no-restore --no-build --framework net8.0
