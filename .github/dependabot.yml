@@ -9,10 +9,11 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    # Ignore Abstractions packages - these should not be updated
+    ignore:
+      - dependency-name: "*Abstractions"
     groups:
        # Grouped version updates configuration
        all-dependencies:
           patterns:
             - "*"
-          exclude-patterns:
-            - "*Abstractions" # Don't update abstractions packages
