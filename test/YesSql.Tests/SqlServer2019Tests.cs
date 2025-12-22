@@ -12,12 +12,6 @@ namespace YesSql.Tests
     {
         public SqlServer2019Tests(SqlServer2019ContainerFixture fixture, ITestOutputHelper output) : base(fixture, output)
         {
-            return new Configuration()
-                .UseSqlServer(ConnectionStringBuilder.ConnectionString, "BobaFett")
-                .SetTablePrefix(TablePrefix)
-                .UseBlockIdGenerator()
-                .UseThreadSafetyChecks()
-                .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
     }
 }
