@@ -4,20 +4,24 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Provider.SqlServer;
 using YesSql.Sql;
+using YesSql.Tests.Fixtures;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
 namespace YesSql.Tests
 {
-    public abstract class SqlServerTests : CoreTests
+    public abstract class SqlServerTests<TFixture> : CoreTests
+        where TFixture : SqlServerContainerFixture
     {
-        public abstract SqlConnectionStringBuilder ConnectionStringBuilder { get; }
+        protected readonly TFixture _fixture;
 
-        public SqlServerTests(ITestOutputHelper output) : base(output)
+        public SqlConnectionStringBuilder ConnectionStringBuilder => new SqlConnectionStringBuilder(_fixture.ConnectionString);
+
+        protected SqlServerTests(TFixture fixture, ITestOutputHelper output) : base(output)
         {
+            _fixture = fixture;
         }
 
         protected override IConfiguration CreateConfiguration()
@@ -171,7 +175,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                     await session.DisposeAsync();
                 }
             }
@@ -223,7 +227,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                     await session.DisposeAsync();
                 }
             }
@@ -275,7 +279,7 @@ namespace YesSql.Tests
             {
                 if (session != null)
                 {
-                    await Assert.ThrowsAsync<SqlException>(session.SaveChangesAsync);
+                    await Assert.ThrowsAsync<SqlException>(async () => await session.SaveChangesAsync());
                     await session.DisposeAsync();
                 }
             }

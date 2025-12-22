@@ -182,7 +182,7 @@ namespace YesSql.Provider.PostgreSql
         }  
         public override string GetDropForeignKeyConstraintString(string name)
         {
-            return " drop foreign key " + name;
+            return " drop constraint " + QuoteForColumnName(name);
         }
 
         public override string DefaultValuesInsert => "DEFAULT VALUES";

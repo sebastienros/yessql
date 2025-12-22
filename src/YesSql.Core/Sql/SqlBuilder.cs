@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using YesSql.Utils;
 
 namespace YesSql.Sql
@@ -344,7 +343,7 @@ namespace YesSql.Sql
 
         public virtual void ClearTrail()
         {
-            TrailSegments.Clear();
+            _trail?.Clear();
         }
 
         public virtual string ToSqlString()
@@ -365,7 +364,7 @@ namespace YesSql.Sql
                 if (_order != null)
                 {
                     sb.Append("ON(");
-                    sb.Append(OrderSegments.First());
+                    sb.Append(OrderSegments[0]);
                     sb.Append(") ");
                 }
             }

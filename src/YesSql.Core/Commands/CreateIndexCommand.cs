@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -24,7 +25,7 @@ namespace YesSql.Commands
             _addedDocumentIds = addedDocumentIds.ToArray();
         }
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
             var type = Index.GetType();
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
@@ -44,11 +45,11 @@ namespace YesSql.Commands
                 command.CommandText = sql;
                 GetProperties(command, Index, "", dialect);
                 command.AddParameter($"DocumentId", Index.GetAddedDocuments().Single().Id);
-                Index.Id = Convert.ToInt64(await command.ExecuteScalarAsync());
+                Index.Id = Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken));
             }
             else
             {
-                Index.Id = await connection.ExecuteScalarAsync<long>(sql, Index, transaction);
+                Index.Id = await connection.ExecuteScalarAsync<long>(new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
 
                 var reduceIndex = Index as ReduceIndex;
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
@@ -60,7 +61,7 @@ namespace YesSql.Commands
                     logger.LogTrace(bridgeSql);
                 }
 
-                await connection.ExecuteAsync(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction);
+                await connection.ExecuteAsync(new CommandDefinition(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction, null, null, CommandFlags.Buffered, cancellationToken));
             }
         }
 

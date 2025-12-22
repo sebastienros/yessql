@@ -20,9 +20,9 @@ namespace YesSql.Services
         public long GetNextId(string collection)
             => GetNextIdAsync(collection).GetAwaiter().GetResult();
 
-        public async Task<long> GetNextIdAsync(string collection)
+        public async Task<long> GetNextIdAsync(string collection, CancellationToken cancellationToken = default)
         {
-            await _semaphoreSlim.WaitAsync();
+            await _semaphoreSlim.WaitAsync(cancellationToken);
             try
             {
                 collection ??= string.Empty;
@@ -40,20 +40,20 @@ namespace YesSql.Services
             }
         }
 
-        public Task InitializeAsync(IStore store)
+        public Task InitializeAsync(IStore store, CancellationToken cancellationToken = default)
         {
             _dialect = store.Configuration.SqlDialect;
             return Task.CompletedTask;
         }
 
-        public async Task InitializeCollectionAsync(IConfiguration configuration, string collection)
+        public async Task InitializeCollectionAsync(IConfiguration configuration, string collection, CancellationToken cancellationToken = default)
         {
             // Extract the current max value from the database
 
             await using var connection = configuration.ConnectionFactory.CreateConnection();
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
-            await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
+            await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel, cancellationToken);
             var tableName = configuration.TableNameConvention.GetDocumentTable(collection);
 
             var sql = "SELECT MAX(" + _dialect.QuoteForColumnName("Id") + ") FROM " + _dialect.QuoteForTableName(configuration.TablePrefix + tableName, configuration.Schema);
@@ -66,9 +66,9 @@ namespace YesSql.Services
             {
                 configuration.Logger.LogTrace(sql);
             }
-            var result = await selectCommand.ExecuteScalarAsync();
+            var result = await selectCommand.ExecuteScalarAsync(cancellationToken);
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(cancellationToken);
 
             _seeds[collection] = result == DBNull.Value ? 0 : Convert.ToInt64(result);
         }

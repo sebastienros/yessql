@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -10,7 +9,6 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Commands;
 using YesSql.Filters.Query;
 using YesSql.Indexes;
@@ -36,12 +34,12 @@ namespace YesSql.Tests
         protected abstract IConfiguration CreateConfiguration();
 
 
-        public CoreTests(ITestOutputHelper output)
+        protected CoreTests(ITestOutputHelper output)
         {
             _output = output;
         }
 
-        public async Task InitializeAsync()
+        public virtual async ValueTask InitializeAsync()
         {
             // Create the tables only once
             if (_configuration == null)
@@ -67,8 +65,11 @@ namespace YesSql.Tests
             await ClearTablesAsync(_configuration);
         }
 
-        public virtual Task DisposeAsync()
-            => Task.CompletedTask;
+        public virtual ValueTask DisposeAsync()
+        {
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
+        }
 
         protected void EnableLogging()
         {
@@ -1045,6 +1046,42 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task CountAsync_WhenCalledAfterListAsync_ReturnCorrectTotal()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                var mike = new Person
+                {
+                    Firstname = "Mike",
+                    Lastname = "Alhayek"
+                };
+
+                await session.SaveAsync(bill);
+                await session.SaveAsync(mike);
+
+                await session.SaveChangesAsync();
+
+                var query = session.Query<Person, PersonByName>().OrderBy(x => x.DocumentId).Skip(1).Take(1);
+
+                var records = await query.ListAsync();
+
+                Assert.Equal(2, await query.CountAsync());
+
+                Assert.Single(records);
+
+                Assert.Equal("Mike", records.First().Firstname);
+            }
+        }
+
+        [Fact]
         public async Task ShouldUpdateAutoFlushedIndex()
         {
             // When auto-flush is called on an entity
@@ -1126,7 +1163,7 @@ namespace YesSql.Tests
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Name == firstname && x.Adult == true).FirstOrDefaultAsync());
 
                 // bool && IsIn
-                Assert.Null(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new string[0])).FirstOrDefaultAsync());
+                Assert.Null(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(Array.Empty<string>())).FirstOrDefaultAsync());
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill" })).FirstOrDefaultAsync());
                 Assert.NotNull(await session.Query<Person, PersonByAge>().Where(x => x.Adult && x.Name.IsIn(new[] { "Bill", "Steve" })).FirstOrDefaultAsync());
 
@@ -2511,6 +2548,62 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldDeleteInSessionObjectAndNotInvokeIndexProvider()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(bill, false, null, CancellationToken.None);
+
+                session.Delete(bill);
+
+                await session.SaveChangesAsync(CancellationToken.None);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var person = await session.Query().For<Person>().FirstOrDefaultAsync(CancellationToken.None);
+                Assert.Null(person);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldDeleteInSessionObjectAndAllowedToAddItAgainWhileInvokingIndexProviderOnlyOnce()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var bill = new Person
+            {
+                Firstname = "Bill",
+                Lastname = "Gates"
+            };
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(bill, false, null, CancellationToken.None);
+
+                session.Delete(bill);
+
+                await session.SaveAsync(bill, false, null, CancellationToken.None);
+
+                await session.SaveChangesAsync(CancellationToken.None);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var persons = await session.Query().For<Person>().ListAsync();
+                Assert.Single(persons);
+            }
+        }
+
+        [Fact]
         public async Task ShouldDeleteCustomObjectBatch()
         {
             _store.RegisterIndexes<PersonIndexProvider>();
@@ -2975,7 +3068,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName, StringComparison.Ordinal));
                 }
             }
 
@@ -2991,7 +3084,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(-1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(-1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName, StringComparison.Ordinal));
                 }
             }
 
@@ -3007,7 +3100,7 @@ namespace YesSql.Tests
 
                 for (var i = 1; i < ordered.Count; i++)
                 {
-                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName));
+                    Assert.Equal(1, string.Compare(ordered[i].SomeName, ordered[i - 1].SomeName, StringComparison.Ordinal));
                 }
             }
         }
@@ -3326,7 +3419,6 @@ namespace YesSql.Tests
 
                 await session.SaveChangesAsync();
             }
-            ;
 
             await using (var session = _store.CreateSession())
             {
@@ -3891,7 +3983,7 @@ namespace YesSql.Tests
                     .CountAsync());
 
                 Assert.Equal(0, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.IsIn(new string[0]))
+                    .With<PersonByName>(x => x.SomeName.IsIn(Array.Empty<string>()))
                     .CountAsync());
             }
         }
@@ -3932,7 +4024,7 @@ namespace YesSql.Tests
                     .CountAsync());
 
                 Assert.Equal(3, await session.Query().For<Person>()
-                    .With<PersonByName>(x => x.SomeName.IsNotIn(new string[0]))
+                    .With<PersonByName>(x => x.SomeName.IsNotIn(Array.Empty<string>()))
                     .CountAsync());
             }
         }
@@ -4172,7 +4264,7 @@ namespace YesSql.Tests
                     Lastname = "Balmer"
                 };
 
-                await session.SaveAsync(steve, "Col1");
+                await session.SaveAsync(steve, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4202,8 +4294,8 @@ namespace YesSql.Tests
                     Lastname = "Balmer"
                 };
 
-                await session.SaveAsync(bill, "Col1");
-                await session.SaveAsync(steve, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
+                await session.SaveAsync(steve, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4255,8 +4347,8 @@ namespace YesSql.Tests
                     Firstname = "Bill"
                 };
 
-                await session.SaveAsync(bill, "Col1");
-                await session.SaveAsync(bill2, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
+                await session.SaveAsync(bill2, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4289,8 +4381,8 @@ namespace YesSql.Tests
                     Age = 12
                 };
 
-                await session.SaveAsync(bill, "Col1");
-                await session.SaveAsync(elon, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
+                await session.SaveAsync(elon, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -4323,7 +4415,7 @@ namespace YesSql.Tests
                     Lastname = "Gates",
                 };
 
-                await session.SaveAsync(bill, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -5236,7 +5328,7 @@ namespace YesSql.Tests
                     new FailingCommand(new Document())
                 };
 
-            await Assert.ThrowsAnyAsync<Exception>(session.SaveChangesAsync);
+            await Assert.ThrowsAnyAsync<Exception>(async () => await session.SaveChangesAsync());
 
             Assert.Null(session._commands);
         }
@@ -5798,7 +5890,7 @@ namespace YesSql.Tests
                 };
 
 
-                await session.SaveAsync(bill, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -5834,7 +5926,7 @@ namespace YesSql.Tests
                     Lastname = "Gates"
                 };
 
-                await session.SaveAsync(bill, "Col1");
+                await session.SaveAsync(bill, collection: "Col1");
 
                 await session.SaveChangesAsync();
             }
@@ -7150,6 +7242,170 @@ namespace YesSql.Tests
                     // Try saving an index directly to force an exception which should trigger cancel.
                     await session.FlushAsync();
                 });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowWhenCanceledOnSaveChangesAsync()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            cancellationTokenSource.Cancel();
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                // Postgres uses OperationCanceled, other providers use TaskCanceled
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.SaveChangesAsync(cancellationToken);
+                });
+            }
+        }
+
+
+        [Fact]
+        public async Task ShouldThrowWhenCanceledOnListAsync()
+        {
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.Query<Person>().ListAsync(cancellationToken);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowWhenCancelledOnFirstOrDefaultAsync()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.Query<Person>().FirstOrDefaultAsync(cancellationToken);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowWhenCanceledOnCountAsync()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person
+                {
+                    Firstname = "Bill",
+                    Lastname = "Gates"
+                };
+
+                await session.SaveAsync(bill);
+
+                await session.SaveChangesAsync();
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = cancellationTokenSource.Token;
+                cancellationTokenSource.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    await session.Query<Person>().CountAsync(cancellationToken);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCompareDateTimeOffsetWithDateTime()
+        {
+            var testDateTime = new DateTime(2021, 6, 15, 14, 30, 0, DateTimeKind.Utc);
+            var testDateTimeOffset = new DateTimeOffset(testDateTime, TimeSpan.Zero);
+            var dummy = new Person();
+
+            // Create fake document to associate to index
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(dummy);
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var index = new TypesIndex
+                {
+                    ValueDateTime = testDateTime,
+                    ValueDateTimeOffset = testDateTimeOffset,
+                };
+
+                ((IIndex)index).AddDocument(new Document { Id = dummy.Id });
+
+                var connection = await session.CreateConnectionAsync();
+                var transaction = await session.BeginTransactionAsync();
+
+                await new CreateIndexCommand(index, new long[] { dummy.Id }, session.Store, "").ExecuteAsync(connection, transaction, session.Store.Configuration.SqlDialect, session.Store.Configuration.Logger);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // First verify same-type comparisons work
+                var sameType1 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset == testDateTimeOffset).FirstOrDefaultAsync();
+                Assert.NotNull(sameType1);
+
+                var sameType2 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(sameType2);
+
+                // Test DateTimeOffset field compared with DateTime value
+                var index1 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset == testDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(index1);
+
+                // Test DateTime field compared with DateTimeOffset value  
+                var index2 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTimeOffset).FirstOrDefaultAsync();
+                Assert.NotNull(index2);
+
+                // Test DateTimeOffset field compared with DateTimeOffset.UtcDateTime 
+                var index3 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTimeOffset == testDateTimeOffset.UtcDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(index3);
+
+                // Test DateTime field compared with DateTimeOffset.UtcDateTime  
+                var index4 = await session.QueryIndex<TypesIndex>(x => x.ValueDateTime == testDateTimeOffset.UtcDateTime).FirstOrDefaultAsync();
+                Assert.NotNull(index4);
             }
         }
     }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -19,18 +20,8 @@ namespace YesSql
         /// <param name="obj">The entity to save.</param>
         /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
         /// <param name="collection">The name of the collection to store the object in.</param>
-        [Obsolete($"Instead, utilize the {nameof(SaveAsync)} method. This current method is slated for removal in upcoming releases.")]
-        void Save(object obj, bool checkConcurrency = false, string collection = null);
-
-
-        /// <summary>
-        /// Saves a new or existing object to the store, and updates
-        /// the corresponding indexes.
-        /// </summary>
-        /// <param name="obj">The entity to save.</param>
-        /// <param name="checkConcurrency">If true, a <see cref="ConcurrencyException"/> is thrown if the entity has been updated concurrently by another session.</param>
-        /// <param name="collection">The name of the collection to store the object in.</param>
-        Task SaveAsync(object obj, bool checkConcurrency = false, string collection = null);
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task SaveAsync(object obj, bool checkConcurrency = false, string collection = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Deletes an object and its indexes from the store.
@@ -80,7 +71,7 @@ namespace YesSql
         /// Loads objects by id.
         /// </summary>
         /// <returns>A collection of objects in the same order they were defined.</returns>
-        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class;
+        Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, CancellationToken cancellationToken = default) where T : class;
 
         /// <summary>
         /// Creates a new <see cref="IQuery"/> object.
@@ -98,7 +89,7 @@ namespace YesSql
         IQuery<T> ExecuteQuery<T>(ICompiledQuery<T> compiledQuery, string collection = null) where T : class;
 
         /// <summary>
-        /// Marks the current session as "canceled" such that any following calls to <see cref="SaveChangesAsync"/> will be ignored.
+        /// Marks the current session as "canceled" such that any following calls to <see cref="SaveChangesAsync(CancellationToken)"/> will be ignored.
         /// This is useful when multiple components can add operations to the session and one of them fails, making the session invalid.
         /// To instead rollback the transaction and revert any pending changes, use <see cref="ResetAsync"/>.
         /// </summary>
@@ -113,34 +104,34 @@ namespace YesSql
         /// Flushes pending commands to the database.
         /// </summary>
         /// <remarks>
-        /// This doesn't commit or dispose of the transaction. A call to <see cref="SaveChangesAsync"/>
+        /// This doesn't commit or dispose of the transaction. A call to <see cref="SaveChangesAsync(CancellationToken)"/>
         /// is still necessary for the changes to be visible from other transactions.
         /// </remarks>
-        Task FlushAsync();
+        Task FlushAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Flushes any changes, commits the transaction, and disposes the transaction.
         /// </summary>
         /// <remarks>
-        /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync"/>
+        /// Sessions are not automatically committed when disposed, and <see cref="SaveChangesAsync(CancellationToken)"/>
         /// must be called before disposing the <see cref="ISession"/>
         /// </remarks>
-        Task SaveChangesAsync();
+        Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates or returns a <see cref="DbConnection"/>.
         /// </summary>
-        Task<DbConnection> CreateConnectionAsync();
+        Task<DbConnection> CreateConnectionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the default isolation level.
         /// </summary>
-        Task<DbTransaction> BeginTransactionAsync();
+        Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates or returns an existing <see cref="DbTransaction"/> with the specified isolation level.
         /// </summary>
-        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel);
+        Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns the current <see cref="DbTransaction"/> if it exists.

@@ -10,7 +10,7 @@ using YesSql.Provider.Sqlite;
 
 namespace YesSql.Tests
 {
-    public class ProviderTests : IDisposable
+    public sealed class ProviderTests : IDisposable
     {
         private readonly TemporaryFolder _tempFolder;
 
@@ -30,26 +30,23 @@ namespace YesSql.Tests
             var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
 
             // Arrange
-            var builder = new WebHostBuilder()
-                .ConfigureServices(services =>
-                {
-                    // Act
-                    services.AddDbProvider(config => config.UseSqLite(connectionString).UseDefaultIdGenerator());
-                })
-                .Configure(app =>
-                {
-                    app.Run(context =>
-                    {
-                        var store = context.RequestServices.GetService<IStore>();
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddDbProvider(config => config.UseSqLite(connectionString).UseDefaultIdGenerator());
+        
+            using var app = builder.Build();
 
-                        // Assert
-                        Assert.NotNull(store);
-                        return Task.CompletedTask;
-                    });
-                });
+            app.MapGet("/", context =>
+            {
+                var store = context.RequestServices.GetService<IStore>();
 
-            using var server = new TestServer(builder);
-            var client = server.CreateClient();
+                // Assert
+                Assert.NotNull(store);
+                return Task.CompletedTask;
+            });
+
+            await app.StartAsync();
+            var client = app.GetTestClient();
             var response = await client.GetAsync("/");
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);

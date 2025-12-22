@@ -6,7 +6,10 @@ namespace YesSql.Tests.Indexes
 {
     public class PersonByName : MapIndex
     {
+        public long DocumentId { get; set; }
+
         public string SomeName { get; set; }
+
         public static string Normalize(string name)
         {
             return name.ToUpperInvariant();
@@ -68,5 +71,4 @@ namespace YesSql.Tests.Indexes
                 });
         }
     }
-
 }

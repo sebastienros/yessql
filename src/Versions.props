@@ -1,0 +1,23 @@
+<Project>
+  <!-- This file define constants that can be changed per TFM -->
+  <!-- When a dependency is updated, check that it doesn't lift a runtime dependency from a higher TFM -->
+  <PropertyGroup>
+      <DapperStrongNamePackageVersion>2.1.66</DapperStrongNamePackageVersion>
+      <MicrosoftDataSqlClientPackageVersion>6.1.3</MicrosoftDataSqlClientPackageVersion>
+      <MySqlConnectorPackageVersion>2.5.0</MySqlConnectorPackageVersion>
+      <MicrosoftDataSqlitePackageVersion>10.0.1</MicrosoftDataSqlitePackageVersion>
+      <NpgsqlPackageVersion>10.0.0</NpgsqlPackageVersion>
+      <ParlotPackageVersion>1.5.6</ParlotPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <MicrosoftExtensionsLoggingAbstractionsPackageVersion>8.0.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>8.0.0</MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <MicrosoftExtensionsLoggingAbstractionsPackageVersion>10.0.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>10.0.0</MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>
+  </PropertyGroup>
+
+</Project>

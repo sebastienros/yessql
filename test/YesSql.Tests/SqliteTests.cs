@@ -1,6 +1,7 @@
+using Microsoft.Data.Sqlite;
+using System;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -32,12 +33,6 @@ namespace YesSql.Tests
                 .UseDefaultIdGenerator()
                 .UseThreadSafetyChecks()
                 .SetIdentityColumnSize(IdentityColumnSize.Int64);
-        }
-
-        public override Task DisposeAsync()
-        {
-            //SqliteConnection.ClearAllPools();
-            return Task.CompletedTask;
         }
 
         [Fact(Skip = "Alter column is not supported by Sqlite")]

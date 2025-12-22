@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
         <LangVersion>latest</LangVersion>
         <AssemblyName>YesSql.Tests</AssemblyName>
         <PackageId>YesSql.Tests</PackageId>
@@ -16,6 +16,8 @@
         <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../../src/YesSqlKey.snk</AssemblyOriginatorKeyFile>
+        <OutputType>Exe</OutputType>
+        <NoWarn>$(NoWarn);xUnit1051</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,13 +25,11 @@
     </ItemGroup>
     
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.36" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-        <PackageReference Include="xunit" Version="2.9.3" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-        </PackageReference>
+        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.22" />
+        <PackageReference Include="Testcontainers.MySql" Version="4.9.0" />
+        <PackageReference Include="Testcontainers.PostgreSql" Version="4.9.0" />
+        <PackageReference Include="Testcontainers.MsSql" Version="4.9.0" />
+        <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,12 +43,6 @@
 
     <ItemGroup>
         <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Update="xunit.runner.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
 </Project>
