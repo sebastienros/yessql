@@ -1,4 +1,5 @@
 using Xunit;
+using YesSql.Provider.SqlServer;
 using YesSql.Tests.Fixtures;
 
 namespace YesSql.Tests
