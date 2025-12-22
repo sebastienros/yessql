@@ -21,7 +21,7 @@ namespace YesSql.Tests
                 .UsePostgreSql(ConnectionStringBuilder.ConnectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
-                .UseThreadSafetyChecks()
+                .WithThreadSafetyChecks()
                 .SetIdentityColumnSize(IdentityColumnSize.Int32);
         }
 

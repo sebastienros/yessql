@@ -6631,43 +6631,51 @@ namespace YesSql.Tests
         [Fact]
         public virtual async Task ShouldDetectThreadSafetyIssues()
         {
-            try
+            await using var session = _store.CreateSession();
+
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+            var person = new Person { Firstname = "Bill" };
+            await session.SaveAsync(person);
+            await session.SaveChangesAsync();
+
+            Task[] tasks = null;
+
+            var throws = Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
-                await using var session = _store.CreateSession();
+                tasks = Enumerable.Range(0, 10)
+                    .Select(_ => Task.Run(() => DoWork(cancellationTokenSource.Token), cancellationTokenSource.Token))
+                    .ToArray();
 
-                _store.Configuration.UseThreadSafetyChecks(false);
-
-                var person = new Person { Firstname = "Bill" };
-                await session.SaveAsync(person);
-                await session.SaveChangesAsync();
-
-                Task[] tasks = null;
-
-                var throws = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                try
                 {
-                    tasks = Enumerable.Range(0, 10).Select(x => Task.Run(DoWork)).ToArray();
                     await Task.WhenAll(tasks);
-                });
-
-                await Task.WhenAny(throws, Task.Delay(5000));
-
-                Assert.True(throws.IsCompleted, "The timeout was reached before the expected exception was thrown");
-
-                async Task DoWork()
-                {
-                    while (true)
-                    {
-                        var p = await session.Query<Person>().FirstOrDefaultAsync();
-                        Assert.NotNull(p);
-
-                        person.Firstname = "Bill" + RandomNumberGenerator.GetInt32(100);
-                        await session.FlushAsync();
-                    }
                 }
-            }
-            finally
+                catch (InvalidOperationException)
+                {
+                    cancellationTokenSource.Cancel();
+                    throw;
+                }
+            });
+
+            await Task.WhenAny(throws, Task.Delay(5000));
+
+            Assert.True(throws.IsCompleted, "The timeout was reached before the expected exception was thrown");
+
+            await throws;
+
+            async Task DoWork(CancellationToken cancellationToken)
             {
-                _store.Configuration.UseThreadSafetyChecks(true);
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var p = await session.Query<Person>().FirstOrDefaultAsync(cancellationToken);
+                    Assert.NotNull(p);
+
+                    person.Firstname = "Bill" + RandomNumberGenerator.GetInt32(100);
+                    await session.FlushAsync(cancellationToken);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
             }
         }
 
