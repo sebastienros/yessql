@@ -31,8 +31,8 @@ namespace YesSql.Tests
                 .UseSqLite(connectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseDefaultIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int64)
-                ;
+                .WithThreadSafetyChecks()
+                .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
 
         [Fact(Skip = "Alter column is not supported by Sqlite")]

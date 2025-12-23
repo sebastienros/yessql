@@ -24,8 +24,8 @@ namespace YesSql.Tests
                 .UseSqLite(connectionString)
                 .SetTablePrefix(TablePrefix)
                 .UseDefaultIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int32)
-                ;
+                .WithThreadSafetyChecks()
+                .SetIdentityColumnSize(IdentityColumnSize.Int32);
         }
 
         [Fact(Skip = "Skip to make test faster in this configuration")]
