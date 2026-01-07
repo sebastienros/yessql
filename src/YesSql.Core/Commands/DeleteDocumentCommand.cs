@@ -15,7 +15,7 @@ namespace YesSql.Commands
         private readonly object _entity;
         public override int ExecutionOrder { get; } = 4;
 
-        public DeleteDocumentCommand(object entity, Document document, IStore store, string collection, Session session) : base(document, collection)
+        public DeleteDocumentCommand(object entity, Document document, IStore store, string collection, ISession session) : base(document, collection)
         {
             _store = store;
             _session = session;

@@ -16,7 +16,7 @@ namespace YesSql.Commands
         private readonly long _checkVersion;
         public override int ExecutionOrder { get; } = 2;
 
-        public UpdateDocumentCommand(object entity, Document document, IStore store, long checkVersion, string collection, Session session) : base(document, collection)
+        public UpdateDocumentCommand(object entity, Document document, IStore store, long checkVersion, string collection, ISession session) : base(document, collection)
         {
             _store = store;
             _checkVersion = checkVersion;
