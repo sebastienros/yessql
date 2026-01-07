@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using YesSql.Commands;
 using YesSql.Indexes;
 using YesSql.Serialization;
 
@@ -16,6 +17,15 @@ namespace YesSql.Services
 
         private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> TypeProperties = new();
+
+        public ConcurrentDictionary<CompoundKey, string> InsertsList { get; set; } = new();
+        public ConcurrentDictionary<CompoundKey, string> UpdatesList { get; set; } = new();
+
+        public void ResetQueryCache()
+        {
+            UpdatesList.Clear();
+            InsertsList.Clear();
+        }
 
         public string this[Type t]
         {
@@ -63,7 +73,7 @@ namespace YesSql.Services
                    && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))
                    && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
         }
-        
+
         public PropertyInfo[] GetProperties(Type type)
         {
             if (TypeProperties.TryGetValue(type, out var pis))

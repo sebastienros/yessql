@@ -86,7 +86,6 @@ namespace YesSql
 
         public async Task InitializeAsync()
         {
-            IndexCommand.ResetQueryCache();
             ValidateConfiguration();
 
             TypeService = new TypeService();
