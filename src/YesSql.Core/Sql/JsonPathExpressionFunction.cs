@@ -19,6 +19,7 @@ namespace YesSql.Sql
             {
                 arguments[id] = TransformPathExpression(arguments[id]);
             }
+
             return String.Format(_template, arguments);
         }
 

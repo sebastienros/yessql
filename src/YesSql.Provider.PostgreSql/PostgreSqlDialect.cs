@@ -95,7 +95,6 @@ namespace YesSql.Provider.PostgreSql
             Methods.Add("month", new TemplateFunction("extract(month from {0})"));
             Methods.Add("year", new TemplateFunction("extract(year from {0})"));
             Methods.Add("now", new TemplateFunction("now() at time zone 'utc'"));
-
             Methods.Add("JSON_VALUE", new JsonPathExpressionFunction("{0}::json#>>string_to_array({1}, ',')", 1));
             Methods.Add("JSON_MODIFY", new JsonPathExpressionFunction("jsonb_set({0}, string_to_array({1}, ','), to_jsonb({2}), false)", 1));
         }

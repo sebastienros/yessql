@@ -87,7 +87,6 @@ namespace YesSql.Provider.MySql
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
             Methods.Add("now", new TemplateFunction("UTC_TIMESTAMP()"));
-
             Methods.Add("JSON_MODIFY", new TemplateFunction("json_set({0}, {1}, {2})"));
         }
 

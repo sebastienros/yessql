@@ -4378,16 +4378,19 @@ namespace YesSql.Tests
         [InlineData("JSON_VALUE", "'{ \"a\" : { \"b\" : [{ \"c\" : 1 }, { \"c\" : 2 }, { \"c\" : 3 }] } }'", "'$.a.b[2].c'", "3")]
         public async Task SqlJsonValueFunction(string method, string json, string jsonPathExpression, string expected)
         {
+            // Arrange & Act
             string result;
-
             using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
             {
                 await connection.OpenAsync();
+                
                 var dialect = _store.Configuration.SqlDialect;
-                var sql = "SELECT " + dialect.RenderMethod(method, json, jsonPathExpression);
+                var sql = $"SELECT {dialect.RenderMethod(method, json, jsonPathExpression)}" ;
+                
                 result = await connection.QueryFirstOrDefaultAsync<string>(sql);
             }
 
+            // Assert
             Assert.Equal(expected, result);
         }
 
