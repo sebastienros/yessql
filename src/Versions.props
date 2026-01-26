@@ -3,9 +3,9 @@
   <!-- When a dependency is updated, check that it doesn't lift a runtime dependency from a higher TFM -->
   <PropertyGroup>
       <DapperStrongNamePackageVersion>2.1.66</DapperStrongNamePackageVersion>
-      <MicrosoftDataSqlClientPackageVersion>6.1.3</MicrosoftDataSqlClientPackageVersion>
+      <MicrosoftDataSqlClientPackageVersion>6.1.4</MicrosoftDataSqlClientPackageVersion>
       <MySqlConnectorPackageVersion>2.5.0</MySqlConnectorPackageVersion>
-      <MicrosoftDataSqlitePackageVersion>10.0.1</MicrosoftDataSqlitePackageVersion>
+      <MicrosoftDataSqlitePackageVersion>10.0.2</MicrosoftDataSqlitePackageVersion>
       <NpgsqlPackageVersion>10.0.1</NpgsqlPackageVersion>
       <ParlotPackageVersion>1.5.7</ParlotPackageVersion>
   </PropertyGroup>
