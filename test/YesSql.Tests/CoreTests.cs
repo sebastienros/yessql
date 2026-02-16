@@ -1716,6 +1716,96 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryJoinedIndexes()
+        {
+            // We should be able to query documents on multiple rows in multiple index
+            // This mean the same Index table needs to be JOINed
+
+            _store.RegisterIndexes<PersonIdentitiesIndexProvider>();
+            _store.RegisterIndexes<PersonByNullableAgeIndexProvider>();
+
+            using (var session = _store.CreateSession())
+            {
+                var hanselman = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Hanselman",
+                    Age = -1
+                };
+
+                var guthrie = new Person
+                {
+                    Firstname = "Scott",
+                    Lastname = "Guthrie"
+                };
+
+                await session.SaveAsync(hanselman);
+                await session.SaveAsync(guthrie);
+
+                await session.SaveChangesAsync();
+            }
+
+            using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.QueryIndexJoined<PersonIdentity>()
+                    .All(
+                        x => x.With<PersonByNullableAge>(x => x.Age == null || x.Age == 0),
+                        x => x.Any(
+                            x => x.With<PersonIdentity>(x => x.Identity == "Hanselman"),
+                            x => x.With<PersonIdentity>(x => x.Identity == "Guthrie"))
+                        )
+                    .CountAsync()
+                    );
+            }
+        }
+
+        [Fact]
+        public async Task ShouldReturnFirstOrDefaultJoinedIndexes()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = new Person { Firstname = "Bill", Lastname = "Gates" };
+                var scotth = new Person { Firstname = "Scott", Lastname = "Hanselman" };
+                var scottg = new Person { Firstname = "Scott", Lastname = "Guthrie" };
+                var scotts = new Person { Firstname = "Scott", Lastname = "Smith", Age = 33 };
+                var clint = new Person { Firstname = "Clint", Lastname = "Eastwood", Age = 110 };
+                var smith = new Person { Firstname = "John", Lastname = "Smith", Age = 20 };
+
+                await session.SaveAsync(bill);
+                await session.SaveAsync(scotth);
+                await session.SaveAsync(scottg);
+                await session.SaveAsync(scotts);
+                await session.SaveAsync(smith);
+                await session.SaveAsync(clint);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var qry = session.QueryIndexJoined<PersonByAge>()
+                    .Any(d => d.All(
+                        x => x.With<PersonByName>(d => d.SomeName == "Clint" || d.SomeName.StartsWith("S")),
+                        y => y.With<PersonByAge>(d => d.Adult == true)
+                    ), d => d.All(
+                        x => x.With<PersonByName>(d => d.SomeName == "Scott"),
+                        y => y.With<PersonByAge>(d => d.Adult == false))
+                );
+
+                var persons = await qry.ListAsync();
+                Assert.Collection<PersonByAge>(persons,
+                    x => Assert.Equal(110, x.Age),
+                    x => Assert.Equal(0, x.Age),
+                    x => Assert.Equal(0, x.Age)
+                );
+            }
+        }
+
+
+        [Fact]
         public async Task ShouldQueryMultipleIndexes()
         {
             // We should be able to query documents on multiple rows in an index

@@ -1207,6 +1207,34 @@ namespace YesSql.Services
             return new QueryIndex<TIndex>(this);
         }
 
+        IQuery<TIndex> IQuery.ForIndexJoined<TIndex>()
+        {
+            _queryState.GetBindings().Clear();
+
+            var tIndex = typeof(TIndex);
+
+            var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(tIndex, _collection);
+            var indexTableAlias = _queryState.GetTypeAlias(tIndex);
+
+            _queryState.AddBinding(tIndex);
+            _queryState._sqlBuilder.Select();
+
+            _queryState._sqlBuilder.Table(indexTable, indexTableAlias, _queryState._store.Configuration.Schema);
+
+            _queryState.AddBinding(typeof(Document));
+
+            if (typeof(MapIndex).IsAssignableFrom(tIndex))
+            {
+                _queryState._sqlBuilder.InnerJoin(_queryState._documentTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, onTableIsAlias: true);
+            }
+            else
+            {
+                throw new InvalidOperationException("Reduce Indexes are not supported");
+            }
+
+            return new Query<TIndex>(this);
+        }
+
         IQuery<object> IQuery.Any()
         {
             _queryState.GetBindings().Clear();
