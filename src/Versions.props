@@ -5,7 +5,7 @@
       <DapperStrongNamePackageVersion>2.1.66</DapperStrongNamePackageVersion>
       <MicrosoftDataSqlClientPackageVersion>6.1.4</MicrosoftDataSqlClientPackageVersion>
       <MySqlConnectorPackageVersion>2.5.0</MySqlConnectorPackageVersion>
-      <MicrosoftDataSqlitePackageVersion>10.0.2</MicrosoftDataSqlitePackageVersion>
+      <MicrosoftDataSqlitePackageVersion>10.0.3</MicrosoftDataSqlitePackageVersion>
       <NpgsqlPackageVersion>10.0.1</NpgsqlPackageVersion>
       <ParlotPackageVersion>1.5.7</ParlotPackageVersion>
   </PropertyGroup>
