@@ -6,7 +6,7 @@ using YesSql.Sql;
 
 namespace Bench
 {
-    class Program
+    sealed class Program
     {
         static void Main(string[] args)
         {
@@ -61,7 +61,7 @@ namespace Bench
 
                 user = await session.Query<User, UserByName>().Where(x => x.Age == 1 && x.Adult).FirstOrDefaultAsync();
 
-                user = await session.Query<User, UserByName>().Where(x => x.Name.StartsWith("B")).FirstOrDefaultAsync();
+                user = await session.Query<User, UserByName>().Where(x => x.Name.StartsWith('B')).FirstOrDefaultAsync();
             }
         }
     }

@@ -1,15 +1,17 @@
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Provider.PostgreSql;
+using YesSql.Tests.Fixtures;
 
 namespace YesSql.Tests
 {
-    // Docker command
-    // docker run --name postgresql -e POSTGRES_USER=root -e POSTGRES_PASSWORD=Password12! -e POSTGRES_DB=yessql -d -p 5432:5432 postgres:11
+    /// <summary>
+    /// Run all tests with a PostgreSQL document storage using Testcontainers with legacy (Int32) identity.
+    /// </summary>
+    [Collection("PostgreSql")]
     public class PostgreSqlLegacyIdentityTests : PostgreSqlTests
     {
-        public PostgreSqlLegacyIdentityTests(ITestOutputHelper output) : base(output)
+        public PostgreSqlLegacyIdentityTests(PostgreSqlContainerFixture fixture, ITestOutputHelper output) : base(fixture, output)
         {
         }
 

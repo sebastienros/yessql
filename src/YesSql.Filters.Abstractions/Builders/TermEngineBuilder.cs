@@ -6,7 +6,7 @@ namespace YesSql.Filters.Abstractions.Builders
 {
     public abstract class TermEngineBuilder<T, TTermOption>  where TTermOption : TermOption
     {
-        public TermEngineBuilder(string name)
+        protected TermEngineBuilder(string name)
         {
             Name = name;
         }

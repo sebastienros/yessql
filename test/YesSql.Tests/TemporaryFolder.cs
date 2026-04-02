@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace YesSql.Tests
 {
-    public class TemporaryFolder : IDisposable
+    public sealed class TemporaryFolder : IDisposable
     {
         private readonly bool _deleteOnDispose;
 

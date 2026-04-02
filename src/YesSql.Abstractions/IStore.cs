@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -28,12 +29,12 @@ namespace YesSql
         /// <summary>
         /// Initializes the database by creating the required tables and the default collection if necessary.
         /// </summary>
-        Task InitializeAsync();
+        Task InitializeAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Initializes a collection in the database by creating the required tables if necessary.
         /// </summary>
-        Task InitializeCollectionAsync(string collection);
+        Task InitializeCollectionAsync(string collection, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create an instance of <see cref="IEnumerable&lt;IndexDescriptor&gt;" /> containing descriptors for all indexes associated to a type and a collection.

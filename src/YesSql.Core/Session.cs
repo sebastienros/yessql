@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -63,10 +64,7 @@ namespace YesSql
         {
             foreach (var indexProvider in indexProviders)
             {
-                if (indexProvider.CollectionName == null)
-                {
-                    indexProvider.CollectionName = collection ?? string.Empty;
-                }
+                indexProvider.CollectionName ??= collection ?? string.Empty;
             }
 
             _indexes ??= [];
@@ -92,10 +90,7 @@ namespace YesSql
             return state;
         }
 
-        public void Save(object entity, bool checkConcurrency = false, string collection = null)
-            => SaveAsync(entity, checkConcurrency, collection).GetAwaiter().GetResult();
-
-        public async Task SaveAsync(object entity, bool checkConcurrency = false, string collection = null)
+        public async Task SaveAsync(object entity, bool checkConcurrency = false, string collection = null, CancellationToken cancellationToken = default)
         {
             var state = GetState(collection);
 
@@ -132,6 +127,15 @@ namespace YesSql
 
                 if (id > 0)
                 {
+                    // If we got an object from a different identity map, without change tracking, the object reference could be different than
+                    // the one in the identity map, and the previous state.IdentityMap.TryGetDocumentId would have returned false.
+                    // In this case we need to assume it's an updated object and not try to "Add" it to the identity map.
+
+                    if (state.IdentityMap.TryGetEntityById(id, out var _))
+                    {
+                        throw new InvalidOperationException("An object with the same identity is already part of this transaction. Reload it before doing any changes on it.");
+                    }
+
                     state.IdentityMap.AddEntity(id, entity);
                     state.Updated.Add(entity);
 
@@ -146,7 +150,7 @@ namespace YesSql
             }
 
             // It's a new entity
-            id = await _store.GetNextIdAsync(collection);
+            id = await _store.GetNextIdAsync(collection, cancellationToken);
             state.IdentityMap.AddEntity(id, entity);
 
             // Then assign a new identifier if it has one
@@ -154,6 +158,15 @@ namespace YesSql
 
             state.Saved.Add(entity);
         }
+
+        public Task SaveAsync(object entity, bool checkConcurrency, string collection)
+            => SaveAsync(entity, checkConcurrency, collection, CancellationToken.None);
+
+        public Task SaveAsync(object entity, bool checkConcurrency)
+            => SaveAsync(entity, checkConcurrency, null, CancellationToken.None);
+
+        public Task SaveAsync(object entity)
+            => SaveAsync(entity, false, null, CancellationToken.None);
 
         public bool Import(object entity, long id = 0, long version = 0, string collection = null)
         {
@@ -244,6 +257,28 @@ namespace YesSql
             }
         }
 
+        public void DetachAll(string collection)
+        {
+            CheckDisposed();
+
+            var state = GetState(collection);
+
+            state._concurrent?.Clear();
+            state._saved?.Clear();
+            state._updated?.Clear();
+            state._tracked?.Clear();
+            state._deleted?.Clear();
+            state._identityMap?.Clear();
+        }
+
+        public async Task ResetAsync()
+        {
+            CheckDisposed();
+
+            await ReleaseTransactionAsync();
+            await ReleaseConnectionAsync();
+        }
+
         private static void DetachInternal(object entity, SessionState state)
         {
             state.Saved.Remove(entity);
@@ -257,7 +292,7 @@ namespace YesSql
             }
         }
 
-        private async Task SaveEntityAsync(object entity, string collection)
+        private async Task SaveEntityAsync(object entity, string collection, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(entity);
 
@@ -285,7 +320,7 @@ namespace YesSql
 
             doc.Id = id;
 
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var versionAccessor = _store.GetVersionAccessor(entity.GetType());
             if (versionAccessor != null)
@@ -308,10 +343,10 @@ namespace YesSql
 
             state.IdentityMap.AddDocument(doc);
 
-            await MapNew(doc, entity, collection);
+            await MapNew(doc, entity, collection, cancellationToken);
         }
 
-        private async Task UpdateEntityAsync(object entity, bool tracked, string collection)
+        private async Task UpdateEntityAsync(object entity, bool tracked, string collection, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(entity);
 
@@ -335,7 +370,7 @@ namespace YesSql
 
             if (!state.IdentityMap.TryGetDocument(id, out var oldDoc))
             {
-                oldDoc = await GetDocumentByIdAsync(id, collection);
+                oldDoc = await GetDocumentByIdAsync(id, collection, cancellationToken);
 
                 if (oldDoc == null)
                 {
@@ -384,11 +419,11 @@ namespace YesSql
             var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
 
             // Update map index
-            await MapDeleted(oldDoc, oldObj, collection);
+            await MapDeleted(oldDoc, oldObj, collection, cancellationToken);
 
-            await MapNew(oldDoc, entity, collection);
+            await MapNew(oldDoc, entity, collection, cancellationToken);
 
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             oldDoc.Content = newContent;
 
@@ -397,9 +432,9 @@ namespace YesSql
             _commands.Add(new UpdateDocumentCommand(entity, oldDoc, Store, version, collection, this));
         }
 
-        private async Task<Document> GetDocumentByIdAsync(long id, string collection)
+        private async Task<Document> GetDocumentByIdAsync(long id, string collection, CancellationToken cancellationToken = default)
         {
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -408,7 +443,7 @@ namespace YesSql
 
             try
             {
-                var result = await _store.ProduceAsync(key, (key, state) =>
+                var result = await _store.ProduceAsync(key, static (key, state) =>
                 {
                     var logger = state.Store.Configuration.Logger;
 
@@ -417,9 +452,9 @@ namespace YesSql
                         logger.LogTrace(state.Command);
                     }
 
-                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
+                    return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
-                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id } });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id }, CancellationToken = cancellationToken });
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
                 return result.FirstOrDefault()?.Clone();
@@ -438,10 +473,33 @@ namespace YesSql
 
             var state = GetState(collection);
 
+            if (state.Saved.Remove(obj))
+            {
+                Debug.Assert(!state.Updated.Contains(obj));
+
+                // If the item is in the Saved, this means its a brand new object.
+                // Remove it from the memory and don't add it to the Deleted collection.
+
+                if (state.IdentityMap.TryGetDocumentId(obj, out var id))
+                {
+                    state.IdentityMap.Remove(id, obj);
+                }
+
+                // Ensure we reset the Id of the object to allow it to be added later if needed.
+                var accessor = _store.GetIdAccessor(obj.GetType());
+
+                if (accessor is not null)
+                {
+                    accessor.Set(obj, 0);
+                }
+
+                return;
+            }
+
             state.Deleted.Add(obj);
         }
 
-        private async Task DeleteEntityAsync(object obj, string collection)
+        private async Task DeleteEntityAsync(object obj, string collection, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
@@ -460,7 +518,7 @@ namespace YesSql
                 id = accessor.Get(obj);
             }
 
-            var doc = await GetDocumentByIdAsync(id, collection);
+            var doc = await GetDocumentByIdAsync(id, collection, cancellationToken);
 
             if (doc != null)
             {
@@ -468,7 +526,7 @@ namespace YesSql
                 state.IdentityMap.Remove(id, obj);
 
                 // Update impacted indexes
-                await MapDeleted(doc, obj, collection);
+                await MapDeleted(doc, obj, collection, cancellationToken);
 
                 _commands ??= [];
 
@@ -477,19 +535,19 @@ namespace YesSql
             }
         }
 
-        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null) where T : class
+        public async Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection = null, CancellationToken cancellationToken = default) where T : class
         {
             if (ids?.Length == 0)
             {
-                return Enumerable.Empty<T>();
+                return [];
             }
 
             CheckDisposed();
 
             // Auto-flush
-            await FlushAsync();
+            await FlushAsync(cancellationToken);
 
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
@@ -507,16 +565,29 @@ namespace YesSql
                         logger.LogTrace(state.Command);
                     }
 
-                    return state.Connection.QueryAsync<Document>(state.Command, state.Parameters, state.Transaction);
+                    return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
                 },
-                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Ids = ids } });
+                new
+                {
+                    Store = _store,
+                    Connection = _connection,
+                    Transaction = _transaction,
+                    Command = command,
+                    Parameters = new { Ids = ids },
+                    CancellationToken = cancellationToken,
+                });
+
+                if (!documents.Any())
+                {
+                    return [];
+                }
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
                 var sortedDocuments = documents.Select(x => x.Clone())
-                    .OrderBy(d => Array.IndexOf(ids, d.Id))
-                    .ToList();
+                    .OrderBy(d => Array.IndexOf(ids, d.Id));
 
-                return Get<T>(sortedDocuments, collection);
+                return Get<T>(sortedDocuments, collection)
+                    .ToArray();
             }
             catch
             {
@@ -526,25 +597,19 @@ namespace YesSql
             }
         }
 
-        public IEnumerable<T> Get<T>(IList<Document> documents, string collection) where T : class
+        internal IEnumerable<T> Get<T>(IEnumerable<Document> documents, string collection) where T : class
         {
-            if (documents?.Count == 0)
-            {
-                return Enumerable.Empty<T>();
-            }
-
-            var result = new List<T>();
             var defaultAccessor = _store.GetIdAccessor(typeof(T));
             var typeName = Store.TypeService[typeof(T)];
 
             var state = GetState(collection);
 
             // Are all the objects already in cache?
-            foreach (var d in documents)
+            foreach (var document in documents)
             {
-                if (_withTracking && state.IdentityMap.TryGetEntityById(d.Id, out var entity))
+                if (_withTracking && state.IdentityMap.TryGetEntityById(document.Id, out var entity))
                 {
-                    result.Add((T)entity);
+                    yield return (T)entity;
                 }
                 else
                 {
@@ -552,9 +617,9 @@ namespace YesSql
 
                     IAccessor<long> accessor;
                     // If the document type doesn't match the requested one, check it's a base type
-                    if (!string.Equals(typeName, d.Type, StringComparison.Ordinal))
+                    if (!string.Equals(typeName, document.Type, StringComparison.Ordinal))
                     {
-                        var itemType = Store.TypeService[d.Type];
+                        var itemType = Store.TypeService[document.Type];
 
                         // Ignore the document if it can't be casted to the requested type
                         if (!typeof(T).IsAssignableFrom(itemType))
@@ -564,30 +629,34 @@ namespace YesSql
 
                         accessor = _store.GetIdAccessor(itemType);
 
-                        item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, itemType);
+                        item = (T)Store.Configuration.ContentSerializer.Deserialize(document.Content, itemType);
                     }
                     else
                     {
-                        item = (T)Store.Configuration.ContentSerializer.Deserialize(d.Content, typeof(T));
+                        item = (T)Store.Configuration.ContentSerializer.Deserialize(document.Content, typeof(T));
 
                         accessor = defaultAccessor;
                     }
 
-                    accessor?.Set(item, d.Id);
+                    accessor?.Set(item, document.Id);
 
                     if (_withTracking)
                     {
                         // track the loaded object.
-                        state.IdentityMap.AddEntity(d.Id, item);
-                        state.IdentityMap.AddDocument(d);
+                        state.IdentityMap.AddEntity(document.Id, item);
+                        state.IdentityMap.AddDocument(document);
                     }
 
-                    result.Add(item);
+                    yield return item;
                 }
             }
-
-            return result;
         }
+
+        public Task<IEnumerable<T>> GetAsync<T>(long[] ids, string collection) where T : class
+            => GetAsync<T>(ids, collection, CancellationToken.None);
+
+        public Task<IEnumerable<T>> GetAsync<T>(long[] ids) where T : class
+            => GetAsync<T>(ids, null, CancellationToken.None);
 
         public IQuery Query(string collection = null)
         {
@@ -632,7 +701,7 @@ namespace YesSql
             Dispose(false);
         }
 
-        public void Dispose(bool disposing)
+        public void Dispose(bool _)
         {
             // Do nothing if Dispose() was already called
             if (!_disposed)
@@ -658,12 +727,15 @@ namespace YesSql
             GC.SuppressFinalize(this);
         }
 
-        public Task FlushAsync()
+        public Task FlushAsync(CancellationToken cancellationToken = default)
         {
-            return FlushInternalAsync(false);
+            return FlushInternalAsync(false, cancellationToken);
         }
 
-        private async Task FlushInternalAsync(bool saving)
+        public Task FlushAsync()
+            => FlushAsync(CancellationToken.None);
+
+        private async Task FlushInternalAsync(bool saving, CancellationToken cancellationToken)
         {
             if (!HasWork())
             {
@@ -704,7 +776,7 @@ namespace YesSql
                     {
                         if (!state.Deleted.Contains(obj))
                         {
-                            await UpdateEntityAsync(obj, true, collection);
+                            await UpdateEntityAsync(obj, true, collection, cancellationToken);
                         }
                     }
 
@@ -713,27 +785,27 @@ namespace YesSql
                     {
                         if (!state.Deleted.Contains(obj))
                         {
-                            await UpdateEntityAsync(obj, false, collection);
+                            await UpdateEntityAsync(obj, false, collection, cancellationToken);
                         }
                     }
 
                     // saving all pending entities
                     foreach (var obj in state.Saved)
                     {
-                        await SaveEntityAsync(obj, collection);
+                        await SaveEntityAsync(obj, collection, cancellationToken);
                     }
 
                     // deleting all pending entities
                     foreach (var obj in state.Deleted)
                     {
-                        await DeleteEntityAsync(obj, collection);
+                        await DeleteEntityAsync(obj, collection, cancellationToken);
                     }
                 }
 
                 // compute all reduce indexes
-                await ReduceAsync();
+                await ReduceAsync(cancellationToken);
 
-                await BeginTransactionAsync();
+                await BeginTransactionAsync(cancellationToken);
 
                 BatchCommands();
 
@@ -741,13 +813,14 @@ namespace YesSql
                 {
                     foreach (var command in _commands)
                     {
-                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger);
+                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger, cancellationToken);
                     }
                 }
             }
             catch
             {
-                await CancelAsync();
+                // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
+                await CancelAsyncInternal();
 
                 throw;
             }
@@ -786,7 +859,7 @@ namespace YesSql
 
         private void BatchCommands()
         {
-            if (_commands?.Count == 0)
+            if (_commands is null || _commands.Count == 0)
             {
                 return;
             }
@@ -895,7 +968,7 @@ namespace YesSql
             Interlocked.Decrement(ref _asyncOperations);
         }
 
-        public async Task SaveChangesAsync()
+        public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             EnterAsyncExecution();
 
@@ -903,17 +976,20 @@ namespace YesSql
             {
                 if (!_cancel)
                 {
-                    await FlushInternalAsync(true);
+                    await FlushInternalAsync(true, cancellationToken);
 
                     _save = true;
                 }
             }
             finally
             {
-                await CommitOrRollbackTransactionAsync();
+                await CommitOrRollbackTransactionAsync(cancellationToken);
                 ExitAsyncExecution();
             }
         }
+
+        public Task SaveChangesAsync()
+            => SaveChangesAsync(CancellationToken.None);
 
         public async ValueTask DisposeAsync()
         {
@@ -927,7 +1003,7 @@ namespace YesSql
 
             try
             {
-                await CommitOrRollbackTransactionAsync();
+                await CommitOrRollbackTransactionAsync(CancellationToken.None);
             }
             catch
             {
@@ -938,7 +1014,7 @@ namespace YesSql
             GC.SuppressFinalize(this);
         }
 
-        private async Task CommitOrRollbackTransactionAsync()
+        private async Task CommitOrRollbackTransactionAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -946,12 +1022,12 @@ namespace YesSql
                 {
                     if (_cancel || !_save)
                     {
-                        await _transaction.RollbackAsync();
+                        await _transaction.RollbackAsync(cancellationToken);
 
                         return;
                     }
 
-                    await _transaction.CommitAsync();
+                    await _transaction.CommitAsync(cancellationToken);
                 }
             }
             finally
@@ -967,13 +1043,16 @@ namespace YesSql
         {
             foreach (var state in _collectionStates.Values)
             {
-                // IdentityMap is cleared in ReleaseSession()
                 state._concurrent?.Clear();
                 state._saved?.Clear();
                 state._updated?.Clear();
                 state._tracked?.Clear();
                 state._deleted?.Clear();
                 state._maps?.Clear();
+
+                // Clear the identity map as we don't want to return stale data after committing some changes.
+                // We assume the identity map is part of the unit-of-work.
+                state._identityMap?.Clear();
             }
 
             _commands?.Clear();
@@ -1048,13 +1127,16 @@ namespace YesSql
                     state.Updated.Count +
                     state.Tracked.Count +
                     state.Deleted.Count > 0
-                    ) return true;
+                    )
+                {
+                    return true;
+                }
             }
 
             return false;
         }
 
-        private async Task ReduceAsync()
+        private async Task ReduceAsync(CancellationToken cancellationToken = default)
         {
             foreach (var collectionState in _collectionStates)
             {
@@ -1118,7 +1200,7 @@ namespace YesSql
                             }
                         }
 
-                        var dbIndex = await ReduceForAsync(descriptor, currentKey, collection);
+                        var dbIndex = await ReduceForAsync(descriptor, currentKey, collection, cancellationToken);
 
                         // if index present in db and new objects, reduce them
                         if (dbIndex != null && index != null)
@@ -1194,14 +1276,14 @@ namespace YesSql
             }
         }
 
-        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection)
+        private async Task<ReduceIndex> ReduceForAsync(IndexDescriptor descriptor, object currentKey, string collection, CancellationToken cancellationToken)
         {
-            await CreateConnectionAsync();
+            await CreateConnectionAsync(cancellationToken);
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name, _store.Configuration.Schema) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
-            var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);
+            var index = await _connection.QueryAsync(descriptor.IndexType, new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken));
             return index.FirstOrDefault() as ReduceIndex;
         }
 
@@ -1259,9 +1341,17 @@ namespace YesSql
                 }
             }
 
-            return typedDescriptors.Union(ExtraIndexDescriptors);
+            var descriptors = typedDescriptors;
+
+            if (ExtraIndexDescriptors != null)
+            {
+                descriptors = descriptors.Union(ExtraIndexDescriptors);
+            }
+
+            return descriptors;
         }
-        private async Task MapNew(Document document, object obj, string collection)
+
+        private async Task MapNew(Document document, object obj, string collection, CancellationToken cancellationToken)
         {
             var descriptors = await GetDescriptorsAsync(obj.GetType(), collection);
 
@@ -1275,7 +1365,7 @@ namespace YesSql
                     continue;
                 }
 
-                var mapped = await descriptor.Map(obj);
+                var mapped = await descriptor.Map(obj, cancellationToken);
 
                 if (mapped != null)
                 {
@@ -1321,7 +1411,7 @@ namespace YesSql
         /// <summary>
         /// Update map and reduce indexes when an entity is deleted.
         /// </summary>
-        private async Task MapDeleted(Document document, object obj, string collection)
+        private async Task MapDeleted(Document document, object obj, string collection, CancellationToken cancellationToken)
         {
             var descriptors = await GetDescriptorsAsync(obj.GetType(), collection);
 
@@ -1344,7 +1434,7 @@ namespace YesSql
                 }
                 else
                 {
-                    var mapped = await descriptor.Map(obj);
+                    var mapped = await descriptor.Map(obj, cancellationToken);
 
                     if (mapped != null)
                     {
@@ -1367,7 +1457,7 @@ namespace YesSql
         /// <summary>
         /// Initializes a new connection if none has been yet. Use this method when reads need to be done.
         /// </summary>
-        public async Task<DbConnection> CreateConnectionAsync()
+        public async Task<DbConnection> CreateConnectionAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
@@ -1375,35 +1465,44 @@ namespace YesSql
 
             if (_connection.State == ConnectionState.Closed)
             {
-                await _connection.OpenAsync();
+                await _connection.OpenAsync(cancellationToken);
             }
 
             return _connection;
         }
 
+        public Task<DbConnection> CreateConnectionAsync()
+            => CreateConnectionAsync(CancellationToken.None);
+
         public DbTransaction CurrentTransaction => _transaction;
 
+        public Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+            => BeginTransactionAsync(Store.Configuration.IsolationLevel, cancellationToken);
+
         public Task<DbTransaction> BeginTransactionAsync()
-            => BeginTransactionAsync(Store.Configuration.IsolationLevel);
+            => BeginTransactionAsync(CancellationToken.None);
 
         /// <summary>
         /// Begins a new transaction if none has been yet. Use this method when writes need to be done.
         /// </summary>
-        public async Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
+        public async Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
             if (_transaction == null)
             {
-                await CreateConnectionAsync();
+                await CreateConnectionAsync(cancellationToken);
 
                 // In the case of shared connections (InMemory) this can throw as the transaction
                 // might already be set by a concurrent thread on the same shared connection.
-                _transaction = await _connection.BeginTransactionAsync(isolationLevel);
+                _transaction = await _connection.BeginTransactionAsync(isolationLevel, cancellationToken);
             }
 
             return _transaction;
         }
+
+        public Task<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
+            => BeginTransactionAsync(isolationLevel, CancellationToken.None);
 
         public Task CancelAsync()
         {
@@ -1411,16 +1510,21 @@ namespace YesSql
 
             try
             {
-                CheckDisposed();
-
-                _cancel = true;
-
-                return ReleaseTransactionAsync();
+                return CancelAsyncInternal();
             }
             finally
             {
                 ExitAsyncExecution();
             }
+        }
+
+        internal Task CancelAsyncInternal()
+        {
+            CheckDisposed();
+
+            _cancel = true;
+
+            return ReleaseTransactionAsync();
         }
 
         public IStore Store => _store;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Indexes;
 
@@ -85,22 +86,22 @@ namespace YesSql
         /// <summary>
         /// Executes the query and returns the first result matching the constraints.
         /// </summary>
-        Task<T> FirstOrDefaultAsync();
+        Task<T> FirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync();
+        Task<IEnumerable<T>> ListAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        IAsyncEnumerable<T> ToAsyncEnumerable();
+        IAsyncEnumerable<T> ToAsyncEnumerable(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a that returns the number of documents matching the constraints.
         /// </summary>
-        Task<int> CountAsync();
+        Task<int> CountAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns the SQL alias currently used for the specified index type.
@@ -184,23 +185,23 @@ namespace YesSql
         /// <summary>
         /// Returns the first result only, if it exists.
         /// </summary>
-        Task<T> FirstOrDefaultAsync();
+        Task<T> FirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes the query.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync();
+        Task<IEnumerable<T>> ListAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes the query for asynchronous iteration.
         /// </summary>
         /// <returns></returns>
-        IAsyncEnumerable<T> ToAsyncEnumerable();
+        IAsyncEnumerable<T> ToAsyncEnumerable(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns the number of results only.
         /// </summary>
-        Task<int> CountAsync();
+        Task<int> CountAsync(CancellationToken cancellationToken = default);
     }
 
     /// <summary>

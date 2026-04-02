@@ -136,7 +136,7 @@ namespace YesSql.Provider
             }
 
             res.Append(" constraint ")
-                .Append(name)
+                .Append(QuoteForColumnName(name))
                 .Append(" foreign key (")
                 .AppendJoin(", ", srcColumns)
                 .Append(") references ")
@@ -154,7 +154,7 @@ namespace YesSql.Provider
 
         public virtual string GetDropForeignKeyConstraintString(string name)
         {
-            return " drop constraint " + name;
+            return " drop constraint " + QuoteForColumnName(name);
         }
 
         public virtual bool SupportsIfExistsBeforeTableName => false;

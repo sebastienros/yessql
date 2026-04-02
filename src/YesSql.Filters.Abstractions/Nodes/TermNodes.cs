@@ -6,7 +6,7 @@ namespace YesSql.Filters.Abstractions.Nodes
 {
     public abstract class TermNode : FilterNode
     {
-        public TermNode(string termName)
+        protected TermNode(string termName)
         {
             TermName = termName;
         }
@@ -18,7 +18,7 @@ namespace YesSql.Filters.Abstractions.Nodes
 
     public abstract class TermOperationNode : TermNode
     {
-        public TermOperationNode(string termName, OperatorNode operation) : base(termName)
+        protected TermOperationNode(string termName, OperatorNode operation) : base(termName)
         {
             Operation = operation;
         }
@@ -58,7 +58,7 @@ namespace YesSql.Filters.Abstractions.Nodes
 
     public abstract class CompoundTermNode : TermNode
     {
-        public CompoundTermNode(string termName) : base(termName)
+        protected CompoundTermNode(string termName) : base(termName)
         {
         }
 

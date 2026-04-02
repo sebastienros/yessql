@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands.DocumentChanged;
 
@@ -22,7 +23,7 @@ namespace YesSql.Commands
             _entity = entity;
         }
 
-        public async override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
             var context = new DocumentChangeContext
             {
@@ -43,8 +44,7 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(deleteCmd);
             }
-
-            await connection.ExecuteAsync(deleteCmd, Document, transaction);
+            await connection.ExecuteAsync(new CommandDefinition(deleteCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)

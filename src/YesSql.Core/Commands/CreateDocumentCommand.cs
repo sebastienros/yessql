@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands.DocumentChanged;
 
@@ -22,7 +23,7 @@ namespace YesSql.Commands
             _entity = entity;
         }
 
-        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger)
+        public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
@@ -32,7 +33,7 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(insertCmd);
             }
-            await connection.ExecuteAsync(insertCmd, Document, transaction);
+            await connection.ExecuteAsync(new CommandDefinition(insertCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
 
             var context = new DocumentChangeContext
             {

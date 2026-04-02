@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YesSql
@@ -13,26 +14,19 @@ namespace YesSql
         /// Invoked when the underlying store is created.
         /// </summary>
         /// <param name="store">The store that this <see cref="IIdGenerator"/> instance is assigned to.</param>
-        Task InitializeAsync(IStore store);
+        Task InitializeAsync(IStore store, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Initializes a document collection.
         /// </summary>
-        Task InitializeCollectionAsync(IConfiguration configuration, string collection);
+        Task InitializeCollectionAsync(IConfiguration configuration, string collection, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Generates a unique identifier for the store.
         /// </summary>
         /// <param name="collection">The name of the collection to generate the identifier for.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A unique identifier</returns>
-        [Obsolete($"Instead, utilize the {nameof(GetNextIdAsync)} method. This current method is slated for removal in upcoming releases.")]
-        long GetNextId(string collection);
-
-        /// <summary>
-        /// Generates a unique identifier for the store.
-        /// </summary>
-        /// <param name="collection">The name of the collection to generate the identifier for.</param>
-        /// <returns>A unique identifier</returns>
-        Task<long> GetNextIdAsync(string collection);
+        Task<long> GetNextIdAsync(string collection, CancellationToken cancellationToken = default);
     }
 }

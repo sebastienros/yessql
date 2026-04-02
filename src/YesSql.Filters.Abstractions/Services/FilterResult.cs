@@ -11,12 +11,12 @@ namespace YesSql.Filters.Abstractions.Services
 
         protected Dictionary<string, TermNode> _terms = new Dictionary<string, TermNode>(StringComparer.OrdinalIgnoreCase);
 
-        public FilterResult(IReadOnlyDictionary<string, TTermOption> termOptions)
+        protected FilterResult(IReadOnlyDictionary<string, TTermOption> termOptions)
         {
             TermOptions = termOptions;
         }
 
-        public FilterResult(IReadOnlyList<TermNode> terms, IReadOnlyDictionary<string, TTermOption> termOptions)
+        protected FilterResult(IReadOnlyList<TermNode> terms, IReadOnlyDictionary<string, TTermOption> termOptions)
         {
             TermOptions = termOptions;
 

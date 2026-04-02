@@ -11,10 +11,7 @@ namespace YesSql.Samples.Web.ModelBinding
 
         public Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (bindingContext == null)
-            {
-                throw new ArgumentNullException(nameof(bindingContext));
-            }
+            ArgumentNullException.ThrowIfNull(bindingContext);
 
             var modelName = bindingContext.ModelName;
 

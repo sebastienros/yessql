@@ -2,7 +2,7 @@ namespace YesSql.Filters.Abstractions.Services
 {
     public abstract class FilterExecutionContext<T>
     {
-        public FilterExecutionContext(T item)
+        protected FilterExecutionContext(T item)
         {
             Item = item;
         }

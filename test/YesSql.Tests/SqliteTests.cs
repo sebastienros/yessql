@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using YesSql.Commands;
+using YesSql.Commands.DocumentChanged;
 using YesSql.Indexes;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
@@ -34,12 +37,6 @@ namespace YesSql.Tests
                 .UseDefaultIdGenerator()
                 .SetIdentityColumnSize(IdentityColumnSize.Int64)
                 ;
-        }
-
-        public override Task DisposeAsync()
-        {
-            //SqliteConnection.ClearAllPools();
-            return Task.CompletedTask;
         }
 
         [Fact(Skip = "Alter column is not supported by Sqlite")]
@@ -100,10 +97,12 @@ namespace YesSql.Tests
             }
         }
 
-        [Fact(Skip = "Locking prevents Sqlite from concurrency issues")]
-        public override Task ShouldHandleConcurrency()
+        [Theory(Skip = "Locking prevents Sqlite from concurrency issues")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public override Task ShouldHandleConcurrency(bool checkThreadSafety)
         {
-            return base.ShouldHandleConcurrency();
+            return base.ShouldHandleConcurrency(checkThreadSafety);
         }
 
         [Fact]

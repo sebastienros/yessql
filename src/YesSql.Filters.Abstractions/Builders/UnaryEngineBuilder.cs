@@ -15,7 +15,7 @@ namespace YesSql.Filters.Abstractions.Builders
 
         protected TTermOption _termOption;
 
-        public UnaryEngineBuilder(TTermOption termOption)
+        protected UnaryEngineBuilder(TTermOption termOption)
         {
             _termOption = termOption;
         }
