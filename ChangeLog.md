@@ -15,8 +15,10 @@ session.ExtraIndexDescriptors =
 [
     new IndexDescriptor
     {
+        Type = typeof(PropertyIndex),
+        IndexType = typeof(PropertyIndex),
         Filter = entity => entity is Property,
-        Map = entity =>
+        Map = static (entity, cancellationToken) =>
         {
             var property = (Property)entity;
             return Task.FromResult<IEnumerable<IIndex>>(
@@ -50,8 +52,10 @@ session.BuildExtraIndexDescriptors = (type, collection) =>
     [
         new IndexDescriptor
         {
+            Type = typeof(PropertyIndex),
+            IndexType = typeof(PropertyIndex),
             Filter = entity => entity is Property,
-            Map = entity =>
+            Map = static (entity, cancellationToken) =>
             {
                 var property = (Property)entity;
                 return Task.FromResult<IEnumerable<IIndex>>(
@@ -102,4 +106,6 @@ Notes:
 
 - `ExtraIndexDescriptors` and `BuildExtraIndexDescriptors` are applied in addition to store-level and session-registered index providers.
 - `BuildExtraIndexDescriptors` is invoked per mapped CLR type and collection during session mapping.
+- Dynamic map descriptors should explicitly provide `IndexType` (and keep `Type` aligned with the index CLR type) so delete/update paths can resolve the target index table.
+- `IndexDescriptor.Map` now uses the signature `Func<object, CancellationToken, Task<IEnumerable<IIndex>>>`.
 - `DocumentCommandHandler` is session-scoped. The default handler is a no-op implementation.

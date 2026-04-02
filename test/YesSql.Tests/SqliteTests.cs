@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Commands;
 using YesSql.Commands.DocumentChanged;
 using YesSql.Indexes;
@@ -133,10 +132,10 @@ namespace YesSql.Tests
             {
                 new IndexDescriptor
                 {
-                    //Type = typeof(Property),
-                    //IndexType = typeof(object),
+                    Type = typeof(PropertyIndex),
+                    IndexType = typeof(PropertyIndex),
                     Filter= (entity) => entity is Property,
-                    Map = (entity) =>
+                    Map = static (entity, _) =>
                     {
                         var property = (Property)entity;
                         return Task.FromResult<IEnumerable<IIndex>>([
@@ -172,15 +171,10 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldBuildDynamicExtraDescriptorsAndInvokeDocumentHooks()
         {
-            await EnsurePropertyIndexTableAsync();
-
             var handler = new RecordingDocumentCommandHandler();
-
-            await using var session = _store.CreateSession();
-            session.DocumentCommandHandler = handler;
-            session.BuildExtraIndexDescriptors = static (type, collection) =>
+            static Task<IEnumerable<IndexDescriptor>> BuildDescriptorsAsync(System.Type type, string collection)
             {
-                if (type != typeof(Property))
+                if (type != typeof(Person))
                 {
                     return Task.FromResult<IEnumerable<IndexDescriptor>>([]);
                 }
@@ -189,42 +183,62 @@ namespace YesSql.Tests
                 [
                     new IndexDescriptor
                     {
-                        Filter = entity => entity is Property,
-                        Map = entity =>
+                        Type = typeof(PersonByName),
+                        IndexType = typeof(PersonByName),
+                        Filter = entity => entity is Person,
+                        Map = static (entity, _) =>
                         {
-                            var property = (Property)entity;
+                            var person = (Person)entity;
                             return Task.FromResult<IEnumerable<IIndex>>(
                             [
-                                new PropertyIndex
+                                new PersonByName
                                 {
-                                    Name = property.Name,
-                                    ForRent = property.ForRent,
-                                    IsOccupied = property.IsOccupied,
-                                    Location = property.Location
+                                    SomeName = person.Firstname
                                 }
                             ]);
                         }
                     }
                 ]);
-            };
+            }
 
-            var property = new Property
+            await using (var session = _store.CreateSession())
             {
-                Name = "hooked",
-                IsOccupied = false,
-                ForRent = true,
-                Location = "A"
-            };
+                var person = new Person
+                {
+                    Firstname = "hooked",
+                    Lastname = "A"
+                };
 
-            await session.SaveAsync(property);
-            await session.SaveChangesAsync();
+                session.DocumentCommandHandler = handler;
+                session.BuildExtraIndexDescriptors = BuildDescriptorsAsync;
 
-            property.Location = "B";
-            await session.SaveAsync(property);
-            await session.SaveChangesAsync();
+                await session.SaveAsync(person);
+                await session.SaveChangesAsync();
+            }
 
-            session.Delete(property);
-            await session.SaveChangesAsync();
+            await using (var session = _store.CreateSession())
+            {
+                session.DocumentCommandHandler = handler;
+                session.BuildExtraIndexDescriptors = BuildDescriptorsAsync;
+
+                var storedPerson = await session.Query<Person, PersonByName>(x => x.SomeName == "hooked").FirstOrDefaultAsync();
+                Assert.NotNull(storedPerson);
+
+                storedPerson.Firstname = "updated";
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                session.DocumentCommandHandler = handler;
+                session.BuildExtraIndexDescriptors = BuildDescriptorsAsync;
+
+                var storedPerson = await session.Query<Person, PersonByName>(x => x.SomeName == "updated").FirstOrDefaultAsync();
+                Assert.NotNull(storedPerson);
+
+                session.Delete(storedPerson);
+                await session.SaveChangesAsync();
+            }
 
             Assert.Contains("create:batch", handler.Events);
             Assert.Contains("update:batch", handler.Events);
