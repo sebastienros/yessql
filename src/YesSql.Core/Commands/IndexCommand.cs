@@ -20,8 +20,8 @@ namespace YesSql.Commands
 
         protected readonly IStore _store;
 
-        private readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
-        private readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
+        private readonly ConcurrentDictionary<CompoundKey, string> _insertsList = new();
+        private readonly ConcurrentDictionary<CompoundKey, string> _updatesList = new();
 
         protected static readonly PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
@@ -31,8 +31,8 @@ namespace YesSql.Commands
         {
             Index = index;
             _store = store;
-            InsertsList = store.TypeService.InsertsList;
-            UpdatesList = store.TypeService.UpdatesList;
+            _insertsList = store.TypeService.InsertsList;
+            _updatesList = store.TypeService.UpdatesList;
             Collection = collection;
         }
 
@@ -75,7 +75,7 @@ namespace YesSql.Commands
                 _store.Configuration.TablePrefix,
                 Collection);
 
-            if (!InsertsList.TryGetValue(key, out var result))
+            if (!_insertsList.TryGetValue(key, out var result))
             {
                 string values;
 
@@ -131,7 +131,7 @@ namespace YesSql.Commands
                     }
                 }
 
-                InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema)} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
+                _insertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema)} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
             }
 
             return result;
@@ -146,7 +146,7 @@ namespace YesSql.Commands
                 _store.Configuration.TablePrefix,
                 Collection);
 
-            if (!UpdatesList.TryGetValue(key, out var result))
+            if (!_updatesList.TryGetValue(key, out var result))
             {
                 var allProperties = TypePropertiesCache(type);
                 var values = new StringBuilder(null);
@@ -161,7 +161,7 @@ namespace YesSql.Commands
                     }
                 }
 
-                UpdatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema)} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
+                _updatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema)} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
             }
 
             return result;
@@ -170,6 +170,5 @@ namespace YesSql.Commands
 
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
-
     }
 }

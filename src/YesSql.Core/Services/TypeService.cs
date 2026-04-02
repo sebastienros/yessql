@@ -102,10 +102,9 @@ namespace YesSql.Services
         {
             return
                 pi.Name != nameof(IIndex.Id) &&
-                // don't read DocumentId when on a MapIndex as it might be used to 
+                // don't read DocumentId when on a MapIndex as it might be used to
                 // read the DocumentId directly from an Index query
-                pi.Name != "DocumentId"
-                ;
+                pi.Name != "DocumentId";
         }
     }
 }

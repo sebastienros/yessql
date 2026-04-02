@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using YesSql.Commands.DocumentChanged;
-
 namespace YesSql.Commands
 {
     public class UpdateDocumentCommand : DocumentCommand
@@ -51,17 +49,7 @@ namespace YesSql.Commands
                 throw new ConcurrencyException(Document);
             }
 
-            var context = new DocumentChangeContext
-            {
-                Session = _session,
-                Entity = _entity,
-                Document = Document,
-                Store = _store,
-                Connection = connection,
-                Transaction = transaction,
-                Dialect = dialect,
-            };
-            await _session.DocumentCommandHandler.UpdatedAsync(context);
+            await _session.DocumentCommandHandler.UpdatedAsync(CreateContext(_session, _entity, _store, connection, transaction, dialect));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
@@ -90,15 +78,7 @@ namespace YesSql.Commands
                 .AddParameter("Content_" + index, Document.Content)
                 .AddParameter("Version_" + index, Document.Version);
 
-            var context = new DocumentChangeInBatchContext
-            {
-                Session = _session,
-                Entity = _entity,
-                Document = Document,
-                BatchCommand = batchCommand,
-                Queries = queries,
-            };
-            _session.DocumentCommandHandler.UpdatedInBatch(context);
+            _session.DocumentCommandHandler.UpdatedInBatch(CreateBatchContext(_session, _entity, batchCommand, queries));
 
             return true;
         }

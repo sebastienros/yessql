@@ -5,16 +5,24 @@ namespace YesSql.Commands
 {
     public class DefaultDocumentCommandHandler : IDocumentCommandHandler
     {
+        public static DefaultDocumentCommandHandler Instance { get; } = new();
+
         public Task CreatedAsync(DocumentChangeContext context) => Task.CompletedTask;
 
-        public bool CreatedInBatch(DocumentChangeInBatchContext context) => true;
+        public void CreatedInBatch(DocumentChangeInBatchContext context)
+        {
+        }
 
         public Task RemovingAsync(DocumentChangeContext context) => Task.CompletedTask;
 
-        public bool RemovingInBatch(DocumentChangeInBatchContext context) => true;
+        public void RemovingInBatch(DocumentChangeInBatchContext context)
+        {
+        }
 
         public Task UpdatedAsync(DocumentChangeContext context) => Task.CompletedTask;
 
-        public bool UpdatedInBatch(DocumentChangeInBatchContext context) => true;
+        public void UpdatedInBatch(DocumentChangeInBatchContext context)
+        {
+        }
     }
 }

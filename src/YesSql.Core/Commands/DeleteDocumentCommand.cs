@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using YesSql.Commands.DocumentChanged;
-
 namespace YesSql.Commands
 {
     public class DeleteDocumentCommand : DocumentCommand
@@ -25,17 +23,7 @@ namespace YesSql.Commands
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
-            var context = new DocumentChangeContext
-            {
-                Session = _session,
-                Entity = _entity,
-                Document = Document,
-                Store = _store,
-                Connection = connection,
-                Transaction = transaction,
-                Dialect = dialect,
-            };
-            await _session.DocumentCommandHandler.RemovingAsync(context);
+            await _session.DocumentCommandHandler.RemovingAsync(CreateContext(_session, _entity, _store, connection, transaction, dialect));
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
             var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} where {dialect.QuoteForColumnName("Id")} = @Id;";
@@ -49,15 +37,7 @@ namespace YesSql.Commands
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
         {
-            var context = new DocumentChangeInBatchContext
-            {
-                Session = _session,
-                Document = Document,
-                Entity = _entity,
-                BatchCommand = command,
-                Queries = queries,
-            };
-            _session.DocumentCommandHandler.RemovingInBatch(context);
+            _session.DocumentCommandHandler.RemovingInBatch(CreateBatchContext(_session, _entity, command, queries));
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 

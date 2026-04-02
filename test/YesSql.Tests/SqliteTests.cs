@@ -108,30 +108,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldIndexPropertyKeys()
         {
-            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
-                var builder = new SchemaBuilder(_store.Configuration, transaction);
-
-                await builder
-                    .DropMapIndexTableAsync<PropertyIndex>();
-
-                await builder
-                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
-                    );
-
-                await builder
-                    .AlterTableAsync(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
-
-                await transaction.CommitAsync();
-            }
+            await EnsurePropertyIndexTableAsync();
 
             _store.RegisterIndexes<PropertyIndexProvider>();
 
@@ -150,32 +127,8 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldIndexByExtraDescriptors()
         {
-            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
+            await EnsurePropertyIndexTableAsync();
 
-                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
-                var builder = new SchemaBuilder(_store.Configuration, transaction);
-
-                await builder
-                    .DropMapIndexTableAsync<PropertyIndex>();
-
-                await builder
-                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
-                    );
-
-                await builder
-                    .AlterTableAsync(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
-
-                await transaction.CommitAsync();
-            }
-
-            //_store.RegisterIndexes<PropertyIndexProvider>();
             var extraDescriptors = new List<IndexDescriptor>
             {
                 new IndexDescriptor
@@ -214,6 +167,140 @@ namespace YesSql.Tests
 
             var ls = await session.Query<Property, PropertyIndex>(x => x.Name == "test").ListAsync();
             Assert.NotEmpty(ls);
+        }
+
+        [Fact]
+        public async Task ShouldBuildDynamicExtraDescriptorsAndInvokeDocumentHooks()
+        {
+            await EnsurePropertyIndexTableAsync();
+
+            var handler = new RecordingDocumentCommandHandler();
+
+            await using var session = _store.CreateSession();
+            session.DocumentCommandHandler = handler;
+            session.BuildExtraIndexDescriptors = static (type, collection) =>
+            {
+                if (type != typeof(Property))
+                {
+                    return Task.FromResult<IEnumerable<IndexDescriptor>>([]);
+                }
+
+                return Task.FromResult<IEnumerable<IndexDescriptor>>(
+                [
+                    new IndexDescriptor
+                    {
+                        Filter = entity => entity is Property,
+                        Map = entity =>
+                        {
+                            var property = (Property)entity;
+                            return Task.FromResult<IEnumerable<IIndex>>(
+                            [
+                                new PropertyIndex
+                                {
+                                    Name = property.Name,
+                                    ForRent = property.ForRent,
+                                    IsOccupied = property.IsOccupied,
+                                    Location = property.Location
+                                }
+                            ]);
+                        }
+                    }
+                ]);
+            };
+
+            var property = new Property
+            {
+                Name = "hooked",
+                IsOccupied = false,
+                ForRent = true,
+                Location = "A"
+            };
+
+            await session.SaveAsync(property);
+            await session.SaveChangesAsync();
+
+            property.Location = "B";
+            await session.SaveAsync(property);
+            await session.SaveChangesAsync();
+
+            session.Delete(property);
+            await session.SaveChangesAsync();
+
+            Assert.Contains("create:batch", handler.Events);
+            Assert.Contains("update:batch", handler.Events);
+            Assert.Contains("delete:batch", handler.Events);
+            Assert.All(handler.Documents, static document => Assert.True(document.Id > 0));
+        }
+
+        private async Task EnsurePropertyIndexTableAsync()
+        {
+            await using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
+            var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+            await builder
+                .DropMapIndexTableAsync<PropertyIndex>();
+
+            await builder
+                .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                    .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
+                    .Column<bool>(nameof(PropertyIndex.ForRent))
+                    .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                    .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
+                );
+
+            await builder
+                .AlterTableAsync(nameof(PropertyIndex), table => table
+                    .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+
+            await transaction.CommitAsync();
+        }
+
+        private sealed class RecordingDocumentCommandHandler : IDocumentCommandHandler
+        {
+            public List<string> Events { get; } = [];
+            public List<Document> Documents { get; } = [];
+
+            public Task CreatedAsync(DocumentChangeContext context)
+            {
+                Record("create", context.Document);
+                return Task.CompletedTask;
+            }
+
+            public void CreatedInBatch(DocumentChangeInBatchContext context)
+            {
+                Record("create:batch", context.Document);
+            }
+
+            public Task RemovingAsync(DocumentChangeContext context)
+            {
+                Record("delete", context.Document);
+                return Task.CompletedTask;
+            }
+
+            public void RemovingInBatch(DocumentChangeInBatchContext context)
+            {
+                Record("delete:batch", context.Document);
+            }
+
+            public Task UpdatedAsync(DocumentChangeContext context)
+            {
+                Record("update", context.Document);
+                return Task.CompletedTask;
+            }
+
+            public void UpdatedInBatch(DocumentChangeInBatchContext context)
+            {
+                Record("update:batch", context.Document);
+            }
+
+            private void Record(string action, Document document)
+            {
+                Events.Add(action);
+                Documents.Add(document);
+            }
         }
     }
 }

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using YesSql.Commands.DocumentChanged;
 
 namespace YesSql.Commands
 {
@@ -34,18 +33,7 @@ namespace YesSql.Commands
                 logger.LogTrace(insertCmd);
             }
             await connection.ExecuteAsync(new CommandDefinition(insertCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
-
-            var context = new DocumentChangeContext
-            {
-                Session = _session,
-                Entity = _entity,
-                Document = Document,
-                Store = _store,
-                Connection = connection,
-                Transaction = transaction,
-                Dialect = dialect,
-            };
-            await _session.DocumentCommandHandler.CreatedAsync(context);
+            await _session.DocumentCommandHandler.CreatedAsync(CreateContext(_session, _entity, _store, connection, transaction, dialect));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
@@ -61,15 +49,7 @@ namespace YesSql.Commands
                 .AddParameter("Content_" + index, Document.Content)
                 .AddParameter("Version_" + index, Document.Version);
 
-            var context = new DocumentChangeInBatchContext
-            {
-                Session = _session,
-                Document = Document,
-                Entity = _entity,
-                BatchCommand = batchCommand,
-                Queries = queries,
-            };
-            _session.DocumentCommandHandler.CreatedInBatch(context);
+            _session.DocumentCommandHandler.CreatedInBatch(CreateBatchContext(_session, _entity, batchCommand, queries));
 
             return true;
         }

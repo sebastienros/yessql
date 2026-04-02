@@ -4,7 +4,6 @@ using System.Data;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using YesSql.Commands;
 using YesSql.Indexes;
 
 namespace YesSql
@@ -12,7 +11,7 @@ namespace YesSql
     /// <summary>
     /// Represents a connection to the document store.
     /// </summary>
-    public interface ISession : IDisposable, IAsyncDisposable
+    public interface ISession : IDisposable, IAsyncDisposable, ISessionExtensionProvider, IDocumentCommandSession
     {
         /// <summary>
         /// Saves a new or existing object to the store, and updates
@@ -151,9 +150,5 @@ namespace YesSql
         /// Gets the <see cref="Store" /> instance that created this session. 
         /// </summary>
         IStore Store { get; }
-
-        IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; }
-        Func<Type, string, Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
-        IDocumentCommandHandler DocumentCommandHandler { get; set; }
     }
 }

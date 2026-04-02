@@ -57,7 +57,7 @@ namespace YesSql
             {
                 [string.Empty] = _defaultState
             };
-            DocumentCommandHandler = new DefaultDocumentCommandHandler();
+            DocumentCommandHandler = DefaultDocumentCommandHandler.Instance;
         }
 
         public ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null)
@@ -1332,15 +1332,6 @@ namespace YesSql
                 _descriptors.Add(cacheKey, typedDescriptors);
             }
 
-            if (BuildExtraIndexDescriptors != null)
-            {
-                var dynamicIndexDes = await BuildExtraIndexDescriptors(t, collection);
-                if (dynamicIndexDes != null)
-                {
-                    return typedDescriptors.Union(ExtraIndexDescriptors.Union(dynamicIndexDes));
-                }
-            }
-
             var descriptors = typedDescriptors;
 
             if (ExtraIndexDescriptors != null)
@@ -1348,6 +1339,14 @@ namespace YesSql
                 descriptors = descriptors.Union(ExtraIndexDescriptors);
             }
 
+            if (BuildExtraIndexDescriptors != null)
+            {
+                var dynamicIndexDescriptors = await BuildExtraIndexDescriptors(t, collection);
+                if (dynamicIndexDescriptors != null)
+                {
+                    descriptors = descriptors.Union(dynamicIndexDescriptors);
+                }
+            }
             return descriptors;
         }
 

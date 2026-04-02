@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using YesSql.Commands;
 using YesSql.Serialization;
-
 namespace YesSql
 {
     /// <summary>
@@ -20,7 +19,6 @@ namespace YesSql
         /// Gets the type represented by a string.
         /// </summary>
         Type this[string s] { get; }
-
 
         ConcurrentDictionary<CompoundKey, string> InsertsList { get; set; }
         ConcurrentDictionary<CompoundKey, string> UpdatesList { get; set; }

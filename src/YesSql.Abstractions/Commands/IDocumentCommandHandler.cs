@@ -6,11 +6,11 @@ namespace YesSql.Commands
     public interface IDocumentCommandHandler
     {
         Task CreatedAsync(DocumentChangeContext context);
-        bool CreatedInBatch(DocumentChangeInBatchContext context);
+        void CreatedInBatch(DocumentChangeInBatchContext context);
       
         Task RemovingAsync(DocumentChangeContext context);
-        bool RemovingInBatch(DocumentChangeInBatchContext context);
+        void RemovingInBatch(DocumentChangeInBatchContext context);
         Task UpdatedAsync(DocumentChangeContext context);
-        bool UpdatedInBatch(DocumentChangeInBatchContext context);
+        void UpdatedInBatch(DocumentChangeInBatchContext context);
     }
 }
