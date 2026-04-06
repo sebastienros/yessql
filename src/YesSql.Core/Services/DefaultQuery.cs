@@ -1237,6 +1237,11 @@ namespace YesSql.Services
                 return FirstOrDefaultImpl(cancellationToken);
             }
 
+            Task<T> IQuery<T>.FirstOrDefaultAsync()
+            {
+                return FirstOrDefaultImpl(CancellationToken.None);
+            }
+
             protected async Task<T> FirstOrDefaultImpl(CancellationToken cancellationToken = default)
             {
                 // Flush any pending changes before doing a query (auto-flush)
@@ -1321,6 +1326,11 @@ namespace YesSql.Services
                 return ListImpl(cancellationToken);
             }
 
+            Task<IEnumerable<T>> IQuery<T>.ListAsync()
+            {
+                return ListImpl(CancellationToken.None);
+            }
+
 #pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
             async IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
 #pragma warning restore CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
@@ -1330,6 +1340,11 @@ namespace YesSql.Services
                 {
                     yield return item;
                 }
+            }
+
+            IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
+            {
+                return ((IQuery<T>)this).ToAsyncEnumerable(CancellationToken.None);
             }
 
             internal async Task<IEnumerable<T>> ListImpl(CancellationToken cancellationToken)
@@ -1505,6 +1520,11 @@ namespace YesSql.Services
                 return _query.CountAsync(cancellationToken);
             }
 
+            Task<int> IQuery<T>.CountAsync()
+            {
+                return _query.CountAsync(CancellationToken.None);
+            }
+
             IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)
             {
                 // Scope the currentPredicate so multiple calls will not act on the new predicate.
@@ -1631,9 +1651,19 @@ namespace YesSql.Services
                 return FirstOrDefaultImpl(cancellationToken);
             }
 
+            Task<T> IQueryIndex<T>.FirstOrDefaultAsync()
+            {
+                return FirstOrDefaultImpl(CancellationToken.None);
+            }
+
             Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
             {
                 return ListImpl(cancellationToken);
+            }
+
+            Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
+            {
+                return ListImpl(CancellationToken.None);
             }
 
 #pragma warning disable CS8425 // Async-iterator member has one or more parameters of type 'CancellationToken' but none of them is decorated with the 'EnumeratorCancellation' attribute, so the cancellation token parameter from the generated 'IAsyncEnumerable<>.GetAsyncEnumerator' will be unconsumed
@@ -1645,6 +1675,11 @@ namespace YesSql.Services
                 {
                     yield return item;
                 }
+            }
+
+            IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable()
+            {
+                return ((IQueryIndex<T>)this).ToAsyncEnumerable(CancellationToken.None);
             }
 
             IQueryIndex<T> IQueryIndex<T>.Skip(int count)
@@ -1678,6 +1713,11 @@ namespace YesSql.Services
             async Task<int> IQueryIndex<T>.CountAsync(CancellationToken cancellationToken)
             {
                 return await _query.CountAsync(cancellationToken);
+            }
+
+            Task<int> IQueryIndex<T>.CountAsync()
+            {
+                return _query.CountAsync(CancellationToken.None);
             }
 
             IQueryIndex<TIndex> IQueryIndex<T>.With<TIndex>()

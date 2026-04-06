@@ -89,9 +89,21 @@ namespace YesSql
         Task<T> FirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Executes the query and returns the first result matching the constraints.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        Task<T> FirstOrDefaultAsync();
+
+        /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
         Task<IEnumerable<T>> ListAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Executes the query and returns all documents matching the constraints.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        Task<IEnumerable<T>> ListAsync();
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
@@ -99,9 +111,21 @@ namespace YesSql
         IAsyncEnumerable<T> ToAsyncEnumerable(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Executes the query and returns all documents matching the constraints.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        IAsyncEnumerable<T> ToAsyncEnumerable();
+
+        /// <summary>
         /// Executes a that returns the number of documents matching the constraints.
         /// </summary>
         Task<int> CountAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Executes a that returns the number of documents matching the constraints.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        Task<int> CountAsync();
 
         /// <summary>
         /// Returns the SQL alias currently used for the specified index type.
@@ -188,9 +212,21 @@ namespace YesSql
         Task<T> FirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Returns the first result only, if it exists.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        Task<T> FirstOrDefaultAsync();
+
+        /// <summary>
         /// Executes the query.
         /// </summary>
         Task<IEnumerable<T>> ListAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Executes the query.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        Task<IEnumerable<T>> ListAsync();
 
         /// <summary>
         /// Executes the query for asynchronous iteration.
@@ -199,9 +235,22 @@ namespace YesSql
         IAsyncEnumerable<T> ToAsyncEnumerable(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Executes the query for asynchronous iteration.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        /// <returns></returns>
+        IAsyncEnumerable<T> ToAsyncEnumerable();
+
+        /// <summary>
         /// Returns the number of results only.
         /// </summary>
         Task<int> CountAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Returns the number of results only.
+        /// Kept for source/binary compatibility with older consumers.
+        /// </summary>
+        Task<int> CountAsync();
     }
 
     /// <summary>
