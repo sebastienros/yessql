@@ -1,11 +1,12 @@
 using System;
 
-namespace YesSql
+namespace YesSql;
+
+public interface IIndexColumnTypeAccessor
 {
-    public interface IIndexColumnTypeAccessor
-    {
-        void SetIndexColumnType(Type indexType, string collection, string columnName, Type dbType);
-        bool TryGetIndexColumnType(Type indexType, string collection, string columnName, out Type dbType);
-        void RemoveIndexColumnTypes(Type indexType, string collection);
-    }
+    void SetIndexColumnType(Type indexType, string collection, string columnName, Type dbType);
+
+    bool TryGetIndexColumnType(Type indexType, string collection, string columnName, out Type dbType);
+
+    void RemoveIndexColumnTypes(Type indexType, string collection);
 }
