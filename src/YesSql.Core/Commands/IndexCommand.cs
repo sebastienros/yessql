@@ -48,7 +48,7 @@ namespace YesSql.Commands
             UpdatesList.Clear();
         }
 
-        protected static void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
+        protected static void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect, IConfiguration configuration, string collection)
         {
             var type = item.GetType();
 
@@ -60,10 +60,39 @@ namespace YesSql.Commands
 
                 var parameter = command.CreateParameter();
                 parameter.ParameterName = property.Name + suffix;
-                parameter.Value = dialect.TryConvert(value) ?? DBNull.Value;
-                parameter.DbType = dialect.ToDbType(property.PropertyType);
+                var dbType = GetColumnDbType(configuration, type, collection, property);
+                parameter.Value = ConvertValue(dialect, value, dbType) ?? DBNull.Value;
+                parameter.DbType = dialect.ToDbType(dbType);
                 command.Parameters.Add(parameter);
             }
+        }
+
+        protected static Type GetColumnDbType(IConfiguration configuration, Type indexType, string collection, PropertyInfo property)
+        {
+            if (configuration is IIndexColumnTypeAccessor accessor &&
+                accessor.TryGetIndexColumnType(indexType, collection, property.Name, out var dbType))
+            {
+                return dbType;
+            }
+
+            return property.PropertyType;
+        }
+
+        protected static object ConvertValue(ISqlDialect dialect, object value, Type dbType)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            var normalizedDbType = Nullable.GetUnderlyingType(dbType) ?? dbType;
+
+            if (normalizedDbType == typeof(string) && value.GetType().IsEnum)
+            {
+                return value.ToString();
+            }
+
+            return dialect.TryConvert(value);
         }
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)

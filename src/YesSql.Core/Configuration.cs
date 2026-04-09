@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using YesSql.Data;
@@ -9,8 +10,10 @@ using YesSql.Services;
 
 namespace YesSql
 {
-    public class Configuration : IConfiguration
+    public class Configuration : IConfiguration, IIndexColumnTypeAccessor
     {
+        private readonly ConcurrentDictionary<(Type IndexType, string Collection, string ColumnName), Type> _indexColumnTypes = new();
+
         public Configuration()
         {
             IdentifierAccessorFactory = new PropertyAccessorFactory("Id");
@@ -44,5 +47,28 @@ namespace YesSql
         public ICommandInterpreter CommandInterpreter { get; set; }
         public ISqlDialect SqlDialect { get; set; }
         public IdentityColumnSize IdentityColumnSize { get; set; } = IdentityColumnSize.Int32;
+
+        public void SetIndexColumnType(Type indexType, string collection, string columnName, Type dbType)
+        {
+            _indexColumnTypes[(indexType, collection ?? string.Empty, columnName)] = dbType;
+        }
+
+        public bool TryGetIndexColumnType(Type indexType, string collection, string columnName, out Type dbType)
+        {
+            return _indexColumnTypes.TryGetValue((indexType, collection ?? string.Empty, columnName), out dbType);
+        }
+
+        public void RemoveIndexColumnTypes(Type indexType, string collection)
+        {
+            var normalizedCollection = collection ?? string.Empty;
+
+            foreach (var entry in _indexColumnTypes.Keys)
+            {
+                if (entry.IndexType == indexType && entry.Collection == normalizedCollection)
+                {
+                    _indexColumnTypes.TryRemove(entry, out _);
+                }
+            }
+        }
     }
 }

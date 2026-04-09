@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using System.Threading.Tasks;
 using YesSql.Sql.Schema;
 
@@ -10,6 +11,7 @@ namespace YesSql.Sql
 {
     public class SchemaBuilder : ISchemaBuilder
     {
+        private readonly IConfiguration _configuration;
         private readonly ICommandInterpreter _commandInterpreter;
         private readonly ILogger _logger;
 
@@ -23,6 +25,7 @@ namespace YesSql.Sql
 
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
         {
+            _configuration = configuration;
             Transaction = transaction;
             _logger = configuration.Logger;
             Connection = Transaction.Connection;
@@ -51,6 +54,7 @@ namespace YesSql.Sql
                     ;
 
                 table(createTable);
+                TrackIndexColumnTypes(indexType, collection, createTable.TableCommands.OfType<IColumnCommand>());
                 await ExecuteAsync(_commandInterpreter.CreateSql(createTable));
 
                 await CreateForeignKeyAsync("FK_" + (collection ?? "") + indexName, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
@@ -83,6 +87,7 @@ namespace YesSql.Sql
                     ;
 
                 table(createTable);
+                TrackIndexColumnTypes(indexType, collection, createTable.TableCommands.OfType<IColumnCommand>());
                 await ExecuteAsync(_commandInterpreter.CreateSql(createTable));
 
                 var bridgeTableName = indexTable + "_" + documentTable;
@@ -124,6 +129,7 @@ namespace YesSql.Sql
                 }
 
                 await DropTableAsync(bridgeTableName);
+                RemoveIndexColumnTypes(indexType, collection);
                 await DropTableAsync(indexTable);
             }
             catch
@@ -147,6 +153,7 @@ namespace YesSql.Sql
                     await DropForeignKeyAsync(indexTable, "FK_" + (collection ?? string.Empty) + indexName);
                 }
 
+                RemoveIndexColumnTypes(indexType, collection);
                 await DropTableAsync(indexTable);
             }
             catch
@@ -194,8 +201,21 @@ namespace YesSql.Sql
 
         public async Task AlterIndexTableAsync(Type indexType, Action<IAlterTableCommand> table, string collection)
         {
-            var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
-            await AlterTableAsync(indexTable, table);
+            try
+            {
+                var indexTable = TableNameConvention.GetIndexTable(indexType, collection);
+                var alterTable = new AlterTableCommand(Prefix(indexTable), Dialect, TablePrefix);
+                table(alterTable);
+                TrackIndexColumnTypes(indexType, collection, alterTable.TableCommands.OfType<IColumnCommand>());
+                await ExecuteAsync(_commandInterpreter.CreateSql(alterTable));
+            }
+            catch
+            {
+                if (ThrowOnError)
+                {
+                    throw;
+                }
+            }
         }
 
         public async Task DropTableAsync(string name)
@@ -342,6 +362,28 @@ namespace YesSql.Sql
                 await Connection.ExecuteAsync(statement, null, Transaction);
             }
         }
+
+        private void TrackIndexColumnTypes(Type indexType, string collection, IEnumerable<IColumnCommand> columns)
+        {
+            if (_configuration is not IIndexColumnTypeAccessor accessor)
+            {
+                return;
+            }
+
+            foreach (var column in columns)
+            {
+                accessor.SetIndexColumnType(indexType, collection, column.ColumnName, column.DbType);
+            }
+        }
+
+        private void RemoveIndexColumnTypes(Type indexType, string collection)
+        {
+            if (_configuration is IIndexColumnTypeAccessor accessor)
+            {
+                accessor.RemoveIndexColumnTypes(indexType, collection);
+            }
+        }
+
         private string Prefix(string table)
             => TablePrefix + table;
     }

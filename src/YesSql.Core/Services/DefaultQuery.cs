@@ -37,6 +37,7 @@ namespace YesSql.Services
         public List<Action<object, ISqlBuilder>> _parameterBindings;
         public string _collection;
         public IStore _store;
+        public Type _expectedDbType;
         internal CompositeNode _predicate; // the default root predicate is an AND expression
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
@@ -119,6 +120,7 @@ namespace YesSql.Services
 
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
+            clone._expectedDbType = _expectedDbType;
 
             return clone;
         }
@@ -309,7 +311,7 @@ namespace YesSql.Services
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
                         builder.Append(" = ");
-                        query.ConvertFragment(builder, Expression.Constant(values[0]));
+                        query.ConvertFragment(builder, Expression.Constant(values[0]), query.GetExpectedDbType(expression.Arguments[0]));
                     }
                     else
                     {
@@ -317,7 +319,7 @@ namespace YesSql.Services
                         var elements = new RentedStringBuilder(128);
                         for (var i = 0; i < values.Count; i++)
                         {
-                            query.ConvertFragment(elements, Expression.Constant(values[i]));
+                            query.ConvertFragment(elements, Expression.Constant(values[i]), query.GetExpectedDbType(expression.Arguments[0]));
                             if (i < values.Count - 1)
                             {
                                 elements.Append(", ");
@@ -350,7 +352,7 @@ namespace YesSql.Services
                     {
                         query.ConvertFragment(builder, expression.Arguments[0]);
                         builder.Append(" <> ");
-                        query.ConvertFragment(builder, Expression.Constant(values[0]));
+                        query.ConvertFragment(builder, Expression.Constant(values[0]), query.GetExpectedDbType(expression.Arguments[0]));
                     }
                     else
                     {
@@ -358,7 +360,7 @@ namespace YesSql.Services
                         var elements = new RentedStringBuilder(128);
                         for (var i = 0; i < values.Count; i++)
                         {
-                            query.ConvertFragment(elements, Expression.Constant(values[i]));
+                            query.ConvertFragment(elements, Expression.Constant(values[i]), query.GetExpectedDbType(expression.Arguments[0]));
                             if (i < values.Count - 1)
                             {
                                 elements.Append(", ");
@@ -606,17 +608,18 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                        var expectedDbType = _queryState._expectedDbType;
 
                         _queryState._parameterBindings.Add((o, sqlBuilder) =>
                         {
                             var localValue = ((FieldInfo)memberExpression.Member).GetValue(o);
 
-                            sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
+                            sqlBuilder.Parameters[_parameterName] = convertValue ? ConvertValue(localValue, expectedDbType) : localValue;
                         });
 
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
 
-                        return Expression.Constant(convertValue ? _dialect.TryConvert(value) : value);
+                        return Expression.Constant(convertValue ? ConvertValue(value, expectedDbType) : value);
                     }
                     else if (memberExpression.Member.MemberType == MemberTypes.Property)
                     {
@@ -643,17 +646,18 @@ namespace YesSql.Services
                         // Create a delegate that will be invoked every time a compiled query is reused,
                         // which will re-evaluate the current node, for the current parameter.
                         var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
+                        var expectedDbType = _queryState._expectedDbType;
 
                         _queryState._parameterBindings.Add((o, sqlBuilder) =>
                         {
                             var localValue = ((PropertyInfo)memberExpression.Member).GetValue(o);
 
-                            sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
+                            sqlBuilder.Parameters[_parameterName] = convertValue ? ConvertValue(localValue, expectedDbType) : localValue;
                         });
 
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
 
-                        return Expression.Constant(convertValue ? _dialect.TryConvert(value) : value);
+                        return Expression.Constant(convertValue ? ConvertValue(value, expectedDbType) : value);
                     }
                     break;
             }
@@ -823,7 +827,7 @@ namespace YesSql.Services
                 case ExpressionType.Constant:
                     _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
                     var value = ((ConstantExpression)expression).Value;
-                    _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(value));
+                    _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, ConvertValue(value, _queryState._expectedDbType));
                     builder.Append(_queryState._lastParameterName);
                     break;
                 case ExpressionType.Call:
@@ -847,7 +851,7 @@ namespace YesSql.Services
             void AddConstantParameter(ConstantExpression expression)
             {
                 _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(expression.Value));
+                _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, ConvertValue(expression.Value, _queryState._expectedDbType));
 
                 builder.Append(_queryState._lastParameterName);
             }
@@ -867,7 +871,7 @@ namespace YesSql.Services
                     value = ((FieldInfo)expression.Member).GetValue(obj.Value);
                 }
 
-                builder.Append(_dialect.GetSqlValue(value));
+                builder.Append(_dialect.GetSqlValue(ConvertValue(value, _queryState._expectedDbType)));
             }
         }
 
@@ -1011,9 +1015,23 @@ namespace YesSql.Services
             }
 
             builder.Append("(");
-            ConvertFragment(builder, expression.Left);
+            if (TryGetExpectedDbType(expression.Right, out var leftExpectedDbType))
+            {
+                ConvertFragment(builder, expression.Left, leftExpectedDbType);
+            }
+            else
+            {
+                ConvertFragment(builder, expression.Left);
+            }
             builder.Append(operation);
-            ConvertFragment(builder, expression.Right);
+            if (TryGetExpectedDbType(expression.Left, out var rightExpectedDbType))
+            {
+                ConvertFragment(builder, expression.Right, rightExpectedDbType);
+            }
+            else
+            {
+                ConvertFragment(builder, expression.Right);
+            }
             builder.Append(")");
 
             bool IsNull(Expression e)
@@ -1088,6 +1106,62 @@ namespace YesSql.Services
             ConvertFragment(builder, RemoveUnboxing(keySelector.Body));
             _queryState._sqlBuilder.OrderByDescending(builder.ToString());
             builder.Dispose();
+        }
+
+        private void ConvertFragment(IStringBuilder builder, Expression expression, Type expectedDbType)
+        {
+            var previousExpectedDbType = _queryState._expectedDbType;
+
+            try
+            {
+                _queryState._expectedDbType = expectedDbType;
+                ConvertFragment(builder, expression);
+            }
+            finally
+            {
+                _queryState._expectedDbType = previousExpectedDbType;
+            }
+        }
+
+        private bool TryGetExpectedDbType(Expression expression, out Type expectedDbType)
+        {
+            expression = RemoveUnboxing(expression);
+
+            if (expression is MemberExpression memberExpression &&
+                _queryState.GetBindings().LastOrDefault() is { } boundType &&
+                _session.Store.Configuration is IIndexColumnTypeAccessor accessor &&
+                accessor.TryGetIndexColumnType(boundType, _queryState._collection, memberExpression.Member.Name, out expectedDbType))
+            {
+                return true;
+            }
+
+            expectedDbType = null;
+            return false;
+        }
+
+        private Type GetExpectedDbType(Expression expression)
+            => TryGetExpectedDbType(expression, out var expectedDbType) ? expectedDbType : null;
+
+        private object ConvertValue(object value, Type expectedDbType)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            if (expectedDbType == null)
+            {
+                return _dialect.TryConvert(value);
+            }
+
+            var normalizedDbType = Nullable.GetUnderlyingType(expectedDbType) ?? expectedDbType;
+
+            if (normalizedDbType == typeof(string) && value.GetType().IsEnum)
+            {
+                return value.ToString();
+            }
+
+            return _dialect.TryConvert(value);
         }
 
         private void OrderByRandom()
