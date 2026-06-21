@@ -6,8 +6,9 @@
       <MicrosoftDataSqlClientPackageVersion>6.1.4</MicrosoftDataSqlClientPackageVersion>
       <MySqlConnectorPackageVersion>2.5.0</MySqlConnectorPackageVersion>
       <!-- It's necessary to use the prerelease version of Microsoft.Data.Sqlite until v11 is released, because its
-           indicrect dependency "SQLitePCLRaw.lib.e_sqlite3" has a known high severity vulnerability. See the advisory
-           at https://github.com/advisories/GHSA-2m69-gcr7-jv3q for more details. -->
+           indicrect dependency "SQLitePCLRaw.lib.e_sqlite3" has a known high severity vulnerability. See
+           https://github.com/advisories/GHSA-2m69-gcr7-jv3q and https://github.com/sebastienros/yessql/issues/708 for
+           more details. -->
       <MicrosoftDataSqlitePackageVersion>11.0.0-preview.5.26302.115</MicrosoftDataSqlitePackageVersion>
       <NpgsqlPackageVersion>10.0.1</NpgsqlPackageVersion>
       <ParlotPackageVersion>1.5.7</ParlotPackageVersion>
