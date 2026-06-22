@@ -57,11 +57,9 @@ jobs:
     - name: Get the version
       id: get_version
       run: |
-        arrTag=(${GITHUB_REF//\// })
-        VERSION="${arrTag[2]}"
-        VERSION="${VERSION#v}"
-        echo VERSION:${VERSION}
-        echo ::set-output name=VERSION::${VERSION}
+        # Strip leading 'v' if present
+        VERSION="${GITHUB_REF_NAME#v}"
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
       shell: bash
       
     - name: Build
