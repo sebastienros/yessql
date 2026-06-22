@@ -6,6 +6,7 @@
       <MicrosoftDataSqlClientPackageVersion>7.0.1</MicrosoftDataSqlClientPackageVersion>
       <MySqlConnectorPackageVersion>2.5.0</MySqlConnectorPackageVersion>
       <MicrosoftDataSqlitePackageVersion>10.0.9</MicrosoftDataSqlitePackageVersion>
+      <SQLitePCLRawBundleESqlite3PackageVersion>3.0.3</SQLitePCLRawBundleESqlite3PackageVersion>
       <NpgsqlPackageVersion>10.0.3</NpgsqlPackageVersion>
       <ParlotPackageVersion>1.5.7</ParlotPackageVersion>
   </PropertyGroup>

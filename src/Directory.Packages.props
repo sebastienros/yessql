@@ -5,7 +5,8 @@
   <ItemGroup>
     <PackageVersion Include="Parlot" Version="$(ParlotPackageVersion)" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="$(MicrosoftDataSqlClientPackageVersion)" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="$(MicrosoftDataSqlitePackageVersion)" />
+    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="$(MicrosoftDataSqlitePackageVersion)" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="$(SQLitePCLRawBundleESqlite3PackageVersion)" />
     <PackageVersion Include="Npgsql" Version="$(NpgsqlPackageVersion)" />
     <PackageVersion Include="MySqlConnector" Version="$(MySqlConnectorPackageVersion)" />
     <PackageVersion Include="Dapper.StrongName" Version="$(DapperStrongNamePackageVersion)" />
@@ -16,16 +17,5 @@
 
   <ItemGroup>
     <GlobalPackageReference Include="Meziantou.Analyzer" Version="2.0.298" />
-  </ItemGroup>
-
-  <!-- Transitive audit suppress: Microsoft.Data.Sqlite → SQLitePCLRaw.lib.e_sqlite3 2.1.11
-  is flagged by NuGetAudit (GHSA-2m69-gcr7-jv3q, CVE-2025-6965 — SQLite < 3.50.2
-  memory corruption in aggregate-term handling). No patched version of
-  SQLitePCLRaw.lib.e_sqlite3 is available on NuGet: 3.50.3 was published then unlisted,
-  and 2.1.11 remains the latest stable release. This suppress will be removed once
-  Microsoft ships a Microsoft.Data.Sqlite release that pins a non-vulnerable
-  SQLitePCLRaw.lib.e_sqlite3. Track: https://github.com/dotnet/efcore/issues/38257 -->
-  <ItemGroup>
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
   </ItemGroup>
 </Project>
