@@ -31,7 +31,7 @@ namespace YesSql.Tests
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
                 .SetIdentityColumnSize(IdentityColumnSize.Int64)
-                ;
+                .WithThreadSafetyChecks();
         }
 
         [Fact]

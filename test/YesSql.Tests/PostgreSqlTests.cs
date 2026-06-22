@@ -32,8 +32,8 @@ namespace YesSql.Tests
                 .UsePostgreSql(ConnectionStringBuilder.ConnectionString, "BabyYoda")
                 .SetTablePrefix(TablePrefix)
                 .UseBlockIdGenerator()
-                .SetIdentityColumnSize(IdentityColumnSize.Int64)
-                ;
+                .WithThreadSafetyChecks()
+                .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
 
         [Fact(Skip = "Postgres locks on the table")]
