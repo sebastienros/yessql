@@ -7360,6 +7360,80 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public virtual async Task ShouldReleaseTransactionWhenDocumentListQueryFails()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using var session = _store.CreateSession();
+
+            await session.SaveAsync(new Person { Firstname = "Bill", Lastname = "Gates" });
+
+            // Force a transaction to be opened.
+            await session.FlushAsync();
+
+            Assert.NotNull(session.CurrentTransaction);
+
+            // Inject invalid SQL so the database rejects the query while it executes.
+            await Assert.ThrowsAnyAsync<DbException>(async () =>
+            {
+                await session.Query<Person>().With<PersonByName>().Where("ThisColumnDoesNotExist = 1").ListAsync();
+            });
+
+            // The failing query should have canceled the session and released the transaction.
+            Assert.Null(session.CurrentTransaction);
+        }
+
+        [Fact]
+        public virtual async Task ShouldReleaseTransactionWhenIndexListQueryFails()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using var session = _store.CreateSession();
+
+            await session.SaveAsync(new Person { Firstname = "Bill", Lastname = "Gates" });
+
+            // Force a transaction to be opened.
+            await session.FlushAsync();
+
+            Assert.NotNull(session.CurrentTransaction);
+
+            // Inject invalid SQL so the database rejects the query while it executes.
+            await Assert.ThrowsAnyAsync<DbException>(async () =>
+            {
+                await session.QueryIndex<PersonByName>().Where("ThisColumnDoesNotExist = 1").ListAsync();
+            });
+
+            // The failing query should have canceled the session and released the transaction.
+            Assert.Null(session.CurrentTransaction);
+        }
+
+        [Fact]
+        public virtual async Task ShouldReleaseTransactionWhenStreamingQueryFails()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using var session = _store.CreateSession();
+
+            await session.SaveAsync(new Person { Firstname = "Bill", Lastname = "Gates" });
+
+            // Force a transaction to be opened.
+            await session.FlushAsync();
+
+            Assert.NotNull(session.CurrentTransaction);
+
+            // Inject invalid SQL so the database rejects the query while it is being streamed.
+            await Assert.ThrowsAnyAsync<DbException>(async () =>
+            {
+                await foreach (var _ in session.QueryIndex<PersonByName>().Where("ThisColumnDoesNotExist = 1").ToAsyncEnumerable())
+                {
+                }
+            });
+
+            // The failing query should have canceled the session and released the transaction.
+            Assert.Null(session.CurrentTransaction);
+        }
+
+        [Fact]
         public async Task ShouldCompareDateTimeOffsetWithDateTime()
         {
             var testDateTime = new DateTime(2021, 6, 15, 14, 30, 0, DateTimeKind.Utc);

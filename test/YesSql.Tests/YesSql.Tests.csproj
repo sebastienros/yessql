@@ -16,6 +16,8 @@
         <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../../src/YesSqlKey.snk</AssemblyOriginatorKeyFile>
+        <!-- Tests favor LINQ-style assertions (e.g. (await query.ListAsync()).Count()) over the indexer/Count property. -->
+        <NoWarn>$(NoWarn);CA1826;CA1829</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

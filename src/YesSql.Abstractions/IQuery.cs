@@ -91,7 +91,10 @@ namespace YesSql
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync(CancellationToken cancellationToken = default);
+        /// <remarks>
+        /// The results are buffered in memory. Use <see cref="ToAsyncEnumerable(CancellationToken)"/> to stream them instead.
+        /// </remarks>
+        Task<IReadOnlyList<T>> ListAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
@@ -190,7 +193,10 @@ namespace YesSql
         /// <summary>
         /// Executes the query.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync(CancellationToken cancellationToken = default);
+        /// <remarks>
+        /// The results are buffered in memory. Use <see cref="ToAsyncEnumerable(CancellationToken)"/> to stream them instead.
+        /// </remarks>
+        Task<IReadOnlyList<T>> ListAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes the query for asynchronous iteration.

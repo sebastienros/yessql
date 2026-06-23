@@ -1317,7 +1317,7 @@ namespace YesSql.Services
                 }
             }
 
-            async Task<IEnumerable<T>> IQuery<T>.ListAsync(CancellationToken cancellationToken)
+            async Task<IReadOnlyList<T>> IQuery<T>.ListAsync(CancellationToken cancellationToken)
             {
                 var results = new List<T>();
                 await foreach (var item in ListImpl(cancellationToken))
@@ -1374,8 +1374,34 @@ namespace YesSql.Services
                             logger.LogDebug(sql);
                         }
 
-                        await foreach (var item in connection.QueryUnbufferedAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
+                        // Stream the results without buffering them. The enumeration is driven manually so that
+                        // a failure while reading from the database still cancels the session (releasing the
+                        // transaction), as 'yield return' cannot be used inside a try/catch block.
+                        var enumerable = connection.QueryUnbufferedAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
+
+                        await using var enumerator = enumerable.GetAsyncEnumerator(cancellationToken);
+
+                        while (true)
                         {
+                            T item;
+
+                            try
+                            {
+                                if (!await enumerator.MoveNextAsync())
+                                {
+                                    break;
+                                }
+
+                                item = enumerator.Current;
+                            }
+                            catch
+                            {
+                                // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
+                                await _query._session.CancelAsyncInternal();
+
+                                throw;
+                            }
+
                             yield return item;
                         }
                     }
@@ -1402,19 +1428,29 @@ namespace YesSql.Services
                         }
 
                         var documents = new List<Document>();
-                        
-                        await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
+                        List<T> items;
+
+                        try
                         {
-                            documents.Add(document);
+                            await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
+                            {
+                                documents.Add(document);
+                            }
+
+                            // Clone documents as they might be shared across sessions
+                            items = documents.Count == 0
+                                ? []
+                                : _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection).ToList();
+                        }
+                        catch
+                        {
+                            // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
+                            await _query._session.CancelAsyncInternal();
+
+                            throw;
                         }
 
-                        if (documents.Count == 0)
-                        {
-                            yield break;
-                        }
-
-                        // Clone documents as they might be shared across sessions
-                        foreach (var item in _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection))
+                        foreach (var item in items)
                         {
                             yield return item;
                         }
@@ -1622,7 +1658,7 @@ namespace YesSql.Services
                 return FirstOrDefaultImpl(cancellationToken);
             }
 
-            async Task<IEnumerable<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
+            async Task<IReadOnlyList<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
             {
                 var results = new List<T>();
                 await foreach (var item in ListImpl(cancellationToken))
