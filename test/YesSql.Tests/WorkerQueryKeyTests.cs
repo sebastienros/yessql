@@ -76,5 +76,23 @@ namespace YesSql.Tests
 
             Assert.False(key1.Equals(key2));
         }
+
+        [Fact]
+        public void KeysWithSameSingleIdShouldBeEqual()
+        {
+            var key1 = new WorkerQueryKey("prefix1", 1L);
+            var key2 = new WorkerQueryKey("prefix1", 1L);
+
+            Assert.True(key1.Equals(key2));
+        }
+
+        [Fact]
+        public void KeysWithDifferentSingleIdShouldNotBeEqual()
+        {
+            var key1 = new WorkerQueryKey("prefix1", 1L);
+            var key2 = new WorkerQueryKey("prefix1", 2L);
+
+            Assert.False(key1.Equals(key2));
+        }
     }
 }

@@ -121,6 +121,15 @@ namespace YesSql.Sql
                 yield break;
             }
 
+            // drop index
+            // Indexes are dropped first so columns they reference can subsequently be dropped or altered.
+            foreach (var dropIndex in command.TableCommands.OfType<DropIndexCommand>())
+            {
+                var builder = new StringBuilder();
+                Run(builder, dropIndex);
+                yield return builder.ToString();
+            }
+
             // drop columns
             foreach (var dropColumn in command.TableCommands.OfType<DropColumnCommand>())
             {
@@ -154,18 +163,11 @@ namespace YesSql.Sql
             }
 
             // add index
+            // Indexes are added last so they reference the final column layout.
             foreach (var addIndex in command.TableCommands.OfType<AddIndexCommand>())
             {
                 var builder = new StringBuilder();
                 Run(builder, addIndex);
-                yield return builder.ToString();
-            }
-
-            // drop index
-            foreach (var dropIndex in command.TableCommands.OfType<DropIndexCommand>())
-            {
-                var builder = new StringBuilder();
-                Run(builder, dropIndex);
                 yield return builder.ToString();
             }
         }

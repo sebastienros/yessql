@@ -51,7 +51,7 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(command);
             }
-            await connection.ExecuteAsync(command, new { Id = Index.Id }, transaction);
+            await connection.ExecuteAsync(new CommandDefinition(command, new { Id = Index.Id }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
         }
     }
 }

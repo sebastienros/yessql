@@ -59,9 +59,9 @@ namespace YesSql.Sql
                     table.CreateIndex($"IDX_FK_{indexTable}", "DocumentId")
                     );
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -99,9 +99,9 @@ namespace YesSql.Sql
                     table.CreateIndex($"IDX_FK_{bridgeTableName}", indexName + "Id", "DocumentId")
                     );
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -126,9 +126,9 @@ namespace YesSql.Sql
                 await DropTableAsync(bridgeTableName);
                 await DropTableAsync(indexTable);
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -149,9 +149,9 @@ namespace YesSql.Sql
 
                 await DropTableAsync(indexTable);
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -166,9 +166,9 @@ namespace YesSql.Sql
                 table(createTable);
                 await ExecuteAsync(_commandInterpreter.CreateSql(createTable));
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -183,9 +183,9 @@ namespace YesSql.Sql
                 table(alterTable);
                 await ExecuteAsync(_commandInterpreter.CreateSql(alterTable));
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -205,9 +205,9 @@ namespace YesSql.Sql
                 var deleteTable = new DropTableCommand(Prefix(name));
                 await ExecuteAsync(_commandInterpreter.CreateSql(deleteTable));
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -222,9 +222,9 @@ namespace YesSql.Sql
                 var sql = _commandInterpreter.CreateSql(command);
                 await ExecuteAsync(sql);
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -238,9 +238,9 @@ namespace YesSql.Sql
                 var command = new DropForeignKeyCommand(Dialect.FormatKeyName(Prefix(srcTable)), Prefix(name));
                 await ExecuteAsync(_commandInterpreter.CreateSql(command));
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }
@@ -254,9 +254,9 @@ namespace YesSql.Sql
                 var createSchema = new CreateSchemaCommand(schema);
                 await ExecuteAsync(_commandInterpreter.CreateSql(createSchema));
             }
-            catch
+            catch (Exception e)
             {
-                if (ThrowOnError)
+                if (ThrowOnError || e is not DbException)
                 {
                     throw;
                 }

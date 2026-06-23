@@ -57,6 +57,14 @@ namespace YesSql.Filters.Query.Services
                 currentQuery = argument.CurrentTermOption.NotMatchPredicate;
             }
 
+            if (currentQuery == null)
+            {
+                throw new InvalidOperationException(
+                    "The term does not define a "
+                    + (node.UseMatch ? "match" : "negated (NOT) match")
+                    + " predicate.");
+            }
+
             return result => currentQuery(node.Value, argument.Item, argument);
         }
 

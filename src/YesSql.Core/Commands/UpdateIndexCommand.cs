@@ -61,7 +61,7 @@ namespace YesSql.Commands
                     {
                         logger.LogTrace(bridgeSqlAdd);
                     }
-                    await connection.ExecuteAsync(bridgeSqlAdd, dynamicParamsAdded, transaction);
+                    await connection.ExecuteAsync(new CommandDefinition(bridgeSqlAdd, dynamicParamsAdded, transaction, null, null, CommandFlags.Buffered, cancellationToken));
                 }
 
                 if (_deletedDocumentIds.Length > 0)
@@ -76,7 +76,7 @@ namespace YesSql.Commands
                     {
                         logger.LogTrace(bridgeSqlRemove);
                     }
-                    await connection.ExecuteAsync(bridgeSqlRemove, dynamicParamsDeleted, transaction);
+                    await connection.ExecuteAsync(new CommandDefinition(bridgeSqlRemove, dynamicParamsDeleted, transaction, null, null, CommandFlags.Buffered, cancellationToken));
                 }
             }
         }
