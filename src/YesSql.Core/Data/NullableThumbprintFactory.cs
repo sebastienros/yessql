@@ -58,7 +58,8 @@ namespace YesSql.Data
             // Each type gets a unique type index
             _typeIndex = Interlocked.Increment(ref _globalTypeIndex);
 
-            if (_globalTypeIndex > MaxTypeIndex)
+            // Type indices start at 1, so only MaxTypeIndex - 1 distinct values fit in the 16 reserved bits.
+            if (_typeIndex >= MaxTypeIndex)
             {
                 throw new InvalidOperationException("The maximum number of compiled queries was reached");
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using YesSql.Utils;
 
 namespace YesSql.Sql
@@ -463,10 +464,12 @@ namespace YesSql.Sql
                 _from = _from == null ? null : new List<string>(_from),
                 _join = _join == null ? null : new List<string>(_join),
                 _where = _where == null ? null : new List<string>(_where),
+                _or = _or == null ? null : _or.Select(o => new List<string>(o)).ToList(),
                 _group = _group == null ? null : new List<string>(_group),
                 _having = _having == null ? null : new List<string>(_having),
                 _order = _order == null ? null : new List<string>(_order),
                 _trail = _trail == null ? null : new List<string>(_trail),
+                _distinct = _distinct,
                 _skip = _skip,
                 _count = _count,
 

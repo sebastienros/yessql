@@ -75,7 +75,7 @@ namespace YesSql.Data
                 return SameIds(_ids, other._ids);
             }
 
-            return true;
+            return _id == other._id;
         }
 
         private int BuildHashCode()
