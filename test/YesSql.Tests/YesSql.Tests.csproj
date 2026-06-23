@@ -17,7 +17,8 @@
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>../../src/YesSqlKey.snk</AssemblyOriginatorKeyFile>
         <OutputType>Exe</OutputType>
-        <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+        <!-- Tests favor LINQ-style assertions (e.g. (await query.ListAsync()).Count()) over the indexer/Count property. -->
+        <NoWarn>$(NoWarn);xUnit1051;CA1826;CA1829</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
