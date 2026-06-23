@@ -6,20 +6,10 @@ namespace YesSql.Provider.Sqlite
 {
     public static class SqliteDbProviderOptionsExtensions
     {
-        public static IConfiguration UseSqLite(
-            this IConfiguration configuration,
-            string connectionString)
-        {
-            return UseSqLite(
-                configuration,
-                connectionString,
-                IsolationLevel.Serializable);
-        }
+        public static IConfiguration UseSqLite(this IConfiguration configuration, string connectionString)
+            => UseSqLite(configuration, connectionString, IsolationLevel.Serializable);
 
-        public static IConfiguration UseSqLite(
-            this IConfiguration configuration,
-            string connectionString,
-            IsolationLevel isolationLevel)
+        public static IConfiguration UseSqLite(this IConfiguration configuration, string connectionString, IsolationLevel isolationLevel)
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
