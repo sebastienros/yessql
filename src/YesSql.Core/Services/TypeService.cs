@@ -54,7 +54,7 @@ namespace YesSql.Services
         {
             return type.IsGenericType && type.Name.Contains("AnonymousType")
                    && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))
-                   && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
+                   && (type.Attributes & TypeAttributes.VisibilityMask) == TypeAttributes.NotPublic;
         }
     }
 }
