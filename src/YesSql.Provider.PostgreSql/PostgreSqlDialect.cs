@@ -7,6 +7,9 @@ using YesSql.Utils;
 
 namespace YesSql.Provider.PostgreSql
 {
+    /// <summary>
+    /// Represents the SQL dialect for PostgreSQL.
+    /// </summary>
     public sealed class PostgreSqlDialect : BaseDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
@@ -83,6 +86,9 @@ namespace YesSql.Provider.PostgreSql
             };
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PostgreSqlDialect"/> class.
+        /// </summary>
         public PostgreSqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
@@ -104,16 +110,27 @@ namespace YesSql.Provider.PostgreSql
             Methods.Add("now", new TemplateFunction("now() at time zone 'utc'"));
         }
 
+        /// <inheritdoc />
         public override string Name => "PostgreSql";
+        /// <inheritdoc />
         public override string InOperator(string values) => " = any(array[" + values + "])";
+        /// <inheritdoc />
         public override string NotInOperator(string values) => " <> all(array[" + values + "])";
+        /// <inheritdoc />
         public override string IdentitySelectString => "RETURNING";
+        /// <inheritdoc />
         public override string IdentityLastId => $"lastval()";
+        /// <inheritdoc />
         public override string IdentityColumnString => "BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY";
+        /// <inheritdoc />
         public override string LegacyIdentityColumnString => "INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY";
+        /// <inheritdoc />
         public override string RandomOrderByClause => "random()";
+        /// <inheritdoc />
         public override bool SupportsIfExistsBeforeTableName => true;
+        /// <inheritdoc />
         public override bool PrefixIndex => true;
+        /// <inheritdoc />
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
@@ -157,6 +174,7 @@ namespace YesSql.Provider.PostgreSql
             throw new Exception("DbType not found for: " + dbType);
         }
 
+        /// <inheritdoc />
         public override string FormatKeyName(string name)
         {
             // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
@@ -169,6 +187,7 @@ namespace YesSql.Provider.PostgreSql
             return name;
         }
         
+        /// <inheritdoc />
         public override string FormatIndexName(string name)
         {
             // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
@@ -180,13 +199,16 @@ namespace YesSql.Provider.PostgreSql
 
             return name;
         }  
+        /// <inheritdoc />
         public override string GetDropForeignKeyConstraintString(string name)
         {
             return " drop constraint " + QuoteForColumnName(name);
         }
 
+        /// <inheritdoc />
         public override string DefaultValuesInsert => "DEFAULT VALUES";
 
+        /// <inheritdoc />
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
             sqlBuilder.Trail(" limit ");
@@ -208,16 +230,19 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
+        /// <inheritdoc />
         public override string GetDropIndexString(string indexName, string tableName, string schema)
         {
             return "drop index if exists " + QuoteForColumnName(indexName);
         }
 
+        /// <inheritdoc />
         public override string QuoteForColumnName(string columnName)
         {
             return QuoteString + columnName + QuoteString;
         }
 
+        /// <inheritdoc />
         public override string QuoteForTableName(string tableName, string schema)
         {
             return string.IsNullOrEmpty(schema)
@@ -226,17 +251,22 @@ namespace YesSql.Provider.PostgreSql
                 ;
         }
 
+        /// <inheritdoc />
         public override string QuoteForAliasName(string aliasName)
         {
             return QuoteString + aliasName + QuoteString;
         }
 
+        /// <inheritdoc />
         public override string CascadeConstraintsString => " cascade ";
 
+        /// <inheritdoc />
         public override byte DefaultDecimalPrecision => 19;
 
+        /// <inheritdoc />
         public override byte DefaultDecimalScale => 5;
 
+        /// <inheritdoc />
         public override string GetSqlValue(object value)
         {
             if (value == null)
@@ -265,6 +295,7 @@ namespace YesSql.Provider.PostgreSql
             }
         }
 
+        /// <inheritdoc />
         public override string GetCreateSchemaString(string schema)
         {
             return $"CREATE SCHEMA IF NOT EXISTS {QuoteForColumnName(schema)}";

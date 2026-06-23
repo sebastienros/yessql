@@ -6,6 +6,9 @@ using YesSql.Indexes;
 
 namespace YesSql
 {
+    /// <summary>
+    /// Represents a document store that creates sessions and manages the underlying database schema and configuration.
+    /// </summary>
     public interface IStore : IDisposable
     {
         /// <summary>

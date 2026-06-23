@@ -4,10 +4,20 @@ using System.Linq;
 
 namespace YesSql.Indexes
 {
+    /// <summary>
+    /// Provides the context used by an <see cref="IIndexProvider"/> to describe how
+    /// indexes are mapped, grouped and reduced for documents of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the document the indexes are described for.</typeparam>
     public class DescribeContext<T> : IDescriptor
     {
         private readonly Dictionary<Type, List<IDescribeFor>> _describes = new Dictionary<Type, List<IDescribeFor>>();
 
+        /// <summary>
+        /// Builds the <see cref="IndexDescriptor"/> instances for the described indexes.
+        /// </summary>
+        /// <param name="types">The index types to describe, or an empty array to describe all of them.</param>
+        /// <returns>The descriptors matching the requested index types.</returns>
         public IEnumerable<IndexDescriptor> Describe(params Type[] types)
         {
             return _describes
@@ -25,11 +35,23 @@ namespace YesSql.Indexes
                 });
         }
 
+        /// <summary>
+        /// Starts describing how an index of type <typeparamref name="TIndex"/> is built from the document.
+        /// </summary>
+        /// <typeparam name="TIndex">The type of the index to map.</typeparam>
+        /// <returns>An <see cref="IMapFor{T, TIndex}"/> used to configure the mapping.</returns>
         public IMapFor<T, TIndex> For<TIndex>() where TIndex : IIndex
         {
             return For<TIndex, object>();
         }
 
+        /// <summary>
+        /// Starts describing how an index of type <typeparamref name="TIndex"/> with a group key of
+        /// type <typeparamref name="TKey"/> is built from the document.
+        /// </summary>
+        /// <typeparam name="TIndex">The type of the index to map.</typeparam>
+        /// <typeparam name="TKey">The type of the key used to group reduce indexes.</typeparam>
+        /// <returns>An <see cref="IMapFor{T, TIndex}"/> used to configure the mapping.</returns>
         public IMapFor<T, TIndex> For<TIndex, TKey>() where TIndex : IIndex
         {
             if (!_describes.TryGetValue(typeof(T), out var descriptors))

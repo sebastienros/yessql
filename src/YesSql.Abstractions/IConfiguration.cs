@@ -105,6 +105,9 @@ namespace YesSql
         IdentityColumnSize IdentityColumnSize { get; set; }
     }
 
+    /// <summary>
+    /// Provides extension methods for configuring an <see cref="IConfiguration"/> instance.
+    /// </summary>
     public static class ConfigurationExtensions
     {
         /// <summary>

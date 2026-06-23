@@ -8,6 +8,9 @@ using YesSql.Utils;
 
 namespace YesSql.Provider.MySql
 {
+    /// <summary>
+    /// Represents the SQL dialect for MySQL.
+    /// </summary>
     public sealed class MySqlDialect : BaseDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
@@ -83,6 +86,9 @@ namespace YesSql.Provider.MySql
             };
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MySqlDialect"/> class.
+        /// </summary>
         public MySqlDialect()
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
@@ -90,14 +96,22 @@ namespace YesSql.Provider.MySql
             Methods.Add("now", new TemplateFunction("UTC_TIMESTAMP()"));
         }
 
+        /// <inheritdoc />
         public override string Name => "MySql";
+        /// <inheritdoc />
         public override string IdentitySelectString => "; select LAST_INSERT_ID()";
+        /// <inheritdoc />
         public override string IdentityLastId => "LAST_INSERT_ID()";
+        /// <inheritdoc />
         public override string IdentityColumnString => "bigint AUTO_INCREMENT primary key";
+        /// <inheritdoc />
         public override string LegacyIdentityColumnString => "int AUTO_INCREMENT primary key";
+        /// <inheritdoc />
         public override string RandomOrderByClause => "rand()";
+        /// <inheritdoc />
         public override bool SupportsIfExistsBeforeTableName => true;
 
+        /// <inheritdoc />
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
@@ -165,6 +179,7 @@ namespace YesSql.Provider.MySql
             throw new Exception("DbType not found for: " + dbType);
         }
 
+        /// <inheritdoc />
         public override string FormatKeyName(string name)
         {
             // https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html
@@ -177,6 +192,7 @@ namespace YesSql.Provider.MySql
             return name;
         }
 
+        /// <inheritdoc />
         public override string FormatIndexName(string name)
         {
             // https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html
@@ -189,11 +205,13 @@ namespace YesSql.Provider.MySql
             return name;
         }        
 
+        /// <inheritdoc />
         public override string GetDropForeignKeyConstraintString(string name)
         {
             return " drop foreign key " + QuoteForColumnName(FormatKeyName(name));
         }
 
+        /// <inheritdoc />
         public override string GetAddForeignKeyConstraintString(string name, string[] srcColumns, string destQuotedTable, string[] destColumns, bool primaryKey)
         {
             var sql = base.GetAddForeignKeyConstraintString(name, srcColumns, destQuotedTable, destColumns, primaryKey);
@@ -206,12 +224,16 @@ namespace YesSql.Provider.MySql
             return res.ToString();
         }
 
+        /// <inheritdoc />
         public override string DefaultValuesInsert => "VALUES()";
 
+        /// <inheritdoc />
         public override byte DefaultDecimalPrecision => 65;
 
+        /// <inheritdoc />
         public override byte DefaultDecimalScale => 30;
 
+        /// <inheritdoc />
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
             if (offset != null && limit == null)
@@ -234,27 +256,32 @@ namespace YesSql.Provider.MySql
             }
         }
 
+        /// <inheritdoc />
         public override string GetDropIndexString(string indexName, string tableName, string schema)
         {
             // This is dependent on version of MySql < v10.1.4 does not support IF EXISTS
             return "drop index " + QuoteForColumnName(indexName) + " on " + QuoteForTableName(tableName, schema);
         }
 
+        /// <inheritdoc />
         public override string QuoteForColumnName(string columnName)
         {
             return "`" + columnName + "`";
         }
 
+        /// <inheritdoc />
         public override string QuoteForTableName(string tableName, string schema)
         {
             return "`" + tableName + "`";
         }
 
+        /// <inheritdoc />
         public override string QuoteForAliasName(string aliasName)
         {
             return "`" + aliasName + "`";
         }
 
+        /// <inheritdoc />
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)
         {
             builder.Append("concat(");
@@ -272,6 +299,7 @@ namespace YesSql.Provider.MySql
             builder.Append(")");
         }
 
+        /// <inheritdoc />
         public override string GetSqlValue(object value)
         {
             if (value == null)
@@ -287,6 +315,7 @@ namespace YesSql.Provider.MySql
             return base.GetSqlValue(value);
         }
 
+        /// <inheritdoc />
         public override string GetCreateSchemaString(string schema)
         {
             // MySQL doesn't support schemas

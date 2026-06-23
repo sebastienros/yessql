@@ -7,6 +7,9 @@ using YesSql.Indexes;
 
 namespace YesSql
 {
+    /// <summary>
+    /// Provides extension methods for working with an <see cref="ISession"/>.
+    /// </summary>
     public static class SessionExtensions
     {
         /// <summary>
