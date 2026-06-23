@@ -32,8 +32,7 @@ namespace YesSql.Commands
         {
             var type = Index.GetType();
 
-            var sql = Updates(type, dialect);
-            sql = sql.Replace(ParameterSuffix, "");
+            var sql = UpdatesForExecute(type, dialect);
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(sql);
