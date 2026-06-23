@@ -20,9 +20,8 @@ namespace YesSql.Commands
 
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
-            var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
-            var deleteCmd = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} where {dialect.QuoteForColumnName("Id")} = @Id;";
-            
+            var deleteCmd = GetDeleteCommandText(dialect, _store, Collection);
+
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(deleteCmd);

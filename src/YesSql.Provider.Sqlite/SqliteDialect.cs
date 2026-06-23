@@ -187,6 +187,16 @@ namespace YesSql.Provider.Sqlite
         public override bool SupportsIfExistsBeforeTableName => true;
 
         /// <inheritdoc />
+        /// <remarks>
+        /// Batching is disabled for SQLite. SQLite runs in-process, so grouping many statements
+        /// into a single command provides no round-trip savings. Worse, Microsoft.Data.Sqlite binds
+        /// every parameter of the command to every statement it contains, making parameter binding
+        /// O(statements × parameters). For large batches this dominates both CPU and allocations.
+        /// Executing the commands individually is significantly faster and allocates far less.
+        /// </remarks>
+        public override bool SupportsBatching => false;
+
+        /// <inheritdoc />
         public override string GetCreateSchemaString(string schema)
         {
             return null;

@@ -88,6 +88,7 @@ namespace YesSql
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             IndexCommand.ResetQueryCache();
+            DocumentCommand.ResetQueryCache();
             ValidateConfiguration();
 
             TypeNames = new TypeService();
