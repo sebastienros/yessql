@@ -2,6 +2,11 @@
 
     <PropertyGroup Label="Analysis rules">
 
+        <!-- 
+            When AnalysisLevel is not specified, the default value depends on the .NET SDK version you're using.
+            Setting it to 'latest-Recommended' ensures that you always get the latest recommended set of
+            analyzers and rules, regardless of the SDK version.
+        -->
         <AnalysisLevel>latest-Recommended</AnalysisLevel>
 
         <!-- Member is explicitly initialized to its default value -->

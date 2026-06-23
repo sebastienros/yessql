@@ -2,9 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using YesSql.Filters.Abstractions.Nodes;
+using YesSql.Filters.Nodes;
 
-namespace YesSql.Filters.Abstractions.Services
+namespace YesSql.Filters.Services
 {
     public abstract class FilterResult<T, TTermOption> : IEnumerable<TermNode> where TTermOption : TermOption
     {
@@ -42,8 +42,7 @@ namespace YesSql.Filters.Abstractions.Services
                 var option = TermOptions[term.TermName];
 
                 if (option.MapTo is Action<string, TModel> action &&
-                    term is TermOperationNode operationNode &&
-                    operationNode.Operation is UnaryNode node)
+                    term is TermOperationNode { Operation: UnaryNode node })
                 {
                     action(node.Value, model);
                 }

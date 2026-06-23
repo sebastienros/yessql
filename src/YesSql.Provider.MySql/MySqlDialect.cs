@@ -152,7 +152,7 @@ namespace YesSql.Provider.MySql
                 }
             }
 
-            if (_columnTypes.TryGetValue(dbType, out string value))
+            if (_columnTypes.TryGetValue(dbType, out var value))
             {
                 if (dbType == DbType.Decimal)
                 {
@@ -279,9 +279,9 @@ namespace YesSql.Provider.MySql
                 return "null";
             }
 
-            if (value.GetType() == typeof(TimeSpan))
+            if (value is TimeSpan span)
             {
-                return ((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture);
+                return span.Ticks.ToString(CultureInfo.InvariantCulture);
             }
 
             return base.GetSqlValue(value);

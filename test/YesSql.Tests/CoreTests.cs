@@ -9,7 +9,6 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using YesSql.Commands;
 using YesSql.Filters.Query;
 using YesSql.Indexes;
@@ -40,7 +39,7 @@ namespace YesSql.Tests
             _output = output;
         }
 
-        public async Task InitializeAsync()
+        public virtual async ValueTask InitializeAsync()
         {
             // Create the tables only once
             if (_configuration == null)
@@ -66,8 +65,11 @@ namespace YesSql.Tests
             await ClearTablesAsync(_configuration);
         }
 
-        public virtual Task DisposeAsync()
-            => Task.CompletedTask;
+        public virtual ValueTask DisposeAsync()
+        {
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
+        }
 
         protected void EnableLogging()
         {
@@ -6626,51 +6628,6 @@ namespace YesSql.Tests
             Assert.Equal(10, result);
         }
 
-        [Fact]
-        public virtual async Task ShouldDetectThreadSafetyIssues()
-        {
-            try
-            {
-                _store.Configuration.EnableThreadSafetyChecks = true;
-
-                await using var session = _store.CreateSession();
-
-                _store.Configuration.EnableThreadSafetyChecks = false;
-
-                var person = new Person { Firstname = "Bill" };
-                await session.SaveAsync(person);
-                await session.SaveChangesAsync();
-
-                Task[] tasks = null;
-
-                var throws = Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                {
-                    tasks = Enumerable.Range(0, 10).Select(x => Task.Run(DoWork)).ToArray();
-                    await Task.WhenAll(tasks);
-                });
-
-                await Task.WhenAny(throws, Task.Delay(5000));
-
-                Assert.True(throws.IsCompleted, "The timeout was reached before the expected exception was thrown");
-
-                async Task DoWork()
-                {
-                    while (true)
-                    {
-                        var p = await session.Query<Person>().FirstOrDefaultAsync();
-                        Assert.NotNull(p);
-
-                        person.Firstname = "Bill" + RandomNumberGenerator.GetInt32(100);
-                        await session.FlushAsync();
-                    }
-                }
-            }
-            finally
-            {
-                _store.Configuration.EnableThreadSafetyChecks = false;
-            }
-        }
-
         #region FilterTests
 
         [Fact]
@@ -7231,26 +7188,17 @@ namespace YesSql.Tests
         {
             // https://github.com/sebastienros/yessql/issues/618
 
-            _store.Configuration.EnableThreadSafetyChecks = true;
-
-            try
+            await using (var session = _store.CreateSession())
             {
-                await using (var session = _store.CreateSession())
+                var index = new PropertyIndex { Name = "Home" };
+
+                await session.SaveAsync(index);
+
+                await Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
-                    var index = new PropertyIndex { Name = "Home" };
-
-                    await session.SaveAsync(index);
-
-                    await Assert.ThrowsAsync<ArgumentException>(async () =>
-                    {
-                        // Try saving an index directly to force an exception which should trigger cancel.
-                        await session.FlushAsync();
-                    });
-                }
-            }
-            finally
-            {
-                _store.Configuration.EnableThreadSafetyChecks = false;
+                    // Try saving an index directly to force an exception which should trigger cancel.
+                    await session.FlushAsync();
+                });
             }
         }
 

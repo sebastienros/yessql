@@ -1,5 +1,5 @@
 using System;
-using YesSql.Filters.Abstractions.Builders;
+using YesSql.Filters.Builders;
 using YesSql.Filters.Query.Services;
 
 namespace YesSql.Filters.Query
