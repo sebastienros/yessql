@@ -1,6 +1,7 @@
 using Dapper;
 using System;
 using System.Data;
+using System.Globalization;
 
 namespace YesSql.Data
 {
@@ -20,10 +21,16 @@ namespace YesSql.Data
                     return DateTimeOffset.MinValue;
 
                 case string s:
-                    return DateTimeOffset.Parse(s);
+                    // Values stored in TEXT columns (e.g. Sqlite) don't keep the offset and are
+                    // persisted as UTC. Treat offset-less strings as UTC so the instant round-trips
+                    // regardless of the local timezone. Strings that carry an explicit offset
+                    // (e.g. MySql 'O' format) keep their offset.
+                    return DateTimeOffset.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
 
                 case DateTime dt:
-                    return new DateTimeOffset(dt);
+                    // DateTime values are stored as UTC. A value read back as Unspecified must be
+                    // interpreted as UTC, otherwise the local timezone would shift the instant.
+                    return new DateTimeOffset(dt.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(dt, DateTimeKind.Utc) : dt);
 
                 case DateTimeOffset d:
                     return d;
