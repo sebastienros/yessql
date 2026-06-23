@@ -30,8 +30,7 @@ namespace YesSql.Commands
             var type = Index.GetType();
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var sql = Inserts(type, dialect);
-            sql = sql.Replace(ParameterSuffix, "");
+            var sql = InsertsForExecute(type, dialect);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {

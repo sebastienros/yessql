@@ -6,7 +6,7 @@ namespace YesSql.Samples.Performance
     {
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<Benchmarks>();
+            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
         }
     }
 }

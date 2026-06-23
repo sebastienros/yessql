@@ -312,18 +312,20 @@ namespace YesSql.Provider
             for (var i = 0; i < orderBy.Count; i++)
             {
                 var o = orderBy[i];
-                var next = i + 1 < orderBy.Count ? orderBy[i + 1].Trim() : null;
-                var trimmed = o.Trim();
+                var next = i + 1 < orderBy.Count ? orderBy[i + 1].AsSpan().Trim() : default;
+                var trimmed = o.AsSpan().Trim();
                 var alias = QuoteForAliasName("order_" + index++);
 
                 // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
-                if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC")
+                if (!trimmed.Equals(",", StringComparison.Ordinal)
+                    && !trimmed.Equals("DESC", StringComparison.Ordinal)
+                    && !trimmed.Equals("ASC", StringComparison.Ordinal))
                 {
                     var aggregate = $"MAX({o}) AS {alias}";
 
-                    if (next == "DESC" || next == "ASC")
+                    if (next.Equals("DESC", StringComparison.Ordinal) || next.Equals("ASC", StringComparison.Ordinal))
                     {
-                        alias += " " + next;
+                        alias += " " + next.ToString();
                     }
 
                     result.Add((aggregate, alias));

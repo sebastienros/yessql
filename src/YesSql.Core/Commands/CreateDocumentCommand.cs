@@ -21,9 +21,7 @@ namespace YesSql.Commands
 
         public override Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
-            var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
-
-            var insertCmd = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable, _store.Configuration.Schema)} ({dialect.QuoteForColumnName("Id")}, {dialect.QuoteForColumnName("Type")}, {dialect.QuoteForColumnName("Content")}, {dialect.QuoteForColumnName("Version")}) values (@Id, @Type, @Content, @Version);";
+            var insertCmd = GetInsertCommandText(dialect, _store, Collection);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {

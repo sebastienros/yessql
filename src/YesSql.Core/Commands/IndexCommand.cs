@@ -24,6 +24,8 @@ namespace YesSql.Commands
         private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
+        private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteInsertsList = new();
+        private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteUpdatesList = new();
 
         protected static readonly PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
@@ -46,6 +48,8 @@ namespace YesSql.Commands
         {
             InsertsList.Clear();
             UpdatesList.Clear();
+            ExecuteInsertsList.Clear();
+            ExecuteUpdatesList.Clear();
         }
 
         protected static void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
@@ -174,6 +178,49 @@ namespace YesSql.Commands
                 }
 
                 UpdatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema)} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the <c>insert</c> statement used when a command is executed individually (not batched).
+        /// The parameter suffix placeholder is removed once and the result cached, so the per-row
+        /// <see cref="string.Replace(string, string)"/> is avoided on the hot write path.
+        /// </summary>
+        protected string InsertsForExecute(Type type, ISqlDialect dialect)
+        {
+            var key = new CompoundKey(
+                dialect.Name,
+                type.FullName,
+                _store.Configuration.Schema,
+                _store.Configuration.TablePrefix,
+                Collection);
+
+            if (!ExecuteInsertsList.TryGetValue(key, out var result))
+            {
+                ExecuteInsertsList[key] = result = Inserts(type, dialect).Replace(ParameterSuffix, "");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the <c>update</c> statement used when a command is executed individually (not batched).
+        /// The parameter suffix placeholder is removed once and the result cached.
+        /// </summary>
+        protected string UpdatesForExecute(Type type, ISqlDialect dialect)
+        {
+            var key = new CompoundKey(
+                dialect.Name,
+                type.FullName,
+                _store.Configuration.Schema,
+                _store.Configuration.TablePrefix,
+                Collection);
+
+            if (!ExecuteUpdatesList.TryGetValue(key, out var result))
+            {
+                ExecuteUpdatesList[key] = result = Updates(type, dialect).Replace(ParameterSuffix, "");
             }
 
             return result;

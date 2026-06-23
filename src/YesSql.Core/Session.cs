@@ -865,6 +865,11 @@ namespace YesSql
                 return;
             }
 
+            // The number of commands per batch is capped by the configured page size and by the
+            // maximum the dialect allows (some providers can only batch a limited number of
+            // statements efficiently). A dialect that doesn't impose a cap returns int.MaxValue.
+            var commandsPageSize = Math.Min(_store.Configuration.CommandsPageSize, _dialect.MaxCommandsPageSize);
+
             var batches = new List<IIndexCommand>();
 
             // holds the queries, parameters and actions returned by an IIndexCommand, until we know we can
@@ -887,7 +892,7 @@ namespace YesSql
                     // batch. Adding it would produce an oversized batch that fails at execution time, so
                     // it must be executed individually instead.
                     var exceedsByItself =
-                        localQueries.Count > _store.Configuration.CommandsPageSize ||
+                        localQueries.Count > commandsPageSize ||
                         localDbCommand.Parameters.Count > _store.Configuration.SqlDialect.MaxParametersPerCommand;
 
                     if (exceedsByItself)
@@ -907,7 +912,7 @@ namespace YesSql
                     {
                         // Does it go over the page or parameters limits
 
-                        var tooManyQueries = batch.Queries.Count + localQueries.Count > _store.Configuration.CommandsPageSize;
+                        var tooManyQueries = batch.Queries.Count + localQueries.Count > commandsPageSize;
                         var tooManyCommands = batch.Command.Parameters.Count + localDbCommand.Parameters.Count > _store.Configuration.SqlDialect.MaxParametersPerCommand;
 
                         if (tooManyQueries || tooManyCommands)

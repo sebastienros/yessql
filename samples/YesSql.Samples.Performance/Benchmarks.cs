@@ -275,7 +275,7 @@ namespace YesSql.Samples.Performance
         }
 
         #region Names
-        private static readonly string[] Names = new[]
+        internal static readonly string[] Names = new[]
         {
             "MARY", "PATRICIA", "LINDA", "BARBARA", "ELIZABETH", "JENNIFER", "MARIA", "SUSAN", "MARGARET", "DOROTHY", "LISA",
             "NANCY", "KAREN", "BETTY", "HELEN", "SANDRA", "DONNA", "CAROL", "RUTH", "SHARON", "MICHELLE", "LAURA", "SARAH",

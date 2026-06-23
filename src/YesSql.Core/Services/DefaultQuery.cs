@@ -294,7 +294,7 @@ namespace YesSql.Services
                 static (query, builder, dialect, expression) =>
                 {
                     // Could be simplified if int[] could be casted to IEnumerable<object>
-                    var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
+                    var objects = GetExpressionValue(expression.Arguments[1]) as IEnumerable;
                     var values = new List<object>();
 
                     foreach (var o in objects)
@@ -335,7 +335,7 @@ namespace YesSql.Services
                 static (query, builder, dialect, expression) =>
                 {
                     // Could be simplified if int[] could be casted to IEnumerable<object>
-                    var objects = Expression.Lambda(expression.Arguments[1]).Compile().DynamicInvoke() as IEnumerable;
+                    var objects = GetExpressionValue(expression.Arguments[1]) as IEnumerable;
                     var values = new List<object>();
 
                     foreach (var o in objects)
@@ -550,6 +550,41 @@ namespace YesSql.Services
         /// <summary>
         /// Converts an expression that is not based on a lambda parameter to its atomic constant value.
         /// </summary>
+        // Reads the runtime value of an expression without compiling a lambda for the common
+        // cases (constants and field/property access on closures or constants). Falls back to
+        // compiling only for shapes that aren't handled here. Unlike <see cref="Evaluate"/>, this
+        // has no side effects (it doesn't register parameter bindings) and is used when the value
+        // is inlined rather than parameterized for a compiled query.
+        private static object GetExpressionValue(Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.Constant:
+                    return ((ConstantExpression)expression).Value;
+
+                case ExpressionType.Convert:
+                    return GetExpressionValue(((UnaryExpression)expression).Operand);
+
+                case ExpressionType.MemberAccess:
+                    var memberExpression = (MemberExpression)expression;
+                    var instance = memberExpression.Expression == null
+                        ? null
+                        : GetExpressionValue(memberExpression.Expression);
+
+                    switch (memberExpression.Member)
+                    {
+                        case FieldInfo field:
+                            return field.GetValue(instance);
+                        case PropertyInfo property:
+                            return property.GetValue(instance);
+                    }
+
+                    break;
+            }
+
+            return Expression.Lambda(expression).Compile().DynamicInvoke();
+        }
+
         private ConstantExpression Evaluate(Expression expression, bool convertValue = true)
         {
             switch (expression.NodeType)
