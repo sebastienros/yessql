@@ -13,6 +13,11 @@ namespace YesSql.Filters.Query
     {
         private readonly Dictionary<string, TermEngineBuilder<T, QueryTermOption<T>>> _termBuilders = [];
 
+        /// <summary>
+        /// Registers a term parser on the builder.
+        /// </summary>
+        /// <param name="builder">The term parser builder to register.</param>
+        /// <returns>The <see cref="QueryEngineBuilder{T}"/> instance to allow chaining.</returns>
         public QueryEngineBuilder<T> SetTermParser(TermEngineBuilder<T, QueryTermOption<T>> builder)
         {
             _termBuilders[builder.Name] = builder;
@@ -20,6 +25,10 @@ namespace YesSql.Filters.Query
             return this;
         }
 
+        /// <summary>
+        /// Builds the <see cref="IQueryParser{T}"/> from the registered terms.
+        /// </summary>
+        /// <returns>A new <see cref="IQueryParser{T}"/> instance.</returns>
         public IQueryParser<T> Build()
         {
             var builders = _termBuilders.Values.Select(x => x.Build());

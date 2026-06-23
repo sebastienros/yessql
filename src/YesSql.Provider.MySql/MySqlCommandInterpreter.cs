@@ -8,14 +8,26 @@ using YesSql.Sql.Schema;
 
 namespace YesSql.Provider.MySql
 {
+    /// <summary>
+    /// Represents a command interpreter that generates SQL statements for MySQL.
+    /// </summary>
     public class MySqlCommandInterpreter : BaseCommandInterpreter
     {
         private static readonly char[] Separators = { '(', ')', ' ' };
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MySqlCommandInterpreter"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration used to generate SQL statements.</param>
         public MySqlCommandInterpreter(IConfiguration configuration) : base(configuration)
         {
         }
 
+        /// <summary>
+        /// Appends the SQL statement that alters an existing column to the specified builder.
+        /// </summary>
+        /// <param name="builder">The builder to append the SQL statement to.</param>
+        /// <param name="command">The alter column command to run.</param>
         public override void Run(StringBuilder builder, IAlterColumnCommand command)
         {
             builder.AppendFormat("alter table {0} modify column {1} ",
@@ -65,6 +77,11 @@ namespace YesSql.Provider.MySql
             }
         }
 
+        /// <summary>
+        /// Appends the SQL statement that adds an index to the specified builder.
+        /// </summary>
+        /// <param name="builder">The builder to append the SQL statement to.</param>
+        /// <param name="command">The add index command to run.</param>
         public override void Run(StringBuilder builder, IAddIndexCommand command)
         {
             builder.AppendFormat("create index {1} on {0} ({2}) ",

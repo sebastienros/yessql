@@ -7,14 +7,32 @@ using YesSql.Filters.Query.Services;
 
 namespace YesSql.Filters.Query
 {
+    /// <summary>
+    /// Represents the result of parsing a query filter that can be applied to an <see cref="IQuery{T}"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the queried document.</typeparam>
     public class QueryFilterResult<T> : FilterResult<T, QueryTermOption<T>> where T : class
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryFilterResult{T}"/> class.
+        /// </summary>
+        /// <param name="termOptions">The available term options.</param>
         public QueryFilterResult(IReadOnlyDictionary<string, QueryTermOption<T>> termOptions) : base(termOptions)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryFilterResult{T}"/> class.
+        /// </summary>
+        /// <param name="terms">The parsed terms.</param>
+        /// <param name="termOptions">The available term options.</param>
         public QueryFilterResult(IReadOnlyList<TermNode> terms, IReadOnlyDictionary<string, QueryTermOption<T>> termOptions) : base(terms, termOptions)
         { }
 
+        /// <summary>
+        /// Maps the terms from the specified model.
+        /// </summary>
+        /// <typeparam name="TModel">The type of the model to map from.</typeparam>
+        /// <param name="model">The model to map the terms from.</param>
         public void MapFrom<TModel>(TModel model)
         {
             foreach (var option in TermOptions)

@@ -5,9 +5,17 @@ using static Parlot.Fluent.Parsers;
 
 namespace YesSql.Filters.Builders
 {
+    /// <summary>
+    /// Builds an operator parser that supports a full boolean filter grammar, including <c>AND</c>, <c>OR</c>, <c>NOT</c>, quoted values, grouping, and the default whitespace operator.
+    /// </summary>
+    /// <typeparam name="T">The type the filter is applied to.</typeparam>
+    /// <typeparam name="TTermOption">The type of the term options.</typeparam>
     public abstract class BooleanEngineBuilder<T, TTermOption> : OperatorEngineBuilder<T, TTermOption> where TTermOption : TermOption
     {
         private static readonly Parser<OperatorNode> _parser;
+        /// <summary>
+        /// The term options produced alongside the parser.
+        /// </summary>
         protected TTermOption _termOption;
 
         static BooleanEngineBuilder()
@@ -115,6 +123,10 @@ namespace YesSql.Filters.Builders
             _parser = OperatorNode;
         }
 
+        /// <summary>
+        /// Builds the boolean operator parser and its associated term options.
+        /// </summary>
+        /// <returns>A tuple containing the operator parser and the term options.</returns>
         public override (Parser<OperatorNode> Parser, TTermOption TermOption) Build()
             => (_parser, _termOption);
     }

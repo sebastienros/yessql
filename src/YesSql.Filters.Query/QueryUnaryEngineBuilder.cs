@@ -7,8 +7,17 @@ using YesSql.Filters.Query.Services;
 
 namespace YesSql.Filters.Query
 {
+    /// <summary>
+    /// Builds a term that supports a single condition for an <see cref="IQuery{T}"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the queried document.</typeparam>
     public class QueryUnaryEngineBuilder<T> : UnaryEngineBuilder<T, QueryTermOption<T>> where T : class
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryUnaryEngineBuilder{T}"/> class.
+        /// </summary>
+        /// <param name="name">The name of the term.</param>
+        /// <param name="query">The predicate to apply when the term is parsed.</param>
         public QueryUnaryEngineBuilder(string name, Func<string, IQuery<T>, QueryExecutionContext<T>, ValueTask<IQuery<T>>> query) : base(new QueryTermOption<T>(name, query))
         {
         }

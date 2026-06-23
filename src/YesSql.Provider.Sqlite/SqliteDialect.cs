@@ -5,6 +5,9 @@ using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
 {
+    /// <summary>
+    /// Represents the SQL dialect for SQLite.
+    /// </summary>
     public sealed class SqliteDialect : BaseDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
@@ -82,6 +85,9 @@ namespace YesSql.Provider.Sqlite
             };
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqliteDialect"/> class.
+        /// </summary>
         public SqliteDialect()
         {
             // Add type handlers for cross-type DateTime/DateTimeOffset compatibility
@@ -97,19 +103,28 @@ namespace YesSql.Provider.Sqlite
             Methods.Add("now", new TemplateFunction("DATETIME('now')"));
         }
 
+        /// <inheritdoc />
         public override string Name => "Sqlite";
 
+        /// <inheritdoc />
         public override string IdentityColumnString => "integer primary key autoincrement";
+        /// <inheritdoc />
         public override string LegacyIdentityColumnString => "integer primary key autoincrement";
+        /// <inheritdoc />
         public override string IdentitySelectString => "; select last_insert_rowid()";
+        /// <inheritdoc />
         public override string IdentityLastId => "last_insert_rowid()";
 
+        /// <inheritdoc />
         public override string RandomOrderByClause => "random()";
 
+        /// <inheritdoc />
         public override byte DefaultDecimalPrecision => 19;
 
+        /// <inheritdoc />
         public override byte DefaultDecimalScale => 5;
 
+        /// <inheritdoc />
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (_columnTypes.TryGetValue(dbType, out var value))
@@ -120,6 +135,7 @@ namespace YesSql.Provider.Sqlite
             throw new Exception("DbType not found for: " + dbType);
         }
 
+        /// <inheritdoc />
         public override void Page(ISqlBuilder sqlBuilder, string offset, string limit)
         {
             sqlBuilder.ClearTrail();
@@ -143,33 +159,40 @@ namespace YesSql.Provider.Sqlite
             }
         }
 
+        /// <inheritdoc />
         public override string GetDropIndexString(string indexName, string tableName, string schema)
         {
             return "drop index if exists " + QuoteForColumnName(indexName);
         }
 
+        /// <inheritdoc />
         public override string QuoteForColumnName(string columnName)
         {
             return "[" + columnName + "]";
         }
 
+        /// <inheritdoc />
         public override string QuoteForTableName(string tableName, string schema)
         {
             return "[" + tableName + "]";
         }
 
+        /// <inheritdoc />
         public override string QuoteForAliasName(string aliasName)
         {
             return aliasName;
         }
 
+        /// <inheritdoc />
         public override bool SupportsIfExistsBeforeTableName => true;
 
+        /// <inheritdoc />
         public override string GetCreateSchemaString(string schema)
         {
             return null;
         }
 
+        /// <inheritdoc />
         public override IEnumerable<(string aggregate, string alias)> GetAggregateOrders(IList<string> select, IList<string> orderBy)
         {
             // Most databases (MySql, PostgreSql and SqlServer) require all ordered fields to be part of the select when GROUP BY (or DISTINCT) is used

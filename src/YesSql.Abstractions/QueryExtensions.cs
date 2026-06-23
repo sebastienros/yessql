@@ -4,6 +4,9 @@ using YesSql.Indexes;
 
 namespace YesSql
 {
+    /// <summary>
+    /// Provides extension methods for creating queries from an <see cref="ISession"/>.
+    /// </summary>
     public static class QueryExtensions
     {
         /// <summary>

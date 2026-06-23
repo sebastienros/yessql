@@ -7,6 +7,9 @@ using YesSql.Indexes;
 
 namespace YesSql
 {
+    /// <summary>
+    /// Represents an untyped query used to select the document or index type to return.
+    /// </summary>
     public interface IQuery
     {
         /// <summary>
@@ -249,6 +252,9 @@ namespace YesSql
         /// </summary>
         IQuery<T, TIndex> OrderBy(string sql);
 
+        /// <summary>
+        /// Sets a descending OrderBy clause using a custom lambda expression.
+        /// </summary>
         IQuery<T, TIndex> OrderByDescending(Expression<Func<TIndex, object>> keySelector);
 
         /// <summary>

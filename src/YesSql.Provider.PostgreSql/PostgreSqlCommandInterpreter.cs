@@ -6,12 +6,24 @@ using YesSql.Sql.Schema;
 
 namespace YesSql.Provider.PostgreSql
 {
+    /// <summary>
+    /// Represents a command interpreter that generates SQL statements for PostgreSQL.
+    /// </summary>
     public class PostgreSqlCommandInterpreter : BaseCommandInterpreter
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PostgreSqlCommandInterpreter"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration used to generate SQL statements.</param>
         public PostgreSqlCommandInterpreter(IConfiguration configuration) : base(configuration)
         {
         }
 
+        /// <summary>
+        /// Appends the SQL statement that alters an existing column to the specified builder.
+        /// </summary>
+        /// <param name="builder">The builder to append the SQL statement to.</param>
+        /// <param name="command">The alter column command to run.</param>
         public override void Run(StringBuilder builder, IAlterColumnCommand command)
         {
             builder.AppendFormat("alter table {0} alter column {1} ",

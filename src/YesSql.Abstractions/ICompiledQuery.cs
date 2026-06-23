@@ -11,6 +11,10 @@ namespace YesSql
     /// <typeparam name="T">The type of object the query returns.</typeparam>
     public interface ICompiledQuery<T> where T : class
     {
+        /// <summary>
+        /// Gets the expression tree representing the compiled query.
+        /// </summary>
+        /// <returns>An expression that transforms an <see cref="IQuery{T}"/> into the desired query.</returns>
         Expression<Func<IQuery<T>, IQuery<T>>> Query();
     }
 }

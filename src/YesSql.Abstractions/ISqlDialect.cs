@@ -5,6 +5,10 @@ using System.Text;
 
 namespace YesSql
 {
+    /// <summary>
+    /// Represents a database-specific SQL dialect, providing type mappings, quoting rules
+    /// and statement generation for a particular database provider.
+    /// </summary>
     public interface ISqlDialect
     {
 
@@ -23,10 +27,24 @@ namespace YesSql
         /// </summary>
         DbType ToDbType(Type type);
 
+        /// <summary>
+        /// Converts a value to the representation expected by the database, using the registered type handlers.
+        /// </summary>
+        /// <param name="source">The value to convert.</param>
+        /// <returns>The converted value, or the original value when no conversion applies.</returns>
         object TryConvert(object source);
 
+        /// <summary>
+        /// Removes all the registered custom type handlers.
+        /// </summary>
         void ResetTypeHandlers();
 
+        /// <summary>
+        /// Registers a custom handler that converts a value of type <typeparamref name="T"/> before it is sent to the database.
+        /// </summary>
+        /// <typeparam name="T">The .NET type to handle.</typeparam>
+        /// <typeparam name="TU">The type the value is converted to.</typeparam>
+        /// <param name="handler">The conversion delegate.</param>
         void AddTypeHandler<T, TU>(Func<T, TU> handler);
 
         /// <summary>
