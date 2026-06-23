@@ -35,8 +35,11 @@ namespace YesSql
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
+        public IEnumerable<IndexDescriptor> ExtraIndexDescriptors { get; set; } = [];
+        public IDocumentCommandHandler DocumentCommandHandler { get; set; }
         private readonly bool _withTracking;
 
+        public Func<Type, string, Task<IEnumerable<IndexDescriptor>>> BuildExtraIndexDescriptors { get; set; }
         private readonly bool _enableThreadSafetyChecks;
         private int _asyncOperations = 0;
         private string _previousStackTrace = null;
@@ -54,6 +57,7 @@ namespace YesSql
             {
                 [string.Empty] = _defaultState
             };
+            DocumentCommandHandler = DefaultDocumentCommandHandler.Instance;
         }
 
         public ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null)
@@ -178,7 +182,7 @@ namespace YesSql
 
             var doc = new Document
             {
-                Type = Store.TypeNames[entity.GetType()],
+                Type = Store.TypeService[entity.GetType()],
                 Content = Store.Configuration.ContentSerializer.Serialize(entity)
             };
 
@@ -306,7 +310,7 @@ namespace YesSql
 
             var doc = new Document
             {
-                Type = Store.TypeNames[entity.GetType()]
+                Type = Store.TypeService[entity.GetType()]
             };
 
             if (!state.IdentityMap.TryGetDocumentId(entity, out var id))
@@ -335,7 +339,7 @@ namespace YesSql
 
             _commands ??= [];
 
-            _commands.Add(new CreateDocumentCommand(doc, Store, collection));
+            _commands.Add(new CreateDocumentCommand(entity, doc, Store, collection, this));
 
             state.IdentityMap.AddDocument(doc);
 
@@ -425,7 +429,7 @@ namespace YesSql
 
             _commands ??= [];
 
-            _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
+            _commands.Add(new UpdateDocumentCommand(entity, oldDoc, Store, version, collection, this));
         }
 
         private async Task<Document> GetDocumentByIdAsync(long id, string collection, CancellationToken cancellationToken = default)
@@ -527,7 +531,7 @@ namespace YesSql
                 _commands ??= [];
 
                 // The command needs to come after any index deletion because of the database constraints
-                _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
+                _commands.Add(new DeleteDocumentCommand(obj, doc, Store, collection, this));
             }
         }
 
@@ -596,7 +600,7 @@ namespace YesSql
         internal IEnumerable<T> Get<T>(IEnumerable<Document> documents, string collection) where T : class
         {
             var defaultAccessor = _store.GetIdAccessor(typeof(T));
-            var typeName = Store.TypeNames[typeof(T)];
+            var typeName = Store.TypeService[typeof(T)];
 
             var state = GetState(collection);
 
@@ -615,7 +619,7 @@ namespace YesSql
                     // If the document type doesn't match the requested one, check it's a base type
                     if (!string.Equals(typeName, document.Type, StringComparison.Ordinal))
                     {
-                        var itemType = Store.TypeNames[document.Type];
+                        var itemType = Store.TypeService[document.Type];
 
                         // Ignore the document if it can't be casted to the requested type
                         if (!typeof(T).IsAssignableFrom(itemType))
@@ -1307,7 +1311,7 @@ namespace YesSql
         /// <summary>
         /// Resolves all the descriptors registered on the Store and the Session
         /// </summary>
-        private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collection)
+        private async Task<IEnumerable<IndexDescriptor>> GetDescriptorsAsync(Type t, string collection)
         {
             _descriptors ??= new Dictionary<string, IEnumerable<IndexDescriptor>>();
 
@@ -1328,12 +1332,27 @@ namespace YesSql
                 _descriptors.Add(cacheKey, typedDescriptors);
             }
 
-            return typedDescriptors;
+            var descriptors = typedDescriptors;
+
+            if (ExtraIndexDescriptors != null)
+            {
+                descriptors = descriptors.Union(ExtraIndexDescriptors);
+            }
+
+            if (BuildExtraIndexDescriptors != null)
+            {
+                var dynamicIndexDescriptors = await BuildExtraIndexDescriptors(t, collection);
+                if (dynamicIndexDescriptors != null)
+                {
+                    descriptors = descriptors.Union(dynamicIndexDescriptors);
+                }
+            }
+            return descriptors;
         }
 
         private async Task MapNew(Document document, object obj, string collection, CancellationToken cancellationToken)
         {
-            var descriptors = GetDescriptors(obj.GetType(), collection);
+            var descriptors = await GetDescriptorsAsync(obj.GetType(), collection);
 
             var state = GetState(collection);
 
@@ -1393,7 +1412,7 @@ namespace YesSql
         /// </summary>
         private async Task MapDeleted(Document document, object obj, string collection, CancellationToken cancellationToken)
         {
-            var descriptors = GetDescriptors(obj.GetType(), collection);
+            var descriptors = await GetDescriptorsAsync(obj.GetType(), collection);
 
             var state = GetState(collection);
 
