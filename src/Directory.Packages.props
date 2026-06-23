@@ -5,13 +5,14 @@
   <ItemGroup>
     <PackageVersion Include="Parlot" Version="$(ParlotPackageVersion)" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="$(MicrosoftDataSqlClientPackageVersion)" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="$(MicrosoftDataSqlitePackageVersion)" />
+    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="$(MicrosoftDataSqlitePackageVersion)" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="$(SQLitePCLRawBundleESqlite3PackageVersion)" />
     <PackageVersion Include="Npgsql" Version="$(NpgsqlPackageVersion)" />
     <PackageVersion Include="MySqlConnector" Version="$(MySqlConnectorPackageVersion)" />
     <PackageVersion Include="Dapper.StrongName" Version="$(DapperStrongNamePackageVersion)" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MicrosoftExtensionsLoggingAbstractionsPackageVersion)" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.203" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
   </ItemGroup>
 
   <ItemGroup>

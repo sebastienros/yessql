@@ -1,4 +1,4 @@
-using YesSql.Filters.Abstractions.Services;
+using YesSql.Filters.Services;
 
 namespace YesSql.Filters.Query
 {

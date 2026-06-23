@@ -5,7 +5,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Data.Sqlite" />
+        <!-- Using Microsoft.Data.Sqlite.Core + an explicit SQLitePCLRaw.bundle_e_sqlite3
+             to control the native SQLite version and avoid the vulnerable transitive
+             dependency. Switch back to the Microsoft.Data.Sqlite meta-package once a
+             stable (generally available) release pins a non-vulnerable SQLitePCLRaw. -->
+        <PackageReference Include="Microsoft.Data.Sqlite.Core" />
+        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
     </ItemGroup>
 
 </Project>
