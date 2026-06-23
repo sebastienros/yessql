@@ -11,3 +11,12 @@ jobs:
 
   tests:
     uses: ./.github/workflows/tests.yml
+
+  # Aggregate gate so a single "build" status check (required by branch
+  # protection) reflects the result of all parallel test jobs.
+  build:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: All tests passed
+      run: echo "All database tests passed."
