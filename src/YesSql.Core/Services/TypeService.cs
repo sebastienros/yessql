@@ -46,7 +46,14 @@ namespace YesSql.Services
                     return typeof(object);
                 }
 
-                return nameTypes[s];
+                // The reverse map is populated lazily, only when a type is first written or
+                // queried by its exact type during the current process. When reading a row whose
+                // type hasn't been registered yet, fall back to resolving it through reflection
+                // instead of throwing a 'KeyNotFoundException'. The resolved type is cached to
+                // avoid repeated reflection lookups. If the type name can't be resolved at all, a
+                // 'TypeResolutionException' is thrown so the document is not silently ignored.
+                return nameTypes.GetOrAdd(s, static name =>
+                    Type.GetType(name, throwOnError: false) ?? throw new TypeResolutionException(name));
             }
         }
 
