@@ -617,8 +617,8 @@ namespace YesSql
                     {
                         var itemType = Store.TypeNames[document.Type];
 
-                        // Ignore the document if its type can't be resolved or can't be casted to the requested type.
-                        if (itemType is null || !typeof(T).IsAssignableFrom(itemType))
+                        // Ignore the document if it can't be casted to the requested type
+                        if (!typeof(T).IsAssignableFrom(itemType))
                         {
                             continue;
                         }
