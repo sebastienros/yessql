@@ -63,6 +63,77 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldNotThrowWhenLoadingUnregisteredDocumentTypeById()
+        {
+            using (_tempFolder = new TemporaryFolder())
+            {
+                var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
+
+                var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+
+                long carId;
+                await using (var session1 = store1.CreateSession())
+                {
+                    var car = new Car { Name = "Peugeot" };
+
+                    await session1.SaveAsync(car);
+                    await session1.SaveChangesAsync();
+
+                    carId = car.Id;
+                }
+
+                // A brand-new store has an empty type name cache, like after an application restart.
+                var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+
+                await using var session2 = store2.CreateSession();
+
+                // A by-id read has no type filter, so it loads the 'Car' row even though 'Article'
+                // was requested and the 'Car' type has never been registered in this store. The row
+                // type is resolved through reflection, found not to be an 'Article', and skipped,
+                // instead of throwing a 'KeyNotFoundException'.
+                var result = await session2.GetAsync<Article>([carId]);
+
+                Assert.Empty(result);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldThrowTypeResolutionExceptionWhenStoredTypeCannotBeResolved()
+        {
+            using (_tempFolder = new TemporaryFolder())
+            {
+                var connectionString = @"Data Source=" + _tempFolder.Folder + "yessql.db;Cache=Shared";
+
+                var store1 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+
+                // Persist a 'Car' under a type name that cannot be resolved through reflection, as
+                // happens with a custom 'SimplifiedTypeName' or after an assembly is renamed.
+                store1.TypeNames[typeof(Car)] = "Unresolvable.Type, Missing.Assembly";
+
+                long carId;
+                await using (var session1 = store1.CreateSession())
+                {
+                    var car = new Car { Name = "Peugeot" };
+
+                    await session1.SaveAsync(car);
+                    await session1.SaveChangesAsync();
+
+                    carId = car.Id;
+                }
+
+                // A brand-new store has an empty type name cache, like after an application restart,
+                // so the stored type name can no longer be resolved.
+                var store2 = await StoreFactory.CreateAndInitializeAsync(new Configuration().UseSqLite(connectionString).SetTablePrefix(TablePrefix).UseDefaultIdGenerator());
+
+                await using var session2 = store2.CreateSession();
+
+                // The row exists but its type can't be resolved, so it must surface a descriptive
+                // exception instead of being silently ignored.
+                await Assert.ThrowsAsync<TypeResolutionException>(() => session2.GetAsync<Article>([carId]));
+            }
+        }
+
+        [Fact]
         public async Task ShouldSeedExistingIds()
         {
             using (_tempFolder = new TemporaryFolder())
