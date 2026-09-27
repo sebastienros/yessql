@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -5211,6 +5212,152 @@ namespace YesSql.Tests
 
             Assert.NotEmpty(logger.ToString());
             Assert.DoesNotContain("PersonByAge", logger.ToString());
+        }
+
+        [Fact]
+        public async Task ShouldNotReloadDocumentWhenDeletingLoadedEntity()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var log = new StringBuilder();
+            var logger = new TestLogger(log);
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                var bill = await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync();
+                Assert.NotNull(bill);
+
+                // Only record the statements executed when the entity is deleted
+                log.Clear();
+
+                session.Delete(bill);
+
+                await session.SaveChangesAsync();
+            }
+
+            // The document was already loaded, it should not be queried again to be deleted.
+            Assert.Contains("delete from", logger.ToString(), StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("select", logger.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person>().CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
+                Assert.Equal("Steve", (await session.Query<Person, PersonByName>().FirstOrDefaultAsync()).Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotDeserializePreviousVersionWhenUpdatingMapIndexes()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var serializer = _store.Configuration.ContentSerializer;
+            var countingSerializer = new CountingContentSerializer(serializer);
+
+            try
+            {
+                _store.Configuration.ContentSerializer = countingSerializer;
+
+                await using (var session = _store.CreateSession())
+                {
+                    var bill = await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync();
+                    Assert.Equal(1, countingSerializer.Deserializations);
+
+                    bill.Firstname = "William";
+                    await session.SaveAsync(bill);
+
+                    await session.SaveChangesAsync();
+                }
+
+                // Only the load deserialized the document, updating a map index doesn't need the previous version.
+                Assert.Equal(1, countingSerializer.Deserializations);
+            }
+            finally
+            {
+                _store.Configuration.ContentSerializer = serializer;
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Null(await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync());
+                Assert.Equal("William", (await session.Query<Person, PersonByName>(x => x.SomeName == "William").FirstOrDefaultAsync()).Firstname);
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotDeduplicateQueriesWithoutJoinsOrPaging()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+                await session.SaveAsync(new Person { Firstname = "Paul" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var log = new StringBuilder();
+            _store.Configuration.Logger = new TestLogger(log);
+
+            await using (var session = _store.CreateSession())
+            {
+                // Without a join, a document can't be returned more than once
+                Assert.Equal(3, (await session.Query<Person>().ListAsync()).Count);
+                Assert.DoesNotContain("IndexQuery", log.ToString());
+
+                // Paged queries are applied on the document ids
+                log.Clear();
+                Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
+                Assert.Contains("IndexQuery", log.ToString());
+
+                // With a join, the results are de-duplicated
+                log.Clear();
+                Assert.Equal(new[] { "Bill", "Paul", "Steve" }, (await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync()).Select(x => x.Firstname));
+                Assert.Contains("IndexQuery", log.ToString());
+            }
+        }
+
+        private sealed class CountingContentSerializer : IContentSerializer
+        {
+            private readonly IContentSerializer _serializer;
+
+            public CountingContentSerializer(IContentSerializer serializer)
+            {
+                _serializer = serializer;
+            }
+
+            public int Deserializations { get; private set; }
+
+            public object Deserialize(string content, Type type)
+            {
+                Deserializations++;
+                return _serializer.Deserialize(content, type);
+            }
+
+            public string Serialize(object item)
+            {
+                return _serializer.Serialize(item);
+            }
         }
 
         [Fact]
