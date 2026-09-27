@@ -1461,7 +1461,10 @@ namespace YesSql.Services
 
                         // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
 
-                        var sql = _query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
+                        // Without any join each document can only be returned once, so the query doesn't need to be de-duplicated.
+                        // Paged queries still use the de-duplicated form: the paging is then applied on the document ids only
+                        // (a deferred join), which some databases (e.g. SQLite) execute much faster than sorting whole documents.
+                        var sql = _query._queryState._deduplicate && (sqlBuilder.HasJoin || sqlBuilder.HasPaging) ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
                         var logger = _query._session._store.Configuration.Logger;
 
                         if (logger.IsEnabled(LogLevel.Debug))
