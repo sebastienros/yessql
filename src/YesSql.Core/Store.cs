@@ -89,6 +89,7 @@ namespace YesSql
         {
             IndexCommand.ResetQueryCache();
             DocumentCommand.ResetQueryCache();
+            DeleteMapIndexCommand.ResetQueryCache();
             ValidateConfiguration();
 
             TypeNames = new TypeService();

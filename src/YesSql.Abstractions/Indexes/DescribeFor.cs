@@ -254,7 +254,26 @@ namespace YesSql.Indexes
 
         Func<object, CancellationToken, Task<IEnumerable<IIndex>>> IDescribeFor.GetMap()
         {
-            return async (x, token) => (await _map((T)x, token) ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
+            return (x, token) =>
+            {
+                var task = _map((T)x, token);
+
+                // Most maps are synchronous (e.g. 'Map(x => new TIndex { ... })'), in which case the result
+                // is returned without the cost of an async state machine.
+                if (task.IsCompletedSuccessfully)
+                {
+                    return Task.FromResult(AsIndexes(task.Result));
+                }
+
+                return AwaitMap(task);
+            };
+
+            static async Task<IEnumerable<IIndex>> AwaitMap(Task<IEnumerable<TIndex>> task)
+                => AsIndexes(await task);
+
+            // IEnumerable<T> is covariant, so a sequence of reference type indexes can be used without being wrapped.
+            static IEnumerable<IIndex> AsIndexes(IEnumerable<TIndex> indexes)
+                => indexes as IEnumerable<IIndex> ?? (indexes ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
         }
 
         Func<IGrouping<object, IIndex>, IIndex> IDescribeFor.GetReduce()
