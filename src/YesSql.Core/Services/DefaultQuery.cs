@@ -1479,10 +1479,11 @@ namespace YesSql.Services
                                 documents.Add(document);
                             }
 
-                            // Clone documents as they might be shared across sessions
+                            // The documents are materialized for this query only (they don't go through the shared
+                            // query gating), so they don't need to be cloned.
                             items = documents.Count == 0
                                 ? []
-                                : _query._session.Get<T>(documents.Select(x => x.Clone()), _query._collection).ToList();
+                                : _query._session.Get<T>(documents, _query._collection).ToList();
                         }
                         catch
                         {

@@ -577,14 +577,27 @@ namespace YesSql
                     CancellationToken = cancellationToken,
                 });
 
-                if (!documents.Any())
+                var documentsList = documents as IReadOnlyList<Document> ?? documents.ToList();
+
+                if (documentsList.Count == 0)
                 {
                     return [];
                 }
 
-                // Clone documents returned from ProduceAsync as they might be shared across sessions
-                var sortedDocuments = documents.Select(x => x.Clone())
-                    .OrderBy(d => Array.IndexOf(ids, d.Id));
+                // Clone documents returned from ProduceAsync as they might be shared across sessions,
+                // and return them in the order of the requested ids. Document ids are unique so the
+                // sort doesn't need to be stable.
+                var sortedDocuments = new Document[documentsList.Count];
+                var positions = new int[documentsList.Count];
+
+                for (var i = 0; i < sortedDocuments.Length; i++)
+                {
+                    var document = documentsList[i];
+                    sortedDocuments[i] = document.Clone();
+                    positions[i] = Array.IndexOf(ids, document.Id);
+                }
+
+                Array.Sort(positions, sortedDocuments);
 
                 return Get<T>(sortedDocuments, collection)
                     .ToArray();
