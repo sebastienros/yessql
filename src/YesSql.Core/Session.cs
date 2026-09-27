@@ -513,7 +513,12 @@ namespace YesSql
                 id = accessor.Get(obj);
             }
 
-            var doc = await GetDocumentByIdAsync(id, collection, cancellationToken);
+            // Like for updates, reuse the document from the identity map when the entity was loaded or
+            // saved in this session, instead of querying it again for each deleted entity.
+            if (!state.IdentityMap.TryGetDocument(id, out var doc))
+            {
+                doc = await GetDocumentByIdAsync(id, collection, cancellationToken);
+            }
 
             if (doc != null)
             {
