@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -42,6 +43,10 @@ namespace YesSql.Services
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
         public bool _deduplicate = true;
+
+        // Whether the query is being built to be cached as a compiled query, in which case the
+        // parameter bindings need to be recorded so they can be re-evaluated on each execution.
+        internal bool _trackParameterBindings;
 
         public void FlushFilters()
         {
@@ -291,86 +296,10 @@ namespace YesSql.Services
             };
 
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsIn")] =
-                static (query, builder, dialect, expression) =>
-                {
-                    // Could be simplified if int[] could be casted to IEnumerable<object>
-                    var objects = GetExpressionValue(expression.Arguments[1]) as IEnumerable;
-                    var values = new List<object>();
-
-                    foreach (var o in objects)
-                    {
-                        values.Add(o);
-                    }
-
-                    if (values.Count == 0)
-                    {
-                        builder.Append(" 1 = 0");
-                    }
-                    else if (values.Count == 1)
-                    {
-                        query.ConvertFragment(builder, expression.Arguments[0]);
-                        builder.Append(" = ");
-                        query.ConvertFragment(builder, Expression.Constant(values[0]));
-                    }
-                    else
-                    {
-                        query.ConvertFragment(builder, expression.Arguments[0]);
-                        var elements = new RentedStringBuilder(128);
-                        for (var i = 0; i < values.Count; i++)
-                        {
-                            query.ConvertFragment(elements, Expression.Constant(values[i]));
-                            if (i < values.Count - 1)
-                            {
-                                elements.Append(", ");
-                            }
-                        }
-
-                        builder.Append(dialect.InOperator(elements.ToString()));
-
-                        elements.Dispose();
-                    }
-                };
+                static (query, builder, dialect, expression) => InValues(query, builder, dialect, expression, false);
 
             MethodMappings[typeof(DefaultQueryExtensions).GetMethod("IsNotIn")] =
-                static (query, builder, dialect, expression) =>
-                {
-                    // Could be simplified if int[] could be casted to IEnumerable<object>
-                    var objects = GetExpressionValue(expression.Arguments[1]) as IEnumerable;
-                    var values = new List<object>();
-
-                    foreach (var o in objects)
-                    {
-                        values.Add(o);
-                    }
-
-                    if (values.Count == 0)
-                    {
-                        builder.Append(" 1 = 1");
-                    }
-                    else if (values.Count == 1)
-                    {
-                        query.ConvertFragment(builder, expression.Arguments[0]);
-                        builder.Append(" <> ");
-                        query.ConvertFragment(builder, Expression.Constant(values[0]));
-                    }
-                    else
-                    {
-                        query.ConvertFragment(builder, expression.Arguments[0]);
-                        var elements = new RentedStringBuilder(128);
-                        for (var i = 0; i < values.Count; i++)
-                        {
-                            query.ConvertFragment(elements, Expression.Constant(values[i]));
-                            if (i < values.Count - 1)
-                            {
-                                elements.Append(", ");
-                            }
-                        }
-
-                        builder.Append(dialect.NotInOperator(elements.ToString()));
-
-                        elements.Dispose();
-                    }
-                };
+                static (query, builder, dialect, expression) => InValues(query, builder, dialect, expression, true);
 
             MethodMappings[typeof(DefaultQueryExtensionsIndex).GetMethod("IsIn")] =
                 static (query, builder, dialect, expression) =>
@@ -395,6 +324,84 @@ namespace YesSql.Services
                 {
                     InFilter(query, builder, dialect, expression, true, expression.Arguments[1], null);
                 };
+        }
+
+        private static void InValues(DefaultQuery query, IStringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate)
+        {
+            // Could be simplified if int[] could be casted to IEnumerable<object>
+            var objects = GetExpressionValue(expression.Arguments[1]) as IEnumerable;
+            var enumerator = objects.GetEnumerator();
+
+            try
+            {
+                if (!enumerator.MoveNext())
+                {
+                    builder.Append(negate ? " 1 = 1" : " 1 = 0");
+                    return;
+                }
+
+                var first = enumerator.Current;
+
+                query.ConvertFragment(builder, expression.Arguments[0]);
+
+                if (!enumerator.MoveNext())
+                {
+                    builder.Append(negate ? " <> " : " = ");
+                    query.AddParameter(builder, first);
+                    return;
+                }
+
+                // The values are added as parameters directly, without creating a constant expression for each of them.
+                var elements = new RentedStringBuilder(128);
+                query.AddParameter(elements, first);
+
+                do
+                {
+                    elements.Append(", ");
+                    query.AddParameter(elements, enumerator.Current);
+                }
+                while (enumerator.MoveNext());
+
+                builder.Append(negate ? dialect.NotInOperator(elements.ToString()) : dialect.InOperator(elements.ToString()));
+
+                elements.Dispose();
+            }
+            finally
+            {
+                (enumerator as IDisposable)?.Dispose();
+            }
+        }
+
+        private static readonly string[] _parameterNames = CreateParameterNames(64);
+
+        private static string[] CreateParameterNames(int count)
+        {
+            var names = new string[count];
+
+            for (var i = 0; i < names.Length; i++)
+            {
+                names[i] = "@p" + i.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return names;
+        }
+
+        /// <summary>
+        /// Returns the name of the parameter at the specified index, e.g. <c>@p0</c>, without allocating for the most common ones.
+        /// </summary>
+        private static string GetParameterName(int index)
+        {
+            return (uint)index < (uint)_parameterNames.Length
+                ? _parameterNames[index]
+                : "@p" + index.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private void AddParameter(IStringBuilder builder, object value)
+        {
+            var parameters = _queryState._sqlBuilder.Parameters;
+            var name = _queryState._lastParameterName = GetParameterName(parameters.Count);
+            parameters.Add(name, _dialect.TryConvert(value));
+            builder.Append(name);
         }
 
         private static void InFilter(DefaultQuery query, IStringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate, Expression selector, Expression indexFilter)
@@ -637,18 +644,21 @@ namespace YesSql.Services
                             obj = null;
                         }
 
-                        _queryState._parameterBindings ??= new List<Action<object, ISqlBuilder>>();
-
-                        // Create a delegate that will be invoked every time a compiled query is reused,
-                        // which will re-evaluate the current node, for the current parameter.
-                        var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-
-                        _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                        if (_queryState._trackParameterBindings)
                         {
-                            var localValue = ((FieldInfo)memberExpression.Member).GetValue(o);
+                            _queryState._parameterBindings ??= new List<Action<object, ISqlBuilder>>();
 
-                            sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
-                        });
+                            // Create a delegate that will be invoked every time a compiled query is reused,
+                            // which will re-evaluate the current node, for the current parameter.
+                            var _parameterName = GetParameterName(_queryState._sqlBuilder.Parameters.Count);
+
+                            _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                            {
+                                var localValue = ((FieldInfo)memberExpression.Member).GetValue(o);
+
+                                sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
+                            });
+                        }
 
                         value = ((FieldInfo)memberExpression.Member).GetValue(obj);
 
@@ -674,18 +684,21 @@ namespace YesSql.Services
                             obj = null;
                         }
 
-                        _queryState._parameterBindings = _queryState._parameterBindings ?? new List<Action<object, ISqlBuilder>>();
-
-                        // Create a delegate that will be invoked every time a compiled query is reused,
-                        // which will re-evaluate the current node, for the current parameter.
-                        var _parameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-
-                        _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                        if (_queryState._trackParameterBindings)
                         {
-                            var localValue = ((PropertyInfo)memberExpression.Member).GetValue(o);
+                            _queryState._parameterBindings ??= new List<Action<object, ISqlBuilder>>();
 
-                            sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
-                        });
+                            // Create a delegate that will be invoked every time a compiled query is reused,
+                            // which will re-evaluate the current node, for the current parameter.
+                            var _parameterName = GetParameterName(_queryState._sqlBuilder.Parameters.Count);
+
+                            _queryState._parameterBindings.Add((o, sqlBuilder) =>
+                            {
+                                var localValue = ((PropertyInfo)memberExpression.Member).GetValue(o);
+
+                                sqlBuilder.Parameters[_parameterName] = convertValue ? _dialect.TryConvert(localValue) : localValue;
+                            });
+                        }
 
                         value = ((PropertyInfo)memberExpression.Member).GetValue(obj);
 
@@ -857,10 +870,7 @@ namespace YesSql.Services
 
                     break;
                 case ExpressionType.Constant:
-                    _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                    var value = ((ConstantExpression)expression).Value;
-                    _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(value));
-                    builder.Append(_queryState._lastParameterName);
+                    AddParameter(builder, ((ConstantExpression)expression).Value);
                     break;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)expression;
@@ -882,10 +892,7 @@ namespace YesSql.Services
 
             void AddConstantParameter(ConstantExpression expression)
             {
-                _queryState._lastParameterName = "@p" + _queryState._sqlBuilder.Parameters.Count.ToString();
-                _queryState._sqlBuilder.Parameters.Add(_queryState._lastParameterName, _dialect.TryConvert(expression.Value));
-
-                builder.Append(_queryState._lastParameterName);
+                AddParameter(builder, expression.Value);
             }
 
             void AddMemberParameter(MemberExpression expression)

@@ -673,7 +673,9 @@ namespace YesSql
 
             var queryState = _store.CompiledQueries.GetOrAdd(discriminator, discriminator =>
             {
-                var localQuery = ((IQuery)new DefaultQuery(this, _tablePrefix, collection)).For<T>(false);
+                var compilingQuery = new DefaultQuery(this, _tablePrefix, collection);
+                compilingQuery._queryState._trackParameterBindings = true;
+                var localQuery = ((IQuery)compilingQuery).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
                 return defaultQuery._query._queryState;
             })

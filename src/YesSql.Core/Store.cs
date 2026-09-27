@@ -307,7 +307,8 @@ namespace YesSql
 
         internal async Task<T> ProduceAwaitedAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState,  Task<T>> work, TState state)
         {
-            var content = await _dispatcher.ScheduleAsync(key, state, async (key, state) => await work(key, state)); // TODO cancellation token into dispatcher?
+            // The work and its state are passed as the dispatcher state so the callback doesn't capture them in a closure.
+            var content = await _dispatcher.ScheduleAsync(key, (work, state), static async (key, s) => await s.work(key, s.state)); // TODO cancellation token into dispatcher?
 
             return (T)content;
         }
