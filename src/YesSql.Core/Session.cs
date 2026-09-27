@@ -412,10 +412,9 @@ namespace YesSql
                 }
             }
 
-            var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
-
-            // Update map index
-            await MapDeleted(oldDoc, oldObj, collection, cancellationToken);
+            // Update map index. The previous version of the object is only deserialized if an index
+            // needs it (filtered or reduced indexes), plain map indexes are deleted by document id.
+            await MapDeleted(oldDoc, entity.GetType(), static (state) => state.Serializer.Deserialize(state.Content, state.Type), (Serializer: Store.Configuration.ContentSerializer, oldDoc.Content, Type: entity.GetType()), collection, cancellationToken);
 
             await MapNew(oldDoc, entity, collection, cancellationToken);
 
@@ -522,7 +521,7 @@ namespace YesSql
                 state.IdentityMap.Remove(id, obj);
 
                 // Update impacted indexes
-                await MapDeleted(doc, obj, collection, cancellationToken);
+                await MapDeleted(doc, obj.GetType(), static (obj) => obj, obj, collection, cancellationToken);
 
                 _commands ??= [];
 
@@ -1419,14 +1418,23 @@ namespace YesSql
         /// <summary>
         /// Update map and reduce indexes when an entity is deleted.
         /// </summary>
-        private async Task MapDeleted(Document document, object obj, string collection, CancellationToken cancellationToken)
+        private async Task MapDeleted<TState>(Document document, Type type, Func<TState, object> getObject, TState objectState, string collection, CancellationToken cancellationToken)
         {
-            var descriptors = GetDescriptors(obj.GetType(), collection);
+            var descriptors = GetDescriptors(type, collection);
 
             var state = GetState(collection);
 
+            object obj = null;
+            var objResolved = false;
+
             foreach (var descriptor in descriptors)
             {
+                if (!objResolved && (descriptor.Filter != null || (descriptor.Reduce != null && descriptor.Delete != null)))
+                {
+                    obj = getObject(objectState);
+                    objResolved = true;
+                }
+
                 // Ignore index if the object is filtered out
                 if (descriptor.Filter != null && !descriptor.Filter.Invoke(obj))
                 {
