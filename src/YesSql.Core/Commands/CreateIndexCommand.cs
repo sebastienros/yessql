@@ -28,7 +28,6 @@ namespace YesSql.Commands
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
             var type = Index.GetType();
-            var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
             var sql = InsertsForExecute(type, dialect);
 
@@ -39,7 +38,7 @@ namespace YesSql.Commands
 
             if (Index is MapIndex)
             {
-                var command = connection.CreateCommand();
+                await using var command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = sql;
                 GetProperties(command, Index, "", dialect);
@@ -50,7 +49,7 @@ namespace YesSql.Commands
             {
                 Index.Id = await connection.ExecuteScalarAsync<long>(new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
 
-                var reduceIndex = Index as ReduceIndex;
+                var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 var bridgeSql = "insert into " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + bridgeTableName, _store.Configuration.Schema) + " (" + columnList + ") values (@Id, @DocumentId);";
@@ -85,9 +84,9 @@ namespace YesSql.Commands
             }
 
             var type = Index.GetType();
-            var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
+            var suffix = index.ToString();
             var sql = Inserts(type, dialect);
-            sql = sql.Replace(ParameterSuffix, index.ToString());
+            sql = sql.Replace(ParameterSuffix, suffix);
             queries.Add(sql);
 
             actions.Add(dr =>
@@ -97,18 +96,15 @@ namespace YesSql.Commands
                 dr.NextResult();
             });
 
-            GetProperties(batchCommand, Index, index.ToString(), dialect);
-
-            var tableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection);
+            GetProperties(batchCommand, Index, suffix, dialect);
 
             if (Index is MapIndex)
             {
-                batchCommand.AddParameter($"DocumentId{index}", Index.GetAddedDocuments().Single().Id);
+                batchCommand.AddParameter("DocumentId" + suffix, Index.GetAddedDocuments().Single().Id);
             }
             else
             {
-                var reduceIndex = Index as ReduceIndex;
-                
+                var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
                 var bridgeTableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
                 var columnList = dialect.QuoteForColumnName(type.Name + "Id") + ", " + dialect.QuoteForColumnName("DocumentId");
                 queries.Add($"insert into {dialect.QuoteForTableName(bridgeTableName, _store.Configuration.Schema)} ({columnList}) values ({dialect.IdentityLastId}, @DocumentId_{index});");

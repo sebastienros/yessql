@@ -20,8 +20,8 @@ namespace YesSql.Commands
 
         protected readonly IStore _store;
 
-        private static readonly ConcurrentDictionary<PropertyInfo, PropertyInfoAccessor> PropertyAccessors = new();
-        private static readonly ConcurrentDictionary<string, PropertyInfo[]> TypeProperties = new();
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> TypeProperties = new();
+        private static readonly ConcurrentDictionary<Type, (PropertyInfo Property, PropertyInfoAccessor Accessor)[]> TypeAccessors = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> InsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteInsertsList = new();
@@ -54,12 +54,10 @@ namespace YesSql.Commands
 
         protected static void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
         {
-            var type = item.GetType();
+            var accessors = TypeAccessors.GetOrAdd(item.GetType(), static type => TypePropertiesCache(type).Select(p => (p, new PropertyInfoAccessor(p))).ToArray());
 
-            foreach (var property in TypePropertiesCache(type))
+            foreach (var (property, accessor) in accessors)
             {
-                var accessor = PropertyAccessors.GetOrAdd(property, p => new PropertyInfoAccessor(p));
-
                 var value = accessor.Get(item);
 
                 var parameter = command.CreateParameter();
@@ -72,13 +70,13 @@ namespace YesSql.Commands
 
         protected static PropertyInfo[] TypePropertiesCache(Type type)
         {
-            if (TypeProperties.TryGetValue(type.FullName, out var pis))
+            if (TypeProperties.TryGetValue(type, out var pis))
             {
                 return pis;
             }
 
             var properties = type.GetProperties().Where(IsWriteable).ToArray();
-            TypeProperties[type.FullName] = properties;
+            TypeProperties[type] = properties;
             return properties;
         }
 
@@ -86,7 +84,7 @@ namespace YesSql.Commands
         {
             var key = new CompoundKey(
                 dialect.Name,
-                type.FullName,
+                type,
                 _store.Configuration.Schema,
                 _store.Configuration.TablePrefix,
                 Collection);
@@ -157,7 +155,7 @@ namespace YesSql.Commands
         {
             var key = new CompoundKey(
                 dialect.Name,
-                type.FullName,
+                type,
                 _store.Configuration.Schema,
                 _store.Configuration.TablePrefix,
                 Collection);
@@ -192,7 +190,7 @@ namespace YesSql.Commands
         {
             var key = new CompoundKey(
                 dialect.Name,
-                type.FullName,
+                type,
                 _store.Configuration.Schema,
                 _store.Configuration.TablePrefix,
                 Collection);
@@ -213,7 +211,7 @@ namespace YesSql.Commands
         {
             var key = new CompoundKey(
                 dialect.Name,
-                type.FullName,
+                type,
                 _store.Configuration.Schema,
                 _store.Configuration.TablePrefix,
                 Collection);
@@ -238,6 +236,6 @@ namespace YesSql.Commands
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
 
-        private sealed record CompoundKey(string Dialect, string Type, string Schema, string Prefix, string Collection);
+        private readonly record struct CompoundKey(string Dialect, Type Type, string Schema, string Prefix, string Collection);
     }
 }

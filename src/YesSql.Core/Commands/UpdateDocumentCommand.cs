@@ -23,13 +23,12 @@ namespace YesSql.Commands
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
         {
-            var updateCmd = GetUpdateCommandText(dialect, _store, Collection)
-                + (_checkVersion > -1
-                    ? Document.Version == 1 // When the Document.Version is 0 + 1 the Version column maybe null.
+            var updateCmd = _checkVersion > -1
+                ? GetUpdateCommandText(dialect, _store, Collection)
+                    + (Document.Version == 1 // When the Document.Version is 0 + 1 the Version column maybe null.
                         ? $" and ({dialect.QuoteForColumnName("Version")} IS NULL OR {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)}) ;"
-                        : $" and {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)} ;"
-                    : ";")
-                ;
+                        : $" and {dialect.QuoteForColumnName("Version")} = {dialect.GetSqlValue(_checkVersion)} ;")
+                : GetUnversionedUpdateCommandText(dialect, _store, Collection);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {

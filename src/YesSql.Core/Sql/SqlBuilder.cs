@@ -110,18 +110,24 @@ namespace YesSql.Sql
                 JoinSegments.Add(" INNER JOIN ");
             }
 
-            JoinSegments.Add(FormatTable(table, schema));
+            var segments = JoinSegments;
+
+            segments.Add(FormatTable(table, schema));
 
             if (!string.IsNullOrEmpty(alias))
             {
-                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForAliasName(alias) });
+                segments.Add(" AS ");
+                segments.Add(_dialect.QuoteForAliasName(alias));
             }
 
-            JoinSegments.AddRange(new[] {
-                " ON ", onTable, ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", toTable, ".", _dialect.QuoteForColumnName(toColumn)
-                }
-            );
+            segments.Add(" ON ");
+            segments.Add(onTable);
+            segments.Add(".");
+            segments.Add(_dialect.QuoteForColumnName(onColumn));
+            segments.Add(" = ");
+            segments.Add(toTable);
+            segments.Add(".");
+            segments.Add(_dialect.QuoteForColumnName(toColumn));
         }
 
         public void Select()
