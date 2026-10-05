@@ -37,7 +37,12 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(sql);
             }
-            await connection.ExecuteAsync(new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = sql;
+            GetProperties(command, Index, "", dialect, _store.Configuration, Collection);
+            command.AddParameter("Id", Index.Id);
+            await command.ExecuteNonQueryAsync(cancellationToken);
 
             // Update the documents list
             if (Index is ReduceIndex)
@@ -87,7 +92,7 @@ namespace YesSql.Commands
             sql = sql.Replace(ParameterSuffix, index.ToString());
             queries.Add(sql);
 
-            GetProperties(command, Index, index.ToString(), dialect);
+            GetProperties(command, Index, index.ToString(), dialect, _store.Configuration, Collection);
 
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"Id{index}";
