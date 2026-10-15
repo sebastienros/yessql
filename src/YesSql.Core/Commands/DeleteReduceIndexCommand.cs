@@ -17,7 +17,7 @@ namespace YesSql.Commands
 
         public override int ExecutionOrder { get; } = 1;
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
+        public override bool AddToBatch(ISqlDialect dialect, DbConnection connection, DbTransaction transaction, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             var type = Index.GetType();
             var name = type.Name;

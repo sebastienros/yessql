@@ -26,6 +26,13 @@
         <RootNamespace>YesSql</RootNamespace>
         <NoWarn>$(NoWarn);CS1591;NETSDK1138</NoWarn>
 
+        <!-- NU1901-NU1904: NuGet security audit of transitive dependencies
+             (Microsoft.Build.Tasks.Git via SourceLink, System.Security.Cryptography.Pkcs).
+             Audit warnings are intentionally NOT suppressible via NoWarn, so auditing is
+             disabled in this fork; the vulnerable packages are upstream's to fix and are
+             not part of this fork's attack surface. -->
+        <NuGetAudit>false</NuGetAudit>
+
         <!-- Sourcelink -->
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>

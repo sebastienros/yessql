@@ -1,7 +1,10 @@
-using Microsoft.Data.Sqlite;
-using System;
+using System.Collections.Generic;
+using System.Data.Common;
 using System.Threading.Tasks;
 using Xunit;
+using YesSql.Commands;
+using YesSql.Commands.DocumentChanged;
+using YesSql.Indexes;
 using YesSql.Provider.Sqlite;
 using YesSql.Sql;
 using YesSql.Tests.Indexes;
@@ -175,30 +178,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldIndexPropertyKeys()
         {
-            await using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
-            {
-                await connection.OpenAsync();
-
-                await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
-                var builder = new SchemaBuilder(_store.Configuration, transaction);
-
-                await builder
-                    .DropMapIndexTableAsync<PropertyIndex>();
-
-                await builder
-                    .CreateMapIndexTableAsync<PropertyIndex>(column => column
-                        .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
-                        .Column<bool>(nameof(PropertyIndex.ForRent))
-                        .Column<bool>(nameof(PropertyIndex.IsOccupied))
-                        .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
-                    );
-
-                await builder
-                    .AlterTableAsync(nameof(PropertyIndex), table => table
-                        .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
-
-                await transaction.CommitAsync();
-            }
+            await EnsurePropertyIndexTableAsync();
 
             _store.RegisterIndexes<PropertyIndexProvider>();
 
@@ -212,6 +192,209 @@ namespace YesSql.Tests
             };
 
             await session.SaveAsync(property);
+        }
+
+        [Fact]
+        public async Task ShouldIndexByExtraDescriptors()
+        {
+            await EnsurePropertyIndexTableAsync();
+
+            var extraDescriptors = new List<IndexDescriptor>
+            {
+                new IndexDescriptor
+                {
+                    Type = typeof(PropertyIndex),
+                    IndexType = typeof(PropertyIndex),
+                    Filter= (entity) => entity is Property,
+                    Map = static (entity, _) =>
+                    {
+                        var property = (Property)entity;
+                        return Task.FromResult<IEnumerable<IIndex>>([
+                            new PropertyIndex
+                                {
+                                    Name = property.Name,
+                                    ForRent = property.ForRent,
+                                    IsOccupied = property.IsOccupied,
+                                    Location = property.Location
+                                }
+                            ]);
+                    }
+                }
+            };
+            await using var session = _store.CreateSession();
+            session.ExtraIndexDescriptors = extraDescriptors;
+
+
+            var property = new Property
+            {
+                Name = "test",
+                IsOccupied = true,
+                ForRent = true,
+                Location = new string('*', 4000)
+            };
+
+            await session.SaveAsync(property);
+
+            var ls = await session.Query<Property, PropertyIndex>(x => x.Name == "test").ListAsync();
+            Assert.NotEmpty(ls);
+        }
+
+        [Fact]
+        public async Task ShouldBuildDynamicExtraDescriptorsAndInvokeDocumentHooks()
+        {
+            var handler = new RecordingDocumentCommandHandler();
+            static Task<IEnumerable<IndexDescriptor>> BuildDescriptorsAsync(System.Type type, string collection)
+            {
+                if (type != typeof(Person))
+                {
+                    return Task.FromResult<IEnumerable<IndexDescriptor>>([]);
+                }
+
+                return Task.FromResult<IEnumerable<IndexDescriptor>>(
+                [
+                    new IndexDescriptor
+                    {
+                        Type = typeof(PersonByName),
+                        IndexType = typeof(PersonByName),
+                        Filter = entity => entity is Person,
+                        Map = static (entity, _) =>
+                        {
+                            var person = (Person)entity;
+                            return Task.FromResult<IEnumerable<IIndex>>(
+                            [
+                                new PersonByName
+                                {
+                                    SomeName = person.Firstname
+                                }
+                            ]);
+                        }
+                    }
+                ]);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var person = new Person
+                {
+                    Firstname = "hooked",
+                    Lastname = "A"
+                };
+
+                session.DocumentCommandHandler = handler;
+                session.BuildExtraIndexDescriptors = BuildDescriptorsAsync;
+
+                await session.SaveAsync(person);
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                session.DocumentCommandHandler = handler;
+                session.BuildExtraIndexDescriptors = BuildDescriptorsAsync;
+
+                var storedPerson = await session.Query<Person, PersonByName>(x => x.SomeName == "hooked").FirstOrDefaultAsync();
+                Assert.NotNull(storedPerson);
+
+                storedPerson.Firstname = "updated";
+
+                // v6.0.0 semantics: a tracked (hydrated) entity must be re-registered through
+                // SaveAsync after modification before SaveChangesAsync will flush it (see
+                // upstream ShouldUpdateNewDocument). In 5.0 the flush detected changed tracked
+                // entities on its own.
+                await session.SaveAsync(storedPerson);
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                session.DocumentCommandHandler = handler;
+                session.BuildExtraIndexDescriptors = BuildDescriptorsAsync;
+
+                var storedPerson = await session.Query<Person, PersonByName>(x => x.SomeName == "updated").FirstOrDefaultAsync();
+                Assert.NotNull(storedPerson);
+
+                session.Delete(storedPerson);
+                await session.SaveChangesAsync();
+            }
+
+            // v6.0.0: the SQLite dialect reports SupportsBatching = false (upstream #717), so
+            // document commands execute individually and the non-batch hook variants are
+            // invoked. In 5.0 the SQLite flow was batched and the ":batch" variants fired.
+            Assert.Contains("create", handler.Events);
+            Assert.Contains("update", handler.Events);
+            Assert.Contains("delete", handler.Events);
+            Assert.All(handler.Documents, static document => Assert.True(document.Id > 0));
+        }
+
+        private async Task EnsurePropertyIndexTableAsync()
+        {
+            await using var connection = _store.Configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            await using var transaction = await connection.BeginTransactionAsync(_store.Configuration.IsolationLevel);
+            var builder = new SchemaBuilder(_store.Configuration, transaction);
+
+            await builder
+                .DropMapIndexTableAsync<PropertyIndex>();
+
+            await builder
+                .CreateMapIndexTableAsync<PropertyIndex>(column => column
+                    .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(4000))
+                    .Column<bool>(nameof(PropertyIndex.ForRent))
+                    .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                    .Column<string>(nameof(PropertyIndex.Location), col => col.WithLength(4000))
+                );
+
+            await builder
+                .AlterTableAsync(nameof(PropertyIndex), table => table
+                    .CreateIndex("IDX_Property", "Name", "ForRent", "IsOccupied", "Location"));
+
+            await transaction.CommitAsync();
+        }
+
+        private sealed class RecordingDocumentCommandHandler : IDocumentCommandHandler
+        {
+            public List<string> Events { get; } = [];
+            public List<Document> Documents { get; } = [];
+
+            public Task CreatedAsync(DocumentChangeContext context)
+            {
+                Record("create", context.Document);
+                return Task.CompletedTask;
+            }
+
+            public void CreatedInBatch(DocumentChangeInBatchContext context)
+            {
+                Record("create:batch", context.Document);
+            }
+
+            public Task RemovingAsync(DocumentChangeContext context)
+            {
+                Record("delete", context.Document);
+                return Task.CompletedTask;
+            }
+
+            public void RemovingInBatch(DocumentChangeInBatchContext context)
+            {
+                Record("delete:batch", context.Document);
+            }
+
+            public Task UpdatedAsync(DocumentChangeContext context)
+            {
+                Record("update", context.Document);
+                return Task.CompletedTask;
+            }
+
+            public void UpdatedInBatch(DocumentChangeInBatchContext context)
+            {
+                Record("update:batch", context.Document);
+            }
+
+            private void Record(string action, Document document)
+            {
+                Events.Add(action);
+                Documents.Add(document);
+            }
         }
     }
 }

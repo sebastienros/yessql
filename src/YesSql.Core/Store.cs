@@ -22,7 +22,7 @@ namespace YesSql
 
         public IConfiguration Configuration { get; set; }
         public ISqlDialect Dialect { get; private set; }
-        public ITypeService TypeNames { get; private set; }
+        public ITypeService TypeService { get; set; }
 
         internal readonly ConcurrentDictionary<Type, Func<IIndex, object>> GroupMethods = new();
 
@@ -87,11 +87,15 @@ namespace YesSql
 
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            IndexCommand.ResetQueryCache();
+            // Document tables have a fixed layout, so their statement cache is a process-wide
+            // static that is cleared on (re)initialization. Index statement caches live in the
+            // per-store TypeService (created below only when absent) and need no static reset here.
             DocumentCommand.ResetQueryCache();
             ValidateConfiguration();
 
-            TypeNames = new TypeService();
+            // ??= keeps a TypeService injected by a host (e.g. a per-store cache provider)
+            // instead of clobbering it on (re)initialization.
+            TypeService ??= new TypeService();
 
             if (!string.IsNullOrEmpty(Configuration.Schema))
             {
