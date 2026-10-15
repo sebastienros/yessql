@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Line status
+
+- **The 4.0 line is frozen.** The legacy 4.0-based EasyOC stack will not receive further fork changes; 4.0 deployments stay as-is.
+- This branch (`hyzx86/5.0-ExtraDescriptors`) is the sole carrier of the fork features, rebased onto upstream v6.0.0 (`1cc56e7`); upstream `main` has been restored to a clean baseline and the pre-rebase history is preserved under the `archive/pre-v6-rebase` tag.
+- The feature set below is frozen: compatibility and regression fixes only (covered by the `ForkFeatureTests` suite), no new features.
+
 ## Session extensibility
 
 This branch adds two session-level extension points for custom indexing and document lifecycle hooks.
