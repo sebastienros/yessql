@@ -25,12 +25,17 @@ namespace YesSql
         ConcurrentDictionary<CompoundKey, string> ExecuteInsertsList { get; set; }
         ConcurrentDictionary<CompoundKey, string> ExecuteUpdatesList { get; set; }
 
+        /// <summary>
+        /// Clears the statement caches. The lists are optional in minimal implementations,
+        /// so the default implementation is null-conditional (a plain <c>.Clear()</c> here
+        /// would throw <see cref="NullReferenceException"/> for such implementations).
+        /// </summary>
         void ResetQueryCache()
         {
-            InsertsList.Clear();
-            UpdatesList.Clear();
-            ExecuteInsertsList.Clear();
-            ExecuteUpdatesList.Clear();
+            InsertsList?.Clear();
+            UpdatesList?.Clear();
+            ExecuteInsertsList?.Clear();
+            ExecuteUpdatesList?.Clear();
         }
 
         /// <summary>
