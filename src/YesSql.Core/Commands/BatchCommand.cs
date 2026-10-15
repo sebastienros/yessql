@@ -20,7 +20,7 @@ namespace YesSql.Commands
             Command = command;
         }
 
-        public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
+        public bool AddToBatch(ISqlDialect dialect, DbConnection connection, DbTransaction transaction, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             if (queries == Queries)
             {

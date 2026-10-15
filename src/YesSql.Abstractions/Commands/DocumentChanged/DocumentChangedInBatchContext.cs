@@ -10,5 +10,9 @@ namespace YesSql.Commands.DocumentChanged
         public DbCommand BatchCommand { get; set; }
         public ISession Session { get; set; }
         public Document Document { get; set; }
+        public IStore Store { get; set; }
+        public DbConnection Connection { get; set; }
+        public DbTransaction Transaction { get; set; }
+        public ISqlDialect Dialect { get; set; }
     }
 }

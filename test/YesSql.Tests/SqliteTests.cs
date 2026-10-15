@@ -225,6 +225,12 @@ namespace YesSql.Tests
                 Assert.NotNull(storedPerson);
 
                 storedPerson.Firstname = "updated";
+
+                // v6.0.0 semantics: a tracked (hydrated) entity must be re-registered through
+                // SaveAsync after modification before SaveChangesAsync will flush it (see
+                // upstream ShouldUpdateNewDocument). In 5.0 the flush detected changed tracked
+                // entities on its own.
+                await session.SaveAsync(storedPerson);
                 await session.SaveChangesAsync();
             }
 
@@ -240,9 +246,12 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            Assert.Contains("create:batch", handler.Events);
-            Assert.Contains("update:batch", handler.Events);
-            Assert.Contains("delete:batch", handler.Events);
+            // v6.0.0: the SQLite dialect reports SupportsBatching = false (upstream #717), so
+            // document commands execute individually and the non-batch hook variants are
+            // invoked. In 5.0 the SQLite flow was batched and the ":batch" variants fired.
+            Assert.Contains("create", handler.Events);
+            Assert.Contains("update", handler.Events);
+            Assert.Contains("delete", handler.Events);
             Assert.All(handler.Documents, static document => Assert.True(document.Id > 0));
         }
 

@@ -99,7 +99,48 @@ namespace YesSql.Services
 
         public PropertyInfoAccessor GetPropertyAccessors(PropertyInfo property, Func<PropertyInfo, PropertyInfoAccessor> createFactory)
         {
-            return PropertyAccessors.GetOrAdd(property, createFactory(property));
+            // Fast path: skip accessor construction (delegate creation) when one is already cached.
+            if (PropertyAccessors.TryGetValue(property, out var cached))
+            {
+                return cached;
+            }
+
+            return PropertyAccessors.GetOrAdd(property, createFactory);
+        }
+
+        /// <summary>
+        /// Forgets all cached state for a single type: its property list, its property accessors,
+        /// its name-map entries and the per-type entries in the four statement caches.
+        /// </summary>
+        public void ForgetType(Type type)
+        {
+            if (typeNames.TryGetValue(type, out var typeName))
+            {
+                typeNames.TryRemove(type, out _);
+                nameTypes.TryRemove(typeName, out _);
+            }
+
+            TypeProperties.TryRemove(type, out _);
+
+            foreach (var key in PropertyAccessors.Keys)
+            {
+                if (key.DeclaringType == type)
+                {
+                    PropertyAccessors.TryRemove(key, out _);
+                }
+            }
+
+            var fullName = type.FullName;
+            foreach (var statements in new[] { InsertsList, UpdatesList, ExecuteInsertsList, ExecuteUpdatesList })
+            {
+                foreach (var key in statements.Keys)
+                {
+                    if (key.Type == fullName)
+                    {
+                        statements.TryRemove(key, out _);
+                    }
+                }
+            }
         }
 
         private static bool IsWriteable(PropertyInfo pi)

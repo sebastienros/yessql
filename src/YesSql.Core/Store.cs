@@ -89,11 +89,13 @@ namespace YesSql
         {
             // Document tables have a fixed layout, so their statement cache is a process-wide
             // static that is cleared on (re)initialization. Index statement caches live in the
-            // per-store TypeService (rebuilt below) and need no static reset here.
+            // per-store TypeService (created below only when absent) and need no static reset here.
             DocumentCommand.ResetQueryCache();
             ValidateConfiguration();
 
-            TypeService = new TypeService();
+            // ??= keeps a TypeService injected by a host (e.g. a per-store cache provider)
+            // instead of clobbering it on (re)initialization.
+            TypeService ??= new TypeService();
 
             if (!string.IsNullOrEmpty(Configuration.Schema))
             {

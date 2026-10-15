@@ -1273,11 +1273,6 @@ namespace YesSql.Services
                 return FirstOrDefaultImpl(cancellationToken);
             }
 
-            Task<T> IQuery<T>.FirstOrDefaultAsync()
-            {
-                return FirstOrDefaultImpl(CancellationToken.None);
-            }
-
             protected async Task<T> FirstOrDefaultImpl(CancellationToken cancellationToken = default)
             {
                 // Flush any pending changes before doing a query (auto-flush)
@@ -1370,21 +1365,6 @@ namespace YesSql.Services
             IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
             {
                 return ListImpl(cancellationToken);
-            }
-
-            async Task<IEnumerable<T>> IQuery<T>.ListAsync()
-            {
-                var results = new List<T>();
-                await foreach (var item in ListImpl(CancellationToken.None))
-                {
-                    results.Add(item);
-                }
-                return results;
-            }
-
-            IAsyncEnumerable<T> IQuery<T>.ToAsyncEnumerable()
-            {
-                return ListImpl(CancellationToken.None);
             }
 
             internal async IAsyncEnumerable<T> ListImpl([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -1587,11 +1567,6 @@ namespace YesSql.Services
                 return _query.CountAsync(cancellationToken);
             }
 
-            Task<int> IQuery<T>.CountAsync()
-            {
-                return _query.CountAsync(CancellationToken.None);
-            }
-
             IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)
             {
                 // Scope the currentPredicate so multiple calls will not act on the new predicate.
@@ -1718,11 +1693,6 @@ namespace YesSql.Services
                 return FirstOrDefaultImpl(cancellationToken);
             }
 
-            Task<T> IQueryIndex<T>.FirstOrDefaultAsync()
-            {
-                return FirstOrDefaultImpl(CancellationToken.None);
-            }
-
             async Task<IReadOnlyList<T>> IQueryIndex<T>.ListAsync(CancellationToken cancellationToken)
             {
                 var results = new List<T>();
@@ -1733,24 +1703,9 @@ namespace YesSql.Services
                 return results;
             }
 
-            async Task<IEnumerable<T>> IQueryIndex<T>.ListAsync()
-            {
-                var results = new List<T>();
-                await foreach (var item in ListImpl(CancellationToken.None))
-                {
-                    results.Add(item);
-                }
-                return results;
-            }
-
             IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable(CancellationToken cancellationToken)
             {
                 return ListImpl(cancellationToken);
-            }
-
-            IAsyncEnumerable<T> IQueryIndex<T>.ToAsyncEnumerable()
-            {
-                return ((IQueryIndex<T>)this).ToAsyncEnumerable(CancellationToken.None);
             }
 
             IQueryIndex<T> IQueryIndex<T>.Skip(int count)
@@ -1784,11 +1739,6 @@ namespace YesSql.Services
             async Task<int> IQueryIndex<T>.CountAsync(CancellationToken cancellationToken)
             {
                 return await _query.CountAsync(cancellationToken);
-            }
-
-            Task<int> IQueryIndex<T>.CountAsync()
-            {
-                return _query.CountAsync(CancellationToken.None);
             }
 
             IQueryIndex<TIndex> IQueryIndex<T>.With<TIndex>()

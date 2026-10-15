@@ -33,6 +33,14 @@ namespace YesSql
             ExecuteUpdatesList.Clear();
         }
 
+        /// <summary>
+        /// Forgets all cached state for a single type. Default implementation does nothing;
+        /// <c>TypeService</c> clears its per-type entries.
+        /// </summary>
+        void ForgetType(Type type)
+        {
+        }
+
         PropertyInfo[] GetProperties(Type type);
         PropertyInfoAccessor GetPropertyAccessors(PropertyInfo property, Func<PropertyInfo, PropertyInfoAccessor> createFactory);
     }

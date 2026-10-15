@@ -890,7 +890,7 @@ namespace YesSql
                 index++;
 
                 // Can the command be batched
-                if (command.AddToBatch(_dialect, localQueries, localDbCommand, localActions, index))
+                if (command.AddToBatch(_dialect, _connection, _transaction, localQueries, localDbCommand, localActions, index))
                 {
                     // A single command that on its own exceeds the batch limits can never fit into any
                     // batch. Adding it would produce an oversized batch that fails at execution time, so
@@ -1354,7 +1354,7 @@ namespace YesSql
 
                 if (_indexes != null)
                 {
-                    typedDescriptors = typedDescriptors.Union(_store.CreateDescriptors(t, collection, _indexes)).ToArray();
+                    typedDescriptors = typedDescriptors.Concat(_store.CreateDescriptors(t, collection, _indexes)).ToArray();
                 }
 
                 _descriptors.Add(cacheKey, typedDescriptors);
@@ -1364,7 +1364,7 @@ namespace YesSql
 
             if (ExtraIndexDescriptors != null)
             {
-                descriptors = descriptors.Union(ExtraIndexDescriptors);
+                descriptors = descriptors.Concat(ExtraIndexDescriptors);
             }
 
             if (BuildExtraIndexDescriptors != null)
@@ -1372,7 +1372,7 @@ namespace YesSql
                 var dynamicIndexDescriptors = await BuildExtraIndexDescriptors(t, collection);
                 if (dynamicIndexDescriptors != null)
                 {
-                    descriptors = descriptors.Union(dynamicIndexDescriptors);
+                    descriptors = descriptors.Concat(dynamicIndexDescriptors);
                 }
             }
             return descriptors;

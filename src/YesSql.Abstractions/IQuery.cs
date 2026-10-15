@@ -93,9 +93,9 @@ namespace YesSql
 
         /// <summary>
         /// Executes the query and returns the first result matching the constraints.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
-        Task<T> FirstOrDefaultAsync();
+        Task<T> FirstOrDefaultAsync() => FirstOrDefaultAsync(CancellationToken.None);
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
@@ -107,9 +107,9 @@ namespace YesSql
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync();
+        Task<IReadOnlyList<T>> ListAsync() => ListAsync(CancellationToken.None);
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
@@ -118,9 +118,9 @@ namespace YesSql
 
         /// <summary>
         /// Executes the query and returns all documents matching the constraints.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
-        IAsyncEnumerable<T> ToAsyncEnumerable();
+        IAsyncEnumerable<T> ToAsyncEnumerable() => ToAsyncEnumerable(CancellationToken.None);
 
         /// <summary>
         /// Executes a that returns the number of documents matching the constraints.
@@ -129,9 +129,9 @@ namespace YesSql
 
         /// <summary>
         /// Executes a that returns the number of documents matching the constraints.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
-        Task<int> CountAsync();
+        Task<int> CountAsync() => CountAsync(CancellationToken.None);
 
         /// <summary>
         /// Returns the SQL alias currently used for the specified index type.
@@ -219,9 +219,9 @@ namespace YesSql
 
         /// <summary>
         /// Returns the first result only, if it exists.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
-        Task<T> FirstOrDefaultAsync();
+        Task<T> FirstOrDefaultAsync() => FirstOrDefaultAsync(CancellationToken.None);
 
         /// <summary>
         /// Executes the query.
@@ -233,9 +233,9 @@ namespace YesSql
 
         /// <summary>
         /// Executes the query.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
-        Task<IEnumerable<T>> ListAsync();
+        Task<IReadOnlyList<T>> ListAsync() => ListAsync(CancellationToken.None);
 
         /// <summary>
         /// Executes the query for asynchronous iteration.
@@ -245,10 +245,10 @@ namespace YesSql
 
         /// <summary>
         /// Executes the query for asynchronous iteration.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
         /// <returns></returns>
-        IAsyncEnumerable<T> ToAsyncEnumerable();
+        IAsyncEnumerable<T> ToAsyncEnumerable() => ToAsyncEnumerable(CancellationToken.None);
 
         /// <summary>
         /// Returns the number of results only.
@@ -257,9 +257,9 @@ namespace YesSql
 
         /// <summary>
         /// Returns the number of results only.
-        /// Kept for source/binary compatibility with older consumers.
+        /// Default implementation delegates to the cancellation-token overload.
         /// </summary>
-        Task<int> CountAsync();
+        Task<int> CountAsync() => CountAsync(CancellationToken.None);
     }
 
     /// <summary>
