@@ -3,7 +3,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands.DocumentChanged;
@@ -12,16 +11,6 @@ namespace YesSql.Commands
 {
     public abstract class DocumentCommand : IIndexCommand, ICollectionName
     {
-        protected static readonly PropertyInfo[] AllProperties =
-        [
-            typeof(Document).GetProperty("Type")
-        ];
-
-        protected static readonly PropertyInfo[] AllKeys =
-        [
-            typeof(Document).GetProperty("Id")
-        ];
-
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> InsertCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> UpdateCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> DeleteCommands = new();
