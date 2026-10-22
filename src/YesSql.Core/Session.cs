@@ -1333,6 +1333,20 @@ namespace YesSql
         }
 
         /// <summary>
+        /// Returns whether the rows of an index can only be produced for documents of a specific type, by the providers
+        /// registered on the Store and the Session.
+        /// </summary>
+        internal bool IsIndexProducedOnlyFor(Type indexType, Type documentType)
+        {
+            if (!_store.IsIndexProducedOnlyFor(indexType, documentType))
+            {
+                return false;
+            }
+
+            return _indexes == null || !_store.IsIndexProducedForAnotherType(_indexes, indexType, documentType);
+        }
+
+        /// <summary>
         /// Resolves all the descriptors registered on the Store and the Session
         /// </summary>
         private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collection)

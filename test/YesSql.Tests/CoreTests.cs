@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -5441,6 +5442,219 @@ namespace YesSql.Tests
 
                 Assert.Equal(10, result2.Count());
             }
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexes()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+                await session.SaveAsync(new Person { Firstname = "Paul", Age = 30 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.Query<Person, PersonByName>().CountAsync(includeDocuments: false));
+                Assert.Equal(1, await session.Query<Person, PersonByName>(x => x.SomeName == "Bill", filterType: true).CountAsync(includeDocuments: false));
+                Assert.Equal(2, await session.Query<Person, PersonByAge>(x => x.Adult).With<PersonByName>(x => x.SomeName != "Steve").CountAsync(includeDocuments: false));
+                Assert.Equal(2, await session.Query<Person>().Any(
+                    x => x.With<PersonByName>(x => x.SomeName == "Bill"),
+                    x => x.With<PersonByAge>(x => x.Age < 18)).CountAsync(includeDocuments: false));
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(4, countQueries.Length);
+            Assert.All(countQueries, sql => Assert.False(ReferencesDocumentTable(sql), sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableByDefault()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
+            }
+
+            Assert.True(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsOnceFromIndexesWithMultipleRows()
+        {
+            _store.RegisterIndexes<EmailByAttachmentProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    await session.SaveAsync(new Email
+                    {
+                        Date = DateTime.UtcNow,
+                        Attachments = [new Attachment("resume.doc"), new Attachment("letter.doc"), new Attachment("photo.jpg")],
+                    });
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.Query<Email, EmailByAttachment>().CountAsync(includeDocuments: false));
+                Assert.Equal(3, await session.Query<Email, EmailByAttachment>(e => e.AttachmentName.EndsWith(".doc")).CountAsync(includeDocuments: false));
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromReduceIndexes()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 2) });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var dayOfYear = new DateTime(2011, 11, 1).DayOfYear;
+
+                Assert.Equal(3, await session.Query<Article, ArticlesByDay>().CountAsync(includeDocuments: false));
+                Assert.Equal(2, await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == dayOfYear).CountAsync(includeDocuments: false));
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenIndexIsProducedForAnotherType()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<AnimalNameIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Animal { Name = "Rex" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                // The index has a row for the animal, which only the type of the documents excludes.
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true).CountAsync(includeDocuments: false));
+                Assert.Equal(1, await session.Query<Animal, PersonByName>(filterType: true).CountAsync(includeDocuments: false));
+            }
+
+            Assert.All(GetCountQueries(logger), sql => Assert.True(ReferencesDocumentTable(sql), sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsOfAnyTypeFromIndexesWhenTypeIsNotFiltered()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<AnimalNameIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Animal { Name = "Rex" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                // Without filtering the type of the documents, the document table doesn't exclude the animal either.
+                Assert.Equal(2, await session.Query<Person, PersonByName>().CountAsync(includeDocuments: true));
+                Assert.Equal(2, await session.Query<Person, PersonByName>().CountAsync(includeDocuments: false));
+            }
+
+            Assert.False(ReferencesDocumentTable(GetCountQueries(logger)[1]));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenIndexIsProducedForAnotherTypeInSession()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                session.RegisterIndexes(new AnimalNameIndexProvider());
+
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Animal { Name = "Rex" });
+
+                await session.SaveChangesAsync();
+
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true).CountAsync(includeDocuments: false));
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexesInCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).CountAsync(includeDocuments: false));
+                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).CountAsync(includeDocuments: false));
+            }
+        }
+
+        private static string[] GetCountQueries(TestLogger logger)
+        {
+            return logger.ToString()
+                .Split(Environment.NewLine)
+                .Where(line => line.Contains("count(", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        }
+
+        private bool ReferencesDocumentTable(string sql)
+        {
+            var documentTable = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetDocumentTable("");
+
+            return Regex.IsMatch(sql, $@"(?<!\w){Regex.Escape(documentTable)}(?!\w)", RegexOptions.IgnoreCase);
         }
 
         [Fact]

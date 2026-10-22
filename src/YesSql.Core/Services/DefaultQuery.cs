@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Indexes;
+using YesSql.Sql;
 using YesSql.Utils;
 
 namespace YesSql.Services
@@ -42,6 +43,9 @@ namespace YesSql.Services
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
         public bool _deduplicate = true;
+        public Type _documentType; // the type of the documents a query returns, set by For<T>
+        public string _typeFilter; // the condition on the type of the documents, when For<T> filters it
+        internal List<IndexJoin> _indexJoins; // the indexes joined to the document table, to count from the index tables
 
         public void FlushFilters()
         {
@@ -117,12 +121,34 @@ namespace YesSql.Services
             clone._currentPredicate = (CompositeNode)_predicate.Clone();
             clone._predicate = clone._currentPredicate;
             clone._deduplicate = _deduplicate;
+            clone._documentType = _documentType;
+            clone._typeFilter = _typeFilter;
+            clone._indexJoins = _indexJoins == null ? null : new List<IndexJoin>(_indexJoins);
 
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
 
             return clone;
         }
+    }
+
+    /// <summary>
+    /// An index joined to the document table, which can be joined to another index table instead.
+    /// </summary>
+    internal sealed class IndexJoin
+    {
+        public Type IndexType { get; init; }
+        public string IndexTable { get; init; }
+        public string IndexAlias { get; init; }
+
+        // The bridge table between the documents and a reduce index, null for a map index.
+        public string BridgeTable { get; init; }
+        public string BridgeAlias { get; init; }
+        public string BridgeColumn { get; init; }
+
+        // The table that holds the DocumentId column of the index.
+        public string DocumentTable => BridgeTable ?? IndexTable;
+        public string DocumentAlias => BridgeAlias ?? IndexAlias;
     }
 
     public class DefaultQuery : IQuery
@@ -497,6 +523,13 @@ namespace YesSql.Services
             {
                 // inner join [PersonByName] as [PersonByName_a1] on [PersonByName_a1].[Id] = [Document].[Id] 
                 _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, indexTableAlias);
+
+                (_queryState._indexJoins ??= []).Add(new IndexJoin
+                {
+                    IndexType = tIndex,
+                    IndexTable = indexTable,
+                    IndexAlias = indexTableAlias,
+                });
             }
             else
             {
@@ -508,6 +541,16 @@ namespace YesSql.Services
 
                 // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document].[ArticlesByDayId]
                 _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeName, name + "Id", _queryState._store.Configuration.Schema, indexTableAlias, bridgeAlias);
+
+                (_queryState._indexJoins ??= []).Add(new IndexJoin
+                {
+                    IndexType = tIndex,
+                    IndexTable = indexTable,
+                    IndexAlias = indexTableAlias,
+                    BridgeTable = bridgeName,
+                    BridgeAlias = bridgeAlias,
+                    BridgeColumn = name + "Id",
+                });
             }
         }
 
@@ -1144,7 +1187,10 @@ namespace YesSql.Services
             _queryState._sqlBuilder.ThenOrderByRandom();
         }
 
-        public async Task<int> CountAsync(CancellationToken cancellationToken = default)
+        public Task<int> CountAsync(CancellationToken cancellationToken = default)
+            => CountAsync(includeDocuments: true, cancellationToken);
+
+        public async Task<int> CountAsync(bool includeDocuments, CancellationToken cancellationToken = default)
         {
             // Commit any pending changes before doing a query (auto-flush)
             await _session.FlushAsync(cancellationToken);
@@ -1154,15 +1200,20 @@ namespace YesSql.Services
 
             _queryState.FlushFilters();
 
-            var localBuilder = _queryState._sqlBuilder.Clone();
+            ISqlBuilder localBuilder = includeDocuments ? null : CreateIndexOnlyCountBuilder();
 
-            if (localBuilder.HasJoin)
+            if (localBuilder == null)
             {
-                localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
-            }
-            else
-            {
-                localBuilder.Selector("count(*)");
+                localBuilder = _queryState._sqlBuilder.Clone();
+
+                if (localBuilder.HasJoin)
+                {
+                    localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
+                }
+                else
+                {
+                    localBuilder.Selector("count(*)");
+                }
             }
 
             // Clear paging and order when counting 
@@ -1216,17 +1267,138 @@ namespace YesSql.Services
         public Task<int> CountAsync()
             => CountAsync(CancellationToken.None);
 
+        /// <summary>
+        /// Creates a builder counting the documents of the query from its index tables, without joining the document table,
+        /// or returns <see langword="null"/> when the document table is needed.
+        /// </summary>
+        /// <remarks>
+        /// <c>SELECT count(distinct [Document].[Id]) FROM [Document] INNER JOIN [PersonByName] AS [PersonByName_a1] ON [PersonByName_a1].[DocumentId] = [Document].[Id] WHERE [Document].[Type] = @Type AND ...</c>
+        /// becomes <c>SELECT count(distinct [PersonByName_a1].[DocumentId]) FROM [PersonByName] AS [PersonByName_a1] WHERE ...</c>,
+        /// the other indexes being joined on the DocumentId column of the first one. The count stays distinct as a map index can have
+        /// multiple rows for the same document.
+        /// </remarks>
+        private SqlBuilder CreateIndexOnlyCountBuilder()
+        {
+            var indexJoins = _queryState._indexJoins;
+
+            if (_queryState._documentType == null ||
+                indexJoins == null ||
+                indexJoins.Count == 0)
+            {
+                return null;
+            }
+
+            if (_queryState._typeFilter != null)
+            {
+                // The rows of an index only belong to documents of the queried type when no provider of another type produces it.
+                foreach (var indexJoin in indexJoins)
+                {
+                    if (!_session.IsIndexProducedOnlyFor(indexJoin.IndexType, _queryState._documentType))
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            if (_queryState._sqlBuilder.Clone() is not SqlBuilder builder)
+            {
+                return null;
+            }
+
+            if (_queryState._typeFilter != null)
+            {
+                if (!builder.RemoveFirstWhere(_queryState._typeFilter))
+                {
+                    return null;
+                }
+
+                builder.Parameters.Remove("@Type");
+            }
+
+            var store = _queryState._store;
+
+            if (ReferencesTable(builder.GetWhere(), store.Configuration.TablePrefix + _queryState._documentTable))
+            {
+                return null;
+            }
+
+            var schema = store.Configuration.Schema;
+            var root = indexJoins[0];
+
+            // FROM [PersonByName] AS [PersonByName_a1]
+            builder.Table(root.DocumentTable, root.DocumentAlias, schema);
+            builder.ClearJoins();
+
+            foreach (var indexJoin in indexJoins)
+            {
+                if (indexJoin.BridgeTable == null)
+                {
+                    if (indexJoin != root)
+                    {
+                        // inner join [PersonByAge] as [PersonByAge_a1] on [PersonByAge_a1].[DocumentId] = [PersonByName_a1].[DocumentId]
+                        builder.InnerJoin(indexJoin.IndexTable, indexJoin.IndexAlias, "DocumentId", root.DocumentAlias, "DocumentId", schema, indexJoin.IndexAlias, root.DocumentAlias);
+                    }
+
+                    continue;
+                }
+
+                if (indexJoin != root)
+                {
+                    // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document_a1].[DocumentId] = [PersonByName_a1].[DocumentId]
+                    builder.InnerJoin(indexJoin.BridgeTable, indexJoin.BridgeAlias, "DocumentId", root.DocumentAlias, "DocumentId", schema, indexJoin.BridgeAlias, root.DocumentAlias);
+                }
+
+                // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document_a1].[ArticlesByDayId]
+                builder.InnerJoin(indexJoin.IndexTable, indexJoin.IndexAlias, "Id", indexJoin.BridgeTable, indexJoin.BridgeColumn, schema, indexJoin.IndexAlias, indexJoin.BridgeAlias);
+            }
+
+            builder.Selector($"count(distinct {builder.FormatColumn(root.DocumentAlias, "DocumentId", schema, true)})");
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Returns whether some SQL contains a table name that is not part of a longer identifier, like <c>Document</c> in <c>[Document].[Id]</c>
+        /// but not in <c>[PersonByName_a1].[DocumentId]</c>.
+        /// </summary>
+        private static bool ReferencesTable(string sql, string table)
+        {
+            var index = sql.IndexOf(table, StringComparison.OrdinalIgnoreCase);
+
+            while (index != -1)
+            {
+                var end = index + table.Length;
+
+                if ((index == 0 || !IsIdentifierChar(sql[index - 1])) &&
+                    (end == sql.Length || !IsIdentifierChar(sql[end])))
+                {
+                    return true;
+                }
+
+                index = sql.IndexOf(table, index + 1, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+
+            static bool IsIdentifierChar(char c)
+                => char.IsLetterOrDigit(c) || c == '_';
+        }
+
         IQuery<T> IQuery.For<T>(bool filterType)
         {
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(Document));
+            _queryState._documentType = typeof(T);
+            _queryState._indexJoins = null;
+            _queryState._typeFilter = null;
 
             _queryState._sqlBuilder.Select();
             _queryState._sqlBuilder.Table(_queryState._documentTable, null, _queryState._store.Configuration.Schema);
 
             if (filterType)
             {
-                _queryState._sqlBuilder.WhereAnd(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type", _queryState._store.Configuration.Schema) + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
+                _queryState._typeFilter = _queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type", _queryState._store.Configuration.Schema) + " = @Type";
+                _queryState._sqlBuilder.WhereAnd(_queryState._typeFilter); // TODO: investigate, this makes the query 3 times slower on sqlite
                 _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
             }
 
@@ -1565,6 +1737,11 @@ namespace YesSql.Services
             Task<int> IQuery<T>.CountAsync(CancellationToken cancellationToken)
             {
                 return _query.CountAsync(cancellationToken);
+            }
+
+            Task<int> IQuery<T>.CountAsync(bool includeDocuments, CancellationToken cancellationToken)
+            {
+                return _query.CountAsync(includeDocuments, cancellationToken);
             }
 
             IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)
