@@ -14,11 +14,13 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <MicrosoftExtensionsLoggingAbstractionsPackageVersion>8.0.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>8.0.0</MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>
+    <SystemSecurityCryptographyPkcsPackageVersion>8.0.2</SystemSecurityCryptographyPkcsPackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <MicrosoftExtensionsLoggingAbstractionsPackageVersion>10.0.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>10.0.0</MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>
+    <SystemSecurityCryptographyPkcsPackageVersion>9.0.21</SystemSecurityCryptographyPkcsPackageVersion>
   </PropertyGroup>
 
 </Project>

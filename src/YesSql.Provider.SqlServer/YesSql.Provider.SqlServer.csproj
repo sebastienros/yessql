@@ -6,6 +6,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Data.SqlClient" />
+        <!-- Lifts the version of Microsoft.Data.SqlClient's dependency to one without known vulnerabilities. -->
+        <PackageReference Include="System.Security.Cryptography.Pkcs" />
     </ItemGroup>
 
 </Project>
