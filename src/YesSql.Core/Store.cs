@@ -38,6 +38,8 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<long, QueryState> CompiledQueries = new();
 
+        internal readonly ConcurrentDictionary<(Type IndexType, Type DocumentType), bool> IndexesProducedOnlyFor = new();
+
         private readonly WorkDispatcher<WorkerQueryKey, object> _dispatcher = new();
 
         internal const int SmallBufferSize = 128;
@@ -279,6 +281,8 @@ namespace YesSql
             }
 
             Indexes.AddRange(indexProviders);
+            IndexesProducedOnlyFor.Clear();
+
             return this;
         }
 
@@ -286,6 +290,47 @@ namespace YesSql
         {
             ScopedIndexes.AddRange(indexProviders);
             return this;
+        }
+
+        /// <summary>
+        /// Returns whether the rows of an index can only be produced for documents of a specific type, such that they can be
+        /// counted without filtering the type of their documents.
+        /// </summary>
+        internal bool IsIndexProducedOnlyFor(Type indexType, Type documentType)
+        {
+            // The indexes produced by scoped providers are not known until they are created.
+            if (ScopedIndexes.Count > 0)
+            {
+                return false;
+            }
+
+            return IndexesProducedOnlyFor.GetOrAdd((indexType, documentType), key => !IsIndexProducedForAnotherType(Indexes, key.IndexType, key.DocumentType));
+        }
+
+        /// <summary>
+        /// Returns whether a provider registered for another type than a document type produces an index, in any collection.
+        /// </summary>
+        internal bool IsIndexProducedForAnotherType(IEnumerable<IIndexProvider> indexProviders, Type indexType, Type documentType)
+        {
+            foreach (var provider in indexProviders)
+            {
+                var forType = provider.ForType();
+
+                if (forType == documentType)
+                {
+                    continue;
+                }
+
+                foreach (var descriptor in CreateDescriptors(forType, provider.CollectionName, [provider]))
+                {
+                    if (descriptor.IndexType == indexType)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
