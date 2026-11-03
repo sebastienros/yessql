@@ -62,7 +62,7 @@ namespace YesSql.Commands
 
         public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
         {
-            var sql = $"delete from {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection), _store.Configuration.Schema)} where {dialect.QuoteForColumnName("DocumentId")} = @Id_{index};";
+            var sql = GetDeleteCommandText(dialect).Replace("@Id;", $"@Id_{index};");
 
             queries.Add(sql);
 

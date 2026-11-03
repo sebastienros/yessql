@@ -5229,19 +5229,27 @@ namespace YesSql.Tests
 
             var log = new StringBuilder();
             var logger = new TestLogger(log);
+            var previousLogger = _store.Configuration.Logger;
             _store.Configuration.Logger = logger;
 
-            await using (var session = _store.CreateSession())
+            try
             {
-                var bill = await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync();
-                Assert.NotNull(bill);
+                await using (var session = _store.CreateSession())
+                {
+                    var bill = await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync();
+                    Assert.NotNull(bill);
 
-                // Only record the statements executed when the entity is deleted
-                log.Clear();
+                    // Only record the statements executed when the entity is deleted
+                    log.Clear();
 
-                session.Delete(bill);
+                    session.Delete(bill);
 
-                await session.SaveChangesAsync();
+                    await session.SaveChangesAsync();
+                }
+            }
+            finally
+            {
+                _store.Configuration.Logger = previousLogger;
             }
 
             // The document was already loaded, it should not be queried again to be deleted.
@@ -5317,23 +5325,131 @@ namespace YesSql.Tests
             }
 
             var log = new StringBuilder();
+            var previousLogger = _store.Configuration.Logger;
             _store.Configuration.Logger = new TestLogger(log);
+
+            try
+            {
+                await using (var session = _store.CreateSession())
+                {
+                    // Without a join, a document can't be returned more than once
+                    Assert.Equal(3, (await session.Query<Person>().ListAsync()).Count);
+                    Assert.DoesNotContain("IndexQuery", log.ToString());
+
+                    // Paged queries are applied on the document ids, without grouping them
+                    log.Clear();
+                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
+                    Assert.Contains("IndexQuery", log.ToString());
+                    Assert.DoesNotContain("GROUP BY", log.ToString());
+
+                    // Including when de-duplication is disabled
+                    log.Clear();
+                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().NoDuplicates().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
+                    Assert.Contains("IndexQuery", log.ToString());
+
+                    // With a join, the results are de-duplicated
+                    log.Clear();
+                    Assert.Equal(new[] { "Bill", "Paul", "Steve" }, (await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync()).Select(x => x.Firstname));
+                    Assert.Contains("IndexQuery", log.ToString());
+                }
+            }
+            finally
+            {
+                _store.Configuration.Logger = previousLogger;
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotUpdateReduceIndexWhenDocumentWasDeletedByAnotherSession()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
 
             await using (var session = _store.CreateSession())
             {
-                // Without a join, a document can't be returned more than once
-                Assert.Equal(3, (await session.Query<Person>().ListAsync()).Count);
-                Assert.DoesNotContain("IndexQuery", log.ToString());
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
 
-                // Paged queries are applied on the document ids
-                log.Clear();
-                Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
-                Assert.Contains("IndexQuery", log.ToString());
+                await session.SaveChangesAsync();
+            }
 
-                // With a join, the results are de-duplicated
-                log.Clear();
-                Assert.Equal(new[] { "Bill", "Paul", "Steve" }, (await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync()).Select(x => x.Firstname));
-                Assert.Contains("IndexQuery", log.ToString());
+            await using (var session = _store.CreateSession())
+            {
+                var article = await session.Query().For<Article>().FirstOrDefaultAsync();
+
+                await using (var otherSession = _store.CreateSession())
+                {
+                    otherSession.Delete(await otherSession.Query().For<Article>().FirstOrDefaultAsync());
+
+                    await otherSession.SaveChangesAsync();
+                }
+
+                session.Delete(article);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query().For<Article>().CountAsync());
+                Assert.Equal(1, (await session.QueryIndex<ArticlesByDay>().FirstOrDefaultAsync())?.Count);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldFlushAgainAfterDeletingEntity()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                // The entity is tracked after it was saved and flushed
+                var bill = new Person { Firstname = "Bill" };
+                await session.SaveAsync(bill);
+                await session.FlushAsync();
+
+                session.Delete(bill);
+                await session.FlushAsync();
+
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // The entity is updated and deleted in the same flush
+                var steve = await session.Query<Person>().FirstOrDefaultAsync();
+                await session.SaveAsync(steve);
+
+                session.Delete(steve);
+                await session.FlushAsync();
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.Query<Person>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldRejectIsInValuesThatCanChangeInCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+                await session.SaveAsync(new Person { Firstname = "Paul" });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Throws<NotSupportedException>(() => session.ExecuteQuery(new PersonByNamesQuery("Bill")));
+
+                // Literal values are the same for each execution
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByLiteralNamesQuery()).CountAsync());
             }
         }
 

@@ -328,9 +328,17 @@ namespace YesSql.Services
 
         private static void InValues(DefaultQuery query, IStringBuilder builder, ISqlDialect dialect, MethodCallExpression expression, bool negate)
         {
+            // The number of parameters depends on the values, so they can't be bound again when a compiled query
+            // is reused. Reject values that can change, as every execution would get those of the first one.
+            if (query._queryState._trackParameterBindings && InstanceValueFinder.Find(expression.Arguments[1]))
+            {
+                throw new NotSupportedException("IsIn and IsNotIn only support literal values in a compiled query, as the values are not evaluated again when it is reused.");
+            }
+
             // Could be simplified if int[] could be casted to IEnumerable<object>
             var objects = GetExpressionValue(expression.Arguments[1]) as IEnumerable;
             var enumerator = objects.GetEnumerator();
+            RentedStringBuilder elements = null;
 
             try
             {
@@ -352,7 +360,7 @@ namespace YesSql.Services
                 }
 
                 // The values are added as parameters directly, without creating a constant expression for each of them.
-                var elements = new RentedStringBuilder(128);
+                elements = new RentedStringBuilder(128);
                 query.AddParameter(elements, first);
 
                 do
@@ -363,12 +371,38 @@ namespace YesSql.Services
                 while (enumerator.MoveNext());
 
                 builder.Append(negate ? dialect.NotInOperator(elements.ToString()) : dialect.InOperator(elements.ToString()));
-
-                elements.Dispose();
             }
             finally
             {
+                elements?.Dispose();
                 (enumerator as IDisposable)?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Detects whether an expression reads a value from an instance (e.g. a compiled query or a closure).
+        /// </summary>
+        private sealed class InstanceValueFinder : ExpressionVisitor
+        {
+            private bool _found;
+
+            public static bool Find(Expression expression)
+            {
+                var finder = new InstanceValueFinder();
+                finder.Visit(expression);
+                return finder._found;
+            }
+
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                _found |= node.Expression != null;
+                return base.VisitMember(node);
+            }
+
+            protected override Expression VisitMethodCall(MethodCallExpression node)
+            {
+                _found |= node.Object != null;
+                return base.VisitMethodCall(node);
             }
         }
 
@@ -1462,9 +1496,11 @@ namespace YesSql.Services
                         // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
 
                         // Without any join each document can only be returned once, so the query doesn't need to be de-duplicated.
-                        // Paged queries still use the de-duplicated form: the paging is then applied on the document ids only
-                        // (a deferred join), which some databases (e.g. SQLite) execute much faster than sorting whole documents.
-                        var sql = _query._queryState._deduplicate && (sqlBuilder.HasJoin || sqlBuilder.HasPaging) ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString();
+                        // Paged queries are still applied on the document ids only (a deferred join), which some databases
+                        // (e.g. SQLite) execute much faster than sorting whole documents.
+                        var sql = sqlBuilder.HasJoin
+                            ? (_query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString())
+                            : (sqlBuilder.HasPaging ? GetPagedQuery() : sqlBuilder.ToSqlString());
                         var logger = _query._session._store.Configuration.Logger;
 
                         if (logger.IsEnabled(LogLevel.Debug))
@@ -1537,11 +1573,7 @@ namespace YesSql.Services
                     }
                 }
 
-                var sql = sqlBuilder.ToSqlString();
-
-                sql = $"SELECT {sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema)} " +
-                    $"FROM {sqlBuilder.FormatTable(_query._queryState._documentTable, schema)} " +
-                    $"INNER JOIN ({sql}) AS {_query._dialect.QuoteForAliasName("IndexQuery")} ON {sqlBuilder.FormatColumn("IndexQuery", "Id", schema, true)} = {sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema)}";
+                var sql = JoinDocuments(sqlBuilder.ToSqlString());
 
                 if (sqlBuilder.HasOrder)
                 {
@@ -1549,6 +1581,29 @@ namespace YesSql.Services
                 }
 
                 return sql;
+            }
+
+            /// <summary>
+            /// Applies the paging on the document ids only, then loads the matching documents. This is for queries without
+            /// joins, whose documents can't be duplicated and can only be ordered by columns the outer query has access to.
+            /// </summary>
+            private string GetPagedQuery()
+            {
+                var sqlBuilder = _query._queryState._sqlBuilder;
+
+                sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", _query._queryState._store.Configuration.Schema));
+
+                return $"{JoinDocuments(sqlBuilder.ToSqlString())} ORDER BY {string.Concat(sqlBuilder.GetOrders())}";
+            }
+
+            private string JoinDocuments(string documentIdsQuery)
+            {
+                var schema = _query._queryState._store.Configuration.Schema;
+                var sqlBuilder = _query._queryState._sqlBuilder;
+
+                return $"SELECT {sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema)} " +
+                    $"FROM {sqlBuilder.FormatTable(_query._queryState._documentTable, schema)} " +
+                    $"INNER JOIN ({documentIdsQuery}) AS {_query._dialect.QuoteForAliasName("IndexQuery")} ON {sqlBuilder.FormatColumn("IndexQuery", "Id", schema, true)} = {sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema)}";
             }
 
             IQuery<T> IQuery<T>.Skip(int count)

@@ -271,9 +271,8 @@ namespace YesSql.Indexes
             static async Task<IEnumerable<IIndex>> AwaitMap(Task<IEnumerable<TIndex>> task)
                 => AsIndexes(await task);
 
-            // IEnumerable<T> is covariant, so a sequence of reference type indexes can be used without being wrapped.
             static IEnumerable<IIndex> AsIndexes(IEnumerable<TIndex> indexes)
-                => indexes as IEnumerable<IIndex> ?? (indexes ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
+                => (indexes ?? Enumerable.Empty<TIndex>()).Cast<IIndex>();
         }
 
         Func<IGrouping<object, IIndex>, IIndex> IDescribeFor.GetReduce()
