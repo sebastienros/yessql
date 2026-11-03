@@ -6,7 +6,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Data.SqlClient" />
-        <!-- Lifts the version of Microsoft.Data.SqlClient's dependency to one without known vulnerabilities. -->
+        <!-- Lifts the transitive dependency of Microsoft.Data.SqlClient to a version without CVE-2026-84008 and CVE-2026-70162 -->
         <PackageReference Include="System.Security.Cryptography.Pkcs" />
     </ItemGroup>
 
