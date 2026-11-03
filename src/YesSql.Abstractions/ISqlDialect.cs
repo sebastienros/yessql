@@ -13,6 +13,17 @@ namespace YesSql
     {
 
         /// <summary>
+        /// Gets the value of the <c>db.system.name</c> attribute of the telemetry, as defined by the OpenTelemetry semantic conventions.
+        /// </summary>
+        string TelemetrySystemName => "other_sql";
+
+        /// <summary>
+        /// Gets the name of the <see cref="System.Diagnostics.ActivitySource"/> and <see cref="System.Diagnostics.Metrics.Meter"/>
+        /// of the database driver, or <see langword="null"/> when the driver doesn't publish any.
+        /// </summary>
+        string DriverTelemetryName => null;
+
+        /// <summary>
         /// Gets the maximum number of commands per batch.
         /// </summary>
         int MaxCommandsPageSize { get; }

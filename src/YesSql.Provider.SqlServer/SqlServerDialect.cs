@@ -105,6 +105,9 @@ namespace YesSql.Provider.SqlServer
 
         /// <inheritdoc />
         public override string Name => "SqlServer";
+
+        /// <inheritdoc />
+        public override string TelemetrySystemName => "microsoft.sql_server";
         /// <inheritdoc />
         public override string IdentityColumnString => "[BIGINT] IDENTITY(1,1) primary key";
         /// <inheritdoc />

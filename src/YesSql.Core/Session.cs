@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
+using YesSql.Diagnostics;
 using YesSql.Indexes;
 using YesSql.Services;
 
@@ -36,6 +37,7 @@ namespace YesSql
         private readonly ISqlDialect _dialect;
         private readonly ILogger _logger;
         private readonly bool _withTracking;
+        internal readonly YesSqlStatistics _statistics = new();
 
         private readonly bool _enableThreadSafetyChecks;
         private int _asyncOperations = 0;
@@ -55,6 +57,8 @@ namespace YesSql
                 [string.Empty] = _defaultState
             };
         }
+
+        public YesSqlStatistics Statistics => _statistics;
 
         public ISession RegisterIndexes(IIndexProvider[] indexProviders, string collection = null)
         {
@@ -337,6 +341,8 @@ namespace YesSql
 
             _commands.Add(new CreateDocumentCommand(doc, Store, collection));
 
+            YesSqlStatistics.Add(_statistics, YesSqlStatistics.Counter.DocumentsInserted);
+
             state.IdentityMap.AddDocument(doc);
 
             await MapNew(doc, entity, collection, cancellationToken);
@@ -426,6 +432,8 @@ namespace YesSql
             _commands ??= [];
 
             _commands.Add(new UpdateDocumentCommand(oldDoc, Store, version, collection));
+
+            YesSqlStatistics.Add(_statistics, YesSqlStatistics.Counter.DocumentsUpdated);
         }
 
         private async Task<Document> GetDocumentByIdAsync(long id, string collection, CancellationToken cancellationToken = default)
@@ -448,9 +456,12 @@ namespace YesSql
                         logger.LogTrace(state.Command);
                     }
 
-                    return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                    return YesSqlInstrumentation.ExecuteAsync(
+                        new DbOperation(state.Store.Configuration, state.Connection, DbOperation.Select, state.Table, state.Command, state.Statistics),
+                        (state.Connection, Definition: new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                        static query => query.Connection.QueryAsync<Document>(query.Definition));
                 },
-                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id }, CancellationToken = cancellationToken });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id }, Table = documentTable, Statistics = _statistics, CancellationToken = cancellationToken });
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
                 return result.FirstOrDefault()?.Clone();
@@ -528,6 +539,8 @@ namespace YesSql
 
                 // The command needs to come after any index deletion because of the database constraints
                 _commands.Add(new DeleteDocumentCommand(doc, Store, collection));
+
+                YesSqlStatistics.Add(_statistics, YesSqlStatistics.Counter.DocumentsDeleted);
             }
         }
 
@@ -561,7 +574,10 @@ namespace YesSql
                         logger.LogTrace(state.Command);
                     }
 
-                    return state.Connection.QueryAsync<Document>(new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                    return YesSqlInstrumentation.ExecuteAsync(
+                        new DbOperation(state.Store.Configuration, state.Connection, DbOperation.Select, state.Table, state.Command, state.Statistics),
+                        (state.Connection, Definition: new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                        static query => query.Connection.QueryAsync<Document>(query.Definition));
                 },
                 new
                 {
@@ -570,6 +586,8 @@ namespace YesSql
                     Transaction = _transaction,
                     Command = command,
                     Parameters = new { Ids = ids },
+                    Table = documentTable,
+                    Statistics = _statistics,
                     CancellationToken = cancellationToken,
                 });
 
@@ -603,6 +621,8 @@ namespace YesSql
             // Are all the objects already in cache?
             foreach (var document in documents)
             {
+                YesSqlStatistics.Add(_statistics, YesSqlStatistics.Counter.DocumentsRead);
+
                 if (_withTracking && state.IdentityMap.TryGetEntityById(document.Id, out var entity))
                 {
                     yield return (T)entity;
@@ -711,6 +731,8 @@ namespace YesSql
                     _connection = null;
                     _transaction = null;
                 }
+
+                YesSqlInstrumentation.RecordSession(_store.Configuration, _statistics);
             }
 
             _disposed = true;
@@ -759,6 +781,8 @@ namespace YesSql
             {
                 EnterAsyncExecution();
             }
+
+            var flush = YesSqlInstrumentation.StartFlush(_store.Configuration, _statistics);
 
             try
             {
@@ -809,12 +833,21 @@ namespace YesSql
                 {
                     foreach (var command in _commands)
                     {
+                        if (command is IInstrumentedCommand instrumented)
+                        {
+                            instrumented.Statistics = _statistics;
+                        }
+
                         await command.ExecuteAsync(_connection, _transaction, _dialect, _logger, cancellationToken);
                     }
                 }
+
+                flush.Stop();
             }
-            catch
+            catch (Exception exception)
             {
+                flush.Stop(exception);
+
                 // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
                 await CancelAsyncInternal();
 
@@ -878,7 +911,7 @@ namespace YesSql
             var localQueries = new List<string>();
             var localActions = new List<Action<DbDataReader>>();
 
-            var batch = new BatchCommand(_connection.CreateCommand());
+            var batch = new BatchCommand(_connection.CreateCommand(), _store.Configuration);
             var index = 0;
 
             foreach (var command in _commands.OrderBy(x => x.ExecutionOrder))
@@ -903,7 +936,7 @@ namespace YesSql
                             batches.Add(batch);
 
                             // Then start a new batch
-                            batch = new BatchCommand(_connection.CreateCommand());
+                            batch = new BatchCommand(_connection.CreateCommand(), _store.Configuration);
                         }
 
                         batches.Add(command);
@@ -920,7 +953,7 @@ namespace YesSql
                             batches.Add(batch);
 
                             // Then start a new batch
-                            batch = new BatchCommand(_connection.CreateCommand());
+                            batch = new BatchCommand(_connection.CreateCommand(), _store.Configuration);
                         }
 
                         // We can add the queries to the current batch
@@ -946,7 +979,7 @@ namespace YesSql
                         batches.Add(batch);
 
                         // Then start a new batch
-                        batch = new BatchCommand(_connection.CreateCommand());
+                        batch = new BatchCommand(_connection.CreateCommand(), _store.Configuration);
                     }
 
                     batches.Add(command);
@@ -1035,6 +1068,8 @@ namespace YesSql
                 _connection = null;
             }
 
+            YesSqlInstrumentation.RecordSession(_store.Configuration, _statistics);
+
             GC.SuppressFinalize(this);
         }
 
@@ -1046,12 +1081,28 @@ namespace YesSql
                 {
                     if (_cancel || !_save)
                     {
-                        await _transaction.RollbackAsync(cancellationToken);
+                        await YesSqlInstrumentation.ExecuteAsync(
+                            new DbOperation(_store.Configuration, _connection, DbOperation.Rollback, null, null) { IsCommand = false },
+                            (Transaction: _transaction, cancellationToken),
+                            static async state =>
+                            {
+                                await state.Transaction.RollbackAsync(state.cancellationToken);
+
+                                return true;
+                            });
 
                         return;
                     }
 
-                    await _transaction.CommitAsync(cancellationToken);
+                    await YesSqlInstrumentation.ExecuteAsync(
+                        new DbOperation(_store.Configuration, _connection, DbOperation.Commit, null, null) { IsCommand = false },
+                        (Transaction: _transaction, cancellationToken),
+                        static async state =>
+                        {
+                            await state.Transaction.CommitAsync(state.cancellationToken);
+
+                            return true;
+                        });
                 }
             }
             finally
@@ -1307,7 +1358,10 @@ namespace YesSql
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
             var sql = "select * from " + _dialect.QuoteForTableName(name, _store.Configuration.Schema) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
 
-            var index = await _connection.QueryAsync(descriptor.IndexType, new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var index = await YesSqlInstrumentation.ExecuteAsync(
+                new DbOperation(_store.Configuration, _connection, DbOperation.Select, _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection), sql, _statistics),
+                (_connection, descriptor.IndexType, Definition: new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken)),
+                static state => state._connection.QueryAsync(state.IndexType, state.Definition));
             return index.FirstOrDefault() as ReduceIndex;
         }
 

@@ -14,7 +14,7 @@ using YesSql.Serialization;
 
 namespace YesSql.Commands
 {
-    public abstract class IndexCommand : IIndexCommand
+    public abstract class IndexCommand : IIndexCommand, IInstrumentedCommand
     {
         protected const string ParameterSuffix = "_$$$";
 
@@ -41,6 +41,10 @@ namespace YesSql.Commands
         public IIndex Index { get; }
         public Document Document { get; }
         public string Collection { get; }
+
+        internal YesSqlStatistics Statistics { get; private set; }
+
+        YesSqlStatistics IInstrumentedCommand.Statistics { set => Statistics = value; }
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
 

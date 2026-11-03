@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
+using YesSql.Diagnostics;
 using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
@@ -140,7 +141,10 @@ namespace YesSql
 
                 Configuration.Logger.LogTrace(selectCommand.CommandText);
 
-                using var result = await selectCommand.ExecuteReaderAsync(cancellationToken);
+                using var result = await YesSqlInstrumentation.ExecuteAsync(
+                    new DbOperation(Configuration, connection, DbOperation.Select, documentTable, selectCommand.CommandText),
+                    (selectCommand, cancellationToken),
+                    static state => state.selectCommand.ExecuteReaderAsync(state.cancellationToken));
                 if (result != null)
                 {
                     try

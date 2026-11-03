@@ -73,6 +73,12 @@ namespace YesSql.Provider
         }
 
         public abstract string Name { get; }
+
+        /// <inheritdoc />
+        public virtual string TelemetrySystemName => "other_sql";
+
+        /// <inheritdoc />
+        public virtual string DriverTelemetryName => null;
         public virtual string InOperator(string values)
         {
             if (values.StartsWith('@') && !values.Contains(','))

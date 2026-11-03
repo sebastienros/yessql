@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
@@ -36,7 +37,9 @@ namespace YesSql.Commands
                 logger.LogTrace(updateCmd);
             }
 
-            var updatedCount = await connection.ExecuteAsync(new CommandDefinition(updateCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var operation = new DbOperation(_store.Configuration, connection, DbOperation.Update, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), updateCmd, Statistics);
+
+            var updatedCount = await YesSqlInstrumentation.ExecuteAsync(operation, new CommandDefinition(updateCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
 
             if (_checkVersion > -1 && updatedCount != 1)
             {

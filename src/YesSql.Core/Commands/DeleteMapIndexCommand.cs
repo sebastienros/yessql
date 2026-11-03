@@ -5,16 +5,21 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName
+    public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName, IInstrumentedCommand
     {
         private readonly IStore _store;
         public long DocumentId { get; }
         public Type IndexType { get; }
         public string Collection { get; }
         public int ExecutionOrder { get; } = 1;
+
+        YesSqlStatistics IInstrumentedCommand.Statistics { set => _statistics = value; }
+
+        private YesSqlStatistics _statistics;
 
         public DeleteMapIndexCommand(Type indexType, long documentId, IStore store, string collection)
         {
@@ -33,7 +38,9 @@ namespace YesSql.Commands
                 logger.LogTrace(command);
             }
 
-            return connection.ExecuteAsync(new CommandDefinition(command, new { Id = DocumentId }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var operation = new DbOperation(_store.Configuration, connection, DbOperation.Delete, _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection), command, _statistics);
+
+            return YesSqlInstrumentation.ExecuteAsync(operation, new CommandDefinition(command, new { Id = DocumentId }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
         }
 
         public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)

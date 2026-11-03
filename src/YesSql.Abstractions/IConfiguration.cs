@@ -103,6 +103,11 @@ namespace YesSql
         /// Gets or sets the identity column size. Default is <see cref="YesSql.IdentityColumnSize.Int32"/>.
         /// </summary>
         IdentityColumnSize IdentityColumnSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the options of the telemetry of the store.
+        /// </summary>
+        YesSqlTelemetryOptions Telemetry { get; set; }
     }
 
     /// <summary>
@@ -179,6 +184,15 @@ namespace YesSql
         public static IConfiguration DisableQueryGating(this IConfiguration configuration)
         {
             configuration.QueryGatingEnabled = false;
+            return configuration;
+        }
+
+        /// <summary>
+        /// Configures the telemetry of the store.
+        /// </summary>
+        public static IConfiguration ConfigureTelemetry(this IConfiguration configuration, Action<YesSqlTelemetryOptions> configure)
+        {
+            configure(configuration.Telemetry);
             return configuration;
         }
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 using YesSql.Indexes;
 
 namespace YesSql.Commands
@@ -45,13 +46,17 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(bridgeSql);
             }
-            await connection.ExecuteAsync(new CommandDefinition(bridgeSql, new { Id = Index.Id }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var bridgeOperation = new DbOperation(_store.Configuration, connection, DbOperation.Delete, bridgeTableName, bridgeSql, Statistics);
+
+            await YesSqlInstrumentation.ExecuteAsync(bridgeOperation, new CommandDefinition(bridgeSql, new { Id = Index.Id }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
             var command = "delete from " + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), _store.Configuration.Schema) + " where " + dialect.QuoteForColumnName("Id") + " = @Id;";
             if (logger.IsEnabled(LogLevel.Trace))
             {
                 logger.LogTrace(command);
             }
-            await connection.ExecuteAsync(new CommandDefinition(command, new { Id = Index.Id }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var indexOperation = new DbOperation(_store.Configuration, connection, DbOperation.Delete, _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), command, Statistics);
+
+            await YesSqlInstrumentation.ExecuteAsync(indexOperation, new CommandDefinition(command, new { Id = Index.Id }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
         }
     }
 }

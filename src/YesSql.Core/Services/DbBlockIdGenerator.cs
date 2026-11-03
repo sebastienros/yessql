@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 using YesSql.Sql;
 
 namespace YesSql.Services
@@ -139,7 +140,10 @@ namespace YesSql.Services
                             _store.Configuration.Logger.LogTrace(SelectCommand);
                         }
 
-                        nextValue = Convert.ToInt64(await selectCommand.ExecuteScalarAsync(cancellationToken));
+                        nextValue = Convert.ToInt64(await YesSqlInstrumentation.ExecuteAsync(
+                            new DbOperation(_store.Configuration, connection, DbOperation.Select, TableName, SelectCommand),
+                            (selectCommand, cancellationToken),
+                            static state => state.selectCommand.ExecuteScalarAsync(state.cancellationToken)));
 
                         var updateCommand = connection.CreateCommand();
                         updateCommand.CommandText = UpdateCommand;
@@ -165,7 +169,10 @@ namespace YesSql.Services
                         {
                             _store.Configuration.Logger.LogTrace(UpdateCommand);
                         }
-                        affectedRows = await updateCommand.ExecuteNonQueryAsync(cancellationToken);
+                        affectedRows = await YesSqlInstrumentation.ExecuteAsync(
+                            new DbOperation(_store.Configuration, connection, DbOperation.Update, TableName, UpdateCommand),
+                            (updateCommand, cancellationToken),
+                            static state => state.updateCommand.ExecuteNonQueryAsync(state.cancellationToken));
 
                         await transaction.CommitAsync(cancellationToken);
                     }
@@ -216,7 +223,10 @@ namespace YesSql.Services
                     _store.Configuration.Logger.LogTrace(SelectCommand);
                 }
 
-                nextval = await selectCommand.ExecuteScalarAsync(cancellationToken);
+                nextval = await YesSqlInstrumentation.ExecuteAsync(
+                    new DbOperation(configuration, connection, DbOperation.Select, TableName, SelectCommand),
+                    (selectCommand, cancellationToken),
+                    static state => state.selectCommand.ExecuteScalarAsync(state.cancellationToken));
 
                 await transaction.CommitAsync(cancellationToken);
             }
@@ -249,7 +259,10 @@ namespace YesSql.Services
                         _store.Configuration.Logger.LogTrace(InsertCommand);
                     }
 
-                    await command.ExecuteNonQueryAsync(cancellationToken);
+                    await YesSqlInstrumentation.ExecuteAsync(
+                        new DbOperation(configuration, connection, DbOperation.Insert, TableName, InsertCommand),
+                        (command, cancellationToken),
+                        static state => state.command.ExecuteNonQueryAsync(state.cancellationToken));
                     await transaction.CommitAsync(cancellationToken);
                 }
                 catch
