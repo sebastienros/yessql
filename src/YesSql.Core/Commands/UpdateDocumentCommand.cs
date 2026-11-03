@@ -5,20 +5,20 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
-
 namespace YesSql.Commands
 {
-    public sealed class UpdateDocumentCommand : DocumentCommand
+    public class UpdateDocumentCommand : DocumentCommand
     {
-        private readonly IStore _store;
+        private readonly ISession _session;
+        private readonly object _entity;
         private readonly long _checkVersion;
-
         public override int ExecutionOrder { get; } = 2;
 
-        public UpdateDocumentCommand(Document document, IStore store, long checkVersion, string collection) : base(document, collection)
+        public UpdateDocumentCommand(object entity, Document document, IStore store, long checkVersion, string collection, ISession session) : base(document, collection, store)
         {
-            _store = store;
             _checkVersion = checkVersion;
+            _session = session;
+            _entity = entity;
         }
 
         public override async Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default)
@@ -43,10 +43,10 @@ namespace YesSql.Commands
                 throw new ConcurrencyException(Document);
             }
 
-            return;
+            await _session.DocumentCommandHandler.UpdatedAsync(CreateContext(_session, _entity, _store, connection, transaction, dialect));
         }
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
+        public override bool AddToBatch(ISqlDialect dialect, DbConnection connection, DbTransaction transaction, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             // Can't batch if version needs to be checked
             // TODO: If the scalar result still works in batches, we might need to count what is the expected total number
@@ -71,6 +71,8 @@ namespace YesSql.Commands
                 .AddParameter("Id_" + index, Document.Id)
                 .AddParameter("Content_" + index, Document.Content)
                 .AddParameter("Version_" + index, Document.Version);
+
+            _session.DocumentCommandHandler.UpdatedInBatch(CreateBatchContext(_session, _entity, connection, transaction, dialect, batchCommand, queries));
 
             return true;
         }

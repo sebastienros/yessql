@@ -10,14 +10,14 @@ namespace YesSql.Tests.Commands
 {
     public sealed class FailingCommand : DocumentCommand
     {
-        public FailingCommand(Document document) : base(document, null)
+        public FailingCommand(Document document) : base(document, null, null)
         {
 
         }
 
         public override int ExecutionOrder => 4;
 
-        public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
+        public override bool AddToBatch(ISqlDialect dialect, DbConnection connection, DbTransaction transaction, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
         {
             throw new NotImplementedException();
         }

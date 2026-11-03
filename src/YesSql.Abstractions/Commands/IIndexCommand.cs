@@ -10,7 +10,8 @@ namespace YesSql.Commands
     public interface IIndexCommand
     {
         Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
-        bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
+        bool AddToBatch(ISqlDialect dialect, DbConnection connection, DbTransaction transaction, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index);
         int ExecutionOrder { get; }
     }
+    public record CompoundKey(string Dialect, string Type, string Schema, string Prefix, string Collection);
 }

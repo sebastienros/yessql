@@ -3,32 +3,25 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Commands.DocumentChanged;
 
 namespace YesSql.Commands
 {
     public abstract class DocumentCommand : IIndexCommand, ICollectionName
     {
-        protected static readonly PropertyInfo[] AllProperties = new PropertyInfo[]
-        {
-            typeof(Document).GetProperty("Type")
-        };
-
-        protected static readonly PropertyInfo[] AllKeys = new PropertyInfo[]
-        {
-            typeof(Document).GetProperty("Id")
-        };
-
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> InsertCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> UpdateCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> DeleteCommands = new();
 
         public abstract int ExecutionOrder { get; }
 
-        protected DocumentCommand(Document document, string collection)
+        protected readonly IStore _store;
+
+        protected DocumentCommand(Document document, string collection, IStore store)
         {
+            _store = store;
             Document = document;
             Collection = collection;
         }
@@ -37,9 +30,35 @@ namespace YesSql.Commands
 
         public string Collection { get; }
 
+        protected DocumentChangeContext CreateContext(ISession session, object entity, IStore store, DbConnection connection, DbTransaction transaction, ISqlDialect dialect)
+            => new()
+            {
+                Session = session,
+                Entity = entity,
+                Document = Document,
+                Store = store,
+                Connection = connection,
+                Transaction = transaction,
+                Dialect = dialect
+            };
+
+        protected DocumentChangeInBatchContext CreateBatchContext(ISession session, object entity, DbConnection connection, DbTransaction transaction, ISqlDialect dialect, DbCommand batchCommand, List<string> queries)
+            => new()
+            {
+                Session = session,
+                Entity = entity,
+                Document = Document,
+                Store = _store,
+                Connection = connection,
+                Transaction = transaction,
+                Dialect = dialect,
+                BatchCommand = batchCommand,
+                Queries = queries
+            };
+
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
 
-        public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand parameters, List<Action<DbDataReader>> actions, int index);
+        public abstract bool AddToBatch(ISqlDialect dialect, DbConnection connection, DbTransaction transaction, List<string> queries, DbCommand parameters, List<Action<DbDataReader>> actions, int index);
 
         /// <summary>
         /// Clears the cached document SQL statements. Invoked when a store is (re)initialized.
