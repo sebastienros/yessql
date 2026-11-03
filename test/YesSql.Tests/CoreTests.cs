@@ -92,6 +92,8 @@ namespace YesSql.Tests
             await builder.DropMapIndexTableAsync<ArticleByPublishedDate>();
             await builder.DropMapIndexTableAsync<PersonByName>();
             await builder.DropMapIndexTableAsync<CarIndex>();
+            await builder.DropMapIndexTableAsync<CarIntIndex>();
+            await builder.DropMapIndexTableAsync<WorkflowIndex>();
             await builder.DropMapIndexTableAsync<PersonByNameCol>();
             await builder.DropMapIndexTableAsync<PersonIdentity>();
             await builder.DropMapIndexTableAsync<EmailByAttachment>();
@@ -173,6 +175,7 @@ namespace YesSql.Tests
                 await DeleteMapIndexTableAsync<ArticleByPublishedDate>(connection);
                 await DeleteMapIndexTableAsync<PersonByName>(connection);
                 await DeleteMapIndexTableAsync<CarIndex>(connection);
+                await DeleteMapIndexTableAsync<CarIntIndex>(connection);
                 await DeleteMapIndexTableAsync<PersonByNameCol>(connection);
                 await DeleteMapIndexTableAsync<PersonIdentity>(connection);
                 await DeleteMapIndexTableAsync<EmailByAttachment>(connection);
@@ -184,6 +187,7 @@ namespace YesSql.Tests
                 await DeleteMapIndexTableAsync<Binary>(connection);
                 await DeleteMapIndexTableAsync<PublishedArticle>(connection);
                 await DeleteMapIndexTableAsync<PropertyIndex>(connection);
+                await DeleteMapIndexTableAsync<WorkflowIndex>(connection);
                 await DeleteReduceIndexTableAsync<UserByRoleNameIndex>(connection);
 
                 await DeleteMapIndexTableAsync<PersonByName>(connection, "Col1");
@@ -241,6 +245,16 @@ namespace YesSql.Tests
             await builder.CreateMapIndexTableAsync<CarIndex>(column => column
                 .Column<string>(nameof(CarIndex.Name))
                 .Column<Categories>(nameof(CarIndex.Category))
+            );
+
+            await builder.CreateMapIndexTableAsync<CarIntIndex>(column => column
+                .Column<string>(nameof(CarIntIndex.Name))
+                .Column<int>(nameof(CarIntIndex.Category))
+            );
+
+            await builder.CreateMapIndexTableAsync<WorkflowIndex>(column => column
+                .Column<DateTime>(nameof(WorkflowIndex.CreatedUtc))
+                .Column<string>(nameof(WorkflowIndex.WorkflowStatus), c => c.WithLength(26))
             );
 
             await builder.CreateMapIndexTableAsync<PersonByNameCol>(column => column
@@ -588,6 +602,78 @@ namespace YesSql.Tests
 
                 Assert.Equal("Van", (await session.Query<Car, CarIndex>(x => x.Category == Categories.Van).FirstOrDefaultAsync()).Name);
                 Assert.Equal("Truck", (await session.Query<Car, CarIndex>(x => x.Category == Categories.Truck).FirstOrDefaultAsync()).Name);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryEnumIsInWhenEnumPropertyUsesStringColumn()
+        {
+            _store.RegisterIndexes<WorkflowIndexProvider>();
+
+            var draftCreatedUtc = new DateTime(2024, 01, 01, 00, 00, 00, DateTimeKind.Utc);
+            var runningCreatedUtc = draftCreatedUtc.AddDays(1);
+            var completedCreatedUtc = draftCreatedUtc.AddDays(2);
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Workflow
+                {
+                    Name = "Draft",
+                    WorkflowStatus = WorkflowStatus.Draft,
+                    CreatedUtc = draftCreatedUtc
+                });
+
+                await session.SaveAsync(new Workflow
+                {
+                    Name = "Running",
+                    WorkflowStatus = WorkflowStatus.Running,
+                    CreatedUtc = runningCreatedUtc
+                });
+
+                await session.SaveAsync(new Workflow
+                {
+                    Name = "Completed",
+                    WorkflowStatus = WorkflowStatus.Completed,
+                    CreatedUtc = completedCreatedUtc
+                });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var statuses = new[] { WorkflowStatus.Draft, WorkflowStatus.Running };
+                var dateThreshold = runningCreatedUtc.AddHours(12);
+
+                var workflows = await session.Query<Workflow, WorkflowIndex>(x => x.WorkflowStatus.IsIn(statuses) && x.CreatedUtc <= dateThreshold).ListAsync();
+
+                Assert.Equal(new[] { "Draft", "Running" }, workflows.OrderBy(x => x.CreatedUtc).Select(x => x.Name).ToArray());
+                Assert.Equal(2, await session.QueryIndex<WorkflowIndex>(x => x.WorkflowStatus.IsIn(statuses) && x.CreatedUtc <= dateThreshold).CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldQueryEnumIsInWhenEnumPropertyUsesIntColumn()
+        {
+            _store.RegisterIndexes<CarIntIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Car { Name = "Truck", Category = Categories.Truck });
+                await session.SaveAsync(new Car { Name = "Van", Category = Categories.Van });
+                await session.SaveAsync(new Car { Name = "Spare Van", Category = Categories.Van });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var categories = new[] { Categories.Van, Categories.Truck };
+
+                var cars = await session.Query<Car, CarIntIndex>(x => x.Category.IsIn(categories)).ListAsync();
+
+                Assert.Equal(new[] { "Spare Van", "Truck", "Van" }, cars.OrderBy(x => x.Name).Select(x => x.Name).ToArray());
+                Assert.Equal(3, await session.QueryIndex<CarIntIndex>(x => x.Category.IsIn(categories)).CountAsync());
             }
         }
 

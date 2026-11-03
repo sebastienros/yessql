@@ -42,13 +42,17 @@ namespace YesSql.Commands
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = sql;
-                GetProperties(command, Index, "", dialect);
+                GetProperties(command, Index, "", dialect, _store.Configuration, Collection);
                 command.AddParameter($"DocumentId", Index.GetAddedDocuments().Single().Id);
                 Index.Id = Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken));
             }
             else
             {
-                Index.Id = await connection.ExecuteScalarAsync<long>(new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+                var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = sql;
+                GetProperties(command, Index, "", dialect, _store.Configuration, Collection);
+                Index.Id = Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken));
 
                 var reduceIndex = Index as ReduceIndex;
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
@@ -97,7 +101,7 @@ namespace YesSql.Commands
                 dr.NextResult();
             });
 
-            GetProperties(batchCommand, Index, index.ToString(), dialect);
+            GetProperties(batchCommand, Index, index.ToString(), dialect, _store.Configuration, Collection);
 
             var tableName = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection);
 
