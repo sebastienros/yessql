@@ -119,7 +119,7 @@ namespace YesSql
         /// Only pass <see langword="false"/> when the indexes of the query don't have rows for documents of another type than <typeparamref name="T"/>,
         /// for instance documents of a derived type, which would be counted while the query doesn't return them.
         /// The document table is still joined when the query has no index, when an index is produced by a provider registered for another type,
-        /// or when a filter references the document table.
+        /// or when a filter is raw SQL, as it could reference the document table.
         /// </param>
         /// <param name="cancellationToken">The cancellation token.</param>
         Task<int> CountAsync(bool includeDocuments, CancellationToken cancellationToken = default)

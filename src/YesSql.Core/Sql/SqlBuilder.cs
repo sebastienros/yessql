@@ -268,9 +268,6 @@ namespace YesSql.Sql
         internal void ClearJoins()
             => _join = null;
 
-        internal string GetWhere()
-            => _where == null ? string.Empty : string.Concat(_where);
-
         /// <summary>
         /// Removes a condition when it is the first one of the WHERE clause, with the AND operator that follows it.
         /// </summary>

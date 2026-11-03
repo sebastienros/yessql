@@ -5502,6 +5502,35 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenFilterIsSql()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                var documentId = _store.Configuration.SqlDialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetDocumentTable(""), _store.Configuration.Schema)
+                    + "." + _store.Configuration.SqlDialect.QuoteForColumnName("Id");
+
+                Assert.Equal(1, await session.Query<Person, PersonByName>(x => x.SomeName == "Bill")
+                    .Where(documentId + " > 0")
+                    .CountAsync(includeDocuments: false));
+            }
+
+            Assert.True(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        [Fact]
         public async Task ShouldCountDocumentsOnceFromIndexesWithMultipleRows()
         {
             _store.RegisterIndexes<EmailByAttachmentProvider>();

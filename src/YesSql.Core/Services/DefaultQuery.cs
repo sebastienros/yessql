@@ -46,6 +46,7 @@ namespace YesSql.Services
         public Type _documentType; // the type of the documents a query returns, set by For<T>
         public string _typeFilter; // the condition on the type of the documents, when For<T> filters it
         internal List<IndexJoin> _indexJoins; // the indexes joined to the document table, to count from the index tables
+        internal bool _hasSqlFilters; // whether a filter is raw SQL, which could reference the document table
 
         public void FlushFilters()
         {
@@ -124,6 +125,7 @@ namespace YesSql.Services
             clone._documentType = _documentType;
             clone._typeFilter = _typeFilter;
             clone._indexJoins = _indexJoins == null ? null : new List<IndexJoin>(_indexJoins);
+            clone._hasSqlFilters = _hasSqlFilters;
 
             clone._lastParameterName = _lastParameterName;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
@@ -1281,7 +1283,9 @@ namespace YesSql.Services
         {
             var indexJoins = _queryState._indexJoins;
 
+            // A raw SQL filter could reference the document table, so it is kept.
             if (_queryState._documentType == null ||
+                _queryState._hasSqlFilters ||
                 indexJoins == null ||
                 indexJoins.Count == 0)
             {
@@ -1315,14 +1319,7 @@ namespace YesSql.Services
                 builder.Parameters.Remove("@Type");
             }
 
-            var store = _queryState._store;
-
-            if (ReferencesTable(builder.GetWhere(), store.Configuration.TablePrefix + _queryState._documentTable))
-            {
-                return null;
-            }
-
-            var schema = store.Configuration.Schema;
+            var schema = _queryState._store.Configuration.Schema;
             var root = indexJoins[0];
 
             // FROM [PersonByName] AS [PersonByName_a1]
@@ -1357,33 +1354,6 @@ namespace YesSql.Services
             return builder;
         }
 
-        /// <summary>
-        /// Returns whether some SQL contains a table name that is not part of a longer identifier, like <c>Document</c> in <c>[Document].[Id]</c>
-        /// but not in <c>[PersonByName_a1].[DocumentId]</c>.
-        /// </summary>
-        private static bool ReferencesTable(string sql, string table)
-        {
-            var index = sql.IndexOf(table, StringComparison.OrdinalIgnoreCase);
-
-            while (index != -1)
-            {
-                var end = index + table.Length;
-
-                if ((index == 0 || !IsIdentifierChar(sql[index - 1])) &&
-                    (end == sql.Length || !IsIdentifierChar(sql[end])))
-                {
-                    return true;
-                }
-
-                index = sql.IndexOf(table, index + 1, StringComparison.OrdinalIgnoreCase);
-            }
-
-            return false;
-
-            static bool IsIdentifierChar(char c)
-                => char.IsLetterOrDigit(c) || c == '_';
-        }
-
         IQuery<T> IQuery.For<T>(bool filterType)
         {
             _queryState.GetBindings().Clear();
@@ -1391,6 +1361,7 @@ namespace YesSql.Services
             _queryState._documentType = typeof(T);
             _queryState._indexJoins = null;
             _queryState._typeFilter = null;
+            _queryState._hasSqlFilters = false;
 
             _queryState._sqlBuilder.Select();
             _queryState._sqlBuilder.Table(_queryState._documentTable, null, _queryState._store.Configuration.Schema);
@@ -1934,6 +1905,7 @@ namespace YesSql.Services
             IQueryIndex<T> IQueryIndex<T>.Where(string sql)
             {
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql));
+                _query._queryState._hasSqlFilters = true;
 
                 return this;
             }
@@ -1941,6 +1913,7 @@ namespace YesSql.Services
             IQueryIndex<T> IQueryIndex<T>.Where(Func<ISqlDialect, string> sql)
             {
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql?.Invoke(_query._dialect)));
+                _query._queryState._hasSqlFilters = true;
 
                 return this;
             }
@@ -1997,6 +1970,7 @@ namespace YesSql.Services
                 //_query._queryState._currentFilter.Add(sql);
 
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql));
+                _query._queryState._hasSqlFilters = true;
 
                 return this;
             }
@@ -2005,6 +1979,7 @@ namespace YesSql.Services
             {
                 _query.Bind<TIndex>();
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql?.Invoke(_query._dialect)));
+                _query._queryState._hasSqlFilters = true;
                 return this;
             }
 
