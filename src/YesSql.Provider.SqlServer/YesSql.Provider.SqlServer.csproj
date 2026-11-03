@@ -6,6 +6,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Data.SqlClient" />
+        <!-- Lifts the transitive dependency of Microsoft.Data.SqlClient to a version without CVE-2026-84008 and CVE-2026-70162 -->
+        <PackageReference Include="System.Security.Cryptography.Pkcs" />
     </ItemGroup>
 
 </Project>
