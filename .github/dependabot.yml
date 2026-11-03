@@ -12,6 +12,14 @@ updates:
     # Ignore Abstractions packages - these should not be updated
     ignore:
       - dependency-name: "*Abstractions"
+      # Pinned per TFM in src/Versions.props, on the major version Microsoft.Data.SqlClient
+      # uses for that TFM. Dependabot can't tell the TFMs apart, so bump these by hand.
+      - dependency-name: "System.Security.Cryptography.Pkcs"
+        update-types: ["version-update:semver-major"]
+      # Each major version only targets its matching TFM, and the test project still builds
+      # for net8.0. Remove this when net8.0 is dropped.
+      - dependency-name: "Microsoft.AspNetCore.TestHost"
+        update-types: ["version-update:semver-major"]
     groups:
        # Grouped version updates configuration
        all-dependencies:

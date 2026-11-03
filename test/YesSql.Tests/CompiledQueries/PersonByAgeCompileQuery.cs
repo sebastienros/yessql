@@ -1,5 +1,6 @@
 using System;
 using System.Linq.Expressions;
+using YesSql.Services;
 using YesSql.Tests.Indexes;
 using YesSql.Tests.Models;
 
@@ -50,6 +51,29 @@ namespace YesSql.Tests.CompiledQueries
         public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
         {
             return query => query.With<PersonByAge>().Take(1);
+        }
+    }
+
+    public class PersonByNamesQuery : ICompiledQuery<Person>
+    {
+        public PersonByNamesQuery(params string[] names)
+        {
+            Names = names;
+        }
+
+        public string[] Names { get; }
+
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByName>(x => x.SomeName.IsIn(Names));
+        }
+    }
+
+    public class PersonByLiteralNamesQuery : ICompiledQuery<Person>
+    {
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByName>(x => x.SomeName.IsIn(new[] { "Bill", "Steve" }));
         }
     }
 }

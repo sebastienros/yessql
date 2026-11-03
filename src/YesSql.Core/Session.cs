@@ -418,10 +418,13 @@ namespace YesSql
                 }
             }
 
-            var oldObj = Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType());
+            // Update map index. The previous version of the object is only deserialized if an index
+            // needs it (filtered or reduced indexes), plain map indexes are deleted by document id.
+            var oldObj = GetDescriptors(entity.GetType(), collection).Any(static x => x.Filter != null || (x.Reduce != null && x.Delete != null))
+                ? Store.Configuration.ContentSerializer.Deserialize(oldDoc.Content, entity.GetType())
+                : null;
 
-            // Update map index
-            await MapDeleted(oldDoc, oldObj, collection, cancellationToken);
+            await MapDeleted(oldDoc, entity.GetType(), oldObj, collection, cancellationToken);
 
             await MapNew(oldDoc, entity, collection, cancellationToken);
 
@@ -525,15 +528,25 @@ namespace YesSql
                 id = accessor.Get(obj);
             }
 
-            var doc = await GetDocumentByIdAsync(id, collection, cancellationToken);
+            // Like for updates, reuse the document from the identity map when the entity was loaded or
+            // saved in this session, instead of querying it again for each deleted entity. Reduced indexes need
+            // to know the document still exists, otherwise a delete from another session would be applied twice.
+            var isReduced = GetDescriptors(obj.GetType(), collection).Any(static x => x.Reduce != null && x.Delete != null);
+
+            if (isReduced || !state.IdentityMap.TryGetDocument(id, out var doc))
+            {
+                doc = await GetDocumentByIdAsync(id, collection, cancellationToken);
+            }
 
             if (doc != null)
             {
                 // Untrack the deleted object
                 state.IdentityMap.Remove(id, obj);
+                state.Updated.Remove(obj);
+                state.Tracked.Remove(obj);
 
                 // Update impacted indexes
-                await MapDeleted(doc, obj, collection, cancellationToken);
+                await MapDeleted(doc, obj.GetType(), obj, collection, cancellationToken);
 
                 _commands ??= [];
 
@@ -591,14 +604,27 @@ namespace YesSql
                     CancellationToken = cancellationToken,
                 });
 
-                if (!documents.Any())
+                var documentsList = documents as IReadOnlyList<Document> ?? documents.ToList();
+
+                if (documentsList.Count == 0)
                 {
                     return [];
                 }
 
-                // Clone documents returned from ProduceAsync as they might be shared across sessions
-                var sortedDocuments = documents.Select(x => x.Clone())
-                    .OrderBy(d => Array.IndexOf(ids, d.Id));
+                // Clone documents returned from ProduceAsync as they might be shared across sessions,
+                // and return them in the order of the requested ids. Document ids are unique so the
+                // sort doesn't need to be stable.
+                var sortedDocuments = new Document[documentsList.Count];
+                var positions = new int[documentsList.Count];
+
+                for (var i = 0; i < sortedDocuments.Length; i++)
+                {
+                    var document = documentsList[i];
+                    sortedDocuments[i] = document.Clone();
+                    positions[i] = Array.IndexOf(ids, document.Id);
+                }
+
+                Array.Sort(positions, sortedDocuments);
 
                 return Get<T>(sortedDocuments, collection)
                     .ToArray();
@@ -689,7 +715,9 @@ namespace YesSql
 
             var queryState = _store.CompiledQueries.GetOrAdd(discriminator, discriminator =>
             {
-                var localQuery = ((IQuery)new DefaultQuery(this, _tablePrefix, collection)).For<T>(false);
+                var compilingQuery = new DefaultQuery(this, _tablePrefix, collection);
+                compilingQuery._queryState._trackParameterBindings = true;
+                var localQuery = ((IQuery)compilingQuery).For<T>(false);
                 var defaultQuery = (DefaultQuery.Query<T>)compiledQuery.Query().Compile().Invoke(localQuery);
                 return defaultQuery._query._queryState;
             })
@@ -1473,9 +1501,9 @@ namespace YesSql
         /// <summary>
         /// Update map and reduce indexes when an entity is deleted.
         /// </summary>
-        private async Task MapDeleted(Document document, object obj, string collection, CancellationToken cancellationToken)
+        private async Task MapDeleted(Document document, Type type, object obj, string collection, CancellationToken cancellationToken)
         {
-            var descriptors = GetDescriptors(obj.GetType(), collection);
+            var descriptors = GetDescriptors(type, collection);
 
             var state = GetState(collection);
 
