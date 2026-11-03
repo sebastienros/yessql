@@ -12,6 +12,10 @@ updates:
     # Ignore Abstractions packages - these should not be updated
     ignore:
       - dependency-name: "*Abstractions"
+      # Pinned per TFM in src/Versions.props, on the major version Microsoft.Data.SqlClient
+      # uses for that TFM. Dependabot can't tell the TFMs apart, so bump these by hand.
+      - dependency-name: "System.Security.Cryptography.Pkcs"
+        update-types: ["version-update:semver-major"]
     groups:
        # Grouped version updates configuration
        all-dependencies:
