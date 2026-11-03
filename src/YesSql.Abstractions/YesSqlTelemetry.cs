@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
@@ -51,6 +52,22 @@ namespace YesSql
         /// is simply ignored. The other drivers don't publish a meter.
         /// </remarks>
         public static IReadOnlyList<string> DriverMeters { get; } = ["Npgsql", "MySqlConnector"];
+
+        /// <summary>
+        /// Returns whether an instrument of a database driver measures what YesSql already does, so that subscribing to
+        /// both would count the same work twice. Use it to drop that instrument when subscribing to
+        /// <see cref="DriverMeters"/>.
+        /// </summary>
+        /// <remarks>
+        /// Dropping the instrument of a driver also drops its measurements of the commands that don't go through YesSql.
+        /// </remarks>
+        /// <param name="instrument">The instrument to check.</param>
+        public static bool IsDuplicateDriverInstrument(Instrument instrument)
+        {
+            ArgumentNullException.ThrowIfNull(instrument);
+
+            return instrument.Meter.Name == "Npgsql" && instrument.Name == "db.client.operation.duration";
+        }
 
         /// <summary>
         /// Starts totalling the database work of the current asynchronous flow, and of the flows it starts, whatever the

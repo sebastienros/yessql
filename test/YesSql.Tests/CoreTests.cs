@@ -5451,6 +5451,19 @@ namespace YesSql.Tests
 
             var yesSqlSpans = telemetry.DbSpans;
 
+            // Only the duration of Npgsql measures the same work as YesSql.
+            var duplicates = telemetry.Instruments.Where(YesSqlTelemetry.IsDuplicateDriverInstrument).ToArray();
+
+            if (driver == "Npgsql")
+            {
+                Assert.Equal("db.client.operation.duration", Assert.Single(duplicates).Name);
+                Assert.Contains(telemetry.Measurements, x => x.Meter == driver && x.Instrument == "db.client.operation.duration");
+            }
+            else
+            {
+                Assert.Empty(duplicates);
+            }
+
             if (driver is null)
             {
                 Assert.All(telemetry.Spans, x => Assert.Equal(YesSqlTelemetry.Name, x.Source.Name));
@@ -5461,7 +5474,7 @@ namespace YesSql.Tests
 
             Assert.Contains(driver, YesSqlTelemetry.DriverActivitySources);
             Assert.Contains(driver, YesSqlTelemetry.DriverMeters);
-            Assert.Contains(driver, telemetry.Meters);
+            Assert.Contains(telemetry.Instruments, x => x.Meter.Name == driver);
 
             // A database call has one client span, the one of the driver, in the YesSql span holding the table.
             var driverSpans = telemetry.Spans.Where(x => x.Source.Name == driver && x.Kind == ActivityKind.Client).ToArray();

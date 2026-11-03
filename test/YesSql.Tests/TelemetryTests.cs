@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -85,6 +86,19 @@ namespace YesSql.Tests
 
             Assert.Equal(drivers, YesSqlTelemetry.DriverActivitySources);
             Assert.Equal(drivers, YesSqlTelemetry.DriverMeters);
+        }
+
+        [Fact]
+        public void ShouldOnlyFindTheDurationOfNpgsqlDuplicate()
+        {
+            using var npgsql = new Meter("Npgsql");
+            using var mySql = new Meter("MySqlConnector");
+            using var yesSql = new Meter(YesSqlTelemetry.Name);
+
+            Assert.True(YesSqlTelemetry.IsDuplicateDriverInstrument(npgsql.CreateHistogram<double>("db.client.operation.duration")));
+            Assert.False(YesSqlTelemetry.IsDuplicateDriverInstrument(npgsql.CreateCounter<int>("db.client.operation.failed")));
+            Assert.False(YesSqlTelemetry.IsDuplicateDriverInstrument(mySql.CreateHistogram<double>("db.client.operation.duration")));
+            Assert.False(YesSqlTelemetry.IsDuplicateDriverInstrument(yesSql.CreateHistogram<double>("db.client.operation.duration")));
         }
 
         [Fact]

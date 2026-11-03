@@ -155,13 +155,15 @@ YesSql already covers the commands of every provider. What only a driver knows i
 
 Subscribing to the drivers' sources is optional, since it adds a span in each YesSql span, with the details of the connection, and for Npgsql the SQL text whatever `IncludeQueryText` says. `YesSqlTelemetry.DriverActivitySources` lists them. To keep one client span per database call, the YesSql span then changes its kind to `Internal`, which it detects from the listeners of the source named by `ISqlDialect.DriverTelemetryName`.
 
-Npgsql also publishes its own `db.client.operation.duration`, so with both meters each command is measured twice, once per instrumentation scope. Filter on the scope, or drop one of them with a view:
+Npgsql also publishes its own `db.client.operation.duration`, so with both meters each command is measured twice, once per instrumentation scope, and a sum across scopes counts it twice. It can't be turned off in the driver, so drop it when subscribing:
 
 ```csharp
-metrics.AddView(instrument => instrument.Meter.Name == "Npgsql" && instrument.Name == "db.client.operation.duration"
+metrics.AddView(instrument => YesSqlTelemetry.IsDuplicateDriverInstrument(instrument)
     ? MetricStreamConfiguration.Drop
     : null);
 ```
+
+This keeps the instrument of YesSql, which has the operation and the custom tags, and the other instruments of the driver. It also drops the durations of the Npgsql commands that don't go through YesSql, such as those of EF Core, for the whole process. An application needing them should keep both instruments and filter on the scope instead.
 
 Development
 -------------------

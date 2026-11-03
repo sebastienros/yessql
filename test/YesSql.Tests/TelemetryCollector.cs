@@ -22,7 +22,7 @@ namespace YesSql.Tests
         private readonly Activity _root;
         private readonly ConcurrentQueue<Activity> _spans = new();
         private readonly ConcurrentQueue<TelemetryMeasurement> _measurements = new();
-        private readonly ConcurrentDictionary<string, bool> _meters = new();
+        private readonly ConcurrentQueue<Instrument> _instruments = new();
 
         /// <param name="driverNames">The names of the sources and meters of the database drivers to subscribe to as well.</param>
         public TelemetryCollector(params string[] driverNames)
@@ -52,7 +52,7 @@ namespace YesSql.Tests
                 {
                     if (names.Contains(instrument.Meter.Name))
                     {
-                        _meters[instrument.Meter.Name] = true;
+                        _instruments.Enqueue(instrument);
                         listener.EnableMeasurementEvents(instrument);
                     }
                 },
@@ -82,9 +82,9 @@ namespace YesSql.Tests
         public IReadOnlyList<TelemetryMeasurement> Measurements => _measurements.ToArray();
 
         /// <summary>
-        /// Gets the name of the meters which published instruments.
+        /// Gets the published instruments of the meters this collector subscribes to.
         /// </summary>
-        public IReadOnlyCollection<string> Meters => _meters.Keys.ToArray();
+        public IReadOnlyList<Instrument> Instruments => _instruments.ToArray();
 
         public void Dispose()
         {
