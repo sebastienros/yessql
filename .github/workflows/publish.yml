@@ -13,6 +13,10 @@ jobs:
   publish:
     needs: tests
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: 1
@@ -40,5 +44,14 @@ jobs:
     - name: Pack
       run: dotnet pack --output artifacts --configuration Release --no-restore --no-build -p:Version=${{ steps.get_version.outputs.VERSION }}
 
+    # Kept next to the push as the API key it returns is short-lived
+    - name: NuGet login
+      id: nuget-login
+      uses: NuGet/login@v1
+      with:
+        user: sebastienros
+
     - name: Publish on NuGet
-      run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      env:
+        NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+      run: dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
