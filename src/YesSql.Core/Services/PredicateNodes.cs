@@ -98,7 +98,7 @@ namespace YesSql.Services
         }
     }
 
-    internal sealed class FilterNode : CompositeNode
+    internal sealed class FilterNode : PredicateNode
     {
         public FilterNode(string filter)
         {

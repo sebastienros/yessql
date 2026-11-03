@@ -23,6 +23,7 @@ namespace YesSql.Commands
 
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> InsertCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> UpdateCommands = new();
+        private static readonly ConcurrentDictionary<DocumentCommandKey, string> UnversionedUpdateCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> DeleteCommands = new();
 
         public abstract int ExecutionOrder { get; }
@@ -48,6 +49,7 @@ namespace YesSql.Commands
         {
             InsertCommands.Clear();
             UpdateCommands.Clear();
+            UnversionedUpdateCommands.Clear();
             DeleteCommands.Clear();
         }
 
@@ -89,6 +91,21 @@ namespace YesSql.Commands
         }
 
         /// <summary>
+        /// Returns the cached, terminated <c>update</c> statement used when no version check is required.
+        /// </summary>
+        protected static string GetUnversionedUpdateCommandText(ISqlDialect dialect, IStore store, string collection)
+        {
+            var key = new DocumentCommandKey(dialect.Name, store.Configuration.Schema, store.Configuration.TablePrefix, collection);
+
+            if (!UnversionedUpdateCommands.TryGetValue(key, out var result))
+            {
+                UnversionedUpdateCommands[key] = result = GetUpdateCommandText(dialect, store, collection) + ";";
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Returns the cached <c>delete</c> statement for a document table.
         /// </summary>
         protected static string GetDeleteCommandText(ISqlDialect dialect, IStore store, string collection)
@@ -105,6 +122,6 @@ namespace YesSql.Commands
             return result;
         }
 
-        private sealed record DocumentCommandKey(string Dialect, string Schema, string Prefix, string Collection);
+        private readonly record struct DocumentCommandKey(string Dialect, string Schema, string Prefix, string Collection);
     }
 }
