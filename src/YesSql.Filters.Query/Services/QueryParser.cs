@@ -32,7 +32,7 @@ namespace YesSql.Filters.Query.Services
                         var ctx = (QueryParseContext<T>)context;
 
                         return new QueryFilterResult<T>(terms, ctx.TermOptions);
-                    }).Compile();
+                    });
         }
 
         /// <summary>
