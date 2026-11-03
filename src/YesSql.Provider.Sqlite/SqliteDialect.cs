@@ -107,6 +107,9 @@ namespace YesSql.Provider.Sqlite
         public override string Name => "Sqlite";
 
         /// <inheritdoc />
+        public override string TelemetrySystemName => "sqlite";
+
+        /// <inheritdoc />
         public override string IdentityColumnString => "integer primary key autoincrement";
         /// <inheritdoc />
         public override string LegacyIdentityColumnString => "integer primary key autoincrement";

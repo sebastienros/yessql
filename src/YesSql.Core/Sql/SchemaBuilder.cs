@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 using YesSql.Sql.Schema;
 
 namespace YesSql.Sql
@@ -12,6 +13,7 @@ namespace YesSql.Sql
     {
         private readonly ICommandInterpreter _commandInterpreter;
         private readonly ILogger _logger;
+        private readonly IConfiguration _configuration;
 
         public string TablePrefix { get; private set; }
         public ISqlDialect Dialect { get; private set; }
@@ -24,6 +26,7 @@ namespace YesSql.Sql
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
         {
             Transaction = transaction;
+            _configuration = configuration;
             _logger = configuration.Logger;
             Connection = Transaction.Connection;
             _commandInterpreter = configuration.CommandInterpreter;
@@ -51,7 +54,7 @@ namespace YesSql.Sql
                     ;
 
                 table(createTable);
-                await ExecuteAsync(_commandInterpreter.CreateSql(createTable));
+                await ExecuteAsync(_commandInterpreter.CreateSql(createTable), indexTable);
 
                 await CreateForeignKeyAsync("FK_" + (collection ?? "") + indexName, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
 
@@ -83,7 +86,7 @@ namespace YesSql.Sql
                     ;
 
                 table(createTable);
-                await ExecuteAsync(_commandInterpreter.CreateSql(createTable));
+                await ExecuteAsync(_commandInterpreter.CreateSql(createTable), indexTable);
 
                 var bridgeTableName = indexTable + "_" + documentTable;
 
@@ -164,7 +167,7 @@ namespace YesSql.Sql
             {
                 var createTable = new CreateTableCommand(Prefix(name));
                 table(createTable);
-                await ExecuteAsync(_commandInterpreter.CreateSql(createTable));
+                await ExecuteAsync(_commandInterpreter.CreateSql(createTable), name);
             }
             catch (Exception e)
             {
@@ -181,7 +184,7 @@ namespace YesSql.Sql
             {
                 var alterTable = new AlterTableCommand(Prefix(name), Dialect, TablePrefix);
                 table(alterTable);
-                await ExecuteAsync(_commandInterpreter.CreateSql(alterTable));
+                await ExecuteAsync(_commandInterpreter.CreateSql(alterTable), name);
             }
             catch (Exception e)
             {
@@ -203,7 +206,7 @@ namespace YesSql.Sql
             try
             {
                 var deleteTable = new DropTableCommand(Prefix(name));
-                await ExecuteAsync(_commandInterpreter.CreateSql(deleteTable));
+                await ExecuteAsync(_commandInterpreter.CreateSql(deleteTable), name);
             }
             catch (Exception e)
             {
@@ -220,7 +223,7 @@ namespace YesSql.Sql
             {
                 var command = new CreateForeignKeyCommand(Dialect.FormatKeyName(Prefix(name)), Prefix(srcTable), srcColumns, Prefix(destTable), destColumns);
                 var sql = _commandInterpreter.CreateSql(command);
-                await ExecuteAsync(sql);
+                await ExecuteAsync(sql, srcTable);
             }
             catch (Exception e)
             {
@@ -236,7 +239,7 @@ namespace YesSql.Sql
             try
             {
                 var command = new DropForeignKeyCommand(Dialect.FormatKeyName(Prefix(srcTable)), Prefix(name));
-                await ExecuteAsync(_commandInterpreter.CreateSql(command));
+                await ExecuteAsync(_commandInterpreter.CreateSql(command), srcTable);
             }
             catch (Exception e)
             {
@@ -252,7 +255,7 @@ namespace YesSql.Sql
             try
             {
                 var createSchema = new CreateSchemaCommand(schema);
-                await ExecuteAsync(_commandInterpreter.CreateSql(createSchema));
+                await ExecuteAsync(_commandInterpreter.CreateSql(createSchema), null);
             }
             catch (Exception e)
             {
@@ -329,7 +332,7 @@ namespace YesSql.Sql
             return this;
         }
 
-        private async Task ExecuteAsync(IEnumerable<string> statements)
+        private async Task ExecuteAsync(IEnumerable<string> statements, string table)
         {
             foreach (var statement in statements)
             {
@@ -339,7 +342,12 @@ namespace YesSql.Sql
                 }
 
                 _logger.LogTrace(statement);
-                await Connection.ExecuteAsync(statement, null, Transaction);
+
+                var operationName = YesSqlInstrumentation.IsEnabled ? YesSqlInstrumentation.GetStatementOperationName(statement) : null;
+
+                await YesSqlInstrumentation.ExecuteAsync(
+                    new DbOperation(_configuration, Connection, operationName, table, statement),
+                    new CommandDefinition(statement, null, Transaction));
             }
         }
         private string Prefix(string table)

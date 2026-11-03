@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 using YesSql.Indexes;
 
 namespace YesSql.Commands
@@ -30,6 +31,7 @@ namespace YesSql.Commands
             var type = Index.GetType();
 
             var sql = InsertsForExecute(type, dialect);
+            var indexOperation = new DbOperation(_store.Configuration, connection, DbOperation.Insert, _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), sql, Statistics);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {
@@ -43,11 +45,11 @@ namespace YesSql.Commands
                 command.CommandText = sql;
                 GetProperties(command, Index, "", dialect);
                 command.AddParameter($"DocumentId", Index.GetAddedDocuments().Single().Id);
-                Index.Id = Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken));
+                Index.Id = Convert.ToInt64(await YesSqlInstrumentation.ExecuteAsync(indexOperation, (command, cancellationToken), static state => state.command.ExecuteScalarAsync(state.cancellationToken)));
             }
             else
             {
-                Index.Id = await connection.ExecuteScalarAsync<long>(new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+                Index.Id = await YesSqlInstrumentation.ExecuteAsync(indexOperation, (connection, command: new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken)), static state => state.connection.ExecuteScalarAsync<long>(state.command));
 
                 var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
                 var bridgeTableName = _store.Configuration.TableNameConvention.GetIndexTable(type, Collection) + "_" + documentTable;
@@ -59,7 +61,9 @@ namespace YesSql.Commands
                     logger.LogTrace(bridgeSql);
                 }
 
-                await connection.ExecuteAsync(new CommandDefinition(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction, null, null, CommandFlags.Buffered, cancellationToken));
+                var bridgeOperation = new DbOperation(_store.Configuration, connection, DbOperation.Insert, bridgeTableName, bridgeSql, Statistics);
+
+                await YesSqlInstrumentation.ExecuteAsync(bridgeOperation, new CommandDefinition(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction, null, null, CommandFlags.Buffered, cancellationToken));
             }
         }
 

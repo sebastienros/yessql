@@ -27,4 +27,9 @@ namespace YesSql.Tests
     public class SqlServer2019Collection : ICollectionFixture<SqlServer2019ContainerFixture>
     {
     }
+
+    [CollectionDefinition("Telemetry", DisableParallelization = true)]
+    public class TelemetryCollection
+    {
+    }
 }

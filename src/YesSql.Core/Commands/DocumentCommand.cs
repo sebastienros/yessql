@@ -6,10 +6,11 @@ using System.Data.Common;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public abstract class DocumentCommand : IIndexCommand, ICollectionName
+    public abstract class DocumentCommand : IIndexCommand, ICollectionName, IInstrumentedCommand
     {
         protected static readonly PropertyInfo[] AllProperties = new PropertyInfo[]
         {
@@ -37,6 +38,10 @@ namespace YesSql.Commands
         public Document Document { get; }
 
         public string Collection { get; }
+
+        internal YesSqlStatistics Statistics { get; private set; }
+
+        YesSqlStatistics IInstrumentedCommand.Statistics { set => Statistics = value; }
 
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
 

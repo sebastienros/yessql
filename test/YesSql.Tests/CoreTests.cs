@@ -5597,6 +5597,157 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldEmitTelemetryForCommands()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var dialect = _store.Configuration.SqlDialect;
+            var systemName = dialect.Name switch
+            {
+                "Sqlite" => "sqlite",
+                "SqlServer" => "microsoft.sql_server",
+                "PostgreSql" => "postgresql",
+                "MySql" => "mysql",
+                _ => throw new InvalidOperationException(dialect.Name),
+            };
+
+            var documentTable = TablePrefix + "Document";
+
+            if (!string.IsNullOrEmpty(_store.Configuration.Schema))
+            {
+                documentTable = _store.Configuration.Schema + "." + documentTable;
+            }
+
+            using var telemetry = new TelemetryCollector();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+
+                await session.FlushAsync();
+
+                // No wrapper: the commands are given the transaction of the provider, on its connection.
+                var connection = await session.CreateConnectionAsync();
+
+                Assert.Same(connection, session.CurrentTransaction.Connection);
+                Assert.Same(connection.GetType().Assembly, session.CurrentTransaction.GetType().Assembly);
+
+                await session.SaveChangesAsync();
+
+                Assert.True(session.Statistics.Commands > 0);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByName>().CountAsync());
+                Assert.Equal(2, (await session.Query<Person>().ListAsync()).Count());
+                Assert.Equal(2, session.Statistics.Commands);
+                Assert.Equal(2, session.Statistics.DocumentsRead);
+            }
+
+            var spans = telemetry.DbSpans;
+
+            Assert.All(spans, span =>
+            {
+                Assert.Equal(systemName, span.GetTagItem("db.system.name"));
+                Assert.False(string.IsNullOrEmpty((string)span.GetTagItem("db.namespace")));
+                Assert.Equal(ActivityStatusCode.Unset, span.Status);
+                Assert.Null(span.GetTagItem("db.query.text"));
+            });
+
+            Assert.Contains(spans, x => x.DisplayName == "SELECT " + documentTable);
+            Assert.Single(spans, x => (string)x.GetTagItem("db.operation.name") == "COMMIT");
+
+            // The inserts of both documents and of their indexes
+            if (dialect.SupportsBatching)
+            {
+                var batch = spans.Single(x => (string)x.GetTagItem("db.operation.name") == "BATCH INSERT");
+
+                Assert.Equal(4, batch.GetTagItem("db.operation.batch.size"));
+                Assert.Null(batch.GetTagItem("db.collection.name"));
+            }
+            else
+            {
+                Assert.Equal(2, spans.Count(x => x.DisplayName == "INSERT " + documentTable));
+            }
+
+            var durations = telemetry.Measurements.Where(x => x.Instrument == "db.client.operation.duration").ToArray();
+
+            Assert.Equal(spans.Count, durations.Length);
+            Assert.All(durations, x => Assert.Equal(systemName, x.Tags["db.system.name"]));
+        }
+
+        [Fact]
+        public async Task ShouldEmitTelemetryForFailedCommands()
+        {
+            using var telemetry = new TelemetryCollector();
+
+            await using var session = _store.CreateSession();
+
+            var exception = await Assert.ThrowsAnyAsync<DbException>(() => session.Query<Person, TelemetryTests.MissingTableIndex>().ListAsync());
+
+            var span = telemetry.DbSpans.Single();
+
+            Assert.Equal(ActivityStatusCode.Error, span.Status);
+            Assert.Equal(exception.GetType().FullName, span.GetTagItem("error.type"));
+            Assert.Equal(exception.GetType().FullName, telemetry.Measurements.Single(x => x.Instrument == "db.client.operation.duration").Tags["error.type"]);
+        }
+
+        [Fact]
+        public async Task ShouldCollectTheTelemetryOfTheDriverWhenSubscribed()
+        {
+            var driver = _store.Configuration.SqlDialect.DriverTelemetryName;
+
+            using var telemetry = new TelemetryCollector(driver is null ? [] : [driver]);
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Single(await session.Query<Person>().ListAsync());
+            }
+
+            var yesSqlSpans = telemetry.DbSpans;
+
+            // Only the duration of Npgsql measures the same work as YesSql.
+            var duplicates = telemetry.Instruments.Where(YesSqlTelemetry.IsDuplicateDriverInstrument).ToArray();
+
+            if (driver == "Npgsql")
+            {
+                Assert.Equal("db.client.operation.duration", Assert.Single(duplicates).Name);
+                Assert.Contains(telemetry.Measurements, x => x.Meter == driver && x.Instrument == "db.client.operation.duration");
+            }
+            else
+            {
+                Assert.Empty(duplicates);
+            }
+
+            if (driver is null)
+            {
+                Assert.All(telemetry.Spans, x => Assert.Equal(YesSqlTelemetry.Name, x.Source.Name));
+                Assert.All(yesSqlSpans, x => Assert.Equal(ActivityKind.Client, x.Kind));
+
+                return;
+            }
+
+            Assert.Contains(driver, YesSqlTelemetry.DriverActivitySources);
+            Assert.Contains(driver, YesSqlTelemetry.DriverMeters);
+            Assert.Contains(telemetry.Instruments, x => x.Meter.Name == driver);
+
+            // A database call has one client span, the one of the driver, in the YesSql span holding the table.
+            var driverSpans = telemetry.Spans.Where(x => x.Source.Name == driver && x.Kind == ActivityKind.Client).ToArray();
+
+            Assert.NotEmpty(driverSpans);
+            Assert.All(yesSqlSpans, x => Assert.Equal(ActivityKind.Internal, x.Kind));
+            Assert.Contains(driverSpans, x => yesSqlSpans.Any(y => y.SpanId == x.ParentSpanId));
+        }
+
+        [Fact]
         public async Task ShouldResolveManyTypes()
         {
             await using (var session = _store.CreateSession())

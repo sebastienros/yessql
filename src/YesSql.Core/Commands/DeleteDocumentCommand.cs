@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
@@ -27,7 +28,9 @@ namespace YesSql.Commands
                 logger.LogTrace(deleteCmd);
             }
             
-            return connection.ExecuteAsync(new CommandDefinition(deleteCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var operation = new DbOperation(_store.Configuration, connection, DbOperation.Delete, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), deleteCmd, Statistics);
+
+            return YesSqlInstrumentation.ExecuteAsync(operation, new CommandDefinition(deleteCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)

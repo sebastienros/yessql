@@ -14,6 +14,11 @@ namespace YesSql
     public interface ISession : IDisposable, IAsyncDisposable
     {
         /// <summary>
+        /// Gets the totals of the database work of this session, which can still be read once it is disposed.
+        /// </summary>
+        YesSqlStatistics Statistics => new();
+
+        /// <summary>
         /// Saves a new or existing object to the store, and updates
         /// the corresponding indexes.
         /// </summary>

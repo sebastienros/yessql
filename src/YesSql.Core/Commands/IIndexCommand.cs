@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace YesSql.Commands
 {
+    /// <summary>
+    /// A command recording its database operations in the statistics of the session executing it.
+    /// </summary>
+    internal interface IInstrumentedCommand
+    {
+        YesSqlStatistics Statistics { set; }
+    }
+
     public interface IIndexCommand
     {
         Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);

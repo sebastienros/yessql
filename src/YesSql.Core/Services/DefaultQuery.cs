@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Data;
+using YesSql.Diagnostics;
 using YesSql.Indexes;
 using YesSql.Utils;
 
@@ -23,6 +24,7 @@ namespace YesSql.Services
         {
             _collection = collection;
             _documentTable = store.Configuration.TableNameConvention.GetDocumentTable(collection);
+            _fromTable = _documentTable;
             _sqlBuilder = sqlBuilder;
             _store = store;
             _bindings[_bindingName] = new List<Type>();
@@ -34,6 +36,7 @@ namespace YesSql.Services
         public string _bindingName = "a1";
         public Dictionary<string, List<Type>> _bindings = new();
         public readonly string _documentTable;
+        internal string _fromTable; // the table the query selects from, what its telemetry is about
         public string _lastParameterName;
         public ISqlBuilder _sqlBuilder;
         public List<Action<object, ISqlBuilder>> _parameterBindings;
@@ -124,6 +127,7 @@ namespace YesSql.Services
             clone._deduplicate = _deduplicate;
 
             clone._lastParameterName = _lastParameterName;
+            clone._fromTable = _fromTable;
             clone._parameterBindings = _parameterBindings == null ? null : new List<Action<object, ISqlBuilder>>(_parameterBindings);
 
             return clone;
@@ -576,6 +580,7 @@ namespace YesSql.Services
                 _queryState.AddBinding(typeof(TIndex));
 
                 _queryState._sqlBuilder.Select();
+                _queryState._fromTable = indexTable;
                 _queryState._sqlBuilder.Table(indexTable, null, _queryState._store.Configuration.Schema);
                 _queryState._sqlBuilder.Selector(typeof(TIndex).Name, "DocumentId", _queryState._store.Configuration.Schema);
             }
@@ -1237,9 +1242,12 @@ namespace YesSql.Services
                     {
                         logger.LogDebug(state.Sql);
                     }
-                    return state.Connection.ExecuteScalarAsync<int>(new CommandDefinition(state.Sql, state.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                    return YesSqlInstrumentation.ExecuteAsync(
+                        new DbOperation(state.Session._store.Configuration, state.Connection, DbOperation.Select, state.Table, state.Sql, state.Session._statistics),
+                        (state.Connection, Definition: new CommandDefinition(state.Sql, state.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                        static query => query.Connection.ExecuteScalarAsync<int>(query.Definition));
                 },
-                new { Session = _session, Sql = sql, Parameters = parameters, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
+                new { Session = _session, Sql = sql, Parameters = parameters, Connection = connection, Transaction = transaction, Table = _queryState._fromTable, CancellationToken = cancellationToken });
             }
             catch
             {
@@ -1263,6 +1271,7 @@ namespace YesSql.Services
             _queryState.AddBinding(typeof(Document));
 
             _queryState._sqlBuilder.Select();
+            _queryState._fromTable = _queryState._documentTable;
             _queryState._sqlBuilder.Table(_queryState._documentTable, null, _queryState._store.Configuration.Schema);
 
             if (filterType)
@@ -1279,7 +1288,8 @@ namespace YesSql.Services
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(TIndex));
             _queryState._sqlBuilder.Select();
-            _queryState._sqlBuilder.Table(_queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection), _queryState.GetTypeAlias(typeof(TIndex)), _queryState._store.Configuration.Schema);
+            _queryState._fromTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection);
+            _queryState._sqlBuilder.Table(_queryState._fromTable, _queryState.GetTypeAlias(typeof(TIndex)), _queryState._store.Configuration.Schema);
 
             return new QueryIndex<TIndex>(this);
         }
@@ -1290,6 +1300,7 @@ namespace YesSql.Services
             _queryState.AddBinding(typeof(Document));
 
             _queryState._sqlBuilder.Select();
+            _queryState._fromTable = _queryState._documentTable;
             _queryState._sqlBuilder.Table(_queryState._documentTable, null, _queryState._store.Configuration.Schema);
             _queryState._sqlBuilder.Selector("*");
             return new Query<object>(this);
@@ -1351,7 +1362,10 @@ namespace YesSql.Services
                             {
                                 logger.LogDebug(state.Sql);
                             }
-                            return state.Connection.QueryAsync<T>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                            return YesSqlInstrumentation.ExecuteAsync(
+                                new DbOperation(state.Query._session._store.Configuration, state.Connection, DbOperation.Select, state.Query._queryState._fromTable, state.Sql, state.Query._session._statistics),
+                                (state.Connection, Definition: new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                                static query => query.Connection.QueryAsync<T>(query.Definition));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken })).FirstOrDefault();
                     }
                     else
@@ -1368,7 +1382,10 @@ namespace YesSql.Services
                                 logger.LogDebug(state.Sql);
                             }
 
-                            return state.Connection.QueryFirstOrDefaultAsync<Document>(new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken));
+                            return YesSqlInstrumentation.ExecuteAsync(
+                                new DbOperation(state.Query._session._store.Configuration, state.Connection, DbOperation.Select, state.Query._queryState._fromTable, state.Sql, state.Query._session._statistics),
+                                (state.Connection, Definition: new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                                static query => query.Connection.QueryFirstOrDefaultAsync<Document>(query.Definition));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
                         if (document is null)
@@ -1457,21 +1474,30 @@ namespace YesSql.Services
 
                         await using var enumerator = enumerable.GetAsyncEnumerator(cancellationToken);
 
+                        // The operation ends with the first row: the rest of the time depends on the consumer.
+                        var operation = YesSqlInstrumentation.Start(new DbOperation(_query._session._store.Configuration, connection, DbOperation.Select, _query._queryState._fromTable, sql, _query._session._statistics));
+
                         while (true)
                         {
                             T item;
 
                             try
                             {
-                                if (!await enumerator.MoveNextAsync())
+                                var hasItem = await enumerator.MoveNextAsync();
+
+                                operation.Stop();
+
+                                if (!hasItem)
                                 {
                                     break;
                                 }
 
                                 item = enumerator.Current;
                             }
-                            catch
+                            catch (Exception exception)
                             {
+                                operation.Stop(exception);
+
                                 // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
                                 await _query._session.CancelAsyncInternal();
 
@@ -1511,6 +1537,8 @@ namespace YesSql.Services
                         var documents = new List<Document>();
                         List<T> items;
 
+                        var operation = YesSqlInstrumentation.Start(new DbOperation(_query._session._store.Configuration, connection, DbOperation.Select, _query._queryState._fromTable, sql, _query._session._statistics));
+
                         try
                         {
                             await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
@@ -1518,14 +1546,18 @@ namespace YesSql.Services
                                 documents.Add(document);
                             }
 
+                            operation.Stop();
+
                             // The documents are materialized for this query only (they don't go through the shared
                             // query gating), so they don't need to be cloned.
                             items = documents.Count == 0
                                 ? []
                                 : _query._session.Get<T>(documents, _query._collection).ToList();
                         }
-                        catch
+                        catch (Exception exception)
                         {
+                            operation.Stop(exception);
+
                             // Don't use CancelAsync as we don't want to trigger a thread safety check, it's done in the finally block
                             await _query._session.CancelAsyncInternal();
 

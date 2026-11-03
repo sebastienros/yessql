@@ -98,6 +98,12 @@ namespace YesSql.Provider.MySql
 
         /// <inheritdoc />
         public override string Name => "MySql";
+
+        /// <inheritdoc />
+        public override string TelemetrySystemName => "mysql";
+
+        /// <inheritdoc />
+        public override string DriverTelemetryName => "MySqlConnector";
         /// <inheritdoc />
         public override string IdentitySelectString => "; select LAST_INSERT_ID()";
         /// <inheritdoc />

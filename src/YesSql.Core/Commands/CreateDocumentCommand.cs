@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
@@ -28,7 +29,9 @@ namespace YesSql.Commands
                 logger.LogTrace(insertCmd);
             }
 
-            return connection.ExecuteAsync(new CommandDefinition(insertCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var operation = new DbOperation(_store.Configuration, connection, DbOperation.Insert, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), insertCmd, Statistics);
+
+            return YesSqlInstrumentation.ExecuteAsync(operation, new CommandDefinition(insertCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
