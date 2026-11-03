@@ -12,10 +12,6 @@ updates:
     # Ignore Abstractions packages - these should not be updated
     ignore:
       - dependency-name: "*Abstractions"
-      # Parlot 2 is a binary break for the published Fluid.Core packages, which are built
-      # against Parlot 1.x. Stay on 1.x until a Fluid.Core release depends on Parlot 2.
-      - dependency-name: "Parlot"
-        update-types: ["version-update:semver-major"]
       # Pinned per TFM in src/Versions.props, on the major version Microsoft.Data.SqlClient
       # uses for that TFM. Dependabot can't tell the TFMs apart, so bump these by hand.
       - dependency-name: "System.Security.Cryptography.Pkcs"

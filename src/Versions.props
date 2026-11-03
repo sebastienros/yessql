@@ -8,7 +8,7 @@
       <MicrosoftDataSqlitePackageVersion>10.0.14</MicrosoftDataSqlitePackageVersion>
       <SQLitePCLRawBundleESqlite3PackageVersion>3.0.5</SQLitePCLRawBundleESqlite3PackageVersion>
       <NpgsqlPackageVersion>10.0.3</NpgsqlPackageVersion>
-      <ParlotPackageVersion>1.6.0</ParlotPackageVersion>
+      <ParlotPackageVersion>2.2.1</ParlotPackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
