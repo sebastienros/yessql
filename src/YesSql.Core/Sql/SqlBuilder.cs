@@ -268,33 +268,8 @@ namespace YesSql.Sql
         internal void ClearJoins()
             => _join = null;
 
-        /// <summary>
-        /// Removes a condition when it is the first one of the WHERE clause, with the AND operator that follows it.
-        /// </summary>
-        internal bool RemoveFirstWhere(string where)
-        {
-            if (_where == null || _where.Count == 0 || !string.Equals(_where[0], where, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            if (_where.Count == 1)
-            {
-                _where = null;
-
-                return true;
-            }
-
-            // A condition that follows the first one with OR can't be kept without it.
-            if (_where[1] != " AND ")
-            {
-                return false;
-            }
-
-            _where.RemoveRange(0, 2);
-
-            return true;
-        }
+        internal void ClearWhere()
+            => _where = null;
 
         public bool HasOrder
             => _order?.Count > 0;

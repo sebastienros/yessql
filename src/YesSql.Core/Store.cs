@@ -280,8 +280,11 @@ namespace YesSql
                 indexProvider.CollectionName ??= collection ?? "";
             }
 
-            Indexes.AddRange(indexProviders);
-            IndexesProducedOnlyFor.Clear();
+            lock (IndexesProducedOnlyFor)
+            {
+                Indexes.AddRange(indexProviders);
+                IndexesProducedOnlyFor.Clear();
+            }
 
             return this;
         }
@@ -298,13 +301,21 @@ namespace YesSql
         /// </summary>
         internal bool IsIndexProducedOnlyFor(Type indexType, Type documentType)
         {
-            // The indexes produced by scoped providers are not known until they are created.
-            if (ScopedIndexes.Count > 0)
+            var key = (indexType, documentType);
+
+            if (IndexesProducedOnlyFor.TryGetValue(key, out var producedOnlyFor))
             {
-                return false;
+                return producedOnlyFor;
             }
 
-            return IndexesProducedOnlyFor.GetOrAdd((indexType, documentType), key => !IsIndexProducedForAnotherType(Indexes, key.IndexType, key.DocumentType));
+            // The lock prevents caching a result for a list of providers that has changed since it was read.
+            lock (IndexesProducedOnlyFor)
+            {
+                producedOnlyFor = !IsIndexProducedForAnotherType(Indexes, indexType, documentType);
+                IndexesProducedOnlyFor[key] = producedOnlyFor;
+            }
+
+            return producedOnlyFor;
         }
 
         /// <summary>

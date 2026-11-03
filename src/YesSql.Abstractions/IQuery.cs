@@ -116,10 +116,12 @@ namespace YesSql
         /// Whether to join the document table. When <see langword="false"/>, the documents are counted from the index tables of the query,
         /// like <c>SELECT count(distinct [PersonByName_a1].[DocumentId]) FROM [PersonByName] AS [PersonByName_a1] WHERE ...</c>, without
         /// joining the document table and filtering the type of the documents, which is faster on large tables.
-        /// Only pass <see langword="false"/> when the indexes of the query don't have rows for documents of another type than <typeparamref name="T"/>,
-        /// for instance documents of a derived type, which would be counted while the query doesn't return them.
-        /// The document table is still joined when the query has no index, when an index is produced by a provider registered for another type,
-        /// or when a filter is raw SQL, as it could reference the document table.
+        /// Only pass <see langword="false"/> when the indexes of the query only have rows for existing documents of type <typeparamref name="T"/>.
+        /// Other rows can't always be detected and would be counted while the query doesn't return them: rows written by a provider that isn't
+        /// registered on the store or on this session, for instance one registered on another session or since removed, and rows left by a deleted
+        /// document on a database without foreign keys like SQLite.
+        /// The document table is still joined when the query has no index, when the type is filtered and an index is produced by a provider
+        /// registered for another type, or when a filter is raw SQL, as it could reference the document table.
         /// </param>
         /// <param name="cancellationToken">The cancellation token.</param>
         Task<int> CountAsync(bool includeDocuments, CancellationToken cancellationToken = default)

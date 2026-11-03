@@ -31,6 +31,7 @@ namespace YesSql
         protected bool _cancel;
         protected bool _save;
         protected List<IIndexProvider> _indexes;
+        private Dictionary<(Type IndexType, Type DocumentType), bool> _indexesProducedOnlyFor;
 
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
@@ -66,6 +67,7 @@ namespace YesSql
             _indexes ??= [];
 
             _indexes.AddRange(indexProviders);
+            _indexesProducedOnlyFor?.Clear();
 
             return this;
         }
@@ -1343,7 +1345,22 @@ namespace YesSql
                 return false;
             }
 
-            return _indexes == null || !_store.IsIndexProducedForAnotherType(_indexes, indexType, documentType);
+            if (_indexes == null)
+            {
+                return true;
+            }
+
+            _indexesProducedOnlyFor ??= [];
+
+            var key = (indexType, documentType);
+
+            if (!_indexesProducedOnlyFor.TryGetValue(key, out var producedOnlyFor))
+            {
+                producedOnlyFor = !_store.IsIndexProducedForAnotherType(_indexes, indexType, documentType);
+                _indexesProducedOnlyFor[key] = producedOnlyFor;
+            }
+
+            return producedOnlyFor;
         }
 
         /// <summary>

@@ -52,4 +52,19 @@ namespace YesSql.Tests.CompiledQueries
             return query => query.With<PersonByAge>().Take(1);
         }
     }
+
+    public class PersonByNameColQuery : ICompiledQuery<Person>
+    {
+        public PersonByNameColQuery(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByNameCol>(x => x.Name == Name);
+        }
+    }
 }

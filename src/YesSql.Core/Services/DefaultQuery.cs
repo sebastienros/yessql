@@ -44,7 +44,8 @@ namespace YesSql.Services
         public bool _processed = false;
         public bool _deduplicate = true;
         public Type _documentType; // the type of the documents a query returns, set by For<T>
-        public string _typeFilter; // the condition on the type of the documents, when For<T> filters it
+        internal bool _filterType; // whether For<T> filters the type of the documents
+        internal string _filters; // the flushed filters, without the condition on the type of the documents
         internal List<IndexJoin> _indexJoins; // the indexes joined to the document table, to count from the index tables
         internal bool _hasSqlFilters; // whether a filter is raw SQL, which could reference the document table
 
@@ -57,7 +58,8 @@ namespace YesSql.Services
 
                 if (builder.Length > 0)
                 {
-                    _sqlBuilder.WhereAnd(builder.ToString());
+                    _filters = builder.ToString();
+                    _sqlBuilder.WhereAnd(_filters);
                 }
 
                 builder.Dispose();
@@ -68,7 +70,12 @@ namespace YesSql.Services
 
         public string GetTableAlias(string tableName)
         {
-            return tableName + "_" + _bindingName;
+            return GetTableAlias(tableName, _bindingName);
+        }
+
+        internal static string GetTableAlias(string tableName, string bindingName)
+        {
+            return tableName + "_" + bindingName;
         }
 
         public string GetBridgeAlias(Type t)
@@ -123,7 +130,7 @@ namespace YesSql.Services
             clone._predicate = clone._currentPredicate;
             clone._deduplicate = _deduplicate;
             clone._documentType = _documentType;
-            clone._typeFilter = _typeFilter;
+            clone._filterType = _filterType;
             clone._indexJoins = _indexJoins == null ? null : new List<IndexJoin>(_indexJoins);
             clone._hasSqlFilters = _hasSqlFilters;
 
@@ -137,20 +144,13 @@ namespace YesSql.Services
     /// <summary>
     /// An index joined to the document table, which can be joined to another index table instead.
     /// </summary>
-    internal sealed class IndexJoin
+    internal readonly record struct IndexJoin(Type IndexType, string BindingName)
     {
-        public Type IndexType { get; init; }
-        public string IndexTable { get; init; }
-        public string IndexAlias { get; init; }
+        public bool IsMapIndex => typeof(MapIndex).IsAssignableFrom(IndexType);
+        public string IndexAlias => QueryState.GetTableAlias(IndexType.Name, BindingName);
 
-        // The bridge table between the documents and a reduce index, null for a map index.
-        public string BridgeTable { get; init; }
-        public string BridgeAlias { get; init; }
-        public string BridgeColumn { get; init; }
-
-        // The table that holds the DocumentId column of the index.
-        public string DocumentTable => BridgeTable ?? IndexTable;
-        public string DocumentAlias => BridgeAlias ?? IndexAlias;
+        // The alias of the table that holds the DocumentId column of the index, which is the bridge table of a reduce index.
+        public string DocumentAlias => IsMapIndex ? IndexAlias : QueryState.GetTableAlias(IndexType.Name + "_Document", BindingName);
     }
 
     public class DefaultQuery : IQuery
@@ -515,46 +515,48 @@ namespace YesSql.Services
                 return;
             }
 
-            var name = tIndex.Name;
-            var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(tIndex, _collection);
-            var indexTableAlias = _queryState.GetTypeAlias(tIndex);
+            var indexJoin = new IndexJoin(tIndex, _queryState._bindingName);
 
             _queryState.AddBinding(tIndex);
+            (_queryState._indexJoins ??= []).Add(indexJoin);
 
-            if (typeof(MapIndex).IsAssignableFrom(tIndex))
+            JoinIndex(_queryState._sqlBuilder, indexJoin, _queryState._documentTable, "Id", null);
+        }
+
+        /// <summary>
+        /// Joins an index to a column of another table, through its bridge table for a reduce index. Without a table to join to,
+        /// which is the case of the first index of a count, only a reduce index is joined to its bridge table.
+        /// </summary>
+        private void JoinIndex(ISqlBuilder builder, IndexJoin indexJoin, string toTable, string toColumn, string toAlias)
+        {
+            var schema = _queryState._store.Configuration.Schema;
+            var documentTable = GetDocumentIdTable(indexJoin);
+            var documentAlias = indexJoin.DocumentAlias;
+
+            if (toTable != null)
             {
-                // inner join [PersonByName] as [PersonByName_a1] on [PersonByName_a1].[Id] = [Document].[Id] 
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, indexTableAlias);
-
-                (_queryState._indexJoins ??= []).Add(new IndexJoin
-                {
-                    IndexType = tIndex,
-                    IndexTable = indexTable,
-                    IndexAlias = indexTableAlias,
-                });
+                // inner join [PersonByName] as [PersonByName_a1] on [PersonByName_a1].[DocumentId] = [Document].[Id]
+                // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document_a1].[DocumentId] = [Document].[Id]
+                builder.InnerJoin(documentTable, documentAlias, "DocumentId", toTable, toColumn, schema, documentAlias, toAlias);
             }
-            else
+
+            if (!indexJoin.IsMapIndex)
             {
-                var bridgeName = indexTable + "_" + _queryState._documentTable;
-                var bridgeAlias = _queryState.GetBridgeAlias(tIndex);
+                var indexAlias = indexJoin.IndexAlias;
 
-                // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document].[DocumentId] = [Document].[Id]
-                _queryState._sqlBuilder.InnerJoin(bridgeName, bridgeAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, bridgeAlias);
-
-                // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document].[ArticlesByDayId]
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeName, name + "Id", _queryState._store.Configuration.Schema, indexTableAlias, bridgeAlias);
-
-                (_queryState._indexJoins ??= []).Add(new IndexJoin
-                {
-                    IndexType = tIndex,
-                    IndexTable = indexTable,
-                    IndexAlias = indexTableAlias,
-                    BridgeTable = bridgeName,
-                    BridgeAlias = bridgeAlias,
-                    BridgeColumn = name + "Id",
-                });
+                // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document_a1].[ArticlesByDayId]
+                builder.InnerJoin(GetIndexTable(indexJoin.IndexType), indexAlias, "Id", documentTable, indexJoin.IndexType.Name + "Id", schema, indexAlias, documentAlias);
             }
         }
+
+        // The query state has the collection of a compiled query, which isn't set on this instance.
+        private string GetIndexTable(Type tIndex)
+            => _queryState._store.Configuration.TableNameConvention.GetIndexTable(tIndex, _queryState._collection);
+
+        private string GetDocumentIdTable(IndexJoin indexJoin)
+            => indexJoin.IsMapIndex
+                ? GetIndexTable(indexJoin.IndexType)
+                : GetIndexTable(indexJoin.IndexType) + "_" + _queryState._documentTable;
 
         private void Page(int count, int skip)
         {
@@ -1292,7 +1294,7 @@ namespace YesSql.Services
                 return null;
             }
 
-            if (_queryState._typeFilter != null)
+            if (_queryState._filterType)
             {
                 // The rows of an index only belong to documents of the queried type when no provider of another type produces it.
                 foreach (var indexJoin in indexJoins)
@@ -1309,47 +1311,26 @@ namespace YesSql.Services
                 return null;
             }
 
-            if (_queryState._typeFilter != null)
-            {
-                if (!builder.RemoveFirstWhere(_queryState._typeFilter))
-                {
-                    return null;
-                }
-
-                builder.Parameters.Remove("@Type");
-            }
+            // Only keep the filters of the query, without the condition on the type of the documents.
+            builder.ClearWhere();
+            builder.WhereAnd(_queryState._filters);
+            builder.Parameters.Remove("@Type");
 
             var schema = _queryState._store.Configuration.Schema;
             var root = indexJoins[0];
+            var rootAlias = root.DocumentAlias;
 
             // FROM [PersonByName] AS [PersonByName_a1]
-            builder.Table(root.DocumentTable, root.DocumentAlias, schema);
+            builder.Table(GetDocumentIdTable(root), rootAlias, schema);
             builder.ClearJoins();
 
             foreach (var indexJoin in indexJoins)
             {
-                if (indexJoin.BridgeTable == null)
-                {
-                    if (indexJoin != root)
-                    {
-                        // inner join [PersonByAge] as [PersonByAge_a1] on [PersonByAge_a1].[DocumentId] = [PersonByName_a1].[DocumentId]
-                        builder.InnerJoin(indexJoin.IndexTable, indexJoin.IndexAlias, "DocumentId", root.DocumentAlias, "DocumentId", schema, indexJoin.IndexAlias, root.DocumentAlias);
-                    }
-
-                    continue;
-                }
-
-                if (indexJoin != root)
-                {
-                    // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document_a1].[DocumentId] = [PersonByName_a1].[DocumentId]
-                    builder.InnerJoin(indexJoin.BridgeTable, indexJoin.BridgeAlias, "DocumentId", root.DocumentAlias, "DocumentId", schema, indexJoin.BridgeAlias, root.DocumentAlias);
-                }
-
-                // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document_a1].[ArticlesByDayId]
-                builder.InnerJoin(indexJoin.IndexTable, indexJoin.IndexAlias, "Id", indexJoin.BridgeTable, indexJoin.BridgeColumn, schema, indexJoin.IndexAlias, indexJoin.BridgeAlias);
+                // The first index is in the FROM clause, the others are joined on its DocumentId column.
+                JoinIndex(builder, indexJoin, indexJoin == root ? null : rootAlias, "DocumentId", rootAlias);
             }
 
-            builder.Selector($"count(distinct {builder.FormatColumn(root.DocumentAlias, "DocumentId", schema, true)})");
+            builder.Selector($"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})");
 
             return builder;
         }
@@ -1359,17 +1340,14 @@ namespace YesSql.Services
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(Document));
             _queryState._documentType = typeof(T);
-            _queryState._indexJoins = null;
-            _queryState._typeFilter = null;
-            _queryState._hasSqlFilters = false;
 
             _queryState._sqlBuilder.Select();
             _queryState._sqlBuilder.Table(_queryState._documentTable, null, _queryState._store.Configuration.Schema);
 
             if (filterType)
             {
-                _queryState._typeFilter = _queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type", _queryState._store.Configuration.Schema) + " = @Type";
-                _queryState._sqlBuilder.WhereAnd(_queryState._typeFilter); // TODO: investigate, this makes the query 3 times slower on sqlite
+                _queryState._filterType = true;
+                _queryState._sqlBuilder.WhereAnd(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type", _queryState._store.Configuration.Schema) + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
                 _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
             }
 
