@@ -58,6 +58,11 @@ namespace YesSql.Sql
 
                 await CreateForeignKeyAsync("FK_" + (collection ?? "") + indexName, indexTable, new[] { "DocumentId" }, documentTable, new[] { "Id" });
 
+                // NB: Don't index the custom columns here. Those indexes belong to the application that defines the columns,
+                // as YesSql doesn't know its filters. Leading with the filter columns and ending with DocumentId works best for counts.
+                // Leading with DocumentId can be worse than no index: on MySQL, count(distinct DocumentId) filtered on another column
+                // then skip scans the whole index.
+
                 await AlterTableAsync(indexTable, table =>
                     table.CreateIndex($"IDX_FK_{indexTable}", "DocumentId")
                     );
@@ -100,6 +105,14 @@ namespace YesSql.Sql
 
                 await AlterTableAsync(bridgeTableName, table =>
                     table.CreateIndex($"IDX_FK_{bridgeTableName}", indexName + "Id", "DocumentId")
+                    );
+
+                // NB: The index above can't serve the foreign key on DocumentId, which every document delete has to check.
+                // MySQL creates an index for that foreign key on its own and replaces it with this one.
+                // Keep it on DocumentId alone, adding the reduce index id gave counts no real benefit.
+
+                await AlterTableAsync(bridgeTableName, table =>
+                    table.CreateIndex($"IDX_FK_{bridgeTableName}_DocumentId", "DocumentId")
                     );
             }
             catch (Exception e)

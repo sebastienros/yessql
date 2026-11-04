@@ -36,6 +36,14 @@ namespace YesSql.Tests
                 .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
 
+        protected override string GetIndexColumnsSql(string table, string indexName)
+        {
+            var quotedTable = _store.Configuration.SqlDialect.QuoteForTableName(table, _store.Configuration.Schema);
+
+            return $"SELECT a.attname::text FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid JOIN pg_attribute a ON a.attrelid = i.indexrelid " +
+                $"WHERE i.indrelid = to_regclass('{quotedTable}') AND c.relname = '{indexName}' ORDER BY a.attnum";
+        }
+
         [Fact(Skip = "Postgres locks on the table")]
         public override Task ShouldReadUncommittedRecords()
         {

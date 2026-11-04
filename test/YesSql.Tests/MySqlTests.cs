@@ -37,6 +37,9 @@ namespace YesSql.Tests
                 .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
 
+        protected override string GetIndexColumnsSql(string table, string indexName)
+            => $"SELECT COLUMN_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{table}' AND INDEX_NAME = '{indexName}' ORDER BY SEQ_IN_INDEX";
+
         [Fact]
         public async Task ForeignKeyOfIndexesMustBe_DeleteCascated()
         {

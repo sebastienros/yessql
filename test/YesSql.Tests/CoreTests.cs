@@ -28,6 +28,11 @@ namespace YesSql.Tests
 
         protected virtual string DecimalColumnDefinitionFormatString => "DECIMAL({0},{1})";
 
+        /// <summary>
+        /// Returns the SQL selecting the columns of an index in their order, or nothing if it doesn't exist.
+        /// </summary>
+        protected abstract string GetIndexColumnsSql(string table, string indexName);
+
         protected IStore _store;
         protected static IConfiguration _configuration;
 
@@ -4330,6 +4335,54 @@ namespace YesSql.Tests
             }
         }
 
+
+        [Fact]
+        public async Task ShouldCreateAndDropReduceIndexWithBridgeDocumentIdIndex()
+        {
+            // This collection makes the index name long enough to be hashed by the dialects limiting identifiers.
+            const string collection = "LongCollection";
+
+            await _store.InitializeCollectionAsync(collection);
+
+            var configuration = _store.Configuration;
+            var dialect = configuration.SqlDialect;
+            var bridgeTable = configuration.TableNameConvention.GetIndexTable(typeof(PersonsByNameCol), collection) + "_" + configuration.TableNameConvention.GetDocumentTable(collection);
+            var indexName = dialect.FormatIndexName((dialect.PrefixIndex ? configuration.TablePrefix : "") + $"IDX_FK_{bridgeTable}_DocumentId");
+            var indexColumnsSql = GetIndexColumnsSql(configuration.TablePrefix + bridgeTable, indexName);
+
+            await using var connection = configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            // Twice, as anything the first drop leaves behind prevents creating the table again.
+            for (var i = 0; i < 2; i++)
+            {
+                await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(configuration, transaction);
+
+                    await builder.CreateReduceIndexTableAsync<PersonsByNameCol>(column => column
+                        .Column<string>(nameof(PersonsByNameCol.Name))
+                        .Column<int>(nameof(PersonsByNameCol.Count)),
+                        collection
+                    );
+
+                    await transaction.CommitAsync();
+                }
+
+                Assert.Equal(["DocumentId"], await connection.QueryAsync<string>(indexColumnsSql));
+
+                await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel))
+                {
+                    var builder = new SchemaBuilder(configuration, transaction);
+
+                    await builder.DropReduceIndexTableAsync<PersonsByNameCol>(collection);
+
+                    await transaction.CommitAsync();
+                }
+
+                Assert.Empty(await connection.QueryAsync<string>(indexColumnsSql));
+            }
+        }
 
         [Fact]
         public async Task ShouldSaveReduceIndexInCollection()

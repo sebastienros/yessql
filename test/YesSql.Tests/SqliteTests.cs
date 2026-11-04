@@ -35,6 +35,9 @@ namespace YesSql.Tests
                 .SetIdentityColumnSize(IdentityColumnSize.Int64);
         }
 
+        protected override string GetIndexColumnsSql(string table, string indexName)
+            => $"SELECT name FROM pragma_index_info('{indexName}') ORDER BY seqno";
+
         [Fact(Skip = "Alter column is not supported by Sqlite")]
         public override void ShouldAlterColumn()
         {
