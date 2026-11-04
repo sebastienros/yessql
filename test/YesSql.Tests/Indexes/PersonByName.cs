@@ -26,6 +26,16 @@ namespace YesSql.Tests.Indexes
         }
     }
 
+    public class AnimalNameIndexProvider : IndexProvider<Animal>
+    {
+        public override void Describe(DescribeContext<Animal> context)
+        {
+            context
+                .For<PersonByName>()
+                .Map(animal => new PersonByName { SomeName = animal.Name });
+        }
+    }
+
     public class PersonWithAIndexProvider : IndexProvider<Person>
     {
         public override void Describe(DescribeContext<Person> context)
