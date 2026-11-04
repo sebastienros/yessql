@@ -32,6 +32,7 @@ namespace YesSql
         protected bool _cancel;
         protected bool _save;
         protected List<IIndexProvider> _indexes;
+        private Dictionary<(Type IndexType, Type DocumentType, string Collection), IndexOwnership> _indexOwnerships;
 
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
@@ -70,6 +71,7 @@ namespace YesSql
             _indexes ??= [];
 
             _indexes.AddRange(indexProviders);
+            _indexOwnerships?.Clear();
 
             return this;
         }
@@ -1412,6 +1414,33 @@ namespace YesSql
 
                 return Expression.Lambda<Func<IIndex, object>>(convert, instance).Compile();
             });
+        }
+
+        /// <summary>
+        /// Returns whether an index is declared to only have rows for documents of a specific type, and no provider
+        /// produces it for another type, among the providers registered on the Store and the Session.
+        /// </summary>
+        internal bool IsIndexExclusiveTo(Type indexType, Type documentType, string collection)
+        {
+            var ownership = _store.GetIndexOwnership(indexType, documentType, collection);
+
+            if (_indexes == null || ownership == IndexOwnership.Shared)
+            {
+                return ownership == IndexOwnership.Exclusive;
+            }
+
+            _indexOwnerships ??= [];
+
+            var key = (indexType, documentType, collection ?? "");
+
+            if (!_indexOwnerships.TryGetValue(key, out var sessionOwnership))
+            {
+                sessionOwnership = _store.FindIndexOwnership(_indexes, indexType, documentType, collection);
+                _indexOwnerships[key] = sessionOwnership;
+            }
+
+            return sessionOwnership != IndexOwnership.Shared &&
+                (ownership == IndexOwnership.Exclusive || sessionOwnership == IndexOwnership.Exclusive);
         }
 
         /// <summary>

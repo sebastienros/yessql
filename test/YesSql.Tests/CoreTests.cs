@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -5855,6 +5856,474 @@ namespace YesSql.Tests
 
                 Assert.Equal(10, result2.Count());
             }
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexes()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+            _store.RegisterIndexes<ExclusivePersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+                await session.SaveAsync(new Person { Firstname = "Paul", Age = 30 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.Query<Person, PersonByName>().CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByName>(x => x.SomeName == "Bill", filterType: true).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>(x => x.Adult).With<PersonByName>(x => x.SomeName != "Steve").CountAsync());
+                Assert.Equal(2, await session.Query<Person>().Any(
+                    x => x.With<PersonByName>(x => x.SomeName == "Bill"),
+                    x => x.With<PersonByAge>(x => x.Age < 18)).CountAsync());
+                Assert.Equal(1, await session.Query<Person>().All(
+                    x => x.With<PersonByName>(x => x.SomeName == "Bill"),
+                    x => x.With<PersonByAge>(x => x.Adult)).CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(5, countQueries.Length);
+            Assert.All(countQueries, sql => Assert.False(ReferencesDocumentTable(sql), sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableByDefault()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
+            }
+
+            Assert.True(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenFilterIsSql()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                var documentId = _store.Configuration.SqlDialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetDocumentTable(""), _store.Configuration.Schema)
+                    + "." + _store.Configuration.SqlDialect.QuoteForColumnName("Id");
+
+                Assert.Equal(1, await session.Query<Person, PersonByName>(x => x.SomeName == "Bill")
+                    .Where(documentId + " > 0")
+                    .CountAsync());
+            }
+
+            Assert.True(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsOnceFromIndexesWithMultipleRows()
+        {
+            _store.RegisterIndexes<ExclusiveEmailByAttachmentProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    await session.SaveAsync(new Email
+                    {
+                        Date = DateTime.UtcNow,
+                        Attachments = [new Attachment("resume.doc"), new Attachment("letter.doc"), new Attachment("photo.jpg")],
+                    });
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(3, await session.Query<Email, EmailByAttachment>().CountAsync());
+                Assert.Equal(3, await session.Query<Email, EmailByAttachment>(e => e.AttachmentName.EndsWith(".doc")).CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromReduceIndexes()
+        {
+            _store.RegisterIndexes<ExclusiveArticleIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 2) });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var dayOfYear = new DateTime(2011, 11, 1).DayOfYear;
+
+                Assert.Equal(3, await session.Query<Article, ArticlesByDay>().CountAsync());
+                Assert.Equal(2, await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == dayOfYear).CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenIndexIsProducedForAnotherType()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+            _store.RegisterIndexes<AnimalNameIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Animal { Name = "Rex" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                // The index has a row for the animal, which only the type of the documents excludes.
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true).CountAsync());
+                Assert.Equal(1, await session.Query<Animal, PersonByName>(filterType: true).CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(2, countQueries.Length);
+            Assert.All(countQueries, sql => Assert.True(ReferencesDocumentTable(sql), sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenIndexIsProducedForAnotherTypeInSession()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                session.RegisterIndexes(new PersonAgeIndexProvider());
+
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true).CountAsync());
+
+                // The result of the previous count doesn't apply anymore once another provider is registered.
+                session.RegisterIndexes(new AnimalNameIndexProvider());
+
+                await session.SaveAsync(new Animal { Name = "Rex" });
+
+                await session.SaveChangesAsync();
+
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true).CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(2, countQueries.Length);
+            Assert.False(ReferencesDocumentTable(countQueries[0]), countQueries[0]);
+            Assert.True(ReferencesDocumentTable(countQueries[1]), countQueries[1]);
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenFilterIsRawSql()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            var documentTable = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetDocumentTable("");
+
+            await using (var session = _store.CreateSession())
+            {
+                // A column of the document table, with and without the name of the table.
+                Assert.Equal(1, await session.Query<Person, PersonByName>()
+                    .Where(d => d.QuoteForTableName(documentTable, _store.Configuration.Schema) + "." + d.QuoteForColumnName("Id") + " > 0")
+                    .CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByName>()
+                    .Where(d => d.QuoteForColumnName("Version") + " >= 0")
+                    .CountAsync());
+
+                // The parameter of the condition on the type of the documents.
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true)
+                    .Where(d => d.QuoteForColumnName(nameof(PersonByName.SomeName)) + " <> @Type")
+                    .CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(3, countQueries.Length);
+            Assert.All(countQueries, sql => Assert.True(ReferencesDocumentTable(sql), sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromMapAndReduceIndexes()
+        {
+            _store.RegisterIndexes<ExclusiveArticleIndexProvider>();
+            _store.RegisterIndexes<ExclusiveArticleByPublishedDateProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Article { Title = "First", PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { Title = "Second", PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { Title = "Third", PublishedUtc = new DateTime(2011, 11, 2) });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                var dayOfYear = new DateTime(2011, 11, 1).DayOfYear;
+
+                Assert.Equal(1, await session.Query<Article, ArticleByPublishedDate>(x => x.Title == "First").With<ArticlesByDay>(x => x.DayOfYear == dayOfYear).CountAsync());
+                Assert.Equal(2, await session.Query<Article, ArticlesByDay>(x => x.DayOfYear == dayOfYear, filterType: true).With<ArticleByPublishedDate>().CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(2, countQueries.Length);
+            Assert.All(countQueries, sql => Assert.False(ReferencesDocumentTable(sql), sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexesInCollections()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProviderCol>("Col1");
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" }, collection: "Col1");
+                await session.SaveAsync(new Person { Firstname = "Steve" }, collection: "Col1");
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByNameCol>("Col1").CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByNameCol>(x => x.Name == "Steve", "Col1").CountAsync());
+                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameColQuery("Steve"), "Col1").CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+            var indexTable = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(typeof(PersonByNameCol), "Col1");
+
+            Assert.Equal(3, countQueries.Length);
+            Assert.All(countQueries, sql => Assert.False(ReferencesDocumentTable(sql, "Col1"), sql));
+            Assert.All(countQueries, sql => Assert.Contains(indexTable, sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexesInCompiledQueries()
+        {
+            _store.RegisterIndexes<ExclusivePersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).CountAsync());
+                Assert.Equal(1, await session.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(2, countQueries.Length);
+            Assert.All(countQueries, sql => Assert.False(ReferencesDocumentTable(sql), sql));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexesWhenTypeIsNotFiltered()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByName>().CountAsync());
+            }
+
+            Assert.False(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsOfAnyTypeWithDocumentTableWhenTypeIsNotFiltered()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+            _store.RegisterIndexes<AnimalNameIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Animal { Name = "Rex" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByName>().CountAsync());
+            }
+
+            Assert.True(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexesWhenOneIndexIsExclusive()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                // The index that isn't declared is joined to the exclusive one, which only has rows for this type.
+                Assert.Equal(1, await session.Query<Person, PersonByAge>(x => x.Adult, filterType: true).With<PersonByName>().CountAsync());
+            }
+
+            Assert.False(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsFromIndexesDeclaredOnSession()
+        {
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                session.RegisterIndexes(new ExclusivePersonIndexProvider());
+
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true).CountAsync());
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // Another session doesn't have the provider, so nothing declares the index for it.
+                Assert.Equal(1, await session.Query<Person, PersonByName>(filterType: true).CountAsync());
+            }
+
+            var countQueries = GetCountQueries(logger);
+
+            Assert.Equal(2, countQueries.Length);
+            Assert.False(ReferencesDocumentTable(countQueries[0]), countQueries[0]);
+            Assert.True(ReferencesDocumentTable(countQueries[1]), countQueries[1]);
+        }
+
+        [Fact]
+        public async Task ShouldCountDocumentsWithDocumentTableWhenIndexIsDeclaredOnAnotherCollection()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProviderCol>("Col1");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.Query<Person, PersonByNameCol>(filterType: true).CountAsync());
+            }
+
+            Assert.True(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
+        }
+
+        private static string[] GetCountQueries(TestLogger logger)
+        {
+            return logger.ToString()
+                .Split(Environment.NewLine)
+                .Where(line => line.Contains("count(", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        }
+
+        private bool ReferencesDocumentTable(string sql, string collection = "")
+        {
+            var documentTable = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetDocumentTable(collection);
+
+            return Regex.IsMatch(sql, $@"(?<!\w){Regex.Escape(documentTable)}(?!\w)", RegexOptions.IgnoreCase);
         }
 
         [Fact]
