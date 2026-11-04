@@ -6769,7 +6769,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task NoDuplicatesShouldStillNotUseADeferredJoinOnSingleRecordIndexes()
+        public async Task NoDuplicatesShouldUseADeferredJoin()
         {
             _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
 
@@ -6783,6 +6783,42 @@ namespace YesSql.Tests
             var persons = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).NoDuplicates().Take(1).ListAsync();
 
             Assert.Equal("Bill", Assert.Single(persons).Firstname);
+            AssertNotGrouped(logger, deferred: true);
+        }
+
+        [Fact]
+        public async Task NoDuplicatesShouldNotGroupAFilterKeepingOneRecordOfAMultipleRecordsIndex()
+        {
+            _store.RegisterIndexes<MultipleRecordsPersonAgeIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            var persons = await session.Query<Person, PersonByAge>(x => x.Age == 0).OrderBy(x => x.Name).NoDuplicates().Skip(1).Take(1).ListAsync();
+
+            Assert.Equal("Steve", Assert.Single(persons).Firstname);
+            AssertNotGrouped(logger, deferred: true);
+        }
+
+        [Fact]
+        public async Task NoDuplicatesShouldNotUseADeferredJoinWithoutAnOrder()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            var persons = await session.Query<Person, PersonByName>().NoDuplicates().ListAsync();
+
+            Assert.Equal(2, persons.Count());
             AssertNotGrouped(logger, deferred: false);
         }
 

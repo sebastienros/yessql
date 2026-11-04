@@ -1675,13 +1675,13 @@ namespace YesSql.Services
                         sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
 
                         // Group by document id to de-duplicate records if the index has multiple matches for a single document,
-                        // unless all the indexes of the query declare a single record per document.
+                        // unless all the indexes of the query declare a single record per document, or the query disabled it.
 
                         // Without any join each document can only be returned once, so the query doesn't need to be de-duplicated.
                         // Paged queries are still applied on the document ids only (a deferred join), which some databases
                         // (e.g. SQLite) execute much faster than sorting whole documents.
                         var sql = sqlBuilder.HasJoin
-                            ? (_query._queryState._deduplicate ? GetDocumentIdsQuery(group: !_query.HasSingleRecordPerDocument()) : sqlBuilder.ToSqlString())
+                            ? GetDocumentIdsQuery(group: _query._queryState._deduplicate && !_query.HasSingleRecordPerDocument())
                             : (sqlBuilder.HasPaging ? GetPagedQuery() : sqlBuilder.ToSqlString());
                         var logger = _query._session._store.Configuration.Logger;
 
