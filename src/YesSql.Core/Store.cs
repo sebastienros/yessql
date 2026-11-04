@@ -39,7 +39,7 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<long, QueryState> CompiledQueries = new();
 
-        internal readonly ConcurrentDictionary<(Type IndexType, Type DocumentType), bool> IndexesProducedOnlyFor = new();
+        internal readonly ConcurrentDictionary<(Type IndexType, Type DocumentType, string Collection), IndexOwnership> IndexOwnerships = new();
 
         private readonly WorkDispatcher<WorkerQueryKey, object> _dispatcher = new();
 
@@ -285,10 +285,10 @@ namespace YesSql
                 indexProvider.CollectionName ??= collection ?? "";
             }
 
-            lock (IndexesProducedOnlyFor)
+            lock (IndexOwnerships)
             {
                 Indexes.AddRange(indexProviders);
-                IndexesProducedOnlyFor.Clear();
+                IndexOwnerships.Clear();
             }
 
             return this;
@@ -301,52 +301,63 @@ namespace YesSql
         }
 
         /// <summary>
-        /// Returns whether the rows of an index can only be produced for documents of a specific type, such that they can be
-        /// counted without filtering the type of their documents.
+        /// Returns what the providers registered on the store declare about the rows of an index.
         /// </summary>
-        internal bool IsIndexProducedOnlyFor(Type indexType, Type documentType)
+        internal IndexOwnership GetIndexOwnership(Type indexType, Type documentType, string collection)
         {
-            var key = (indexType, documentType);
+            var key = (indexType, documentType, collection ?? "");
 
-            if (IndexesProducedOnlyFor.TryGetValue(key, out var producedOnlyFor))
+            if (IndexOwnerships.TryGetValue(key, out var ownership))
             {
-                return producedOnlyFor;
+                return ownership;
             }
 
             // The lock prevents caching a result for a list of providers that has changed since it was read.
-            lock (IndexesProducedOnlyFor)
+            lock (IndexOwnerships)
             {
-                producedOnlyFor = !IsIndexProducedForAnotherType(Indexes, indexType, documentType);
-                IndexesProducedOnlyFor[key] = producedOnlyFor;
+                ownership = FindIndexOwnership(Indexes, indexType, documentType, collection);
+                IndexOwnerships[key] = ownership;
             }
 
-            return producedOnlyFor;
+            return ownership;
         }
 
         /// <summary>
-        /// Returns whether a provider registered for another type than a document type produces an index, in any collection.
+        /// Returns what some providers declare about the rows of an index, in the table of a collection.
         /// </summary>
-        internal bool IsIndexProducedForAnotherType(IEnumerable<IIndexProvider> indexProviders, Type indexType, Type documentType)
+        internal IndexOwnership FindIndexOwnership(IEnumerable<IIndexProvider> indexProviders, Type indexType, Type documentType, string collection)
         {
+            var ownership = IndexOwnership.Undeclared;
+
             foreach (var provider in indexProviders)
             {
-                var forType = provider.ForType();
-
-                if (forType == documentType)
+                if (!string.Equals(provider.CollectionName ?? "", collection ?? "", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
+                var forType = provider.ForType();
+
                 foreach (var descriptor in CreateDescriptors(forType, provider.CollectionName, [provider]))
                 {
-                    if (descriptor.IndexType == indexType)
+                    if (descriptor.IndexType != indexType)
                     {
-                        return true;
+                        continue;
+                    }
+
+                    if (forType != documentType)
+                    {
+                        return IndexOwnership.Shared;
+                    }
+
+                    if (descriptor.IsExclusiveToDocumentType)
+                    {
+                        ownership = IndexOwnership.Exclusive;
                     }
                 }
             }
 
-            return false;
+            return ownership;
         }
 
         /// <summary>
@@ -372,5 +383,20 @@ namespace YesSql
 
             return (T)content;
         }
+    }
+
+    /// <summary>
+    /// What index providers declare about the rows of an index for a document type.
+    /// </summary>
+    internal enum IndexOwnership
+    {
+        // No provider declares that the index is exclusive to the document type.
+        Undeclared,
+
+        // A provider for the document type declares that the index is exclusive to it.
+        Exclusive,
+
+        // A provider for another type produces the index, whatever is declared.
+        Shared,
     }
 }

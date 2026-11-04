@@ -110,24 +110,6 @@ namespace YesSql
         Task<int> CountAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Executes a query that returns the number of documents matching the constraints.
-        /// </summary>
-        /// <param name="includeDocuments">
-        /// Whether to join the document table. When <see langword="false"/>, the documents are counted from the index tables of the query,
-        /// like <c>SELECT count(distinct [PersonByName_a1].[DocumentId]) FROM [PersonByName] AS [PersonByName_a1] WHERE ...</c>, without
-        /// joining the document table and filtering the type of the documents, which is faster on large tables.
-        /// Only pass <see langword="false"/> when the indexes of the query only have rows for existing documents of type <typeparamref name="T"/>.
-        /// Other rows can't always be detected and would be counted while the query doesn't return them: rows written by a provider that isn't
-        /// registered on the store or on this session, for instance one registered on another session or since removed, and rows left by a deleted
-        /// document on a database without foreign keys like SQLite.
-        /// The document table is still joined when the query has no index, when the type is filtered and an index is produced by a provider
-        /// registered for another type, or when a filter is raw SQL, as it could reference the document table.
-        /// </param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        Task<int> CountAsync(bool includeDocuments, CancellationToken cancellationToken = default)
-            => CountAsync(cancellationToken);
-
-        /// <summary>
         /// Returns the SQL alias currently used for the specified index type.
         /// </summary>
         string GetTypeAlias(Type t);

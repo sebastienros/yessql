@@ -48,7 +48,6 @@ namespace YesSql.Services
         public bool _processed = false;
         public bool _deduplicate = true;
         public Type _documentType; // the type of the documents a query returns, set by For<T>
-        internal bool _filterType; // whether For<T> filters the type of the documents
         internal string _filters; // the flushed filters, without the condition on the type of the documents
         internal List<IndexJoin> _indexJoins; // the indexes joined to the document table, to count from the index tables
         internal bool _hasSqlFilters; // whether a filter is raw SQL, which could reference the document table
@@ -138,7 +137,6 @@ namespace YesSql.Services
             clone._predicate = clone._currentPredicate;
             clone._deduplicate = _deduplicate;
             clone._documentType = _documentType;
-            clone._filterType = _filterType;
             clone._indexJoins = _indexJoins == null ? null : new List<IndexJoin>(_indexJoins);
             clone._hasSqlFilters = _hasSqlFilters;
 
@@ -1237,10 +1235,7 @@ namespace YesSql.Services
             _queryState._sqlBuilder.ThenOrderByRandom();
         }
 
-        public Task<int> CountAsync(CancellationToken cancellationToken = default)
-            => CountAsync(includeDocuments: true, cancellationToken);
-
-        public async Task<int> CountAsync(bool includeDocuments, CancellationToken cancellationToken = default)
+        public async Task<int> CountAsync(CancellationToken cancellationToken = default)
         {
             // Commit any pending changes before doing a query (auto-flush)
             await _session.FlushAsync(cancellationToken);
@@ -1250,7 +1245,7 @@ namespace YesSql.Services
 
             _queryState.FlushFilters();
 
-            ISqlBuilder localBuilder = includeDocuments ? null : CreateIndexOnlyCountBuilder();
+            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder();
 
             if (localBuilder == null)
             {
@@ -1343,16 +1338,21 @@ namespace YesSql.Services
                 return null;
             }
 
-            if (_queryState._filterType)
+            // The indexes are all inner joined on the same document, so a single one that is exclusive to the queried type is enough.
+            var isExclusive = false;
+
+            foreach (var indexJoin in indexJoins)
             {
-                // The rows of an index only belong to documents of the queried type when no provider of another type produces it.
-                foreach (var indexJoin in indexJoins)
+                if (_session.IsIndexExclusiveTo(indexJoin.IndexType, _queryState._documentType, _queryState._collection))
                 {
-                    if (!_session.IsIndexProducedOnlyFor(indexJoin.IndexType, _queryState._documentType))
-                    {
-                        return null;
-                    }
+                    isExclusive = true;
+                    break;
                 }
+            }
+
+            if (!isExclusive)
+            {
+                return null;
             }
 
             if (_queryState._sqlBuilder.Clone() is not SqlBuilder builder)
@@ -1396,7 +1396,6 @@ namespace YesSql.Services
 
             if (filterType)
             {
-                _queryState._filterType = true;
                 _queryState._sqlBuilder.WhereAnd(_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Type", _queryState._store.Configuration.Schema) + " = @Type"); // TODO: investigate, this makes the query 3 times slower on sqlite
                 _queryState._sqlBuilder.Parameters["@Type"] = _session.Store.TypeNames[typeof(T)];
             }
@@ -1784,11 +1783,6 @@ namespace YesSql.Services
             Task<int> IQuery<T>.CountAsync(CancellationToken cancellationToken)
             {
                 return _query.CountAsync(cancellationToken);
-            }
-
-            Task<int> IQuery<T>.CountAsync(bool includeDocuments, CancellationToken cancellationToken)
-            {
-                return _query.CountAsync(includeDocuments, cancellationToken);
             }
 
             IQuery<T> IQuery<T>.Any(params Func<IQuery<T>, IQuery<T>>[] predicates)

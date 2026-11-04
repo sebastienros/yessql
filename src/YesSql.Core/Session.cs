@@ -32,7 +32,7 @@ namespace YesSql
         protected bool _cancel;
         protected bool _save;
         protected List<IIndexProvider> _indexes;
-        private Dictionary<(Type IndexType, Type DocumentType), bool> _indexesProducedOnlyFor;
+        private Dictionary<(Type IndexType, Type DocumentType, string Collection), IndexOwnership> _indexOwnerships;
 
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
@@ -71,7 +71,7 @@ namespace YesSql
             _indexes ??= [];
 
             _indexes.AddRange(indexProviders);
-            _indexesProducedOnlyFor?.Clear();
+            _indexOwnerships?.Clear();
 
             return this;
         }
@@ -1417,32 +1417,30 @@ namespace YesSql
         }
 
         /// <summary>
-        /// Returns whether the rows of an index can only be produced for documents of a specific type, by the providers
-        /// registered on the Store and the Session.
+        /// Returns whether an index is declared to only have rows for documents of a specific type, and no provider
+        /// produces it for another type, among the providers registered on the Store and the Session.
         /// </summary>
-        internal bool IsIndexProducedOnlyFor(Type indexType, Type documentType)
+        internal bool IsIndexExclusiveTo(Type indexType, Type documentType, string collection)
         {
-            if (!_store.IsIndexProducedOnlyFor(indexType, documentType))
+            var ownership = _store.GetIndexOwnership(indexType, documentType, collection);
+
+            if (_indexes == null || ownership == IndexOwnership.Shared)
             {
-                return false;
+                return ownership == IndexOwnership.Exclusive;
             }
 
-            if (_indexes == null)
+            _indexOwnerships ??= [];
+
+            var key = (indexType, documentType, collection ?? "");
+
+            if (!_indexOwnerships.TryGetValue(key, out var sessionOwnership))
             {
-                return true;
+                sessionOwnership = _store.FindIndexOwnership(_indexes, indexType, documentType, collection);
+                _indexOwnerships[key] = sessionOwnership;
             }
 
-            _indexesProducedOnlyFor ??= [];
-
-            var key = (indexType, documentType);
-
-            if (!_indexesProducedOnlyFor.TryGetValue(key, out var producedOnlyFor))
-            {
-                producedOnlyFor = !_store.IsIndexProducedForAnotherType(_indexes, indexType, documentType);
-                _indexesProducedOnlyFor[key] = producedOnlyFor;
-            }
-
-            return producedOnlyFor;
+            return sessionOwnership != IndexOwnership.Shared &&
+                (ownership == IndexOwnership.Exclusive || sessionOwnership == IndexOwnership.Exclusive);
         }
 
         /// <summary>
