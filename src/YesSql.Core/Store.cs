@@ -39,6 +39,10 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<long, QueryState> CompiledQueries = new();
 
+        internal readonly ConcurrentDictionary<(Type IndexType, Type DocumentType, string Collection), IndexOwnership> IndexOwnerships = new();
+
+        internal readonly ConcurrentDictionary<(Type IndexType, Type DocumentType, string Collection), IndexCardinality> IndexCardinalities = new();
+
         private readonly WorkDispatcher<WorkerQueryKey, object> _dispatcher = new();
 
         internal const int SmallBufferSize = 128;
@@ -286,7 +290,13 @@ namespace YesSql
                 indexProvider.CollectionName ??= collection ?? "";
             }
 
-            Indexes.AddRange(indexProviders);
+            lock (IndexOwnerships)
+            {
+                Indexes.AddRange(indexProviders);
+                IndexOwnerships.Clear();
+                IndexCardinalities.Clear();
+            }
+
             return this;
         }
 
@@ -294,6 +304,124 @@ namespace YesSql
         {
             ScopedIndexes.AddRange(indexProviders);
             return this;
+        }
+
+        /// <summary>
+        /// Returns what the providers registered on the store declare about the rows of an index.
+        /// </summary>
+        internal IndexOwnership GetIndexOwnership(Type indexType, Type documentType, string collection)
+        {
+            var key = (indexType, documentType, collection ?? "");
+
+            if (IndexOwnerships.TryGetValue(key, out var ownership))
+            {
+                return ownership;
+            }
+
+            // The lock prevents caching a result for a list of providers that has changed since it was read.
+            lock (IndexOwnerships)
+            {
+                ownership = FindIndexOwnership(Indexes, indexType, documentType, collection);
+                IndexOwnerships[key] = ownership;
+            }
+
+            return ownership;
+        }
+
+        /// <summary>
+        /// Returns what some providers declare about the rows of an index, in the table of a collection.
+        /// </summary>
+        internal IndexOwnership FindIndexOwnership(IEnumerable<IIndexProvider> indexProviders, Type indexType, Type documentType, string collection)
+        {
+            var ownership = IndexOwnership.Undeclared;
+
+            foreach (var provider in indexProviders)
+            {
+                if (!string.Equals(provider.CollectionName ?? "", collection ?? "", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var forType = provider.ForType();
+
+                foreach (var descriptor in CreateDescriptors(forType, provider.CollectionName, [provider]))
+                {
+                    if (descriptor.IndexType != indexType)
+                    {
+                        continue;
+                    }
+
+                    if (forType != documentType)
+                    {
+                        return IndexOwnership.Shared;
+                    }
+
+                    if (descriptor.IsExclusiveToDocumentType)
+                    {
+                        ownership = IndexOwnership.Exclusive;
+                    }
+                }
+            }
+
+            return ownership;
+        }
+
+        /// <summary>
+        /// Returns how many rows per document the providers registered on the store produce in an index.
+        /// </summary>
+        internal IndexCardinality GetIndexCardinality(Type indexType, Type documentType, string collection)
+        {
+            var key = (indexType, documentType, collection ?? "");
+
+            if (IndexCardinalities.TryGetValue(key, out var cardinality))
+            {
+                return cardinality;
+            }
+
+            // The lock prevents caching a result for a list of providers that has changed since it was read.
+            lock (IndexOwnerships)
+            {
+                cardinality = FindIndexCardinality(Indexes, indexType, documentType, collection);
+                IndexCardinalities[key] = cardinality;
+            }
+
+            return cardinality;
+        }
+
+        /// <summary>
+        /// Returns how many rows per document some providers produce in an index, in a collection, for the documents of a
+        /// type or, without a type, for the documents of any type.
+        /// </summary>
+        internal IndexCardinality FindIndexCardinality(IEnumerable<IIndexProvider> indexProviders, Type indexType, Type documentType, string collection)
+        {
+            var documentTypes = new HashSet<Type>();
+
+            foreach (var provider in indexProviders)
+            {
+                var forType = provider.ForType();
+
+                if ((documentType != null && forType != documentType) ||
+                    !string.Equals(provider.CollectionName ?? "", collection ?? "", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                foreach (var descriptor in CreateDescriptors(forType, provider.CollectionName, [provider]))
+                {
+                    if (descriptor.IndexType != indexType)
+                    {
+                        continue;
+                    }
+
+                    // Each descriptor writes its own rows, so even two single records are several rows for a document.
+                    if (!descriptor.IsSingleRecordPerDocument || !documentTypes.Add(forType))
+                    {
+                        return IndexCardinality.Multiple;
+                    }
+                }
+            }
+
+            return documentTypes.Count > 0 ? IndexCardinality.Single : IndexCardinality.None;
         }
 
         /// <summary>
@@ -319,5 +447,35 @@ namespace YesSql
 
             return (T)content;
         }
+    }
+
+    /// <summary>
+    /// What index providers declare about the rows of an index for a document type.
+    /// </summary>
+    internal enum IndexOwnership
+    {
+        // No provider declares that the index is exclusive to the document type.
+        Undeclared,
+
+        // A provider for the document type declares that the index is exclusive to it.
+        Exclusive,
+
+        // A provider for another type produces the index, whatever is declared.
+        Shared,
+    }
+
+    /// <summary>
+    /// How many rows per document index providers produce in an index.
+    /// </summary>
+    internal enum IndexCardinality
+    {
+        // No provider produces the index for the document type.
+        None,
+
+        // A single descriptor produces the index for each document type, and declares a single record per document.
+        Single,
+
+        // The rows aren't declared to be unique per document, or several descriptors produce them.
+        Multiple,
     }
 }
