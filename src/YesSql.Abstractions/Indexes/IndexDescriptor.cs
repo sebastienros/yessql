@@ -57,5 +57,10 @@ namespace YesSql.Indexes
         /// Gets or sets whether the index is declared to only have rows for documents of the described type.
         /// </summary>
         public bool IsExclusiveToDocumentType { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the index is declared to have at most one row per document.
+        /// </summary>
+        public bool IsSingleRecordPerDocument { get; set; }
     }
 }

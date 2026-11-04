@@ -47,6 +47,8 @@ namespace YesSql.Services
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
         public bool _deduplicate = true;
+        internal bool _noIndexOptimizations; // whether the query ignores what its indexes declare
+        internal bool _filtersDocumentType; // whether the query only returns documents of _documentType, instead of any type
         public Type _documentType; // the type of the documents a query returns, set by For<T>
         internal string _filters; // the flushed filters, without the condition on the type of the documents
         internal List<IndexJoin> _indexJoins; // the indexes joined to the document table, to count from the index tables
@@ -136,6 +138,8 @@ namespace YesSql.Services
             clone._currentPredicate = (CompositeNode)_predicate.Clone();
             clone._predicate = clone._currentPredicate;
             clone._deduplicate = _deduplicate;
+            clone._noIndexOptimizations = _noIndexOptimizations;
+            clone._filtersDocumentType = _filtersDocumentType;
             clone._documentType = _documentType;
             clone._indexJoins = _indexJoins == null ? null : new List<IndexJoin>(_indexJoins);
             clone._hasSqlFilters = _hasSqlFilters;
@@ -1245,13 +1249,15 @@ namespace YesSql.Services
 
             _queryState.FlushFilters();
 
-            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder();
+            var hasSingleRecords = HasSingleRecordPerDocument();
+
+            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder(hasSingleRecords);
 
             if (localBuilder == null)
             {
                 localBuilder = _queryState._sqlBuilder.Clone();
 
-                if (localBuilder.HasJoin)
+                if (localBuilder.HasJoin && !hasSingleRecords)
                 {
                     localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
                 }
@@ -1323,14 +1329,15 @@ namespace YesSql.Services
         /// <c>SELECT count(distinct [Document].[Id]) FROM [Document] INNER JOIN [PersonByName] AS [PersonByName_a1] ON [PersonByName_a1].[DocumentId] = [Document].[Id] WHERE [Document].[Type] = @Type AND ...</c>
         /// becomes <c>SELECT count(distinct [PersonByName_a1].[DocumentId]) FROM [PersonByName] AS [PersonByName_a1] WHERE ...</c>,
         /// the other indexes being joined on the DocumentId column of the first one. The count stays distinct as a map index can have
-        /// multiple rows for the same document.
+        /// multiple rows for the same document, unless all the indexes declare a single record per document.
         /// </remarks>
-        private SqlBuilder CreateIndexOnlyCountBuilder()
+        private SqlBuilder CreateIndexOnlyCountBuilder(bool hasSingleRecords)
         {
             var indexJoins = _queryState._indexJoins;
 
             // A raw SQL filter could reference the document table, so it is kept.
-            if (_queryState._documentType == null ||
+            if (_queryState._noIndexOptimizations ||
+                _queryState._documentType == null ||
                 _queryState._hasSqlFilters ||
                 indexJoins == null ||
                 indexJoins.Count == 0)
@@ -1379,9 +1386,38 @@ namespace YesSql.Services
                 JoinIndex(builder, indexJoin, indexJoin == root ? null : rootAlias, "DocumentId", rootAlias);
             }
 
-            builder.Selector($"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})");
+            builder.Selector(hasSingleRecords ? "count(*)" : $"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})");
 
             return builder;
+        }
+
+        /// <summary>
+        /// Returns whether the joins of the query can't return a document several times. The rows of the joined indexes multiply
+        /// for a document, so they all need to have at most one row for it, including an index joined again by Any() or All().
+        /// </summary>
+        private bool HasSingleRecordPerDocument()
+        {
+            var indexJoins = _queryState._indexJoins;
+
+            if (_queryState._noIndexOptimizations ||
+                indexJoins == null ||
+                indexJoins.Count == 0)
+            {
+                return false;
+            }
+
+            var documentType = _queryState._filtersDocumentType ? _queryState._documentType : null;
+
+            foreach (var indexJoin in indexJoins)
+            {
+                if (!indexJoin.IsMapIndex ||
+                    !_session.IsIndexSingleRecord(indexJoin.IndexType, documentType, _queryState._collection))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         IQuery<T> IQuery.For<T>(bool filterType)
@@ -1389,6 +1425,7 @@ namespace YesSql.Services
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(Document));
             _queryState._documentType = typeof(T);
+            _queryState._filtersDocumentType = filterType;
 
             _queryState._sqlBuilder.Select();
             _queryState._fromTable = _queryState._documentTable;
@@ -1637,15 +1674,14 @@ namespace YesSql.Services
 
                         sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
 
-                        // Group by document id to de-duplicate records if the index has multiple matches for a single document
-
-                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
+                        // Group by document id to de-duplicate records if the index has multiple matches for a single document,
+                        // unless all the indexes of the query declare a single record per document.
 
                         // Without any join each document can only be returned once, so the query doesn't need to be de-duplicated.
                         // Paged queries are still applied on the document ids only (a deferred join), which some databases
                         // (e.g. SQLite) execute much faster than sorting whole documents.
                         var sql = sqlBuilder.HasJoin
-                            ? (_query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString())
+                            ? (_query._queryState._deduplicate ? GetDocumentIdsQuery(group: !_query.HasSingleRecordPerDocument()) : sqlBuilder.ToSqlString())
                             : (sqlBuilder.HasPaging ? GetPagedQuery() : sqlBuilder.ToSqlString());
                         var logger = _query._session._store.Configuration.Logger;
 
@@ -1696,17 +1732,34 @@ namespace YesSql.Services
                 }
             }
 
-            private string GetDeduplicatedQuery()
+            /// <summary>
+            /// Applies the filters, the order and the paging on the document ids only, then loads the matching documents. Without
+            /// grouping, which is for queries that can't return a document several times, a page can stop as soon as it's full when
+            /// a database index serves the order, while still only sorting document ids otherwise.
+            /// </summary>
+            private string GetDocumentIdsQuery(bool group)
             {
                 var schema = _query._queryState._store.Configuration.Schema;
                 var sqlBuilder = _query._queryState._sqlBuilder;
 
+                // A page always has an order, so this reads all the documents and there is nothing to sort.
+                if (!group && !sqlBuilder.HasOrder)
+                {
+                    return sqlBuilder.ToSqlString();
+                }
+
                 var selector = sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema);
 
                 sqlBuilder.Selector(selector);
-                sqlBuilder.GroupBy(selector);
 
-                var results = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList());
+                if (group)
+                {
+                    sqlBuilder.GroupBy(selector);
+                }
+
+                var results = group
+                    ? _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList())
+                    : GetOrders(sqlBuilder.GetOrders().ToList());
 
                 if (sqlBuilder.HasOrder)
                 {
@@ -1733,6 +1786,38 @@ namespace YesSql.Services
                 }
 
                 return sql;
+            }
+
+            /// <summary>
+            /// Selects the ordered fields with an alias, for the outer query to sort on them too.
+            /// </summary>
+            private List<(string aggregate, string alias)> GetOrders(List<string> orderBy)
+            {
+                var results = new List<(string, string)>();
+
+                for (var i = 0; i < orderBy.Count; i++)
+                {
+                    var order = orderBy[i].AsSpan().Trim();
+
+                    // Each order segment can be a field name, or a punctuation, so we filter out the punctuations
+                    if (order.Equals(",", StringComparison.Ordinal) || order.Equals("DESC", StringComparison.Ordinal) || order.Equals("ASC", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var next = i + 1 < orderBy.Count ? orderBy[i + 1].AsSpan().Trim() : default;
+                    var alias = _query._dialect.QuoteForAliasName("order_" + (results.Count + 1));
+                    var selector = $"{orderBy[i]} AS {alias}";
+
+                    if (next.Equals("DESC", StringComparison.Ordinal) || next.Equals("ASC", StringComparison.Ordinal))
+                    {
+                        alias += " " + next.ToString();
+                    }
+
+                    results.Add((selector, alias));
+                }
+
+                return results;
             }
 
             /// <summary>
@@ -1897,6 +1982,12 @@ namespace YesSql.Services
             IQuery<T> IQuery<T>.NoDuplicates()
             {
                 _query._queryState._deduplicate = false;
+                return new Query<T>(_query);
+            }
+
+            IQuery<T> IQuery<T>.NoIndexOptimizations()
+            {
+                _query._queryState._noIndexOptimizations = true;
                 return new Query<T>(_query);
             }
         }

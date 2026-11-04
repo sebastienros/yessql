@@ -32,7 +32,8 @@ namespace YesSql.Indexes
                     GroupKey = kp.GroupProperty,
                     IndexType = kp.IndexType,
                     Filter = kp.Filter,
-                    IsExclusiveToDocumentType = kp.IsExclusiveToDocumentType
+                    IsExclusiveToDocumentType = kp.IsExclusiveToDocumentType,
+                    IsSingleRecordPerDocument = kp.IsSingleRecordPerDocument
                 });
         }
 

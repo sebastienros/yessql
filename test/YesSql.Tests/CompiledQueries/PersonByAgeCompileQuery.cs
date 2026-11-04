@@ -84,6 +84,21 @@ namespace YesSql.Tests.CompiledQueries
         }
     }
 
+    public class PersonByNameNoIndexOptimizationsQuery : ICompiledQuery<Person>
+    {
+        public PersonByNameNoIndexOptimizationsQuery(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByName>(x => x.SomeName == Name).NoIndexOptimizations();
+        }
+    }
+
     public class PersonByLiteralNamesQuery : ICompiledQuery<Person>
     {
         public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()

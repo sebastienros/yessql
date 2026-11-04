@@ -6364,6 +6364,477 @@ namespace YesSql.Tests
             Assert.True(ReferencesDocumentTable(Assert.Single(GetCountQueries(logger))));
         }
 
+        [Fact]
+        public async Task ShouldNotGroupQueriesOnSingleRecordIndexes()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve", "Paul", "Scott");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            // The page is applied on the document ids, and the order is kept by the outer query.
+            var page = await session.Query<Person, PersonByName>().OrderByDescending(x => x.SomeName).Skip(1).Take(2).ListAsync();
+            Assert.Equal(new[] { "Scott", "Paul" }, page.Select(x => x.Firstname));
+            AssertNotGrouped(logger, deferred: true);
+
+            logger.Clear();
+            page = await session.Query<Person, PersonByName>(filterType: true).OrderBy(x => x.SomeName).ThenByDescending(x => x.Id).Take(2).ListAsync();
+            Assert.Equal(new[] { "Bill", "Paul" }, page.Select(x => x.Firstname));
+            AssertNotGrouped(logger, deferred: true);
+
+            // A page without an order is ordered by document id.
+            logger.Clear();
+            page = await session.Query<Person, PersonByName>().Skip(3).Take(10).ListAsync();
+            Assert.Equal("Scott", Assert.Single(page).Firstname);
+            AssertNotGrouped(logger, deferred: true);
+
+            // Without a page the order is still only applied on the document ids.
+            logger.Clear();
+            page = await session.Query<Person, PersonByName>(x => x.SomeName != "Bill").OrderBy(x => x.SomeName).ListAsync();
+            Assert.Equal(new[] { "Paul", "Scott", "Steve" }, page.Select(x => x.Firstname));
+            AssertNotGrouped(logger, deferred: true);
+
+            // Without an order or a page there is nothing to apply on the document ids.
+            logger.Clear();
+            page = await session.Query<Person, PersonByName>().ListAsync();
+            Assert.Equal(4, page.Count);
+            AssertNotGrouped(logger, deferred: false);
+        }
+
+        [Fact]
+        public async Task ShouldNotGroupQueriesJoiningSeveralSingleRecordIndexes()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+            _store.RegisterIndexes<SingleRecordPersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+                await session.SaveAsync(new Person { Firstname = "Paul", Age = 30 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                var persons = await session.Query<Person, PersonByAge>(x => x.Adult).With<PersonByName>(x => x.SomeName != "Steve").OrderByDescending(x => x.SomeName).ListAsync();
+                Assert.Equal(new[] { "Paul", "Bill" }, persons.Select(x => x.Firstname));
+                AssertNotGrouped(logger, deferred: true);
+
+                logger.Clear();
+                persons = await session.Query<Person>().Any(
+                    x => x.With<PersonByName>(x => x.SomeName == "Bill"),
+                    x => x.With<PersonByName>(x => x.SomeName == "Steve")).ListAsync();
+                Assert.Equal(2, persons.Count);
+                Assert.DoesNotContain("GROUP BY", logger.ToString());
+
+                logger.Clear();
+                Assert.Equal(2, await session.Query<Person>().Any(
+                    x => x.With<PersonByName>(x => x.SomeName == "Bill"),
+                    x => x.With<PersonByAge>(x => x.Age < 18)).CountAsync());
+                Assert.Contains("count(*)", Assert.Single(GetCountQueries(logger)));
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotGroupQueriesOnSingleRecordIndexesForAnyDocumentType()
+        {
+            _store.RegisterIndexes<SingleRecordShapeIndexProvider<Circle>>();
+            _store.RegisterIndexes<SingleRecordShapeIndexProvider<Square>>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Square { Size = 10 });
+                await session.SaveAsync(new Square { Size = 20 });
+                await session.SaveAsync(new Circle { Radius = 5 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                var shapes = await session.Query<Shape, ShapeIndex>(filterType: false).OrderBy(x => x.Name).ListAsync();
+
+                Assert.Equal(3, shapes.Count);
+                Assert.IsType<Circle>(shapes[0]);
+                AssertNotGrouped(logger, deferred: true);
+
+                logger.Clear();
+                Assert.Equal(3, await session.Query<Shape, ShapeIndex>(filterType: false).CountAsync());
+                Assert.Contains("count(*)", Assert.Single(GetCountQueries(logger)));
+            }
+        }
+
+        [Fact]
+        public async Task ShouldCountSingleRecordIndexesWithoutDistinct()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").CountAsync());
+            }
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.Contains("count(*)", count);
+            Assert.True(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task ShouldCountExclusiveSingleRecordIndexesFromIndexTablesWithoutDistinct()
+        {
+            _store.RegisterIndexes<SingleRecordExclusivePersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByName>().CountAsync());
+            }
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.Contains("count(*)", count);
+            Assert.False(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task ShouldNotGroupCompiledQueriesOnSingleRecordIndexes()
+        {
+            _store.RegisterIndexes<SingleRecordPersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session2 = _store.CreateSession();
+
+            Assert.Equal("Bill", Assert.Single(await session2.ExecuteQuery(new PersonByNameOrAgeQuery(0, "Bill")).ListAsync()).Firstname);
+            Assert.DoesNotContain("GROUP BY", logger.ToString());
+            Assert.Equal(1, await session2.ExecuteQuery(new PersonByNameOrAgeQuery(12, null)).CountAsync());
+            Assert.Contains("count(*)", Assert.Single(GetCountQueries(logger)));
+        }
+
+        [Fact]
+        public async Task ShouldGroupQueriesWithAnIndexNotDeclaredAsSingleRecord()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+            _store.RegisterIndexes<MultipleRecordsPersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session2 = _store.CreateSession();
+
+            var persons = await session2.Query<Person, PersonByName>().With<PersonByAge>().OrderBy(x => x.Age).ListAsync();
+
+            Assert.Equal(new[] { "Steve", "Bill" }, persons.Select(x => x.Firstname));
+            Assert.Contains("GROUP BY", logger.ToString());
+
+            logger.Clear();
+            Assert.Equal(2, await session2.Query<Person, PersonByName>().With<PersonByAge>().CountAsync());
+            Assert.Contains("count(distinct", Assert.Single(GetCountQueries(logger)));
+        }
+
+        [Fact]
+        public async Task ShouldGroupQueriesWhenSeveralProvidersProduceASingleRecordIndex()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+            _store.RegisterIndexes<SecondSingleRecordPersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Lastname = "Gates" });
+                await session.SaveAsync(new Person { Firstname = "Steve", Lastname = "Ballmer" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session2 = _store.CreateSession();
+
+            Assert.Equal(2, (await session2.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync()).Count);
+            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Equal(2, await session2.Query<Person, PersonByName>().CountAsync());
+        }
+
+        [Fact]
+        public async Task ShouldGroupQueriesWhenASessionProviderAlsoProducesASingleRecordIndex()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+
+            await SavePersonsAsync("Bill");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
+                Assert.DoesNotContain("GROUP BY", logger.ToString());
+
+                session.RegisterIndexes(new SecondSingleRecordPersonIndexProvider());
+
+                logger.Clear();
+                await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
+                Assert.Contains("GROUP BY", logger.ToString());
+            }
+
+            // The provider of another session doesn't apply.
+            logger.Clear();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
+                Assert.DoesNotContain("GROUP BY", logger.ToString());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldGroupQueriesWhenSingleRecordIsDeclaredOnAnotherCollection()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>("Col1");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
+
+            Assert.Contains("GROUP BY", logger.ToString());
+        }
+
+        [Fact]
+        public async Task ShouldGroupQueriesOnReduceIndexesDeclaredAsSingleRecord()
+        {
+            _store.RegisterIndexes<SingleRecordArticleIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+
+                await session.SaveChangesAsync();
+            }
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session2 = _store.CreateSession();
+
+            Assert.Equal(2, (await session2.Query<Article, ArticlesByDay>().OrderBy(x => x.DayOfYear).ListAsync()).Count);
+            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Equal(2, await session2.Query<Article, ArticlesByDay>().CountAsync());
+            Assert.Contains("count(distinct", Assert.Single(GetCountQueries(logger)));
+        }
+
+        [Fact]
+        public async Task NoIndexOptimizationsShouldIgnoreSingleRecordDeclarations()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            var persons = await session.Query<Person>().With<PersonByName>().OrderBy(x => x.SomeName).NoIndexOptimizations().ListAsync();
+
+            Assert.Equal(new[] { "Bill", "Steve" }, persons.Select(x => x.Firstname));
+            Assert.Contains("GROUP BY", logger.ToString());
+
+            logger.Clear();
+            Assert.Equal(2, await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().CountAsync());
+            Assert.Contains("count(distinct", Assert.Single(GetCountQueries(logger)));
+        }
+
+        [Fact]
+        public async Task NoIndexOptimizationsShouldIgnoreExclusiveDeclarations()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            Assert.Equal(1, await session.Query<Person>().With<PersonByName>(x => x.SomeName == "Bill").NoIndexOptimizations().CountAsync());
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.True(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task NoIndexOptimizationsShouldIgnoreBothDeclarations()
+        {
+            _store.RegisterIndexes<SingleRecordExclusivePersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            Assert.Equal(2, (await session.Query<Person>().With<PersonByName>().OrderBy(x => x.SomeName).NoIndexOptimizations().ListAsync()).Count);
+            Assert.Contains("GROUP BY", logger.ToString());
+
+            logger.Clear();
+            Assert.Equal(2, await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().CountAsync());
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.Contains("count(distinct", count);
+            Assert.True(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task NoIndexOptimizationsShouldApplyToCompiledQueries()
+        {
+            _store.RegisterIndexes<SingleRecordExclusivePersonIndexProvider>();
+
+            await SavePersonsAsync("Bill");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            Assert.Equal(1, await session.ExecuteQuery(new PersonByNameNoIndexOptimizationsQuery("Bill")).CountAsync());
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.Contains("count(distinct", count);
+            Assert.True(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task NoDuplicatesShouldStillApplyWithNoIndexOptimizations()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+
+            await SavePersonsAsync("Bill");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().NoDuplicates().ListAsync();
+
+            Assert.DoesNotContain("GROUP BY", logger.ToString());
+        }
+
+        [Fact]
+        public async Task NoDuplicatesShouldStillNotUseADeferredJoinOnSingleRecordIndexes()
+        {
+            _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            var persons = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).NoDuplicates().Take(1).ListAsync();
+
+            Assert.Equal("Bill", Assert.Single(persons).Firstname);
+            AssertNotGrouped(logger, deferred: false);
+        }
+
+        [Fact]
+        public async Task ShouldThrowWhenASingleRecordIndexMapsSeveralRecords()
+        {
+            _store.RegisterIndexes<SingleRecordInvalidEmailIndexProvider>();
+
+            await using var session = _store.CreateSession();
+
+            await session.SaveAsync(new Email { Date = new DateTime(2018, 06, 11), Attachments = new List<Attachment> { new Attachment("A1") } });
+
+            await session.SaveChangesAsync();
+
+            await session.SaveAsync(new Email { Date = new DateTime(2018, 06, 11), Attachments = new List<Attachment> { new Attachment("A1"), new Attachment("A2") } });
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => session.SaveChangesAsync());
+
+            Assert.Contains(nameof(EmailByAttachment), exception.Message);
+
+            await session.CancelAsync();
+        }
+
+        private async Task SavePersonsAsync(params string[] names)
+        {
+            await using var session = _store.CreateSession();
+
+            foreach (var name in names)
+            {
+                await session.SaveAsync(new Person { Firstname = name });
+            }
+
+            await session.SaveChangesAsync();
+        }
+
+        private static void AssertNotGrouped(TestLogger logger, bool deferred)
+        {
+            var log = logger.ToString();
+
+            Assert.DoesNotContain("GROUP BY", log);
+            Assert.DoesNotContain("MAX(", log);
+
+            if (deferred)
+            {
+                Assert.Contains("IndexQuery", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("IndexQuery", log);
+            }
+        }
+
         private static string[] GetCountQueries(TestLogger logger)
         {
             return logger.ToString()

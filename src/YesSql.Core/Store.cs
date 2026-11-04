@@ -41,6 +41,8 @@ namespace YesSql
 
         internal readonly ConcurrentDictionary<(Type IndexType, Type DocumentType, string Collection), IndexOwnership> IndexOwnerships = new();
 
+        internal readonly ConcurrentDictionary<(Type IndexType, Type DocumentType, string Collection), IndexCardinality> IndexCardinalities = new();
+
         private readonly WorkDispatcher<WorkerQueryKey, object> _dispatcher = new();
 
         internal const int SmallBufferSize = 128;
@@ -292,6 +294,7 @@ namespace YesSql
             {
                 Indexes.AddRange(indexProviders);
                 IndexOwnerships.Clear();
+                IndexCardinalities.Clear();
             }
 
             return this;
@@ -364,6 +367,64 @@ namespace YesSql
         }
 
         /// <summary>
+        /// Returns how many rows per document the providers registered on the store produce in an index.
+        /// </summary>
+        internal IndexCardinality GetIndexCardinality(Type indexType, Type documentType, string collection)
+        {
+            var key = (indexType, documentType, collection ?? "");
+
+            if (IndexCardinalities.TryGetValue(key, out var cardinality))
+            {
+                return cardinality;
+            }
+
+            // The lock prevents caching a result for a list of providers that has changed since it was read.
+            lock (IndexOwnerships)
+            {
+                cardinality = FindIndexCardinality(Indexes, indexType, documentType, collection);
+                IndexCardinalities[key] = cardinality;
+            }
+
+            return cardinality;
+        }
+
+        /// <summary>
+        /// Returns how many rows per document some providers produce in an index, in a collection, for the documents of a
+        /// type or, without a type, for the documents of any type.
+        /// </summary>
+        internal IndexCardinality FindIndexCardinality(IEnumerable<IIndexProvider> indexProviders, Type indexType, Type documentType, string collection)
+        {
+            var documentTypes = new HashSet<Type>();
+
+            foreach (var provider in indexProviders)
+            {
+                var forType = provider.ForType();
+
+                if ((documentType != null && forType != documentType) ||
+                    !string.Equals(provider.CollectionName ?? "", collection ?? "", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                foreach (var descriptor in CreateDescriptors(forType, provider.CollectionName, [provider]))
+                {
+                    if (descriptor.IndexType != indexType)
+                    {
+                        continue;
+                    }
+
+                    // Each descriptor writes its own rows, so even two single records are several rows for a document.
+                    if (!descriptor.IsSingleRecordPerDocument || !documentTypes.Add(forType))
+                    {
+                        return IndexCardinality.Multiple;
+                    }
+                }
+            }
+
+            return documentTypes.Count > 0 ? IndexCardinality.Single : IndexCardinality.None;
+        }
+
+        /// <summary>
         /// Enlists some reusable logic such that not two threads run the same thing.
         /// </summary>
         /// <param name="key">A key identifying the running work.</param>
@@ -401,5 +462,20 @@ namespace YesSql
 
         // A provider for another type produces the index, whatever is declared.
         Shared,
+    }
+
+    /// <summary>
+    /// How many rows per document index providers produce in an index.
+    /// </summary>
+    internal enum IndexCardinality
+    {
+        // No provider produces the index for the document type.
+        None,
+
+        // A single descriptor produces the index for each document type, and declares a single record per document.
+        Single,
+
+        // The rows aren't declared to be unique per document, or several descriptors produce them.
+        Multiple,
     }
 }
