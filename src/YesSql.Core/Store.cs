@@ -191,6 +191,9 @@ namespace YesSql
                         .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
                     );
 
+                    // NB: Don't add an index on (Type, Id). It did nothing useful on MySQL or PostgreSQL. On SQLite it speeds up
+                    // some joins, but the planner then starts from it and other queries get much slower.
+
                     await builder.AlterTableAsync(documentTable, table => table
                         .CreateIndex("IX_" + documentTable + "_Type", "Type")
                     );

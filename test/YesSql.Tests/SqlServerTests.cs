@@ -34,6 +34,15 @@ namespace YesSql.Tests
                 .WithThreadSafetyChecks();
         }
 
+        protected override string GetIndexColumnsSql(string table, string indexName)
+        {
+            var quotedTable = _store.Configuration.SqlDialect.QuoteForTableName(table, _store.Configuration.Schema);
+
+            return $"SELECT c.name FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id " +
+                $"JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id " +
+                $"WHERE i.object_id = OBJECT_ID('{quotedTable}') AND i.name = '{indexName}' ORDER BY ic.key_ordinal";
+        }
+
         [Fact]
         public async Task ShouldSeedExistingIds()
         {
