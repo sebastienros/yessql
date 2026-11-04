@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Commands;
 using YesSql.Data;
+using YesSql.Diagnostics;
 using YesSql.Indexes;
 using YesSql.Services;
 using YesSql.Sql;
@@ -91,6 +92,7 @@ namespace YesSql
         {
             IndexCommand.ResetQueryCache();
             DocumentCommand.ResetQueryCache();
+            DeleteMapIndexCommand.ResetQueryCache();
             ValidateConfiguration();
 
             TypeNames = new TypeService();
@@ -142,7 +144,10 @@ namespace YesSql
 
                 Configuration.Logger.LogTrace(selectCommand.CommandText);
 
-                using var result = await selectCommand.ExecuteReaderAsync(cancellationToken);
+                using var result = await YesSqlInstrumentation.ExecuteAsync(
+                    new DbOperation(Configuration, connection, DbOperation.Select, documentTable, selectCommand.CommandText),
+                    (selectCommand, cancellationToken),
+                    static state => state.selectCommand.ExecuteReaderAsync(state.cancellationToken));
                 if (result != null)
                 {
                     try
@@ -362,7 +367,8 @@ namespace YesSql
 
         internal async Task<T> ProduceAwaitedAsync<T, TState>(WorkerQueryKey key, Func<WorkerQueryKey, TState,  Task<T>> work, TState state)
         {
-            var content = await _dispatcher.ScheduleAsync(key, state, async (key, state) => await work(key, state)); // TODO cancellation token into dispatcher?
+            // The work and its state are passed as the dispatcher state so the callback doesn't capture them in a closure.
+            var content = await _dispatcher.ScheduleAsync(key, (work, state), static async (key, s) => await s.work(key, s.state)); // TODO cancellation token into dispatcher?
 
             return (T)content;
         }

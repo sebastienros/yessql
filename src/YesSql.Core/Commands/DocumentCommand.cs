@@ -6,10 +6,11 @@ using System.Data.Common;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public abstract class DocumentCommand : IIndexCommand, ICollectionName
+    public abstract class DocumentCommand : IIndexCommand, ICollectionName, IInstrumentedCommand
     {
         protected static readonly PropertyInfo[] AllProperties = new PropertyInfo[]
         {
@@ -23,6 +24,7 @@ namespace YesSql.Commands
 
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> InsertCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> UpdateCommands = new();
+        private static readonly ConcurrentDictionary<DocumentCommandKey, string> UnversionedUpdateCommands = new();
         private static readonly ConcurrentDictionary<DocumentCommandKey, string> DeleteCommands = new();
 
         public abstract int ExecutionOrder { get; }
@@ -37,6 +39,10 @@ namespace YesSql.Commands
 
         public string Collection { get; }
 
+        internal YesSqlStatistics Statistics { get; private set; }
+
+        YesSqlStatistics IInstrumentedCommand.Statistics { set => Statistics = value; }
+
         public abstract Task ExecuteAsync(DbConnection connection, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken = default);
 
         public abstract bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand parameters, List<Action<DbDataReader>> actions, int index);
@@ -48,6 +54,7 @@ namespace YesSql.Commands
         {
             InsertCommands.Clear();
             UpdateCommands.Clear();
+            UnversionedUpdateCommands.Clear();
             DeleteCommands.Clear();
         }
 
@@ -89,6 +96,21 @@ namespace YesSql.Commands
         }
 
         /// <summary>
+        /// Returns the cached, terminated <c>update</c> statement used when no version check is required.
+        /// </summary>
+        protected static string GetUnversionedUpdateCommandText(ISqlDialect dialect, IStore store, string collection)
+        {
+            var key = new DocumentCommandKey(dialect.Name, store.Configuration.Schema, store.Configuration.TablePrefix, collection);
+
+            if (!UnversionedUpdateCommands.TryGetValue(key, out var result))
+            {
+                UnversionedUpdateCommands[key] = result = GetUpdateCommandText(dialect, store, collection) + ";";
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Returns the cached <c>delete</c> statement for a document table.
         /// </summary>
         protected static string GetDeleteCommandText(ISqlDialect dialect, IStore store, string collection)
@@ -105,6 +127,6 @@ namespace YesSql.Commands
             return result;
         }
 
-        private sealed record DocumentCommandKey(string Dialect, string Schema, string Prefix, string Collection);
+        private readonly record struct DocumentCommandKey(string Dialect, string Schema, string Prefix, string Collection);
     }
 }

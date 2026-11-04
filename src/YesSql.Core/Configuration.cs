@@ -44,5 +44,6 @@ namespace YesSql
         public ICommandInterpreter CommandInterpreter { get; set; }
         public ISqlDialect SqlDialect { get; set; }
         public IdentityColumnSize IdentityColumnSize { get; set; } = IdentityColumnSize.Int32;
+        public YesSqlTelemetryOptions Telemetry { get; set; } = new YesSqlTelemetryOptions();
     }
 }

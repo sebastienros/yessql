@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Services
 {
@@ -66,7 +67,10 @@ namespace YesSql.Services
             {
                 configuration.Logger.LogTrace(sql);
             }
-            var result = await selectCommand.ExecuteScalarAsync(cancellationToken);
+            var result = await YesSqlInstrumentation.ExecuteAsync(
+                new DbOperation(configuration, connection, DbOperation.Select, tableName, sql),
+                (selectCommand, cancellationToken),
+                static state => state.selectCommand.ExecuteScalarAsync(state.cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
 

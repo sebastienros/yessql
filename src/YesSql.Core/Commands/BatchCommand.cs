@@ -5,10 +5,11 @@ using System.Data;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public class BatchCommand : IIndexCommand
+    public class BatchCommand : IIndexCommand, IInstrumentedCommand
     {
         public List<string> Queries { get; set; } = new List<string>();
         public DbCommand Command { get; set; }
@@ -19,6 +20,16 @@ namespace YesSql.Commands
         {
             Command = command;
         }
+
+        internal BatchCommand(DbCommand command, IConfiguration configuration) : this(command)
+        {
+            _configuration = configuration;
+        }
+
+        private readonly IConfiguration _configuration;
+        private YesSqlStatistics _statistics;
+
+        YesSqlStatistics IInstrumentedCommand.Statistics { set => _statistics = value; }
 
         public bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
@@ -56,13 +67,29 @@ namespace YesSql.Commands
             Command.Transaction = transaction;
             Command.CommandText = command;
 
-            // This should propigate the cancellation token to any of the actions.
-            await using (var dr = await Command.ExecuteReaderAsync(cancellationToken))
+            // The statements run while their results are read, so the operation includes it.
+            // The statements of a batch usually involve several tables, so it isn't described with one.
+            var operationName = YesSqlInstrumentation.IsEnabled ? YesSqlInstrumentation.GetBatchOperationName(Queries) : null;
+            var scope = YesSqlInstrumentation.Start(new DbOperation(_configuration, connection, operationName, null, command, _statistics) { BatchSize = Queries.Count > 1 ? Queries.Count : 0 });
+
+            try
             {
-                foreach (var action in Actions)
+                // This should propigate the cancellation token to any of the actions.
+                await using (var dr = await Command.ExecuteReaderAsync(cancellationToken))
                 {
-                    action(dr);
+                    foreach (var action in Actions)
+                    {
+                        action(dr);
+                    }
                 }
+
+                scope.Stop();
+            }
+            catch (Exception exception)
+            {
+                scope.Stop(exception);
+
+                throw;
             }
         }
     }

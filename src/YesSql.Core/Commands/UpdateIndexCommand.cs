@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using YesSql.Diagnostics;
 using YesSql.Indexes;
 
 namespace YesSql.Commands
@@ -37,7 +38,9 @@ namespace YesSql.Commands
             {
                 logger.LogTrace(sql);
             }
-            await connection.ExecuteAsync(new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+            var indexOperation = new DbOperation(_store.Configuration, connection, DbOperation.Update, _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), sql, Statistics);
+
+            await YesSqlInstrumentation.ExecuteAsync(indexOperation, new CommandDefinition(sql, Index, transaction, null, null, CommandFlags.Buffered, cancellationToken));
 
             // Update the documents list
             if (Index is ReduceIndex)
@@ -60,7 +63,9 @@ namespace YesSql.Commands
                     {
                         logger.LogTrace(bridgeSqlAdd);
                     }
-                    await connection.ExecuteAsync(new CommandDefinition(bridgeSqlAdd, dynamicParamsAdded, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+                    var addOperation = new DbOperation(_store.Configuration, connection, DbOperation.Insert, bridgeTableName, bridgeSqlAdd, Statistics);
+
+                    await YesSqlInstrumentation.ExecuteAsync(addOperation, new CommandDefinition(bridgeSqlAdd, dynamicParamsAdded, transaction, null, null, CommandFlags.Buffered, cancellationToken));
                 }
 
                 if (_deletedDocumentIds.Length > 0)
@@ -75,7 +80,9 @@ namespace YesSql.Commands
                     {
                         logger.LogTrace(bridgeSqlRemove);
                     }
-                    await connection.ExecuteAsync(new CommandDefinition(bridgeSqlRemove, dynamicParamsDeleted, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+                    var removeOperation = new DbOperation(_store.Configuration, connection, DbOperation.Delete, bridgeTableName, bridgeSqlRemove, Statistics);
+
+                    await YesSqlInstrumentation.ExecuteAsync(removeOperation, new CommandDefinition(bridgeSqlRemove, dynamicParamsDeleted, transaction, null, null, CommandFlags.Buffered, cancellationToken));
                 }
             }
         }

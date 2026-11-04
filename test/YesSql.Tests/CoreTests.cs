@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -5215,6 +5216,268 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldNotReloadDocumentWhenDeletingLoadedEntity()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var log = new StringBuilder();
+            var logger = new TestLogger(log);
+            var previousLogger = _store.Configuration.Logger;
+            _store.Configuration.Logger = logger;
+
+            try
+            {
+                await using (var session = _store.CreateSession())
+                {
+                    var bill = await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync();
+                    Assert.NotNull(bill);
+
+                    // Only record the statements executed when the entity is deleted
+                    log.Clear();
+
+                    session.Delete(bill);
+
+                    await session.SaveChangesAsync();
+                }
+            }
+            finally
+            {
+                _store.Configuration.Logger = previousLogger;
+            }
+
+            // The document was already loaded, it should not be queried again to be deleted.
+            Assert.Contains("delete from", logger.ToString(), StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("select", logger.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query<Person>().CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
+                Assert.Equal("Steve", (await session.Query<Person, PersonByName>().FirstOrDefaultAsync()).Firstname);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotDeserializePreviousVersionWhenUpdatingMapIndexes()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var serializer = _store.Configuration.ContentSerializer;
+            var countingSerializer = new CountingContentSerializer(serializer);
+
+            try
+            {
+                _store.Configuration.ContentSerializer = countingSerializer;
+
+                await using (var session = _store.CreateSession())
+                {
+                    var bill = await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync();
+                    Assert.Equal(1, countingSerializer.Deserializations);
+
+                    bill.Firstname = "William";
+                    await session.SaveAsync(bill);
+
+                    await session.SaveChangesAsync();
+                }
+
+                // Only the load deserialized the document, updating a map index doesn't need the previous version.
+                Assert.Equal(1, countingSerializer.Deserializations);
+            }
+            finally
+            {
+                _store.Configuration.ContentSerializer = serializer;
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Null(await session.Query<Person, PersonByName>(x => x.SomeName == "Bill").FirstOrDefaultAsync());
+                Assert.Equal("William", (await session.Query<Person, PersonByName>(x => x.SomeName == "William").FirstOrDefaultAsync()).Firstname);
+                Assert.Equal(1, await session.QueryIndex<PersonByName>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotDeduplicateQueriesWithoutJoinsOrPaging()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+                await session.SaveAsync(new Person { Firstname = "Paul" });
+
+                await session.SaveChangesAsync();
+            }
+
+            var log = new StringBuilder();
+            var previousLogger = _store.Configuration.Logger;
+            _store.Configuration.Logger = new TestLogger(log);
+
+            try
+            {
+                await using (var session = _store.CreateSession())
+                {
+                    // Without a join, a document can't be returned more than once
+                    Assert.Equal(3, (await session.Query<Person>().ListAsync()).Count);
+                    Assert.DoesNotContain("IndexQuery", log.ToString());
+
+                    // Paged queries are applied on the document ids, without grouping them
+                    log.Clear();
+                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
+                    Assert.Contains("IndexQuery", log.ToString());
+                    Assert.DoesNotContain("GROUP BY", log.ToString());
+
+                    // Including when de-duplication is disabled
+                    log.Clear();
+                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().NoDuplicates().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
+                    Assert.Contains("IndexQuery", log.ToString());
+
+                    // With a join, the results are de-duplicated
+                    log.Clear();
+                    Assert.Equal(new[] { "Bill", "Paul", "Steve" }, (await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync()).Select(x => x.Firstname));
+                    Assert.Contains("IndexQuery", log.ToString());
+                }
+            }
+            finally
+            {
+                _store.Configuration.Logger = previousLogger;
+            }
+        }
+
+        [Fact]
+        public async Task ShouldNotUpdateReduceIndexWhenDocumentWasDeletedByAnotherSession()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var article = await session.Query().For<Article>().FirstOrDefaultAsync();
+
+                await using (var otherSession = _store.CreateSession())
+                {
+                    otherSession.Delete(await otherSession.Query().For<Article>().FirstOrDefaultAsync());
+
+                    await otherSession.SaveChangesAsync();
+                }
+
+                session.Delete(article);
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(1, await session.Query().For<Article>().CountAsync());
+                Assert.Equal(1, (await session.QueryIndex<ArticlesByDay>().FirstOrDefaultAsync())?.Count);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldFlushAgainAfterDeletingEntity()
+        {
+            await using (var session = _store.CreateSession())
+            {
+                // The entity is tracked after it was saved and flushed
+                var bill = new Person { Firstname = "Bill" };
+                await session.SaveAsync(bill);
+                await session.FlushAsync();
+
+                session.Delete(bill);
+                await session.FlushAsync();
+
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // The entity is updated and deleted in the same flush
+                var steve = await session.Query<Person>().FirstOrDefaultAsync();
+                await session.SaveAsync(steve);
+
+                session.Delete(steve);
+                await session.FlushAsync();
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(0, await session.Query<Person>().CountAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ShouldRejectIsInValuesThatCanChangeInCompiledQueries()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+                await session.SaveAsync(new Person { Firstname = "Paul" });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Throws<NotSupportedException>(() => session.ExecuteQuery(new PersonByNamesQuery("Bill")));
+
+                // Literal values are the same for each execution
+                Assert.Equal(2, await session.ExecuteQuery(new PersonByLiteralNamesQuery()).CountAsync());
+            }
+        }
+
+        private sealed class CountingContentSerializer : IContentSerializer
+        {
+            private readonly IContentSerializer _serializer;
+
+            public CountingContentSerializer(IContentSerializer serializer)
+            {
+                _serializer = serializer;
+            }
+
+            public int Deserializations { get; private set; }
+
+            public object Deserialize(string content, Type type)
+            {
+                Deserializations++;
+                return _serializer.Deserialize(content, type);
+            }
+
+            public string Serialize(object item)
+            {
+                return _serializer.Serialize(item);
+            }
+        }
+
+        [Fact]
         public async Task ShouldGenerateDeleteStatementsForFilteredIndexProviders()
         {
             var logger = new TestLogger();
@@ -5332,6 +5595,157 @@ namespace YesSql.Tests
             await Assert.ThrowsAnyAsync<Exception>(async () => await session.SaveChangesAsync());
 
             Assert.Null(session._commands);
+        }
+
+        [Fact]
+        public async Task ShouldEmitTelemetryForCommands()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            var dialect = _store.Configuration.SqlDialect;
+            var systemName = dialect.Name switch
+            {
+                "Sqlite" => "sqlite",
+                "SqlServer" => "microsoft.sql_server",
+                "PostgreSql" => "postgresql",
+                "MySql" => "mysql",
+                _ => throw new InvalidOperationException(dialect.Name),
+            };
+
+            var documentTable = TablePrefix + "Document";
+
+            if (!string.IsNullOrEmpty(_store.Configuration.Schema))
+            {
+                documentTable = _store.Configuration.Schema + "." + documentTable;
+            }
+
+            using var telemetry = new TelemetryCollector();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+
+                await session.FlushAsync();
+
+                // No wrapper: the commands are given the transaction of the provider, on its connection.
+                var connection = await session.CreateConnectionAsync();
+
+                Assert.Same(connection, session.CurrentTransaction.Connection);
+                Assert.Same(connection.GetType().Assembly, session.CurrentTransaction.GetType().Assembly);
+
+                await session.SaveChangesAsync();
+
+                Assert.True(session.Statistics.Commands > 0);
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Equal(2, await session.Query<Person, PersonByName>().CountAsync());
+                Assert.Equal(2, (await session.Query<Person>().ListAsync()).Count());
+                Assert.Equal(2, session.Statistics.Commands);
+                Assert.Equal(2, session.Statistics.DocumentsRead);
+            }
+
+            var spans = telemetry.DbSpans;
+
+            Assert.All(spans, span =>
+            {
+                Assert.Equal(systemName, span.GetTagItem("db.system.name"));
+                Assert.False(string.IsNullOrEmpty((string)span.GetTagItem("db.namespace")));
+                Assert.Equal(ActivityStatusCode.Unset, span.Status);
+                Assert.Null(span.GetTagItem("db.query.text"));
+            });
+
+            Assert.Contains(spans, x => x.DisplayName == "SELECT " + documentTable);
+            Assert.Single(spans, x => (string)x.GetTagItem("db.operation.name") == "COMMIT");
+
+            // The inserts of both documents and of their indexes
+            if (dialect.SupportsBatching)
+            {
+                var batch = spans.Single(x => (string)x.GetTagItem("db.operation.name") == "BATCH INSERT");
+
+                Assert.Equal(4, batch.GetTagItem("db.operation.batch.size"));
+                Assert.Null(batch.GetTagItem("db.collection.name"));
+            }
+            else
+            {
+                Assert.Equal(2, spans.Count(x => x.DisplayName == "INSERT " + documentTable));
+            }
+
+            var durations = telemetry.Measurements.Where(x => x.Instrument == "db.client.operation.duration").ToArray();
+
+            Assert.Equal(spans.Count, durations.Length);
+            Assert.All(durations, x => Assert.Equal(systemName, x.Tags["db.system.name"]));
+        }
+
+        [Fact]
+        public async Task ShouldEmitTelemetryForFailedCommands()
+        {
+            using var telemetry = new TelemetryCollector();
+
+            await using var session = _store.CreateSession();
+
+            var exception = await Assert.ThrowsAnyAsync<DbException>(() => session.Query<Person, TelemetryTests.MissingTableIndex>().ListAsync());
+
+            var span = telemetry.DbSpans.Single();
+
+            Assert.Equal(ActivityStatusCode.Error, span.Status);
+            Assert.Equal(exception.GetType().FullName, span.GetTagItem("error.type"));
+            Assert.Equal(exception.GetType().FullName, telemetry.Measurements.Single(x => x.Instrument == "db.client.operation.duration").Tags["error.type"]);
+        }
+
+        [Fact]
+        public async Task ShouldCollectTheTelemetryOfTheDriverWhenSubscribed()
+        {
+            var driver = _store.Configuration.SqlDialect.DriverTelemetryName;
+
+            using var telemetry = new TelemetryCollector(driver is null ? [] : [driver]);
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                Assert.Single(await session.Query<Person>().ListAsync());
+            }
+
+            var yesSqlSpans = telemetry.DbSpans;
+
+            // Only the duration of Npgsql measures the same work as YesSql.
+            var duplicates = telemetry.Instruments.Where(YesSqlTelemetry.IsDuplicateDriverInstrument).ToArray();
+
+            if (driver == "Npgsql")
+            {
+                Assert.Equal("db.client.operation.duration", Assert.Single(duplicates).Name);
+                Assert.Contains(telemetry.Measurements, x => x.Meter == driver && x.Instrument == "db.client.operation.duration");
+            }
+            else
+            {
+                Assert.Empty(duplicates);
+            }
+
+            if (driver is null)
+            {
+                Assert.All(telemetry.Spans, x => Assert.Equal(YesSqlTelemetry.Name, x.Source.Name));
+                Assert.All(yesSqlSpans, x => Assert.Equal(ActivityKind.Client, x.Kind));
+
+                return;
+            }
+
+            Assert.Contains(driver, YesSqlTelemetry.DriverActivitySources);
+            Assert.Contains(driver, YesSqlTelemetry.DriverMeters);
+            Assert.Contains(telemetry.Instruments, x => x.Meter.Name == driver);
+
+            // A database call has one client span, the one of the driver, in the YesSql span holding the table.
+            var driverSpans = telemetry.Spans.Where(x => x.Source.Name == driver && x.Kind == ActivityKind.Client).ToArray();
+
+            Assert.NotEmpty(driverSpans);
+            Assert.All(yesSqlSpans, x => Assert.Equal(ActivityKind.Internal, x.Kind));
+            Assert.Contains(driverSpans, x => yesSqlSpans.Any(y => y.SpanId == x.ParentSpanId));
         }
 
         [Fact]

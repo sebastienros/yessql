@@ -112,6 +112,12 @@ namespace YesSql.Provider.PostgreSql
 
         /// <inheritdoc />
         public override string Name => "PostgreSql";
+
+        /// <inheritdoc />
+        public override string TelemetrySystemName => "postgresql";
+
+        /// <inheritdoc />
+        public override string DriverTelemetryName => "Npgsql";
         /// <inheritdoc />
         public override string InOperator(string values) => " = any(array[" + values + "])";
         /// <inheritdoc />
