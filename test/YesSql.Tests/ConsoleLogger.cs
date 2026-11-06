@@ -37,5 +37,12 @@ namespace YesSql.Tests
         {
             Log(logLevel, formatter(state, exception));
         }
+
+        private sealed class FakeScope : IDisposable
+        {
+            public void Dispose()
+            {
+            }
+        }
     }
 }
