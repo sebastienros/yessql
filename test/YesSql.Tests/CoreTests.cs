@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Extensions.Logging.Testing;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -5716,7 +5717,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldLogSql()
         {
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
 
             _store.Configuration.Logger = logger;
 
@@ -5734,13 +5735,13 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            Assert.NotEmpty(logger.ToString());
+            Assert.NotNull(logger.LatestRecord);
         }
 
         [Fact]
         public async Task ShouldNotGenerateDeleteStatementsForFilteredIndexProviders()
         {
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
 
             _store.Configuration.Logger = logger;
 
@@ -5763,8 +5764,9 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            Assert.NotEmpty(logger.ToString());
-            Assert.DoesNotContain("PersonByAge", logger.ToString());
+            var logs = string.Join(Environment.NewLine, logger.Collector.GetSnapshot().Select(record => record.Message));
+            Assert.NotEmpty(logs);
+            Assert.DoesNotContain("PersonByAge", logs);
         }
 
         [Fact]
@@ -5780,8 +5782,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var log = new StringBuilder();
-            var logger = new TestLogger(log);
+            var logger = new FakeLogger<CoreTests>();
             var previousLogger = _store.Configuration.Logger;
             _store.Configuration.Logger = logger;
 
@@ -5793,7 +5794,7 @@ namespace YesSql.Tests
                     Assert.NotNull(bill);
 
                     // Only record the statements executed when the entity is deleted
-                    log.Clear();
+                    logger.Collector.Clear();
 
                     session.Delete(bill);
 
@@ -5806,8 +5807,9 @@ namespace YesSql.Tests
             }
 
             // The document was already loaded, it should not be queried again to be deleted.
-            Assert.Contains("delete from", logger.ToString(), StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("select", logger.ToString(), StringComparison.OrdinalIgnoreCase);
+            var logs = string.Join(Environment.NewLine, logger.Collector.GetSnapshot().Select(record => record.Message));
+            Assert.Contains("delete from", logs, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("select", logs, StringComparison.OrdinalIgnoreCase);
 
             await using (var session = _store.CreateSession())
             {
@@ -5877,33 +5879,41 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var log = new StringBuilder();
             var previousLogger = _store.Configuration.Logger;
-            _store.Configuration.Logger = new TestLogger(log);
 
             try
             {
                 await using (var session = _store.CreateSession())
                 {
+                    var firstQueryLogger = new FakeLogger<CoreTests>();
+                    _store.Configuration.Logger = firstQueryLogger;
+
                     // Without a join, a document can't be returned more than once
                     Assert.Equal(3, (await session.Query<Person>().ListAsync()).Count);
-                    Assert.DoesNotContain("IndexQuery", log.ToString());
+                    Assert.DoesNotContain("IndexQuery", string.Join(Environment.NewLine, firstQueryLogger.Collector.GetSnapshot().Select(record => record.Message)));
+
+                    var secondQueryLogger = new FakeLogger<CoreTests>();
+                    _store.Configuration.Logger = secondQueryLogger;
 
                     // Paged queries are applied on the document ids, without grouping them
-                    log.Clear();
                     Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
-                    Assert.Contains("IndexQuery", log.ToString());
-                    Assert.DoesNotContain("GROUP BY", log.ToString());
+                    var secondLogs = string.Join(Environment.NewLine, secondQueryLogger.Collector.GetSnapshot().Select(record => record.Message));
+                    Assert.Contains("IndexQuery", secondLogs);
+                    Assert.DoesNotContain("GROUP BY", secondLogs);
+
+                    var thirdQueryLogger = new FakeLogger<CoreTests>();
+                    _store.Configuration.Logger = thirdQueryLogger;
 
                     // Including when de-duplication is disabled
-                    log.Clear();
-                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().SkipDeduplication().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
-                    Assert.Contains("IndexQuery", log.ToString());
+                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().NoDuplicates().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
+                    Assert.Contains("IndexQuery", string.Join(Environment.NewLine, thirdQueryLogger.Collector.GetSnapshot().Select(record => record.Message)));
+
+                    var fourthQueryLogger = new FakeLogger<CoreTests>();
+                    _store.Configuration.Logger = fourthQueryLogger;
 
                     // With a join, the results are de-duplicated
-                    log.Clear();
                     Assert.Equal(new[] { "Bill", "Paul", "Steve" }, (await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync()).Select(x => x.Firstname));
-                    Assert.Contains("IndexQuery", log.ToString());
+                    Assert.Contains("IndexQuery", string.Join(Environment.NewLine, fourthQueryLogger.Collector.GetSnapshot().Select(record => record.Message)));
                 }
             }
             finally
@@ -6032,7 +6042,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldGenerateDeleteStatementsForFilteredIndexProviders()
         {
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
 
             _store.Configuration.Logger = logger;
 
@@ -6055,8 +6065,9 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            Assert.NotEmpty(logger.ToString());
-            Assert.Contains("PersonByAge", logger.ToString());
+            var logs = string.Join(Environment.NewLine, logger.Collector.GetSnapshot().Select(record => record.Message));
+            Assert.NotEmpty(logs);
+            Assert.Contains("PersonByAge", logs);
         }
 
         [Fact]
