@@ -157,6 +157,48 @@ namespace YesSql
     public interface IQueryIndex<T> where T : IIndex
     {
         /// <summary>
+        /// Keeps the records matching any of the predicates. A predicate filters the current records with <c>Where()</c>,
+        /// or joins another index on their documents with <c>With()</c>, like <c>q =&gt; q.With&lt;PersonByAge&gt;(x =&gt; x.Age &lt; 18)</c>.
+        /// </summary>
+        /// <remarks>
+        /// Each predicate joins its indexes with new aliases, so a record is only returned when its document has a record in each of them,
+        /// and it repeats for each combination of their records, like with <see cref="With{TIndex}(Expression{Func{TIndex, bool}})"/>.
+        /// The query still returns the records of <typeparamref name="T"/>.
+        /// </remarks>
+        IQueryIndex<T> Any(params Action<IQueryIndex<T>>[] predicates);
+
+        /// <summary>
+        /// Keeps the records matching any of the predicates. A predicate filters the current records with <c>Where()</c>,
+        /// or joins another index on their documents with <c>With()</c>, like <c>q =&gt; q.With&lt;PersonByAge&gt;(x =&gt; x.Age &lt; 18)</c>.
+        /// </summary>
+        /// <remarks>
+        /// Each predicate joins its indexes with new aliases, so a record is only returned when its document has a record in each of them,
+        /// and it repeats for each combination of their records, like with <see cref="With{TIndex}(Expression{Func{TIndex, bool}})"/>.
+        /// The query still returns the records of <typeparamref name="T"/>.
+        /// </remarks>
+        ValueTask<IQueryIndex<T>> AnyAsync(params Func<IQueryIndex<T>, ValueTask>[] predicates);
+
+        /// <summary>
+        /// Keeps the records matching all the predicates. A predicate filters the current records with <c>Where()</c>,
+        /// or joins another index on their documents with <c>With()</c>, like <c>q =&gt; q.With&lt;PersonByAge&gt;(x =&gt; x.Adult)</c>.
+        /// </summary>
+        /// <remarks>
+        /// Each predicate joins its indexes with new aliases, so a record repeats for each combination of their matching records,
+        /// like with <see cref="With{TIndex}(Expression{Func{TIndex, bool}})"/>. The query still returns the records of <typeparamref name="T"/>.
+        /// </remarks>
+        IQueryIndex<T> All(params Action<IQueryIndex<T>>[] predicates);
+
+        /// <summary>
+        /// Keeps the records matching all the predicates. A predicate filters the current records with <c>Where()</c>,
+        /// or joins another index on their documents with <c>With()</c>, like <c>q =&gt; q.With&lt;PersonByAge&gt;(x =&gt; x.Adult)</c>.
+        /// </summary>
+        /// <remarks>
+        /// Each predicate joins its indexes with new aliases, so a record repeats for each combination of their matching records,
+        /// like with <see cref="With{TIndex}(Expression{Func{TIndex, bool}})"/>. The query still returns the records of <typeparamref name="T"/>.
+        /// </remarks>
+        ValueTask<IQueryIndex<T>> AllAsync(params Func<IQueryIndex<T>, ValueTask>[] predicates);
+
+        /// <summary>
         /// Joins an index on the documents of the current records, and returns the records of the joined index.
         /// </summary>
         /// <remarks>
