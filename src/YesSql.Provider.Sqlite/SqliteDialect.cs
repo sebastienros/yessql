@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
+using Microsoft.Data.Sqlite;
+using YesSql.Provider;
 using YesSql.Sql;
 
 namespace YesSql.Provider.Sqlite
@@ -8,7 +11,7 @@ namespace YesSql.Provider.Sqlite
     /// <summary>
     /// Represents the SQL dialect for SQLite.
     /// </summary>
-    public sealed class SqliteDialect : BaseDialect
+    public sealed class SqliteDialect : BaseDialect, ILastInsertIdDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
@@ -198,6 +201,13 @@ namespace YesSql.Provider.Sqlite
         /// Executing the commands individually is significantly faster and allocates far less.
         /// </remarks>
         public override bool SupportsBatching => false;
+
+        /// <inheritdoc />
+        public bool CanReadLastInsertId(DbConnection connection) => connection is SqliteConnection;
+
+        /// <inheritdoc />
+        public long ReadLastInsertId(DbConnection connection)
+            => SQLitePCL.raw.sqlite3_last_insert_rowid(((SqliteConnection)connection).Handle);
 
         /// <inheritdoc />
         public override string GetCreateSchemaString(string schema)

@@ -115,23 +115,37 @@ namespace YesSql
         string GetTypeAlias(Type t);
 
         /// <summary>
-        /// Removes the Group By clause that folds documents when an index returns multiple records, for a query
-        /// whose indexes are known to return a single record per document.
+        /// Skips removing the documents returned several times when an index has multiple records for a document, for a query
+        /// that is known to match a single record per document: the results aren't grouped by document, and
+        /// <see cref="CountAsync"/> uses <c>count(*)</c> instead of a distinct count.
         /// </summary>
         /// <remarks>
         /// An index that always has a single record per document should declare it with
-        /// <see cref="IMapFor{T, TIndex}.SingleRecordPerDocument"/> instead, which also applies to counts and fails when
-        /// a document maps several records. This method is for what a declaration can't express, like a filter that only keeps one
-        /// of the records of each document. Nothing verifies it, so a document with several matches is returned several times.
-        /// It doesn't change <see cref="CountAsync"/>.
+        /// <see cref="IMapFor{T, TIndex}.SingleRecordPerDocument"/> instead, which fails when a document maps several records.
+        /// This method is for what a declaration can't express, like a filter that only keeps one of the records of each document.
+        /// Nothing verifies it, so a document with several matches is returned and counted several times.
+        /// It still applies with <see cref="NoIndexOptimizations"/>, as it isn't declared by an index.
         /// </remarks>
+        IQuery<T> SkipDeduplication()
+        {
+            // Implementations written before this method only implement NoDuplicates().
+#pragma warning disable CS0618 // Type or member is obsolete
+            return NoDuplicates();
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        /// <summary>
+        /// Skips removing the documents returned several times. Use <see cref="SkipDeduplication"/> instead.
+        /// </summary>
+        [Obsolete("Use SkipDeduplication() instead, as this method doesn't remove duplicates but skips removing them.")]
         IQuery<T> NoDuplicates();
 
         /// <summary>
         /// Runs the query as if its indexes declared nothing, ignoring
         /// <see cref="Indexes.IMapFor{T, TIndex}.ExclusiveToDocumentType"/> and <see cref="IMapFor{T, TIndex}.SingleRecordPerDocument"/>:
-        /// the results are grouped by document, and the count joins the document table and is distinct.
-        /// This is for a query these optimizations make slower, or whose indexes have rows that don't match their declarations.
+        /// the results are grouped by document, and the count joins the document table and is distinct, unless the query uses
+        /// <see cref="SkipDeduplication"/>. This is for a query these optimizations make slower, or whose indexes have rows that don't
+        /// match their declarations.
         /// </summary>
         IQuery<T> NoIndexOptimizations() => this;
     }

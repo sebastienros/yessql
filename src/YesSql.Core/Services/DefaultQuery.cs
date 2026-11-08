@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Diagnostics;
 using YesSql.Indexes;
+using YesSql.Provider;
 using YesSql.Sql;
 using YesSql.Utils;
 
@@ -397,16 +398,50 @@ namespace YesSql.Services
                     return;
                 }
 
-                // The values are added as parameters directly, without creating a constant expression for each of them.
-                elements = new RentedStringBuilder(128);
-                query.AddParameter(elements, first);
-
-                do
+                // Databases accepting arrays get all the values in a single parameter, so that the SQL text doesn't
+                // depend on the number of values (each length would otherwise be a different prepared statement or plan).
+                if (dialect is IArrayParameterDialect arrayDialect)
                 {
-                    elements.Append(", ");
-                    query.AddParameter(elements, enumerator.Current);
+                    var values = new List<object> { first };
+
+                    do
+                    {
+                        values.Add(enumerator.Current);
+                    }
+                    while (enumerator.MoveNext());
+
+                    if (query.TryCreateArrayParameter(arrayDialect, values, out var array))
+                    {
+                        var parameterName = query.AddParameterValue(new ArrayParameter(array));
+                        builder.Append(negate ? arrayDialect.NotInArrayOperator(parameterName) : arrayDialect.InArrayOperator(parameterName));
+                        return;
+                    }
+
+                    elements = new RentedStringBuilder(128);
+
+                    for (var i = 0; i < values.Count; i++)
+                    {
+                        if (i > 0)
+                        {
+                            elements.Append(", ");
+                        }
+
+                        query.AddParameter(elements, values[i]);
+                    }
                 }
-                while (enumerator.MoveNext());
+                else
+                {
+                    // The values are added as parameters directly, without creating a constant expression for each of them.
+                    elements = new RentedStringBuilder(128);
+                    query.AddParameter(elements, first);
+
+                    do
+                    {
+                        elements.Append(", ");
+                        query.AddParameter(elements, enumerator.Current);
+                    }
+                    while (enumerator.MoveNext());
+                }
 
                 builder.Append(negate ? dialect.NotInOperator(elements.ToString()) : dialect.InOperator(elements.ToString()));
             }
@@ -466,6 +501,68 @@ namespace YesSql.Services
             return (uint)index < (uint)_parameterNames.Length
                 ? _parameterNames[index]
                 : "@p" + index.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Creates a typed array from the values of an <c>IsIn</c> filter, converted like individual parameters. Returns
+        /// <c>false</c> if a value is null, or the values don't have the same type, or the dialect doesn't support it,
+        /// in which case one parameter is used per value.
+        /// </summary>
+        private bool TryCreateArrayParameter(IArrayParameterDialect arrayDialect, List<object> values, out Array array)
+        {
+            array = null;
+            Type elementType = null;
+            var converted = new object[values.Count];
+
+            for (var i = 0; i < values.Count; i++)
+            {
+                var value = _dialect.TryConvert(values[i]);
+
+                if (value is null)
+                {
+                    // Keep the semantics of NULL in an IN list.
+                    return false;
+                }
+
+                // Like Dapper does for single parameters, enums are passed as their underlying value.
+                if (value is Enum)
+                {
+                    value = Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType()), CultureInfo.InvariantCulture);
+                }
+
+                if (elementType is null)
+                {
+                    elementType = value.GetType();
+
+                    if (!arrayDialect.SupportsArrayParameter(elementType))
+                    {
+                        return false;
+                    }
+                }
+                else if (value.GetType() != elementType)
+                {
+                    return false;
+                }
+
+                converted[i] = value;
+            }
+
+            array = Array.CreateInstance(elementType, converted.Length);
+            Array.Copy(converted, array, converted.Length);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Adds a parameter with a value that is already converted, and returns its name.
+        /// </summary>
+        private string AddParameterValue(object value)
+        {
+            var parameters = _queryState._sqlBuilder.Parameters;
+            var name = _queryState._lastParameterName = GetParameterName(parameters.Count);
+            parameters.Add(name, value);
+
+            return name;
         }
 
         private void AddParameter(IStringBuilder builder, object value)
@@ -1286,16 +1383,16 @@ namespace YesSql.Services
 
             _queryState.FlushFilters();
 
-            var hasSingleRecords = HasSingleRecordPerDocument();
+            var deduplicate = ShouldDeduplicate();
 
-            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder(hasSingleRecords);
+            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder(deduplicate);
 
             if (localBuilder == null)
             {
                 localBuilder = _queryState._sqlBuilder.Clone();
 
                 // An index query counts the records it returns, while a document query counts distinct documents.
-                if (localBuilder.HasJoin && !hasSingleRecords && _queryState._rootIndex == null)
+                if (localBuilder.HasJoin && deduplicate && _queryState._rootIndex == null)
                 {
                     localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
                 }
@@ -1321,7 +1418,7 @@ namespace YesSql.Services
             }
 
             var sql = localBuilder.ToSqlString();
-            var parameters = localBuilder.Parameters;
+            var parameters = PrefixedParameters.FromDictionary(localBuilder.Parameters);
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
 
             _session.EnterAsyncExecution();
@@ -1367,9 +1464,10 @@ namespace YesSql.Services
         /// <c>SELECT count(distinct [Document].[Id]) FROM [Document] INNER JOIN [PersonByName] AS [PersonByName_a1] ON [PersonByName_a1].[DocumentId] = [Document].[Id] WHERE [Document].[Type] = @Type AND ...</c>
         /// becomes <c>SELECT count(distinct [PersonByName_a1].[DocumentId]) FROM [PersonByName] AS [PersonByName_a1] WHERE ...</c>,
         /// the other indexes being joined on the DocumentId column of the first one. The count stays distinct as a map index can have
-        /// multiple rows for the same document, unless all the indexes declare a single record per document.
+        /// multiple rows for the same document, unless all the indexes declare a single record per document or the query uses
+        /// <see cref="IQuery{T}.SkipDeduplication"/>.
         /// </remarks>
-        private SqlBuilder CreateIndexOnlyCountBuilder(bool hasSingleRecords)
+        private SqlBuilder CreateIndexOnlyCountBuilder(bool deduplicate)
         {
             var indexJoins = _queryState._indexJoins;
 
@@ -1424,9 +1522,18 @@ namespace YesSql.Services
                 JoinIndex(builder, indexJoin, indexJoin == root ? null : rootAlias, "DocumentId", rootAlias);
             }
 
-            builder.Selector(hasSingleRecords ? "count(*)" : $"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})");
+            builder.Selector(deduplicate ? $"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})" : "count(*)");
 
             return builder;
+        }
+
+        /// <summary>
+        /// Returns whether the results and the count of a query with joins need to remove the documents returned several times,
+        /// as neither its indexes declare a single record per document nor the query uses <see cref="IQuery{T}.SkipDeduplication"/>.
+        /// </summary>
+        private bool ShouldDeduplicate()
+        {
+            return _queryState._deduplicate && !HasSingleRecordPerDocument();
         }
 
         /// <summary>
@@ -1561,7 +1668,7 @@ namespace YesSql.Services
                             }
                             return YesSqlInstrumentation.ExecuteAsync(
                                 new DbOperation(state.Query._session._store.Configuration, state.Connection, DbOperation.Select, state.Query._queryState._fromTable, state.Sql, state.Query._session._statistics),
-                                (state.Connection, Definition: new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                                (state.Connection, Definition: new CommandDefinition(state.Sql, PrefixedParameters.FromDictionary(state.Query._queryState._sqlBuilder.Parameters), state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
                                 static query => query.Connection.QueryAsync<T>(query.Definition));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken })).FirstOrDefault();
                     }
@@ -1581,7 +1688,7 @@ namespace YesSql.Services
 
                             return YesSqlInstrumentation.ExecuteAsync(
                                 new DbOperation(state.Query._session._store.Configuration, state.Connection, DbOperation.Select, state.Query._queryState._fromTable, state.Sql, state.Query._session._statistics),
-                                (state.Connection, Definition: new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                                (state.Connection, Definition: new CommandDefinition(state.Sql, PrefixedParameters.FromDictionary(state.Query._queryState._sqlBuilder.Parameters), state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
                                 static query => query.Connection.QueryFirstOrDefaultAsync<Document>(query.Definition));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
@@ -1667,7 +1774,7 @@ namespace YesSql.Services
                         // Stream the results without buffering them. The enumeration is driven manually so that
                         // a failure while reading from the database still cancels the session (releasing the
                         // transaction), as 'yield return' cannot be used inside a try/catch block.
-                        var enumerable = connection.QueryUnbufferedAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
+                        var enumerable = connection.QueryStreamAsync<T>(new CommandDefinition(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction, cancellationToken: cancellationToken), cancellationToken);
 
                         await using var enumerator = enumerable.GetAsyncEnumerator(cancellationToken);
 
@@ -1721,7 +1828,7 @@ namespace YesSql.Services
                         // Paged queries are still applied on the document ids only (a deferred join), which some databases
                         // (e.g. SQLite) execute much faster than sorting whole documents.
                         var sql = sqlBuilder.HasJoin
-                            ? GetDocumentIdsQuery(group: _query._queryState._deduplicate && !_query.HasSingleRecordPerDocument())
+                            ? GetDocumentIdsQuery(group: _query.ShouldDeduplicate())
                             : (sqlBuilder.HasPaging ? GetPagedQuery() : sqlBuilder.ToSqlString());
                         var logger = _query._session._store.Configuration.Logger;
 
@@ -1730,17 +1837,14 @@ namespace YesSql.Services
                             logger.LogDebug(sql);
                         }
 
-                        var documents = new List<Document>();
                         List<T> items;
 
                         var operation = YesSqlInstrumentation.Start(new DbOperation(_query._session._store.Configuration, connection, DbOperation.Select, _query._queryState._fromTable, sql, _query._session._statistics));
 
                         try
                         {
-                            await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
-                            {
-                                documents.Add(document);
-                            }
+                            // The documents are read entirely before being returned, so they are buffered by Dapper.
+                            var documents = (await connection.QueryAsync<Document>(new CommandDefinition(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction, flags: CommandFlags.Buffered, cancellationToken: cancellationToken))).AsList();
 
                             operation.Stop();
 
@@ -2019,10 +2123,15 @@ namespace YesSql.Services
                 return new Query<T, TIndex>(_query);
             }
 
-            IQuery<T> IQuery<T>.NoDuplicates()
+            IQuery<T> IQuery<T>.SkipDeduplication()
             {
                 _query._queryState._deduplicate = false;
                 return new Query<T>(_query);
+            }
+
+            IQuery<T> IQuery<T>.NoDuplicates()
+            {
+                return ((IQuery<T>)this).SkipDeduplication();
             }
 
             IQuery<T> IQuery<T>.NoIndexOptimizations()

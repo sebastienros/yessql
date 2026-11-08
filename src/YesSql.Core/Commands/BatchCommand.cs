@@ -100,6 +100,7 @@ namespace YesSql.Commands
         {
             var parameter = command.CreateParameter();
             parameter.ParameterName = name;
+            DbCommandCache.SetStringSize(parameter, value);
             parameter.Value = value ?? DBNull.Value;
             parameter.DbType = dbType;
 

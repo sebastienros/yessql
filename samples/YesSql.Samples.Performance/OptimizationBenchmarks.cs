@@ -45,7 +45,9 @@ namespace YesSql.Samples.Performance
             }
         }
 
-        private const string PostgreSqlConnectionString = "Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
+        // Can be overridden with the YESSQL_BENCH_POSTGRESQL environment variable, e.g. to compare connection options.
+        private static readonly string PostgreSqlConnectionString =
+            Environment.GetEnvironmentVariable("YESSQL_BENCH_POSTGRESQL") ?? "Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
         private const int BatchSize = 128;
 
         private readonly Consumer _consumer = new();
@@ -56,8 +58,14 @@ namespace YesSql.Samples.Performance
         private string[] _names;
         private int _counter;
 
-        [Params("Sqlite", "PostgreSql")]
+        // The providers can be restricted with the YESSQL_BENCH_PROVIDERS environment variable,
+        // e.g. YESSQL_BENCH_PROVIDERS=Sqlite to run without a PostgreSQL server.
+        [ParamsSource(nameof(Providers))]
         public string Provider { get; set; }
+
+        public static string[] Providers =>
+            (Environment.GetEnvironmentVariable("YESSQL_BENCH_PROVIDERS") ?? "Sqlite,PostgreSql")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         [GlobalSetup]
         public void Setup()
@@ -147,6 +155,18 @@ namespace YesSql.Samples.Performance
 
             await session.SaveChangesAsync();
             await session.DisposeAsync();
+
+            if (Provider != "Sqlite")
+            {
+                // Update the statistics of the tables that were just created, as autovacuum might not have analyzed
+                // them yet. Otherwise the plans, in particular the generic plans of prepared statements, are based on
+                // the statistics of empty tables.
+                await using var connection = configuration.ConnectionFactory.CreateConnection();
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "ANALYZE";
+                await command.ExecuteNonQueryAsync();
+            }
 
             _updateIds = Enumerable.Range(1, BatchSize).Select(x => (long)x).ToArray();
 

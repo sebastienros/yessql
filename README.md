@@ -165,6 +165,21 @@ metrics.AddView(instrument => YesSqlTelemetry.IsDuplicateDriverInstrument(instru
 
 This keeps the instrument of YesSql, which has the operation and the custom tags, and the other instruments of the driver. It also drops the durations of the Npgsql commands that don't go through YesSql, such as those of EF Core, for the whole process. An application needing them should keep both instruments and filter on the scope instead.
 
+Performance
+-------------------
+
+### PostgreSQL: prepared statements
+
+YesSql generates the same SQL text for the same queries and commands, so PostgreSQL can reuse prepared statements instead of parsing and planning them on each execution. Npgsql prepares the most frequent statements automatically, and keeps them across pooled connections, when it's enabled in the connection string:
+
+```
+Server=...;Database=...;Max Auto Prepare=50;Auto Prepare Min Usages=2
+```
+
+With the benchmarks in `samples/YesSql.Samples.Performance` on a local server, it makes inserts and updates about twice as fast, and most queries 25% to 65% faster.
+
+Prepared statements use generic plans once PostgreSQL considers them as good as custom ones, which depends on up-to-date table statistics. Tables that change a lot quickly, like freshly loaded ones, may need an `ANALYZE` before their statistics, and the plans based on them, are accurate.
+
 Development
 -------------------
 

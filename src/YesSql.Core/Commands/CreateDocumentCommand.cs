@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public sealed class CreateDocumentCommand : DocumentCommand
+    public sealed class CreateDocumentCommand : DocumentCommand, ICachedCommand
     {
         private readonly IStore _store;
 
@@ -32,6 +33,36 @@ namespace YesSql.Commands
             var operation = new DbOperation(_store.Configuration, connection, DbOperation.Insert, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), insertCmd, Statistics);
 
             return YesSqlInstrumentation.ExecuteAsync(operation, new CommandDefinition(insertCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+        }
+
+        Task ICachedCommand.ExecuteAsync(DbCommandCache commandCache, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
+        {
+            var insertCmd = GetInsertCommandText(dialect, _store, Collection);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(insertCmd);
+            }
+
+            var command = commandCache.GetCommand(insertCmd, out var created);
+
+            if (created)
+            {
+                DbCommandCache.AddParameter(command, "@Id", DbType.Int64);
+                DbCommandCache.AddParameter(command, "@Type", DbType.String);
+                DbCommandCache.AddParameter(command, "@Content", DbType.String);
+                DbCommandCache.AddParameter(command, "@Version", DbType.Int64);
+            }
+
+            var parameters = command.Parameters;
+            parameters[0].Value = Document.Id;
+            DbCommandCache.SetStringValue(parameters[1], Document.Type);
+            DbCommandCache.SetStringValue(parameters[2], Document.Content);
+            parameters[3].Value = Document.Version;
+
+            var operation = new DbOperation(_store.Configuration, commandCache.Connection, DbOperation.Insert, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), insertCmd, Statistics);
+
+            return YesSqlInstrumentation.ExecuteAsync(operation, (command, cancellationToken), static state => state.command.ExecuteNonQueryAsync(state.cancellationToken));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)

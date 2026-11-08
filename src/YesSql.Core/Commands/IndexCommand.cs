@@ -26,6 +26,7 @@ namespace YesSql.Commands
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteInsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteUpdatesList = new();
+        private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteInsertsWithoutIdentityList = new();
 
         protected static readonly PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
@@ -54,19 +55,52 @@ namespace YesSql.Commands
             UpdatesList.Clear();
             ExecuteInsertsList.Clear();
             ExecuteUpdatesList.Clear();
+            ExecuteInsertsWithoutIdentityList.Clear();
+        }
+
+        private static (PropertyInfo Property, PropertyInfoAccessor Accessor)[] GetAccessors(Type type)
+        {
+            return TypeAccessors.GetOrAdd(type, static type => TypePropertiesCache(type).Select(p => (p, new PropertyInfoAccessor(p))).ToArray());
+        }
+
+        /// <summary>
+        /// Sets the values of the index properties on a command from a <see cref="DbCommandCache"/>, adding the
+        /// parameters first if the command was just created. Returns the number of parameters for the properties.
+        /// </summary>
+        internal static int SetProperties(DbCommand command, object item, ISqlDialect dialect, bool created)
+        {
+            var accessors = GetAccessors(item.GetType());
+            var parameters = command.Parameters;
+
+            for (var i = 0; i < accessors.Length; i++)
+            {
+                var (property, accessor) = accessors[i];
+
+                var parameter = created
+                    ? DbCommandCache.AddParameter(command, "@" + property.Name, dialect.ToDbType(property.PropertyType))
+                    : parameters[i];
+
+                var value = dialect.TryConvert(accessor.Get(item));
+
+                DbCommandCache.SetStringSize(parameter, value);
+                parameter.Value = value ?? DBNull.Value;
+            }
+
+            return accessors.Length;
         }
 
         protected static void GetProperties(DbCommand command, object item, string suffix, ISqlDialect dialect)
         {
-            var accessors = TypeAccessors.GetOrAdd(item.GetType(), static type => TypePropertiesCache(type).Select(p => (p, new PropertyInfoAccessor(p))).ToArray());
+            var accessors = GetAccessors(item.GetType());
 
             foreach (var (property, accessor) in accessors)
             {
-                var value = accessor.Get(item);
+                var value = dialect.TryConvert(accessor.Get(item));
 
                 var parameter = command.CreateParameter();
                 parameter.ParameterName = property.Name + suffix;
-                parameter.Value = dialect.TryConvert(value) ?? DBNull.Value;
+                DbCommandCache.SetStringSize(parameter, value);
+                parameter.Value = value ?? DBNull.Value;
                 parameter.DbType = dialect.ToDbType(property.PropertyType);
                 command.Parameters.Add(parameter);
             }
@@ -202,6 +236,30 @@ namespace YesSql.Commands
             if (!ExecuteInsertsList.TryGetValue(key, out var result))
             {
                 ExecuteInsertsList[key] = result = Inserts(type, dialect).Replace(ParameterSuffix, "");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the <c>insert</c> statement used when a command is executed individually, without selecting the
+        /// generated identifier, for dialects which can read it from the connection (<see cref="Provider.ILastInsertIdDialect"/>).
+        /// </summary>
+        internal string InsertsWithoutIdentityForExecute(Type type, ISqlDialect dialect)
+        {
+            var key = new CompoundKey(
+                dialect.Name,
+                type,
+                _store.Configuration.Schema,
+                _store.Configuration.TablePrefix,
+                Collection);
+
+            if (!ExecuteInsertsWithoutIdentityList.TryGetValue(key, out var result))
+            {
+                var identitySelect = $" {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
+                var sql = InsertsForExecute(type, dialect);
+
+                ExecuteInsertsWithoutIdentityList[key] = result = string.Concat(sql.AsSpan(0, sql.Length - identitySelect.Length), ";");
             }
 
             return result;
