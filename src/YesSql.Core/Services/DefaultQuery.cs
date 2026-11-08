@@ -53,6 +53,8 @@ namespace YesSql.Services
         internal string _filters; // the flushed filters, without the condition on the type of the documents
         internal List<IndexJoin> _indexJoins; // the indexes joined to the document table, to count from the index tables
         internal bool _hasSqlFilters; // whether a filter is raw SQL, which could reference the document table
+        internal IndexJoin? _rootIndex; // the index an index query selects from, which the other indexes are joined to instead of the document table
+        internal bool _rootBridgeJoined; // whether the bridge table of a reduce root index is joined, for its DocumentId column
 
         // Whether the query is being built to be cached as a compiled query, in which case the
         // parameter bindings need to be recorded so they can be re-evaluated on each execution.
@@ -143,6 +145,8 @@ namespace YesSql.Services
             clone._documentType = _documentType;
             clone._indexJoins = _indexJoins == null ? null : new List<IndexJoin>(_indexJoins);
             clone._hasSqlFilters = _hasSqlFilters;
+            clone._rootIndex = _rootIndex;
+            clone._rootBridgeJoined = _rootBridgeJoined;
 
             clone._lastParameterName = _lastParameterName;
             clone._fromTable = _fromTable;
@@ -567,7 +571,32 @@ namespace YesSql.Services
             _queryState.AddBinding(tIndex);
             (_queryState._indexJoins ??= []).Add(indexJoin);
 
-            JoinIndex(_queryState._sqlBuilder, indexJoin, _queryState._documentTable, "Id", null);
+            if (_queryState._rootIndex is { } root)
+            {
+                // An index query doesn't select from the document table, the index is joined on the DocumentId column of the first one.
+                var rootAlias = JoinRootBridgeTable(root);
+                JoinIndex(_queryState._sqlBuilder, indexJoin, rootAlias, "DocumentId", rootAlias);
+            }
+            else
+            {
+                JoinIndex(_queryState._sqlBuilder, indexJoin, _queryState._documentTable, "Id", null);
+            }
+        }
+
+        /// <summary>
+        /// Returns the alias of the table holding the DocumentId column of the index an index query selects from,
+        /// joining the bridge table of a reduce index the first time.
+        /// </summary>
+        private string JoinRootBridgeTable(IndexJoin root)
+        {
+            if (!root.IsMapIndex && !_queryState._rootBridgeJoined)
+            {
+                // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document_a1].[ArticlesByDayId] = [ArticlesByDay_a1].[Id]
+                _queryState._sqlBuilder.InnerJoin(GetDocumentIdTable(root), root.DocumentAlias, root.IndexType.Name + "Id", root.IndexAlias, "Id", _queryState._store.Configuration.Schema, root.DocumentAlias, root.IndexAlias);
+                _queryState._rootBridgeJoined = true;
+            }
+
+            return root.DocumentAlias;
         }
 
         /// <summary>
@@ -595,6 +624,14 @@ namespace YesSql.Services
                 builder.InnerJoin(GetIndexTable(indexJoin.IndexType), indexAlias, "Id", documentTable, indexJoin.IndexType.Name + "Id", schema, indexAlias, documentAlias);
             }
         }
+
+        /// <summary>
+        /// Returns the columns an index query selects, which are only those of the returned index when other tables are joined.
+        /// </summary>
+        private string GetIndexSelector(Type indexType)
+            => _queryState._rootIndex != null && _queryState._sqlBuilder.HasJoin
+                ? _queryState._sqlBuilder.FormatColumn(_queryState.GetTypeAlias(indexType), "*", _queryState._store.Configuration.Schema, true)
+                : "*";
 
         // The query state has the collection of a compiled query, which isn't set on this instance.
         private string GetIndexTable(Type tIndex)
@@ -1257,7 +1294,8 @@ namespace YesSql.Services
             {
                 localBuilder = _queryState._sqlBuilder.Clone();
 
-                if (localBuilder.HasJoin && !hasSingleRecords)
+                // An index query counts the records it returns, while a document query counts distinct documents.
+                if (localBuilder.HasJoin && !hasSingleRecords && _queryState._rootIndex == null)
                 {
                     localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
                 }
@@ -1447,6 +1485,8 @@ namespace YesSql.Services
             _queryState._sqlBuilder.Select();
             _queryState._fromTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(typeof(TIndex), _collection);
             _queryState._sqlBuilder.Table(_queryState._fromTable, _queryState.GetTypeAlias(typeof(TIndex)), _queryState._store.Configuration.Schema);
+            _queryState._rootIndex = new IndexJoin(typeof(TIndex), _queryState._bindingName);
+            _queryState._rootBridgeJoined = false;
 
             return new QueryIndex<TIndex>(this);
         }
@@ -1508,7 +1548,7 @@ namespace YesSql.Services
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                     {
-                        _query._queryState._sqlBuilder.Selector("*");
+                        _query._queryState._sqlBuilder.Selector(_query.GetIndexSelector(typeof(T)));
                         var sql = _query._queryState._sqlBuilder.ToSqlString();
                         var key = new WorkerQueryKey(sql, _query._queryState._sqlBuilder.Parameters);
                         return (await _query._session._store.ProduceAsync(key, static (key, state) =>
@@ -1608,7 +1648,7 @@ namespace YesSql.Services
                 {
                     if (typeof(IIndex).IsAssignableFrom(typeof(T)))
                     {
-                        sqlBuilder.Selector("*");
+                        sqlBuilder.Selector(_query.GetIndexSelector(typeof(T)));
 
                         // If a page is requested without order add a default one
                         if (!sqlBuilder.HasOrder && sqlBuilder.HasPaging)

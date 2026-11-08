@@ -143,13 +143,19 @@ namespace YesSql
     public interface IQueryIndex<T> where T : IIndex
     {
         /// <summary>
-        /// Joins the document table with an index.
+        /// Joins an index on the documents of the current records, and returns the records of the joined index.
         /// </summary>
+        /// <remarks>
+        /// A record is returned for each match of the joined indexes, so it repeats when another index has several records for its document.
+        /// </remarks>
         IQueryIndex<TIndex> With<TIndex>() where TIndex : class, IIndex;
 
         /// <summary>
-        /// Joins the document table with an index, and filter it with a predicate.
+        /// Joins an index on the documents of the current records, filters it with a predicate, and returns the records of the joined index.
         /// </summary>
+        /// <remarks>
+        /// A record is returned for each match of the joined indexes, so it repeats when another index has several records for its document.
+        /// </remarks>
         IQueryIndex<TIndex> With<TIndex>(Expression<Func<TIndex, bool>> predicate) where TIndex : class, IIndex;
 
         /// <summary>
