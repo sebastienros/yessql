@@ -575,6 +575,51 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldAssignMapIndexIdentifiers()
+        {
+            var indexProvider = new TrackingPersonIndexProvider();
+            _store.RegisterIndexes(indexProvider);
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill" });
+                await session.SaveAsync(new Person { Firstname = "Steve" });
+                await session.SaveAsync(new Person { Firstname = "Paul" });
+                await session.SaveChangesAsync();
+            }
+
+            Assert.Equal(3, indexProvider.Indexes.Count);
+
+            await using (var session = _store.CreateSession())
+            {
+                var indexes = await session.QueryIndex<PersonByName>().ListAsync();
+
+                // The identifiers assigned when the indexes were inserted are the ones stored
+                Assert.Equal(
+                    indexes.OrderBy(x => x.Id).Select(x => (x.Id, x.SomeName)),
+                    indexProvider.Indexes.OrderBy(x => x.Id).Select(x => (x.Id, x.SomeName)));
+                Assert.All(indexProvider.Indexes, x => Assert.True(x.Id > 0));
+            }
+        }
+
+        private sealed class TrackingPersonIndexProvider : IndexProvider<Person>
+        {
+            public List<PersonByName> Indexes { get; } = [];
+
+            public override void Describe(DescribeContext<Person> context)
+            {
+                context
+                    .For<PersonByName>()
+                    .Map(person =>
+                    {
+                        var index = new PersonByName { SomeName = person.Firstname };
+                        Indexes.Add(index);
+                        return index;
+                    });
+            }
+        }
+
+        [Fact]
         public async Task ShouldQueryWithPrefixedParameters()
         {
             _store.RegisterIndexes<PersonIndexProvider>();

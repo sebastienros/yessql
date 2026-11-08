@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using YesSql.Diagnostics;
 using YesSql.Indexes;
+using YesSql.Provider;
 
 namespace YesSql.Commands
 {
@@ -83,7 +84,14 @@ namespace YesSql.Commands
         {
             var type = Index.GetType();
 
-            var sql = InsertsForExecute(type, dialect);
+            // When the driver exposes the generated identifier, it is read from the connection instead of
+            // being selected by a second statement, which is executed (and bound) for each index.
+            var lastInsertIdDialect = dialect as ILastInsertIdDialect;
+            var readLastInsertId = lastInsertIdDialect != null && lastInsertIdDialect.CanReadLastInsertId(commandCache.Connection);
+
+            var sql = readLastInsertId
+                ? InsertsWithoutIdentityForExecute(type, dialect)
+                : InsertsForExecute(type, dialect);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {
@@ -102,7 +110,16 @@ namespace YesSql.Commands
 
             var indexOperation = new DbOperation(_store.Configuration, commandCache.Connection, DbOperation.Insert, _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), sql, Statistics);
 
-            Index.Id = Convert.ToInt64(await YesSqlInstrumentation.ExecuteAsync(indexOperation, (command, cancellationToken), static state => state.command.ExecuteScalarAsync(state.cancellationToken)));
+            if (readLastInsertId)
+            {
+                await YesSqlInstrumentation.ExecuteAsync(indexOperation, (command, cancellationToken), static state => state.command.ExecuteNonQueryAsync(state.cancellationToken));
+
+                Index.Id = lastInsertIdDialect.ReadLastInsertId(commandCache.Connection);
+            }
+            else
+            {
+                Index.Id = Convert.ToInt64(await YesSqlInstrumentation.ExecuteAsync(indexOperation, (command, cancellationToken), static state => state.command.ExecuteScalarAsync(state.cancellationToken)));
+            }
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)

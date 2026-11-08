@@ -26,6 +26,7 @@ namespace YesSql.Commands
         private static readonly ConcurrentDictionary<CompoundKey, string> UpdatesList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteInsertsList = new();
         private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteUpdatesList = new();
+        private static readonly ConcurrentDictionary<CompoundKey, string> ExecuteInsertsWithoutIdentityList = new();
 
         protected static readonly PropertyInfo[] KeysProperties = new[] { typeof(IIndex).GetProperty("Id") };
 
@@ -54,6 +55,7 @@ namespace YesSql.Commands
             UpdatesList.Clear();
             ExecuteInsertsList.Clear();
             ExecuteUpdatesList.Clear();
+            ExecuteInsertsWithoutIdentityList.Clear();
         }
 
         private static (PropertyInfo Property, PropertyInfoAccessor Accessor)[] GetAccessors(Type type)
@@ -230,6 +232,30 @@ namespace YesSql.Commands
             if (!ExecuteInsertsList.TryGetValue(key, out var result))
             {
                 ExecuteInsertsList[key] = result = Inserts(type, dialect).Replace(ParameterSuffix, "");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the <c>insert</c> statement used when a command is executed individually, without selecting the
+        /// generated identifier, for dialects which can read it from the connection (<see cref="Provider.ILastInsertIdDialect"/>).
+        /// </summary>
+        internal string InsertsWithoutIdentityForExecute(Type type, ISqlDialect dialect)
+        {
+            var key = new CompoundKey(
+                dialect.Name,
+                type,
+                _store.Configuration.Schema,
+                _store.Configuration.TablePrefix,
+                Collection);
+
+            if (!ExecuteInsertsWithoutIdentityList.TryGetValue(key, out var result))
+            {
+                var identitySelect = $" {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
+                var sql = InsertsForExecute(type, dialect);
+
+                ExecuteInsertsWithoutIdentityList[key] = result = string.Concat(sql.AsSpan(0, sql.Length - identitySelect.Length), ";");
             }
 
             return result;
