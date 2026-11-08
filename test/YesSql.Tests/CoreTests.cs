@@ -775,6 +775,174 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldFilterIndexQueryWithAnyAndAll()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 30 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 10 });
+                await session.SaveAsync(new Person { Firstname = "Paul", Age = 70 });
+                await session.SaveAsync(new Person { Firstname = "Anna", Age = 15 });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // The records of the first index whose documents match any of the joined indexes.
+                IQueryIndex<PersonByName> MinorsOrSeniors() => session.QueryIndex<PersonByName>()
+                    .Any(
+                        q => q.With<PersonByAge>(x => x.Age < 18),
+                        q => q.With<PersonByAge>(x => x.Age > 60));
+
+                var minorsOrSeniors = await MinorsOrSeniors().OrderBy(x => x.SomeName).ListAsync();
+                Assert.Equal(new[] { "Anna", "Paul", "Steve" }, minorsOrSeniors.Select(x => x.SomeName));
+                Assert.Equal(3, await MinorsOrSeniors().CountAsync());
+
+                // The default order of a page is on the returned index, not on an index joined by a predicate.
+                var byId = await MinorsOrSeniors().OrderBy(x => x.Id).ListAsync();
+                var page = await MinorsOrSeniors().Skip(1).Take(1).ListAsync();
+                Assert.Equal(byId[1].Id, Assert.Single(page).Id);
+
+                // The records whose documents match all the joined indexes.
+                IQueryIndex<PersonByName> AdultsUnder60() => session.QueryIndex<PersonByName>()
+                    .All(
+                        q => q.With<PersonByAge>(x => x.Adult),
+                        q => q.With<PersonByAge>(x => x.Age < 60));
+
+                Assert.Equal("Bill", Assert.Single(await AdultsUnder60().ListAsync()).SomeName);
+                Assert.Equal("Bill", (await AdultsUnder60().FirstOrDefaultAsync()).SomeName);
+                Assert.Equal(1, await AdultsUnder60().CountAsync());
+
+                // A predicate can filter the returned index, and the query can still be filtered on it before and after.
+                IQueryIndex<PersonByName> BillOrSeniors() => session.QueryIndex<PersonByName>()
+                    .Any(
+                        q => q.Where(x => x.SomeName == "Bill"),
+                        q => q.With<PersonByAge>(x => x.Age > 60));
+
+                Assert.Equal(new[] { "Bill", "Paul" }, (await BillOrSeniors().OrderBy(x => x.SomeName).ListAsync()).Select(x => x.SomeName));
+                Assert.Equal(2, await BillOrSeniors().CountAsync());
+
+                IQueryIndex<PersonByName> Filtered() => session.QueryIndex<PersonByName>(x => x.SomeName != "Paul")
+                    .Any(
+                        q => q.With<PersonByAge>(x => x.Age < 18),
+                        q => q.With<PersonByAge>(x => x.Age > 60))
+                    .Where(x => x.SomeName != "Anna");
+
+                Assert.Equal("Steve", Assert.Single(await Filtered().ListAsync()).SomeName);
+                Assert.Equal(1, await Filtered().CountAsync());
+
+                // Nested predicates.
+                IQueryIndex<PersonByName> Nested() => session.QueryIndex<PersonByName>()
+                    .All(
+                        q => q.Any(
+                            q => q.With<PersonByAge>(x => x.Age < 18),
+                            q => q.With<PersonByAge>(x => x.Age > 60)),
+                        q => q.Where(x => x.SomeName != "Steve"));
+
+                Assert.Equal(new[] { "Anna", "Paul" }, (await Nested().OrderBy(x => x.SomeName).ListAsync()).Select(x => x.SomeName));
+                Assert.Equal(2, await Nested().CountAsync());
+
+                // Asynchronous predicates.
+                var minAge = 12;
+                var maxAge = 60;
+
+                var asyncAny = await session.QueryIndex<PersonByName>()
+                    .AnyAsync(
+                        async q =>
+                        {
+                            var age = await Task.FromResult(minAge);
+                            q.With<PersonByAge>(x => x.Age < age);
+                        },
+                        async q =>
+                        {
+                            var age = await Task.FromResult(maxAge);
+                            q.With<PersonByAge>(x => x.Age > age);
+                        });
+
+                Assert.Equal(new[] { "Paul", "Steve" }, (await asyncAny.OrderBy(x => x.SomeName).ListAsync()).Select(x => x.SomeName));
+
+                var asyncAll = await session.QueryIndex<PersonByName>()
+                    .AllAsync(
+                        async q =>
+                        {
+                            var age = await Task.FromResult(minAge);
+                            q.With<PersonByAge>(x => x.Age > age);
+                        },
+                        async q =>
+                        {
+                            var age = await Task.FromResult(maxAge);
+                            q.With<PersonByAge>(x => x.Age < age);
+                        });
+
+                Assert.Equal(new[] { "Anna", "Bill" }, (await asyncAll.OrderBy(x => x.SomeName).ListAsync()).Select(x => x.SomeName));
+            }
+        }
+
+        [Fact]
+        public async Task ShouldFilterIndexQueryWithAnyAndAllOnReduceIndexes()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            var firstDay = new DateTime(2011, 11, 1);
+            var secondDay = new DateTime(2011, 11, 2);
+            var thirdDay = new DateTime(2011, 11, 3);
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Article { Title = "a", PublishedUtc = firstDay });
+                await session.SaveAsync(new Article { Title = "b", PublishedUtc = firstDay });
+                await session.SaveAsync(new Article { Title = "c", PublishedUtc = secondDay });
+                await session.SaveAsync(new Article { Title = "d", PublishedUtc = thirdDay });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // From a map index, with a reduce index joined by each predicate.
+                IQueryIndex<ArticleByPublishedDate> FirstOrThirdDay() => session.QueryIndex<ArticleByPublishedDate>()
+                    .Any(
+                        q => q.With<ArticlesByDay>(x => x.DayOfYear == firstDay.DayOfYear),
+                        q => q.With<ArticlesByDay>(x => x.DayOfYear == thirdDay.DayOfYear));
+
+                Assert.Equal(new[] { "a", "b", "d" }, (await FirstOrThirdDay().OrderBy(x => x.Title).ListAsync()).Select(x => x.Title));
+                Assert.Equal(3, await FirstOrThirdDay().CountAsync());
+
+                IQueryIndex<ArticleByPublishedDate> BusyDays() => session.QueryIndex<ArticleByPublishedDate>()
+                    .All(
+                        q => q.With<ArticlesByDay>(x => x.Count > 1),
+                        q => q.Where(x => x.Title != "a"));
+
+                Assert.Equal("b", Assert.Single(await BusyDays().ListAsync()).Title);
+                Assert.Equal(1, await BusyDays().CountAsync());
+
+                // From a reduce index, with a map index joined by each predicate. A day is returned for each of its matching articles.
+                IQueryIndex<ArticlesByDay> DaysOfAOrC() => session.QueryIndex<ArticlesByDay>()
+                    .Any(
+                        q => q.With<ArticleByPublishedDate>(x => x.Title == "a"),
+                        q => q.With<ArticleByPublishedDate>(x => x.Title == "c"));
+
+                var days = await DaysOfAOrC().OrderBy(x => x.DayOfYear).ListAsync();
+                Assert.Equal(new[] { firstDay.DayOfYear, secondDay.DayOfYear }, days.Select(x => x.DayOfYear));
+                Assert.Equal(new[] { 2, 1 }, days.Select(x => x.Count));
+                Assert.Equal(2, await DaysOfAOrC().CountAsync());
+
+                IQueryIndex<ArticlesByDay> BusyDaysWithoutA() => session.QueryIndex<ArticlesByDay>()
+                    .All(
+                        q => q.With<ArticleByPublishedDate>(x => x.Title != "a"),
+                        q => q.Where(x => x.Count > 1));
+
+                Assert.Equal(firstDay.DayOfYear, Assert.Single(await BusyDaysWithoutA().ListAsync()).DayOfYear);
+                Assert.Equal(1, await BusyDaysWithoutA().CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldMapAsyncIndex()
         {
             _store.RegisterIndexes<PersonAsyncIndexProvider>();

@@ -125,6 +125,15 @@ namespace YesSql.Services
             return _bindings[_bindingName];
         }
 
+        /// <summary>
+        /// Switches to a new binding, for the indexes of a predicate of Any() or All() to be joined with new aliases.
+        /// </summary>
+        internal void StartBinding()
+        {
+            _bindingName = "a" + (_bindings.Count + 1);
+            _bindings.Add(_bindingName, new List<Type>());
+        }
+
         public QueryState Clone()
         {
             var clone = new QueryState(_sqlBuilder.Clone(), _store, _collection)
@@ -2066,9 +2075,7 @@ namespace YesSql.Services
 
                 foreach (var p in predicates)
                 {
-                    var name = "a" + (_query._queryState._bindings.Count + 1);
-                    _query._queryState._bindingName = name;
-                    _query._queryState._bindings.Add(name, new List<Type>());
+                    _query._queryState.StartBinding();
 
                     p(this);
                 }
@@ -2084,9 +2091,7 @@ namespace YesSql.Services
 
                 foreach (var p in predicates)
                 {
-                    var name = "a" + (_query._queryState._bindings.Count + 1);
-                    _query._queryState._bindingName = name;
-                    _query._queryState._bindings.Add(name, new List<Type>());
+                    _query._queryState.StartBinding();
 
                     await p(this);
                 }
@@ -2143,8 +2148,98 @@ namespace YesSql.Services
 
         class QueryIndex<T> : Query<T>, IQueryIndex<T> where T : class, IIndex
         {
+            // The binding T is joined with. The predicates of Any() and All() join their indexes with new bindings,
+            // while their filters on T still use the alias of T.
+            private readonly string _bindingName;
+
             public QueryIndex(DefaultQuery query) : base(query)
-            { }
+            {
+                _bindingName = query._queryState._bindingName;
+            }
+
+            /// <summary>
+            /// Switches to the binding of T, with T as its last bound type for the expressions on T to use its alias,
+            /// and returns the current binding to restore.
+            /// </summary>
+            private string UseBinding()
+            {
+                var queryState = _query._queryState;
+                var bindingName = queryState._bindingName;
+
+                queryState._bindingName = _bindingName;
+                _query.Bind<T>();
+
+                return bindingName;
+            }
+
+            IQueryIndex<T> IQueryIndex<T>.Any(params Action<IQueryIndex<T>>[] predicates)
+            {
+                return ComposeIndexQuery(predicates, new OrNode());
+            }
+
+            ValueTask<IQueryIndex<T>> IQueryIndex<T>.AnyAsync(params Func<IQueryIndex<T>, ValueTask>[] predicates)
+            {
+                return ComposeIndexQueryAsync(predicates, new OrNode());
+            }
+
+            IQueryIndex<T> IQueryIndex<T>.All(params Action<IQueryIndex<T>>[] predicates)
+            {
+                return ComposeIndexQuery(predicates, new AndNode());
+            }
+
+            ValueTask<IQueryIndex<T>> IQueryIndex<T>.AllAsync(params Func<IQueryIndex<T>, ValueTask>[] predicates)
+            {
+                return ComposeIndexQueryAsync(predicates, new AndNode());
+            }
+
+            /// <summary>
+            /// Adds the predicates to a composite predicate, each one joining its indexes with a new binding, on the DocumentId column
+            /// of the index the query selects from. The current predicate and binding are then restored, for the next calls to act on
+            /// them, and for the query to still select the columns of T.
+            /// </summary>
+            private QueryIndex<T> ComposeIndexQuery(Action<IQueryIndex<T>>[] predicates, CompositeNode predicate)
+            {
+                var queryState = _query._queryState;
+                var currentPredicate = queryState._currentPredicate;
+                var bindingName = queryState._bindingName;
+
+                currentPredicate.Children.Add(predicate);
+                queryState._currentPredicate = predicate;
+
+                foreach (var p in predicates)
+                {
+                    queryState.StartBinding();
+
+                    p(this);
+                }
+
+                queryState._currentPredicate = currentPredicate;
+                queryState._bindingName = bindingName;
+
+                return this;
+            }
+
+            private async ValueTask<IQueryIndex<T>> ComposeIndexQueryAsync(Func<IQueryIndex<T>, ValueTask>[] predicates, CompositeNode predicate)
+            {
+                var queryState = _query._queryState;
+                var currentPredicate = queryState._currentPredicate;
+                var bindingName = queryState._bindingName;
+
+                currentPredicate.Children.Add(predicate);
+                queryState._currentPredicate = predicate;
+
+                foreach (var p in predicates)
+                {
+                    queryState.StartBinding();
+
+                    await p(this);
+                }
+
+                queryState._currentPredicate = currentPredicate;
+                queryState._bindingName = bindingName;
+
+                return this;
+            }
 
             Task<T> IQueryIndex<T>.FirstOrDefaultAsync(CancellationToken cancellationToken)
             {
@@ -2230,31 +2325,41 @@ namespace YesSql.Services
 
             IQueryIndex<T> IQueryIndex<T>.Where(Expression<Func<T, bool>> predicate)
             {
+                var bindingName = UseBinding();
                 _query.Filter<T>(predicate);
+                _query._queryState._bindingName = bindingName;
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.OrderBy(Expression<Func<T, object>> keySelector)
             {
+                var bindingName = UseBinding();
                 _query.OrderBy(keySelector);
+                _query._queryState._bindingName = bindingName;
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.OrderByDescending(Expression<Func<T, object>> keySelector)
             {
+                var bindingName = UseBinding();
                 _query.OrderByDescending(keySelector);
+                _query._queryState._bindingName = bindingName;
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.ThenBy(Expression<Func<T, object>> keySelector)
             {
+                var bindingName = UseBinding();
                 _query.ThenBy(keySelector);
+                _query._queryState._bindingName = bindingName;
                 return this;
             }
 
             IQueryIndex<T> IQueryIndex<T>.ThenByDescending(Expression<Func<T, object>> keySelector)
             {
+                var bindingName = UseBinding();
                 _query.ThenByDescending(keySelector);
+                _query._queryState._bindingName = bindingName;
                 return this;
             }
 
