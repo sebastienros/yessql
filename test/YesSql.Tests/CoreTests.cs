@@ -4030,6 +4030,53 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldQueryIsInWithValuesOfAnyType()
+        {
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+            _store.RegisterIndexes<CarIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 50 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 12 });
+                await session.SaveAsync(new Person { Firstname = "Paul", Age = 30 });
+                await session.SaveAsync(new Car { Name = "Truck", Category = Categories.Truck });
+                await session.SaveAsync(new Car { Name = "Van", Category = Categories.Van });
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // Strings, from an array or a list
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Name.IsIn(new[] { "Bill", "Paul", "Elon" })).CountAsync());
+                Assert.Equal(2, await session.Query<Person, PersonByAge>(x => x.Name.IsIn(new List<string> { "Bill", "Steve" })).CountAsync());
+                Assert.Equal(1, await session.Query<Person, PersonByAge>(x => x.Name.IsNotIn(new[] { "Bill", "Steve" })).CountAsync());
+
+                // Numbers, including boxed values and values of a different type than the column
+                Assert.Equal(2, (await session.Query<Person, PersonByAge>(x => x.Age.IsIn(new[] { 12, 30, 99 })).ListAsync()).Count());
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Age.IsIn(new[] { 12, 50 }.Cast<object>())).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Age.IsIn(new long[] { 12, 50 })).CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByAge>(x => x.Age.IsNotIn(new[] { 12, 50 })).CountAsync());
+
+                // Values of different types, or nulls, are passed as individual parameters
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Age.IsIn(new object[] { 12, 50L })).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Name.IsIn(new[] { "Bill", null, "Paul" })).CountAsync());
+
+                // Enums
+                Assert.Equal(2, await session.QueryIndex<CarIndex>(x => x.Category.IsIn(new[] { Categories.Van, Categories.Truck })).CountAsync());
+                Assert.Equal("Van", (await session.Query<Car, CarIndex>(x => x.Category.IsIn(new[] { Categories.Van, (Categories)42 })).FirstOrDefaultAsync()).Name);
+                Assert.Equal("Truck", (await session.QueryIndex<CarIndex>(x => x.Category.IsNotIn(new[] { Categories.Van, (Categories)42 })).FirstOrDefaultAsync()).Name);
+
+                // The same query with the same values, and different ones
+                var names = new[] { "Bill", "Steve" };
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Name.IsIn(names)).CountAsync());
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Name.IsIn(names)).CountAsync());
+                names = ["Paul", "Elon", "Bill"];
+                Assert.Equal(2, await session.QueryIndex<PersonByAge>(x => x.Name.IsIn(names)).CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldAcceptEmptyIsIn()
         {
             _store.RegisterIndexes<PersonIndexProvider>();

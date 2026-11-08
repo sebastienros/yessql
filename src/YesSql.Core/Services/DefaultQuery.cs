@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using YesSql.Data;
 using YesSql.Diagnostics;
 using YesSql.Indexes;
+using YesSql.Provider;
 using YesSql.Utils;
 
 namespace YesSql.Services
@@ -363,16 +364,50 @@ namespace YesSql.Services
                     return;
                 }
 
-                // The values are added as parameters directly, without creating a constant expression for each of them.
-                elements = new RentedStringBuilder(128);
-                query.AddParameter(elements, first);
-
-                do
+                // Databases accepting arrays get all the values in a single parameter, so that the SQL text doesn't
+                // depend on the number of values (each length would otherwise be a different prepared statement or plan).
+                if (dialect is IArrayParameterDialect arrayDialect)
                 {
-                    elements.Append(", ");
-                    query.AddParameter(elements, enumerator.Current);
+                    var values = new List<object> { first };
+
+                    do
+                    {
+                        values.Add(enumerator.Current);
+                    }
+                    while (enumerator.MoveNext());
+
+                    if (query.TryCreateArrayParameter(arrayDialect, values, out var array))
+                    {
+                        var parameterName = query.AddParameterValue(new ArrayParameter(array));
+                        builder.Append(negate ? arrayDialect.NotInArrayOperator(parameterName) : arrayDialect.InArrayOperator(parameterName));
+                        return;
+                    }
+
+                    elements = new RentedStringBuilder(128);
+
+                    for (var i = 0; i < values.Count; i++)
+                    {
+                        if (i > 0)
+                        {
+                            elements.Append(", ");
+                        }
+
+                        query.AddParameter(elements, values[i]);
+                    }
                 }
-                while (enumerator.MoveNext());
+                else
+                {
+                    // The values are added as parameters directly, without creating a constant expression for each of them.
+                    elements = new RentedStringBuilder(128);
+                    query.AddParameter(elements, first);
+
+                    do
+                    {
+                        elements.Append(", ");
+                        query.AddParameter(elements, enumerator.Current);
+                    }
+                    while (enumerator.MoveNext());
+                }
 
                 builder.Append(negate ? dialect.NotInOperator(elements.ToString()) : dialect.InOperator(elements.ToString()));
             }
@@ -432,6 +467,68 @@ namespace YesSql.Services
             return (uint)index < (uint)_parameterNames.Length
                 ? _parameterNames[index]
                 : "@p" + index.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Creates a typed array from the values of an <c>IsIn</c> filter, converted like individual parameters. Returns
+        /// <c>false</c> if a value is null, or the values don't have the same type, or the dialect doesn't support it,
+        /// in which case one parameter is used per value.
+        /// </summary>
+        private bool TryCreateArrayParameter(IArrayParameterDialect arrayDialect, List<object> values, out Array array)
+        {
+            array = null;
+            Type elementType = null;
+            var converted = new object[values.Count];
+
+            for (var i = 0; i < values.Count; i++)
+            {
+                var value = _dialect.TryConvert(values[i]);
+
+                if (value is null)
+                {
+                    // Keep the semantics of NULL in an IN list.
+                    return false;
+                }
+
+                // Like Dapper does for single parameters, enums are passed as their underlying value.
+                if (value is Enum)
+                {
+                    value = Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType()), CultureInfo.InvariantCulture);
+                }
+
+                if (elementType is null)
+                {
+                    elementType = value.GetType();
+
+                    if (!arrayDialect.SupportsArrayParameter(elementType))
+                    {
+                        return false;
+                    }
+                }
+                else if (value.GetType() != elementType)
+                {
+                    return false;
+                }
+
+                converted[i] = value;
+            }
+
+            array = Array.CreateInstance(elementType, converted.Length);
+            Array.Copy(converted, array, converted.Length);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Adds a parameter with a value that is already converted, and returns its name.
+        /// </summary>
+        private string AddParameterValue(object value)
+        {
+            var parameters = _queryState._sqlBuilder.Parameters;
+            var name = _queryState._lastParameterName = GetParameterName(parameters.Count);
+            parameters.Add(name, value);
+
+            return name;
         }
 
         private void AddParameter(IStringBuilder builder, object value)

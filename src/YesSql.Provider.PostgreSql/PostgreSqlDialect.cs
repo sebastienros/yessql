@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using YesSql.Provider;
 using YesSql.Sql;
 using YesSql.Utils;
 
@@ -10,7 +11,7 @@ namespace YesSql.Provider.PostgreSql
     /// <summary>
     /// Represents the SQL dialect for PostgreSQL.
     /// </summary>
-    public sealed class PostgreSqlDialect : BaseDialect
+    public sealed class PostgreSqlDialect : BaseDialect, IArrayParameterDialect
     {
         private static readonly Dictionary<DbType, string> _columnTypes = new Dictionary<DbType, string>
         {
@@ -122,6 +123,27 @@ namespace YesSql.Provider.PostgreSql
         public override string InOperator(string values) => " = any(array[" + values + "])";
         /// <inheritdoc />
         public override string NotInOperator(string values) => " <> all(array[" + values + "])";
+
+        /// <inheritdoc />
+        public bool SupportsArrayParameter(Type elementType)
+        {
+            // Types whose arrays Npgsql maps without ambiguity. Dates are excluded as their mapping depends on their kind.
+            return elementType == typeof(string)
+                || elementType == typeof(int)
+                || elementType == typeof(long)
+                || elementType == typeof(short)
+                || elementType == typeof(bool)
+                || elementType == typeof(double)
+                || elementType == typeof(float)
+                || elementType == typeof(decimal)
+                || elementType == typeof(Guid);
+        }
+
+        /// <inheritdoc />
+        public string InArrayOperator(string parameterName) => " = any(" + parameterName + ")";
+
+        /// <inheritdoc />
+        public string NotInArrayOperator(string parameterName) => " <> all(" + parameterName + ")";
         /// <inheritdoc />
         public override string IdentitySelectString => "RETURNING";
         /// <inheritdoc />
