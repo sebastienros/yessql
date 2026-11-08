@@ -15,6 +15,7 @@ using YesSql.Data;
 using YesSql.Diagnostics;
 using YesSql.Indexes;
 using YesSql.Provider;
+using YesSql.Sql;
 using YesSql.Utils;
 
 namespace YesSql.Services
@@ -47,6 +48,12 @@ namespace YesSql.Services
         internal CompositeNode _currentPredicate; // the current predicate when Any() or All() is called
         public bool _processed = false;
         public bool _deduplicate = true;
+        internal bool _noIndexOptimizations; // whether the query ignores what its indexes declare
+        internal bool _filtersDocumentType; // whether the query only returns documents of _documentType, instead of any type
+        public Type _documentType; // the type of the documents a query returns, set by For<T>
+        internal string _filters; // the flushed filters, without the condition on the type of the documents
+        internal List<IndexJoin> _indexJoins; // the indexes joined to the document table, to count from the index tables
+        internal bool _hasSqlFilters; // whether a filter is raw SQL, which could reference the document table
 
         // Whether the query is being built to be cached as a compiled query, in which case the
         // parameter bindings need to be recorded so they can be re-evaluated on each execution.
@@ -61,7 +68,8 @@ namespace YesSql.Services
 
                 if (builder.Length > 0)
                 {
-                    _sqlBuilder.WhereAnd(builder.ToString());
+                    _filters = builder.ToString();
+                    _sqlBuilder.WhereAnd(_filters);
                 }
 
                 builder.Dispose();
@@ -72,7 +80,12 @@ namespace YesSql.Services
 
         public string GetTableAlias(string tableName)
         {
-            return tableName + "_" + _bindingName;
+            return GetTableAlias(tableName, _bindingName);
+        }
+
+        internal static string GetTableAlias(string tableName, string bindingName)
+        {
+            return tableName + "_" + bindingName;
         }
 
         public string GetBridgeAlias(Type t)
@@ -126,6 +139,11 @@ namespace YesSql.Services
             clone._currentPredicate = (CompositeNode)_predicate.Clone();
             clone._predicate = clone._currentPredicate;
             clone._deduplicate = _deduplicate;
+            clone._noIndexOptimizations = _noIndexOptimizations;
+            clone._filtersDocumentType = _filtersDocumentType;
+            clone._documentType = _documentType;
+            clone._indexJoins = _indexJoins == null ? null : new List<IndexJoin>(_indexJoins);
+            clone._hasSqlFilters = _hasSqlFilters;
 
             clone._lastParameterName = _lastParameterName;
             clone._fromTable = _fromTable;
@@ -133,6 +151,18 @@ namespace YesSql.Services
 
             return clone;
         }
+    }
+
+    /// <summary>
+    /// An index joined to the document table, which can be joined to another index table instead.
+    /// </summary>
+    internal readonly record struct IndexJoin(Type IndexType, string BindingName)
+    {
+        public bool IsMapIndex => typeof(MapIndex).IsAssignableFrom(IndexType);
+        public string IndexAlias => QueryState.GetTableAlias(IndexType.Name, BindingName);
+
+        // The alias of the table that holds the DocumentId column of the index, which is the bridge table of a reduce index.
+        public string DocumentAlias => IsMapIndex ? IndexAlias : QueryState.GetTableAlias(IndexType.Name + "_Document", BindingName);
     }
 
     public class DefaultQuery : IQuery
@@ -629,29 +659,48 @@ namespace YesSql.Services
                 return;
             }
 
-            var name = tIndex.Name;
-            var indexTable = _queryState._store.Configuration.TableNameConvention.GetIndexTable(tIndex, _collection);
-            var indexTableAlias = _queryState.GetTypeAlias(tIndex);
+            var indexJoin = new IndexJoin(tIndex, _queryState._bindingName);
 
             _queryState.AddBinding(tIndex);
+            (_queryState._indexJoins ??= []).Add(indexJoin);
 
-            if (typeof(MapIndex).IsAssignableFrom(tIndex))
+            JoinIndex(_queryState._sqlBuilder, indexJoin, _queryState._documentTable, "Id", null);
+        }
+
+        /// <summary>
+        /// Joins an index to a column of another table, through its bridge table for a reduce index. Without a table to join to,
+        /// which is the case of the first index of a count, only a reduce index is joined to its bridge table.
+        /// </summary>
+        private void JoinIndex(ISqlBuilder builder, IndexJoin indexJoin, string toTable, string toColumn, string toAlias)
+        {
+            var schema = _queryState._store.Configuration.Schema;
+            var documentTable = GetDocumentIdTable(indexJoin);
+            var documentAlias = indexJoin.DocumentAlias;
+
+            if (toTable != null)
             {
-                // inner join [PersonByName] as [PersonByName_a1] on [PersonByName_a1].[Id] = [Document].[Id] 
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, indexTableAlias);
+                // inner join [PersonByName] as [PersonByName_a1] on [PersonByName_a1].[DocumentId] = [Document].[Id]
+                // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document_a1].[DocumentId] = [Document].[Id]
+                builder.InnerJoin(documentTable, documentAlias, "DocumentId", toTable, toColumn, schema, documentAlias, toAlias);
             }
-            else
+
+            if (!indexJoin.IsMapIndex)
             {
-                var bridgeName = indexTable + "_" + _queryState._documentTable;
-                var bridgeAlias = _queryState.GetBridgeAlias(tIndex);
+                var indexAlias = indexJoin.IndexAlias;
 
-                // inner join [ArticlesByDay_Document] as [ArticlesByDay_Document_a1] on [ArticlesByDay_Document].[DocumentId] = [Document].[Id]
-                _queryState._sqlBuilder.InnerJoin(bridgeName, bridgeAlias, "DocumentId", _queryState._documentTable, "Id", _queryState._store.Configuration.Schema, bridgeAlias);
-
-                // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document].[ArticlesByDayId]
-                _queryState._sqlBuilder.InnerJoin(indexTable, indexTableAlias, "Id", bridgeName, name + "Id", _queryState._store.Configuration.Schema, indexTableAlias, bridgeAlias);
+                // inner join [ArticlesByDay] as [ArticlesByDay_a1] on [ArticlesByDay_a1].[Id] = [ArticlesByDay_Document_a1].[ArticlesByDayId]
+                builder.InnerJoin(GetIndexTable(indexJoin.IndexType), indexAlias, "Id", documentTable, indexJoin.IndexType.Name + "Id", schema, indexAlias, documentAlias);
             }
         }
+
+        // The query state has the collection of a compiled query, which isn't set on this instance.
+        private string GetIndexTable(Type tIndex)
+            => _queryState._store.Configuration.TableNameConvention.GetIndexTable(tIndex, _queryState._collection);
+
+        private string GetDocumentIdTable(IndexJoin indexJoin)
+            => indexJoin.IsMapIndex
+                ? GetIndexTable(indexJoin.IndexType)
+                : GetIndexTable(indexJoin.IndexType) + "_" + _queryState._documentTable;
 
         private void Page(int count, int skip)
         {
@@ -1297,15 +1346,22 @@ namespace YesSql.Services
 
             _queryState.FlushFilters();
 
-            var localBuilder = _queryState._sqlBuilder.Clone();
+            var hasSingleRecords = HasSingleRecordPerDocument();
 
-            if (localBuilder.HasJoin)
+            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder(hasSingleRecords);
+
+            if (localBuilder == null)
             {
-                localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
-            }
-            else
-            {
-                localBuilder.Selector("count(*)");
+                localBuilder = _queryState._sqlBuilder.Clone();
+
+                if (localBuilder.HasJoin && !hasSingleRecords)
+                {
+                    localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
+                }
+                else
+                {
+                    localBuilder.Selector("count(*)");
+                }
             }
 
             // Clear paging and order when counting 
@@ -1362,10 +1418,111 @@ namespace YesSql.Services
         public Task<int> CountAsync()
             => CountAsync(CancellationToken.None);
 
+        /// <summary>
+        /// Creates a builder counting the documents of the query from its index tables, without joining the document table,
+        /// or returns <see langword="null"/> when the document table is needed.
+        /// </summary>
+        /// <remarks>
+        /// <c>SELECT count(distinct [Document].[Id]) FROM [Document] INNER JOIN [PersonByName] AS [PersonByName_a1] ON [PersonByName_a1].[DocumentId] = [Document].[Id] WHERE [Document].[Type] = @Type AND ...</c>
+        /// becomes <c>SELECT count(distinct [PersonByName_a1].[DocumentId]) FROM [PersonByName] AS [PersonByName_a1] WHERE ...</c>,
+        /// the other indexes being joined on the DocumentId column of the first one. The count stays distinct as a map index can have
+        /// multiple rows for the same document, unless all the indexes declare a single record per document.
+        /// </remarks>
+        private SqlBuilder CreateIndexOnlyCountBuilder(bool hasSingleRecords)
+        {
+            var indexJoins = _queryState._indexJoins;
+
+            // A raw SQL filter could reference the document table, so it is kept.
+            if (_queryState._noIndexOptimizations ||
+                _queryState._documentType == null ||
+                _queryState._hasSqlFilters ||
+                indexJoins == null ||
+                indexJoins.Count == 0)
+            {
+                return null;
+            }
+
+            // The indexes are all inner joined on the same document, so a single one that is exclusive to the queried type is enough.
+            var isExclusive = false;
+
+            foreach (var indexJoin in indexJoins)
+            {
+                if (_session.IsIndexExclusiveTo(indexJoin.IndexType, _queryState._documentType, _queryState._collection))
+                {
+                    isExclusive = true;
+                    break;
+                }
+            }
+
+            if (!isExclusive)
+            {
+                return null;
+            }
+
+            if (_queryState._sqlBuilder.Clone() is not SqlBuilder builder)
+            {
+                return null;
+            }
+
+            // Only keep the filters of the query, without the condition on the type of the documents.
+            builder.ClearWhere();
+            builder.WhereAnd(_queryState._filters);
+            builder.Parameters.Remove("@Type");
+
+            var schema = _queryState._store.Configuration.Schema;
+            var root = indexJoins[0];
+            var rootAlias = root.DocumentAlias;
+
+            // FROM [PersonByName] AS [PersonByName_a1]
+            builder.Table(GetDocumentIdTable(root), rootAlias, schema);
+            builder.ClearJoins();
+
+            foreach (var indexJoin in indexJoins)
+            {
+                // The first index is in the FROM clause, the others are joined on its DocumentId column.
+                JoinIndex(builder, indexJoin, indexJoin == root ? null : rootAlias, "DocumentId", rootAlias);
+            }
+
+            builder.Selector(hasSingleRecords ? "count(*)" : $"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})");
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Returns whether the joins of the query can't return a document several times. The rows of the joined indexes multiply
+        /// for a document, so they all need to have at most one row for it, including an index joined again by Any() or All().
+        /// </summary>
+        private bool HasSingleRecordPerDocument()
+        {
+            var indexJoins = _queryState._indexJoins;
+
+            if (_queryState._noIndexOptimizations ||
+                indexJoins == null ||
+                indexJoins.Count == 0)
+            {
+                return false;
+            }
+
+            var documentType = _queryState._filtersDocumentType ? _queryState._documentType : null;
+
+            foreach (var indexJoin in indexJoins)
+            {
+                if (!indexJoin.IsMapIndex ||
+                    !_session.IsIndexSingleRecord(indexJoin.IndexType, documentType, _queryState._collection))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         IQuery<T> IQuery.For<T>(bool filterType)
         {
             _queryState.GetBindings().Clear();
             _queryState.AddBinding(typeof(Document));
+            _queryState._documentType = typeof(T);
+            _queryState._filtersDocumentType = filterType;
 
             _queryState._sqlBuilder.Select();
             _queryState._fromTable = _queryState._documentTable;
@@ -1614,15 +1771,14 @@ namespace YesSql.Services
 
                         sqlBuilder.Selector(sqlBuilder.FormatColumn(_query._queryState._documentTable, "*", schema));
 
-                        // Group by document id to de-duplicate records if the index has multiple matches for a single document
-
-                        // TODO: This could potentially be detected automically, for instance by creating a MultiMapIndex, but might require breaking changes
+                        // Group by document id to de-duplicate records if the index has multiple matches for a single document,
+                        // unless all the indexes of the query declare a single record per document, or the query disabled it.
 
                         // Without any join each document can only be returned once, so the query doesn't need to be de-duplicated.
                         // Paged queries are still applied on the document ids only (a deferred join), which some databases
                         // (e.g. SQLite) execute much faster than sorting whole documents.
                         var sql = sqlBuilder.HasJoin
-                            ? (_query._queryState._deduplicate ? GetDeduplicatedQuery() : sqlBuilder.ToSqlString())
+                            ? GetDocumentIdsQuery(group: _query._queryState._deduplicate && !_query.HasSingleRecordPerDocument())
                             : (sqlBuilder.HasPaging ? GetPagedQuery() : sqlBuilder.ToSqlString());
                         var logger = _query._session._store.Configuration.Logger;
 
@@ -1670,17 +1826,34 @@ namespace YesSql.Services
                 }
             }
 
-            private string GetDeduplicatedQuery()
+            /// <summary>
+            /// Applies the filters, the order and the paging on the document ids only, then loads the matching documents. Without
+            /// grouping, which is for queries that can't return a document several times, a page can stop as soon as it's full when
+            /// a database index serves the order, while still only sorting document ids otherwise.
+            /// </summary>
+            private string GetDocumentIdsQuery(bool group)
             {
                 var schema = _query._queryState._store.Configuration.Schema;
                 var sqlBuilder = _query._queryState._sqlBuilder;
 
+                // A page always has an order, so this reads all the documents and there is nothing to sort.
+                if (!group && !sqlBuilder.HasOrder)
+                {
+                    return sqlBuilder.ToSqlString();
+                }
+
                 var selector = sqlBuilder.FormatColumn(_query._queryState._documentTable, "Id", schema);
 
                 sqlBuilder.Selector(selector);
-                sqlBuilder.GroupBy(selector);
 
-                var results = _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList());
+                if (group)
+                {
+                    sqlBuilder.GroupBy(selector);
+                }
+
+                var results = group
+                    ? _query._dialect.GetAggregateOrders(sqlBuilder.GetSelectors().ToList(), sqlBuilder.GetOrders().ToList())
+                    : GetOrders(sqlBuilder.GetOrders().ToList());
 
                 if (sqlBuilder.HasOrder)
                 {
@@ -1707,6 +1880,38 @@ namespace YesSql.Services
                 }
 
                 return sql;
+            }
+
+            /// <summary>
+            /// Selects the ordered fields with an alias, for the outer query to sort on them too.
+            /// </summary>
+            private List<(string aggregate, string alias)> GetOrders(List<string> orderBy)
+            {
+                var results = new List<(string, string)>();
+
+                for (var i = 0; i < orderBy.Count; i++)
+                {
+                    var order = orderBy[i].AsSpan().Trim();
+
+                    // Each order segment can be a field name, or a punctuation, so we filter out the punctuations
+                    if (order.Equals(",", StringComparison.Ordinal) || order.Equals("DESC", StringComparison.Ordinal) || order.Equals("ASC", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var next = i + 1 < orderBy.Count ? orderBy[i + 1].AsSpan().Trim() : default;
+                    var alias = _query._dialect.QuoteForAliasName("order_" + (results.Count + 1));
+                    var selector = $"{orderBy[i]} AS {alias}";
+
+                    if (next.Equals("DESC", StringComparison.Ordinal) || next.Equals("ASC", StringComparison.Ordinal))
+                    {
+                        alias += " " + next.ToString();
+                    }
+
+                    results.Add((selector, alias));
+                }
+
+                return results;
             }
 
             /// <summary>
@@ -1873,6 +2078,12 @@ namespace YesSql.Services
                 _query._queryState._deduplicate = false;
                 return new Query<T>(_query);
             }
+
+            IQuery<T> IQuery<T>.NoIndexOptimizations()
+            {
+                _query._queryState._noIndexOptimizations = true;
+                return new Query<T>(_query);
+            }
         }
 
         class QueryIndex<T> : Query<T>, IQueryIndex<T> where T : class, IIndex
@@ -1949,6 +2160,7 @@ namespace YesSql.Services
             IQueryIndex<T> IQueryIndex<T>.Where(string sql)
             {
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql));
+                _query._queryState._hasSqlFilters = true;
 
                 return this;
             }
@@ -1956,6 +2168,7 @@ namespace YesSql.Services
             IQueryIndex<T> IQueryIndex<T>.Where(Func<ISqlDialect, string> sql)
             {
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql?.Invoke(_query._dialect)));
+                _query._queryState._hasSqlFilters = true;
 
                 return this;
             }
@@ -2012,6 +2225,7 @@ namespace YesSql.Services
                 //_query._queryState._currentFilter.Add(sql);
 
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql));
+                _query._queryState._hasSqlFilters = true;
 
                 return this;
             }
@@ -2020,6 +2234,7 @@ namespace YesSql.Services
             {
                 _query.Bind<TIndex>();
                 _query._queryState._currentPredicate.Children.Add(new FilterNode(sql?.Invoke(_query._dialect)));
+                _query._queryState._hasSqlFilters = true;
                 return this;
             }
 

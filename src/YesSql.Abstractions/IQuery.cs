@@ -115,9 +115,25 @@ namespace YesSql
         string GetTypeAlias(Type t);
 
         /// <summary>
-        /// Adds a Group By clause to the query for fold documents when an index returns multiple records.
+        /// Removes the Group By clause that folds documents when an index returns multiple records, for a query
+        /// whose indexes are known to return a single record per document.
         /// </summary>
+        /// <remarks>
+        /// An index that always has a single record per document should declare it with
+        /// <see cref="IMapFor{T, TIndex}.SingleRecordPerDocument"/> instead, which also applies to counts and fails when
+        /// a document maps several records. This method is for what a declaration can't express, like a filter that only keeps one
+        /// of the records of each document. Nothing verifies it, so a document with several matches is returned several times.
+        /// It doesn't change <see cref="CountAsync"/>.
+        /// </remarks>
         IQuery<T> NoDuplicates();
+
+        /// <summary>
+        /// Runs the query as if its indexes declared nothing, ignoring
+        /// <see cref="Indexes.IMapFor{T, TIndex}.ExclusiveToDocumentType"/> and <see cref="IMapFor{T, TIndex}.SingleRecordPerDocument"/>:
+        /// the results are grouped by document, and the count joins the document table and is distinct.
+        /// This is for a query these optimizations make slower, or whose indexes have rows that don't match their declarations.
+        /// </summary>
+        IQuery<T> NoIndexOptimizations() => this;
     }
 
     /// <summary>

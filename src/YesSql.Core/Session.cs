@@ -32,6 +32,8 @@ namespace YesSql
         protected bool _cancel;
         protected bool _save;
         protected List<IIndexProvider> _indexes;
+        private Dictionary<(Type IndexType, Type DocumentType, string Collection), IndexOwnership> _indexOwnerships;
+        private Dictionary<(Type IndexType, Type DocumentType, string Collection), IndexCardinality> _indexCardinalities;
 
         protected string _tablePrefix;
         private readonly ISqlDialect _dialect;
@@ -70,6 +72,8 @@ namespace YesSql
             _indexes ??= [];
 
             _indexes.AddRange(indexProviders);
+            _indexOwnerships?.Clear();
+            _indexCardinalities?.Clear();
 
             return this;
         }
@@ -1435,6 +1439,58 @@ namespace YesSql
         }
 
         /// <summary>
+        /// Returns whether an index is declared to only have rows for documents of a specific type, and no provider
+        /// produces it for another type, among the providers registered on the Store and the Session.
+        /// </summary>
+        internal bool IsIndexExclusiveTo(Type indexType, Type documentType, string collection)
+        {
+            var ownership = _store.GetIndexOwnership(indexType, documentType, collection);
+
+            if (_indexes == null || ownership == IndexOwnership.Shared)
+            {
+                return ownership == IndexOwnership.Exclusive;
+            }
+
+            _indexOwnerships ??= [];
+
+            var key = (indexType, documentType, collection ?? "");
+
+            if (!_indexOwnerships.TryGetValue(key, out var sessionOwnership))
+            {
+                sessionOwnership = _store.FindIndexOwnership(_indexes, indexType, documentType, collection);
+                _indexOwnerships[key] = sessionOwnership;
+            }
+
+            return sessionOwnership != IndexOwnership.Shared &&
+                (ownership == IndexOwnership.Exclusive || sessionOwnership == IndexOwnership.Exclusive);
+        }
+
+        /// <summary>
+        /// Returns whether an index has at most one row per document of a specific type, among the providers registered on the Store and the Session.
+        /// </summary>
+        internal bool IsIndexSingleRecord(Type indexType, Type documentType, string collection)
+        {
+            var cardinality = _store.GetIndexCardinality(indexType, documentType, collection);
+
+            if (_indexes == null || cardinality == IndexCardinality.Multiple)
+            {
+                return cardinality == IndexCardinality.Single;
+            }
+
+            _indexCardinalities ??= [];
+
+            var key = (indexType, documentType, collection ?? "");
+
+            if (!_indexCardinalities.TryGetValue(key, out var sessionCardinality))
+            {
+                sessionCardinality = _store.FindIndexCardinality(_indexes, indexType, documentType, collection);
+                _indexCardinalities[key] = sessionCardinality;
+            }
+
+            return (cardinality, sessionCardinality) is (IndexCardinality.Single, IndexCardinality.None) or (IndexCardinality.None, IndexCardinality.Single);
+        }
+
+        /// <summary>
         /// Resolves all the descriptors registered on the Store and the Session
         /// </summary>
         private IEnumerable<IndexDescriptor> GetDescriptors(Type t, string collection)
@@ -1479,11 +1535,19 @@ namespace YesSql
 
                 if (mapped != null)
                 {
+                    var records = 0;
+
                     foreach (var index in mapped)
                     {
                         if (index == null)
                         {
                             continue;
+                        }
+
+                        if (descriptor.IsSingleRecordPerDocument && ++records > 1)
+                        {
+                            throw new InvalidOperationException(
+                                $"The index '{descriptor.IndexType.FullName}' is declared with a single record per document but its map returned several for a document of type '{obj.GetType().FullName}'.");
                         }
 
                         _commands ??= new List<IIndexCommand>();

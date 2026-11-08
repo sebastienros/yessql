@@ -46,6 +46,16 @@ namespace YesSql.Indexes
         /// Gets the predicate used to filter the documents that are mapped, or <c>null</c> when no filter is defined.
         /// </summary>
         Func<object, bool> Filter { get; }
+
+        /// <summary>
+        /// Gets whether the index is declared to only have rows for documents of the described type.
+        /// </summary>
+        bool IsExclusiveToDocumentType => false;
+
+        /// <summary>
+        /// Gets whether the index is declared to have at most one row per document.
+        /// </summary>
+        bool IsSingleRecordPerDocument => false;
     }
 
     /// <summary>
@@ -103,6 +113,41 @@ namespace YesSql.Indexes
         /// <param name="predicate">The predicate a document must satisfy to be mapped.</param>
         /// <returns>The current <see cref="IMapFor{T, TIndex}"/> instance so that calls can be chained.</returns>
         IMapFor<T, TIndex> When(Func<T, bool> predicate);
+
+        /// <summary>
+        /// Declares that the index only has rows for existing documents of type <typeparamref name="T"/>, so that
+        /// counting these documents can read the index tables without joining the document table and filtering its type.
+        /// </summary>
+        /// <remarks>
+        /// YesSql can't verify this declaration, and any other row would be counted while the query doesn't return its document.
+        /// That includes rows written by a provider that isn't registered on the store or on the session, for instance one
+        /// registered on another session or since removed, and rows left by a deleted document on a database without foreign
+        /// keys like SQLite. It's usually faster, but on MySQL an index that starts with DocumentId can make a filtered count
+        /// slower, so prefer indexes that start with the filtered columns and end with DocumentId, or use
+        /// <see cref="IQuery{T}.NoIndexOptimizations"/> for that query.
+        /// The document table is still joined when a provider registered for another type produces the index in the same
+        /// collection, or when a filter is raw SQL, as it could reference the document table.
+        /// </remarks>
+        /// <returns>The current <see cref="IMapFor{T, TIndex}"/> instance so that calls can be chained.</returns>
+        IMapFor<T, TIndex> ExclusiveToDocumentType() => this;
+
+        /// <summary>
+        /// Declares that the index has at most one row per document, so that a query joining only such indexes doesn't need to
+        /// remove duplicates: its results aren't grouped by document, which lets a page stop as soon as it's full when a database
+        /// index serves the order, and its count doesn't need to be distinct.
+        /// </summary>
+        /// <remarks>
+        /// Saving a document throws if the map returns more than one record, but YesSql can't verify the rows that are already in the
+        /// table. Any other row would return its document several times and shift the pages, and be counted several times. That
+        /// includes rows written before the map returned a single record, rows written by a provider that isn't registered on the
+        /// store or on the session, and rows from concurrent saves of the same document without concurrency checks. A unique
+        /// database index on DocumentId guarantees it. This only applies to map indexes, and the query is still grouped when
+        /// several providers produce the index for the same document type.
+        /// Not grouping can also be slower, when the database walks an index in the requested order looking for rare matches.
+        /// Use <see cref="IQuery{T}.NoIndexOptimizations"/> for these queries.
+        /// </remarks>
+        /// <returns>The current <see cref="IMapFor{T, TIndex}"/> instance so that calls can be chained.</returns>
+        IMapFor<T, TIndex> SingleRecordPerDocument() => this;
     }
 
     /// <summary>
@@ -171,6 +216,26 @@ namespace YesSql.Indexes
 
         /// <inheritdoc/>
         public Func<object, bool> Filter => _filter;
+
+        /// <inheritdoc/>
+        public bool IsExclusiveToDocumentType { get; private set; }
+
+        /// <inheritdoc/>
+        public IMapFor<T, TIndex> ExclusiveToDocumentType()
+        {
+            IsExclusiveToDocumentType = true;
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public bool IsSingleRecordPerDocument { get; private set; }
+
+        /// <inheritdoc/>
+        public IMapFor<T, TIndex> SingleRecordPerDocument()
+        {
+            IsSingleRecordPerDocument = true;
+            return this;
+        }
 
         /// <inheritdoc/>
         public IGroupFor<TIndex> Map(Func<T, IEnumerable<TIndex>> map)

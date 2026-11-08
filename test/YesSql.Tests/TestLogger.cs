@@ -43,6 +43,14 @@ namespace YesSql.Tests
             Log(logLevel, formatter(state, exception));
         }
 
+        public void Clear()
+        {
+            lock (_lockObj)
+            {
+                _builder.Clear();
+            }
+        }
+
         public override string ToString()
         {
             lock (_lockObj)
