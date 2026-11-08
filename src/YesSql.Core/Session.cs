@@ -859,14 +859,34 @@ namespace YesSql
 
                 if (_commands != null)
                 {
-                    foreach (var command in _commands)
-                    {
-                        if (command is IInstrumentedCommand instrumented)
-                        {
-                            instrumented.Statistics = _statistics;
-                        }
+                    // Commands executed individually (when they can't be batched) reuse the same database command
+                    // for the same statement, e.g. to insert many documents, instead of preparing it each time.
+                    DbCommandCache commandCache = null;
 
-                        await command.ExecuteAsync(_connection, _transaction, _dialect, _logger, cancellationToken);
+                    try
+                    {
+                        foreach (var command in _commands)
+                        {
+                            if (command is IInstrumentedCommand instrumented)
+                            {
+                                instrumented.Statistics = _statistics;
+                            }
+
+                            if (command is ICachedCommand cachedCommand)
+                            {
+                                commandCache ??= new DbCommandCache(_connection, _transaction);
+
+                                await cachedCommand.ExecuteAsync(commandCache, _transaction, _dialect, _logger, cancellationToken);
+                            }
+                            else
+                            {
+                                await command.ExecuteAsync(_connection, _transaction, _dialect, _logger, cancellationToken);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        commandCache?.Dispose();
                     }
                 }
 

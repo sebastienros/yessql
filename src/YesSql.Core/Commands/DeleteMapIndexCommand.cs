@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName, IInstrumentedCommand
+    public sealed class DeleteMapIndexCommand : IIndexCommand, ICollectionName, IInstrumentedCommand, ICachedCommand
     {
         private static readonly ConcurrentDictionary<CommandKey, string> DeleteCommands = new();
 
@@ -45,6 +46,29 @@ namespace YesSql.Commands
             var operation = new DbOperation(_store.Configuration, connection, DbOperation.Delete, _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection), command, _statistics);
 
             return YesSqlInstrumentation.ExecuteAsync(operation, new CommandDefinition(command, new { Id = DocumentId }, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+        }
+
+        Task ICachedCommand.ExecuteAsync(DbCommandCache commandCache, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
+        {
+            var sql = GetDeleteCommandText(dialect);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(sql);
+            }
+
+            var command = commandCache.GetCommand(sql, out var created);
+
+            if (created)
+            {
+                DbCommandCache.AddParameter(command, "@Id", DbType.Int64);
+            }
+
+            command.Parameters[0].Value = DocumentId;
+
+            var operation = new DbOperation(_store.Configuration, commandCache.Connection, DbOperation.Delete, _store.Configuration.TableNameConvention.GetIndexTable(IndexType, Collection), sql, _statistics);
+
+            return YesSqlInstrumentation.ExecuteAsync(operation, (command, cancellationToken), static state => state.command.ExecuteNonQueryAsync(state.cancellationToken));
         }
 
         /// <summary>

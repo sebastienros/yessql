@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading;
@@ -11,7 +12,7 @@ using YesSql.Indexes;
 
 namespace YesSql.Commands
 {
-    public sealed class CreateIndexCommand : IndexCommand
+    public sealed class CreateIndexCommand : IndexCommand, ICachedCommand
     {
         private readonly long[] _addedDocumentIds;
 
@@ -65,6 +66,43 @@ namespace YesSql.Commands
 
                 await YesSqlInstrumentation.ExecuteAsync(bridgeOperation, new CommandDefinition(bridgeSql, _addedDocumentIds.Select(x => new { DocumentId = x, Id = Index.Id }), transaction, null, null, CommandFlags.Buffered, cancellationToken));
             }
+        }
+
+        Task ICachedCommand.ExecuteAsync(DbCommandCache commandCache, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
+        {
+            // Only map indexes, which are inserted with a single statement, reuse their command.
+            if (Index is not MapIndex)
+            {
+                return ExecuteAsync(commandCache.Connection, transaction, dialect, logger, cancellationToken);
+            }
+
+            return ExecuteMapIndexAsync(commandCache, dialect, logger, cancellationToken);
+        }
+
+        private async Task ExecuteMapIndexAsync(DbCommandCache commandCache, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
+        {
+            var type = Index.GetType();
+
+            var sql = InsertsForExecute(type, dialect);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(sql);
+            }
+
+            var command = commandCache.GetCommand(sql, out var created);
+
+            var count = SetProperties(command, Index, dialect, created);
+
+            var documentId = created
+                ? DbCommandCache.AddParameter(command, "@DocumentId", DbType.Int64)
+                : command.Parameters[count];
+
+            documentId.Value = Index.GetAddedDocuments().Single().Id;
+
+            var indexOperation = new DbOperation(_store.Configuration, commandCache.Connection, DbOperation.Insert, _store.Configuration.TableNameConvention.GetIndexTable(type, Collection), sql, Statistics);
+
+            Index.Id = Convert.ToInt64(await YesSqlInstrumentation.ExecuteAsync(indexOperation, (command, cancellationToken), static state => state.command.ExecuteScalarAsync(state.cancellationToken)));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
