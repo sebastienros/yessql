@@ -695,6 +695,86 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldJoinMapIndexesInIndexQuery()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+            _store.RegisterIndexes<PersonAgeIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Person { Firstname = "Bill", Age = 30 });
+                await session.SaveAsync(new Person { Firstname = "Steve", Age = 10 });
+                await session.SaveAsync(new Person { Firstname = "Paul", Age = 40 });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // Filters on the joined index, which is the one returned.
+                var adults = await session.QueryIndex<PersonByName>().With<PersonByAge>(x => x.Adult).OrderBy(x => x.Age).ListAsync();
+                Assert.Equal(new[] { "Bill", "Paul" }, adults.Select(x => x.Name));
+                Assert.Equal(new[] { 30, 40 }, adults.Select(x => x.Age));
+
+                // Filters on the first index, and returns the joined one.
+                var steve = await session.QueryIndex<PersonByName>(x => x.SomeName == "Steve").With<PersonByAge>().FirstOrDefaultAsync();
+                Assert.Equal(10, steve.Age);
+
+                Assert.Equal(2, await session.QueryIndex<PersonByName>().With<PersonByAge>(x => x.Adult).CountAsync());
+                Assert.Equal(1, await session.QueryIndex<PersonByName>(x => x.SomeName != "Bill").With<PersonByAge>(x => x.Adult).CountAsync());
+
+                var page = await session.QueryIndex<PersonByName>().With<PersonByAge>().OrderBy(x => x.Age).Skip(1).Take(1).ListAsync();
+                Assert.Equal(30, Assert.Single(page).Age);
+
+                var streamed = new List<PersonByAge>();
+                await foreach (var item in session.QueryIndex<PersonByName>(x => x.SomeName == "Paul").With<PersonByAge>().ToAsyncEnumerable())
+                {
+                    streamed.Add(item);
+                }
+
+                Assert.Equal(40, Assert.Single(streamed).Age);
+            }
+        }
+
+        [Fact]
+        public async Task ShouldJoinReduceIndexesInIndexQuery()
+        {
+            _store.RegisterIndexes<ArticleIndexProvider>();
+            _store.RegisterIndexes<ArticleBydPublishedDateProvider>();
+
+            var firstDay = new DateTime(2011, 11, 1);
+            var secondDay = new DateTime(2011, 11, 2);
+
+            await using (var session = _store.CreateSession())
+            {
+                await session.SaveAsync(new Article { Title = "a", PublishedUtc = firstDay });
+                await session.SaveAsync(new Article { Title = "b", PublishedUtc = firstDay });
+                await session.SaveAsync(new Article { Title = "c", PublishedUtc = secondDay });
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                // From a reduce index to the map index of its documents.
+                var firstDayArticles = await session.QueryIndex<ArticlesByDay>(x => x.DayOfYear == firstDay.DayOfYear).With<ArticleByPublishedDate>().OrderBy(x => x.Title).ListAsync();
+                Assert.Equal(new[] { "a", "b" }, firstDayArticles.Select(x => x.Title));
+                Assert.Equal(2, await session.QueryIndex<ArticlesByDay>(x => x.DayOfYear == firstDay.DayOfYear).With<ArticleByPublishedDate>().CountAsync());
+
+                // From a map index to the reduce index of its documents.
+                var day = await session.QueryIndex<ArticleByPublishedDate>(x => x.Title == "c").With<ArticlesByDay>().FirstOrDefaultAsync();
+                Assert.Equal(secondDay.DayOfYear, day.DayOfYear);
+                Assert.Equal(1, day.Count);
+
+                // A reduce index record is returned for each of its documents.
+                var days = await session.QueryIndex<ArticleByPublishedDate>().With<ArticlesByDay>(x => x.DayOfYear == firstDay.DayOfYear).ListAsync();
+                Assert.Equal(2, days.Count);
+                Assert.All(days, x => Assert.Equal(2, x.Count));
+                Assert.Equal(2, await session.QueryIndex<ArticleByPublishedDate>().With<ArticlesByDay>(x => x.DayOfYear == firstDay.DayOfYear).CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldMapAsyncIndex()
         {
             _store.RegisterIndexes<PersonAsyncIndexProvider>();
