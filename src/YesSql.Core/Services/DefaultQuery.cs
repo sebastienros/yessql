@@ -1249,15 +1249,15 @@ namespace YesSql.Services
 
             _queryState.FlushFilters();
 
-            var hasSingleRecords = HasSingleRecordPerDocument();
+            var deduplicate = ShouldDeduplicate();
 
-            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder(hasSingleRecords);
+            ISqlBuilder localBuilder = CreateIndexOnlyCountBuilder(deduplicate);
 
             if (localBuilder == null)
             {
                 localBuilder = _queryState._sqlBuilder.Clone();
 
-                if (localBuilder.HasJoin && !hasSingleRecords)
+                if (localBuilder.HasJoin && deduplicate)
                 {
                     localBuilder.Selector($"count(distinct {_queryState._sqlBuilder.FormatColumn(_queryState._documentTable, "Id", _queryState._store.Configuration.Schema)})");
                 }
@@ -1329,9 +1329,10 @@ namespace YesSql.Services
         /// <c>SELECT count(distinct [Document].[Id]) FROM [Document] INNER JOIN [PersonByName] AS [PersonByName_a1] ON [PersonByName_a1].[DocumentId] = [Document].[Id] WHERE [Document].[Type] = @Type AND ...</c>
         /// becomes <c>SELECT count(distinct [PersonByName_a1].[DocumentId]) FROM [PersonByName] AS [PersonByName_a1] WHERE ...</c>,
         /// the other indexes being joined on the DocumentId column of the first one. The count stays distinct as a map index can have
-        /// multiple rows for the same document, unless all the indexes declare a single record per document.
+        /// multiple rows for the same document, unless all the indexes declare a single record per document or the query uses
+        /// <see cref="IQuery{T}.SkipDeduplication"/>.
         /// </remarks>
-        private SqlBuilder CreateIndexOnlyCountBuilder(bool hasSingleRecords)
+        private SqlBuilder CreateIndexOnlyCountBuilder(bool deduplicate)
         {
             var indexJoins = _queryState._indexJoins;
 
@@ -1386,9 +1387,18 @@ namespace YesSql.Services
                 JoinIndex(builder, indexJoin, indexJoin == root ? null : rootAlias, "DocumentId", rootAlias);
             }
 
-            builder.Selector(hasSingleRecords ? "count(*)" : $"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})");
+            builder.Selector(deduplicate ? $"count(distinct {builder.FormatColumn(rootAlias, "DocumentId", schema, true)})" : "count(*)");
 
             return builder;
+        }
+
+        /// <summary>
+        /// Returns whether the results and the count of a query with joins need to remove the documents returned several times,
+        /// as neither its indexes declare a single record per document nor the query uses <see cref="IQuery{T}.SkipDeduplication"/>.
+        /// </summary>
+        private bool ShouldDeduplicate()
+        {
+            return _queryState._deduplicate && !HasSingleRecordPerDocument();
         }
 
         /// <summary>
@@ -1681,7 +1691,7 @@ namespace YesSql.Services
                         // Paged queries are still applied on the document ids only (a deferred join), which some databases
                         // (e.g. SQLite) execute much faster than sorting whole documents.
                         var sql = sqlBuilder.HasJoin
-                            ? GetDocumentIdsQuery(group: _query._queryState._deduplicate && !_query.HasSingleRecordPerDocument())
+                            ? GetDocumentIdsQuery(group: _query.ShouldDeduplicate())
                             : (sqlBuilder.HasPaging ? GetPagedQuery() : sqlBuilder.ToSqlString());
                         var logger = _query._session._store.Configuration.Logger;
 
@@ -1979,10 +1989,15 @@ namespace YesSql.Services
                 return new Query<T, TIndex>(_query);
             }
 
-            IQuery<T> IQuery<T>.NoDuplicates()
+            IQuery<T> IQuery<T>.SkipDeduplication()
             {
                 _query._queryState._deduplicate = false;
                 return new Query<T>(_query);
+            }
+
+            IQuery<T> IQuery<T>.NoDuplicates()
+            {
+                return ((IQuery<T>)this).SkipDeduplication();
             }
 
             IQuery<T> IQuery<T>.NoIndexOptimizations()

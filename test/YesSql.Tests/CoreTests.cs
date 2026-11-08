@@ -5035,7 +5035,7 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                var results = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).NoDuplicates().ListAsync();
+                var results = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).SkipDeduplication().ListAsync();
 
                 Assert.Equal("A", results.ElementAt(0).Firstname);
                 Assert.Equal("D", results.ElementAt(1).Firstname);
@@ -5398,7 +5398,7 @@ namespace YesSql.Tests
 
                     // Including when de-duplication is disabled
                     log.Clear();
-                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().NoDuplicates().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
+                    Assert.Equal(new[] { "Steve" }, (await session.Query<Person>().SkipDeduplication().Skip(1).Take(1).ListAsync()).Select(x => x.Firstname));
                     Assert.Contains("IndexQuery", log.ToString());
 
                     // With a join, the results are de-duplicated
@@ -6752,7 +6752,7 @@ namespace YesSql.Tests
         }
 
         [Fact]
-        public async Task NoDuplicatesShouldStillApplyWithNoIndexOptimizations()
+        public async Task SkipDeduplicationShouldStillApplyWithNoIndexOptimizations()
         {
             _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
 
@@ -6763,13 +6763,13 @@ namespace YesSql.Tests
 
             await using var session = _store.CreateSession();
 
-            await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().NoDuplicates().ListAsync();
+            await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().SkipDeduplication().ListAsync();
 
             Assert.DoesNotContain("GROUP BY", logger.ToString());
         }
 
         [Fact]
-        public async Task NoDuplicatesShouldUseADeferredJoin()
+        public async Task SkipDeduplicationShouldUseADeferredJoin()
         {
             _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
 
@@ -6780,14 +6780,14 @@ namespace YesSql.Tests
 
             await using var session = _store.CreateSession();
 
-            var persons = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).NoDuplicates().Take(1).ListAsync();
+            var persons = await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).SkipDeduplication().Take(1).ListAsync();
 
             Assert.Equal("Bill", Assert.Single(persons).Firstname);
             AssertNotGrouped(logger, deferred: true);
         }
 
         [Fact]
-        public async Task NoDuplicatesShouldNotGroupAFilterKeepingOneRecordOfAMultipleRecordsIndex()
+        public async Task SkipDeduplicationShouldNotGroupAFilterKeepingOneRecordOfAMultipleRecordsIndex()
         {
             _store.RegisterIndexes<MultipleRecordsPersonAgeIndexProvider>();
 
@@ -6798,14 +6798,14 @@ namespace YesSql.Tests
 
             await using var session = _store.CreateSession();
 
-            var persons = await session.Query<Person, PersonByAge>(x => x.Age == 0).OrderBy(x => x.Name).NoDuplicates().Skip(1).Take(1).ListAsync();
+            var persons = await session.Query<Person, PersonByAge>(x => x.Age == 0).OrderBy(x => x.Name).SkipDeduplication().Skip(1).Take(1).ListAsync();
 
             Assert.Equal("Steve", Assert.Single(persons).Firstname);
             AssertNotGrouped(logger, deferred: true);
         }
 
         [Fact]
-        public async Task NoDuplicatesShouldNotUseADeferredJoinWithoutAnOrder()
+        public async Task SkipDeduplicationShouldNotUseADeferredJoinWithoutAnOrder()
         {
             _store.RegisterIndexes<SingleRecordPersonIndexProvider>();
 
@@ -6816,10 +6816,118 @@ namespace YesSql.Tests
 
             await using var session = _store.CreateSession();
 
-            var persons = await session.Query<Person, PersonByName>().NoDuplicates().ListAsync();
+            var persons = await session.Query<Person, PersonByName>().SkipDeduplication().ListAsync();
 
             Assert.Equal(2, persons.Count());
             AssertNotGrouped(logger, deferred: false);
+        }
+
+        [Fact]
+        public async Task SkipDeduplicationShouldCountWithoutDistinct()
+        {
+            _store.RegisterIndexes<MultipleRecordsPersonAgeIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            // Each person has two records, only one of them having an Age of 0.
+            Assert.Equal(2, await session.Query<Person, PersonByAge>(x => x.Age == 0).SkipDeduplication().CountAsync());
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.Contains("count(*)", count);
+            Assert.DoesNotContain("distinct", count, StringComparison.OrdinalIgnoreCase);
+            Assert.True(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task SkipDeduplicationShouldCountFromIndexTablesWithoutDistinct()
+        {
+            _store.RegisterIndexes<ExclusivePersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            Assert.Equal(2, await session.Query<Person, PersonByName>().SkipDeduplication().CountAsync());
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.Contains("count(*)", count);
+            Assert.False(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task SkipDeduplicationShouldCountWithoutDistinctWithNoIndexOptimizations()
+        {
+            _store.RegisterIndexes<SingleRecordExclusivePersonIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            Assert.Equal(2, await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().SkipDeduplication().CountAsync());
+
+            var count = Assert.Single(GetCountQueries(logger));
+
+            Assert.Contains("count(*)", count);
+            Assert.True(ReferencesDocumentTable(count), count);
+        }
+
+        [Fact]
+        public async Task SkipDeduplicationShouldCountCompiledQueriesWithoutDistinct()
+        {
+            _store.RegisterIndexes<MultipleRecordsPersonAgeIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+            // The second execution uses the cached state of the compiled query.
+            Assert.Equal(2, await session.ExecuteQuery(new PersonByAgeSkipDeduplicationQuery(0)).CountAsync());
+            Assert.Equal(2, await session.ExecuteQuery(new PersonByAgeSkipDeduplicationQuery(1)).CountAsync());
+
+            var counts = GetCountQueries(logger);
+
+            Assert.Equal(2, counts.Length);
+            Assert.All(counts, count => Assert.Contains("count(*)", count));
+        }
+
+        [Fact]
+        public async Task NoDuplicatesShouldStillSkipDeduplication()
+        {
+            _store.RegisterIndexes<MultipleRecordsPersonAgeIndexProvider>();
+
+            await SavePersonsAsync("Bill", "Steve");
+
+            var logger = new TestLogger();
+            _store.Configuration.Logger = logger;
+
+            await using var session = _store.CreateSession();
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            var persons = await session.Query<Person, PersonByAge>(x => x.Age == 0).OrderBy(x => x.Name).NoDuplicates().ListAsync();
+            Assert.Equal(new[] { "Bill", "Steve" }, persons.Select(x => x.Firstname));
+            AssertNotGrouped(logger, deferred: true);
+
+            logger.Clear();
+            Assert.Equal(2, await session.Query<Person, PersonByAge>(x => x.Age == 0).NoDuplicates().CountAsync());
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            Assert.Contains("count(*)", Assert.Single(GetCountQueries(logger)));
         }
 
         [Fact]
