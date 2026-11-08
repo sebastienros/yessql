@@ -88,6 +88,21 @@ namespace YesSql.Commands
             parameter.Value = (object)value ?? DBNull.Value;
         }
 
+        /// <summary>
+        /// Sets the size of a parameter whose value is a string the same way Dapper does (4000, or -1 for longer values).
+        /// </summary>
+        /// <remarks>
+        /// Without an explicit size, SQL Server clients declare a string parameter with the length of its value
+        /// (e.g. <c>nvarchar(5)</c>), and SQL Server compiles and caches a different plan for each distinct length.
+        /// </remarks>
+        public static void SetStringSize(DbParameter parameter, object value)
+        {
+            if (value is string text)
+            {
+                parameter.Size = text.Length > DefaultStringLength ? -1 : DefaultStringLength;
+            }
+        }
+
         // Dapper's default size for string parameters (DbString.DefaultLength).
         private const int DefaultStringLength = 4000;
     }

@@ -80,7 +80,10 @@ namespace YesSql.Commands
                     ? DbCommandCache.AddParameter(command, "@" + property.Name, dialect.ToDbType(property.PropertyType))
                     : parameters[i];
 
-                parameter.Value = dialect.TryConvert(accessor.Get(item)) ?? DBNull.Value;
+                var value = dialect.TryConvert(accessor.Get(item));
+
+                DbCommandCache.SetStringSize(parameter, value);
+                parameter.Value = value ?? DBNull.Value;
             }
 
             return accessors.Length;
@@ -92,11 +95,12 @@ namespace YesSql.Commands
 
             foreach (var (property, accessor) in accessors)
             {
-                var value = accessor.Get(item);
+                var value = dialect.TryConvert(accessor.Get(item));
 
                 var parameter = command.CreateParameter();
                 parameter.ParameterName = property.Name + suffix;
-                parameter.Value = dialect.TryConvert(value) ?? DBNull.Value;
+                DbCommandCache.SetStringSize(parameter, value);
+                parameter.Value = value ?? DBNull.Value;
                 parameter.DbType = dialect.ToDbType(property.PropertyType);
                 command.Parameters.Add(parameter);
             }
