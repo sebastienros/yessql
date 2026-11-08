@@ -45,7 +45,9 @@ namespace YesSql.Samples.Performance
             }
         }
 
-        private const string PostgreSqlConnectionString = "Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
+        // Can be overridden with the YESSQL_BENCH_POSTGRESQL environment variable, e.g. to compare connection options.
+        private static readonly string PostgreSqlConnectionString =
+            Environment.GetEnvironmentVariable("YESSQL_BENCH_POSTGRESQL") ?? "Server=localhost;Port=5432;Database=yessql;User Id=root;Password=Password12!;";
         private const int BatchSize = 128;
 
         private readonly Consumer _consumer = new();
