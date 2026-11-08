@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public sealed class UpdateDocumentCommand : DocumentCommand
+    public sealed class UpdateDocumentCommand : DocumentCommand, ICachedCommand
     {
         private readonly IStore _store;
         private readonly long _checkVersion;
@@ -46,6 +47,40 @@ namespace YesSql.Commands
             }
 
             return;
+        }
+
+        Task ICachedCommand.ExecuteAsync(DbCommandCache commandCache, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
+        {
+            // The statement checking the version contains the expected version, so it can't be reused.
+            if (_checkVersion > -1)
+            {
+                return ExecuteAsync(commandCache.Connection, transaction, dialect, logger, cancellationToken);
+            }
+
+            var updateCmd = GetUnversionedUpdateCommandText(dialect, _store, Collection);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(updateCmd);
+            }
+
+            var command = commandCache.GetCommand(updateCmd, out var created);
+
+            if (created)
+            {
+                DbCommandCache.AddParameter(command, "@Content", DbType.String);
+                DbCommandCache.AddParameter(command, "@Version", DbType.Int64);
+                DbCommandCache.AddParameter(command, "@Id", DbType.Int64);
+            }
+
+            var parameters = command.Parameters;
+            DbCommandCache.SetStringValue(parameters[0], Document.Content);
+            parameters[1].Value = Document.Version;
+            parameters[2].Value = Document.Id;
+
+            var operation = new DbOperation(_store.Configuration, commandCache.Connection, DbOperation.Update, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), updateCmd, Statistics);
+
+            return YesSqlInstrumentation.ExecuteAsync(operation, (command, cancellationToken), static state => state.command.ExecuteNonQueryAsync(state.cancellationToken));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)

@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ using YesSql.Diagnostics;
 
 namespace YesSql.Commands
 {
-    public sealed class DeleteDocumentCommand : DocumentCommand
+    public sealed class DeleteDocumentCommand : DocumentCommand, ICachedCommand
     {
         private readonly IStore _store;
         public override int ExecutionOrder { get; } = 4;
@@ -31,6 +32,29 @@ namespace YesSql.Commands
             var operation = new DbOperation(_store.Configuration, connection, DbOperation.Delete, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), deleteCmd, Statistics);
 
             return YesSqlInstrumentation.ExecuteAsync(operation, new CommandDefinition(deleteCmd, Document, transaction, null, null, CommandFlags.Buffered, cancellationToken));
+        }
+
+        Task ICachedCommand.ExecuteAsync(DbCommandCache commandCache, DbTransaction transaction, ISqlDialect dialect, ILogger logger, CancellationToken cancellationToken)
+        {
+            var deleteCmd = GetDeleteCommandText(dialect, _store, Collection);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace(deleteCmd);
+            }
+
+            var command = commandCache.GetCommand(deleteCmd, out var created);
+
+            if (created)
+            {
+                DbCommandCache.AddParameter(command, "@Id", DbType.Int64);
+            }
+
+            command.Parameters[0].Value = Document.Id;
+
+            var operation = new DbOperation(_store.Configuration, commandCache.Connection, DbOperation.Delete, _store.Configuration.TableNameConvention.GetDocumentTable(Collection), deleteCmd, Statistics);
+
+            return YesSqlInstrumentation.ExecuteAsync(operation, (command, cancellationToken), static state => state.command.ExecuteNonQueryAsync(state.cancellationToken));
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand command, List<Action<DbDataReader>> actions, int index)
