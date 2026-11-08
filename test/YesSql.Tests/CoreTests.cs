@@ -7925,6 +7925,42 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldReuseConnectionAfterStoppingStreamedQuery()
+        {
+            _store.RegisterIndexes<PersonIndexProvider>();
+
+            await using (var session = _store.CreateSession())
+            {
+                for (var i = 0; i < 20; i++)
+                {
+                    await session.SaveAsync(new Person { Firstname = "Bill" + i });
+                }
+
+                await session.SaveChangesAsync();
+            }
+
+            await using (var session = _store.CreateSession())
+            {
+                var count = 0;
+
+                // Stop reading before the end of the results.
+                await foreach (var _ in session.QueryIndex<PersonByName>().OrderBy(x => x.SomeName).ToAsyncEnumerable())
+                {
+                    if (++count == 3)
+                    {
+                        break;
+                    }
+                }
+
+                Assert.Equal(3, count);
+
+                // The reader is released so the connection can run other queries.
+                Assert.Equal(20, (await session.QueryIndex<PersonByName>().ListAsync()).Count());
+                Assert.Equal(20, await session.Query<Person, PersonByName>().CountAsync());
+            }
+        }
+
+        [Fact]
         public async Task ShouldCompareDateTimeOffsetWithDateTime()
         {
             var testDateTime = new DateTime(2021, 6, 15, 14, 30, 0, DateTimeKind.Utc);

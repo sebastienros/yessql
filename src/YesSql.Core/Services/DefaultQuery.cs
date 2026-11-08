@@ -1470,7 +1470,7 @@ namespace YesSql.Services
                         // Stream the results without buffering them. The enumeration is driven manually so that
                         // a failure while reading from the database still cancels the session (releasing the
                         // transaction), as 'yield return' cannot be used inside a try/catch block.
-                        var enumerable = connection.QueryUnbufferedAsync<T>(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction);
+                        var enumerable = connection.QueryStreamAsync<T>(new CommandDefinition(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction, cancellationToken: cancellationToken), cancellationToken);
 
                         await using var enumerator = enumerable.GetAsyncEnumerator(cancellationToken);
 
@@ -1534,17 +1534,14 @@ namespace YesSql.Services
                             logger.LogDebug(sql);
                         }
 
-                        var documents = new List<Document>();
                         List<T> items;
 
                         var operation = YesSqlInstrumentation.Start(new DbOperation(_query._session._store.Configuration, connection, DbOperation.Select, _query._queryState._fromTable, sql, _query._session._statistics));
 
                         try
                         {
-                            await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction).WithCancellation(cancellationToken))
-                            {
-                                documents.Add(document);
-                            }
+                            // The documents are read entirely before being returned, so they are buffered by Dapper.
+                            var documents = (await connection.QueryAsync<Document>(new CommandDefinition(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction, flags: CommandFlags.Buffered, cancellationToken: cancellationToken))).AsList();
 
                             operation.Stop();
 
