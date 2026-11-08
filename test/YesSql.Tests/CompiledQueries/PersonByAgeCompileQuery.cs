@@ -99,6 +99,21 @@ namespace YesSql.Tests.CompiledQueries
         }
     }
 
+    public class PersonByAgeSkipDeduplicationQuery : ICompiledQuery<Person>
+    {
+        public PersonByAgeSkipDeduplicationQuery(int age)
+        {
+            Age = age;
+        }
+
+        public int Age { get; }
+
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByAge>(x => x.Age == Age).SkipDeduplication();
+        }
+    }
+
     public class PersonByLiteralNamesQuery : ICompiledQuery<Person>
     {
         public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
