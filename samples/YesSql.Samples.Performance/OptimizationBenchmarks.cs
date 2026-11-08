@@ -56,8 +56,14 @@ namespace YesSql.Samples.Performance
         private string[] _names;
         private int _counter;
 
-        [Params("Sqlite", "PostgreSql")]
+        // The providers can be restricted with the YESSQL_BENCH_PROVIDERS environment variable,
+        // e.g. YESSQL_BENCH_PROVIDERS=Sqlite to run without a PostgreSQL server.
+        [ParamsSource(nameof(Providers))]
         public string Provider { get; set; }
+
+        public static string[] Providers =>
+            (Environment.GetEnvironmentVariable("YESSQL_BENCH_PROVIDERS") ?? "Sqlite,PostgreSql")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         [GlobalSetup]
         public void Setup()
