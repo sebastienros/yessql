@@ -271,6 +271,12 @@ namespace YesSql.Sql
         public bool HasJoin
             => _join?.Count > 0;
 
+        internal void ClearJoins()
+            => _join = null;
+
+        internal void ClearWhere()
+            => _where = null;
+
         public bool HasOrder
             => _order?.Count > 0;
 

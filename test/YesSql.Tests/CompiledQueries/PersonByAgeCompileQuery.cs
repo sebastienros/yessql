@@ -54,6 +54,21 @@ namespace YesSql.Tests.CompiledQueries
         }
     }
 
+    public class PersonByNameColQuery : ICompiledQuery<Person>
+    {
+        public PersonByNameColQuery(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByNameCol>(x => x.Name == Name);
+        }
+    }
+
     public class PersonByNamesQuery : ICompiledQuery<Person>
     {
         public PersonByNamesQuery(params string[] names)
@@ -66,6 +81,21 @@ namespace YesSql.Tests.CompiledQueries
         public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
         {
             return query => query.With<PersonByName>(x => x.SomeName.IsIn(Names));
+        }
+    }
+
+    public class PersonByNameNoIndexOptimizationsQuery : ICompiledQuery<Person>
+    {
+        public PersonByNameNoIndexOptimizationsQuery(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public Expression<Func<IQuery<Person>, IQuery<Person>>> Query()
+        {
+            return query => query.With<PersonByName>(x => x.SomeName == Name).NoIndexOptimizations();
         }
     }
 

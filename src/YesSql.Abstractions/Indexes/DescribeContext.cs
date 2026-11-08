@@ -31,7 +31,9 @@ namespace YesSql.Indexes
                     Delete = kp.GetDelete(),
                     GroupKey = kp.GroupProperty,
                     IndexType = kp.IndexType,
-                    Filter = kp.Filter
+                    Filter = kp.Filter,
+                    IsExclusiveToDocumentType = kp.IsExclusiveToDocumentType,
+                    IsSingleRecordPerDocument = kp.IsSingleRecordPerDocument
                 });
         }
 
