@@ -156,6 +156,18 @@ namespace YesSql.Samples.Performance
             await session.SaveChangesAsync();
             await session.DisposeAsync();
 
+            if (Provider != "Sqlite")
+            {
+                // Update the statistics of the tables that were just created, as autovacuum might not have analyzed
+                // them yet. Otherwise the plans, in particular the generic plans of prepared statements, are based on
+                // the statistics of empty tables.
+                await using var connection = configuration.ConnectionFactory.CreateConnection();
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "ANALYZE";
+                await command.ExecuteNonQueryAsync();
+            }
+
             _updateIds = Enumerable.Range(1, BatchSize).Select(x => (long)x).ToArray();
 
             var rnd = new Random(1);
