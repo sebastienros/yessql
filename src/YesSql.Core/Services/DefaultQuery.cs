@@ -1227,7 +1227,7 @@ namespace YesSql.Services
             }
 
             var sql = localBuilder.ToSqlString();
-            var parameters = localBuilder.Parameters;
+            var parameters = PrefixedParameters.FromDictionary(localBuilder.Parameters);
             var key = new WorkerQueryKey(sql, localBuilder.Parameters);
 
             _session.EnterAsyncExecution();
@@ -1364,7 +1364,7 @@ namespace YesSql.Services
                             }
                             return YesSqlInstrumentation.ExecuteAsync(
                                 new DbOperation(state.Query._session._store.Configuration, state.Connection, DbOperation.Select, state.Query._queryState._fromTable, state.Sql, state.Query._session._statistics),
-                                (state.Connection, Definition: new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                                (state.Connection, Definition: new CommandDefinition(state.Sql, PrefixedParameters.FromDictionary(state.Query._queryState._sqlBuilder.Parameters), state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
                                 static query => query.Connection.QueryAsync<T>(query.Definition));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken })).FirstOrDefault();
                     }
@@ -1384,7 +1384,7 @@ namespace YesSql.Services
 
                             return YesSqlInstrumentation.ExecuteAsync(
                                 new DbOperation(state.Query._session._store.Configuration, state.Connection, DbOperation.Select, state.Query._queryState._fromTable, state.Sql, state.Query._session._statistics),
-                                (state.Connection, Definition: new CommandDefinition(state.Sql, state.Query._queryState._sqlBuilder.Parameters, state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
+                                (state.Connection, Definition: new CommandDefinition(state.Sql, PrefixedParameters.FromDictionary(state.Query._queryState._sqlBuilder.Parameters), state.Transaction, flags: CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
                                 static query => query.Connection.QueryFirstOrDefaultAsync<Document>(query.Definition));
                         }, new { Query = _query, Sql = sql, Connection = connection, Transaction = transaction, CancellationToken = cancellationToken });
 
@@ -1470,7 +1470,7 @@ namespace YesSql.Services
                         // Stream the results without buffering them. The enumeration is driven manually so that
                         // a failure while reading from the database still cancels the session (releasing the
                         // transaction), as 'yield return' cannot be used inside a try/catch block.
-                        var enumerable = connection.QueryUnbufferedAsync<T>(sql, _query._queryState._sqlBuilder.Parameters, transaction);
+                        var enumerable = connection.QueryUnbufferedAsync<T>(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction);
 
                         await using var enumerator = enumerable.GetAsyncEnumerator(cancellationToken);
 
@@ -1541,7 +1541,7 @@ namespace YesSql.Services
 
                         try
                         {
-                            await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, _query._queryState._sqlBuilder.Parameters, transaction).WithCancellation(cancellationToken))
+                            await foreach (var document in connection.QueryUnbufferedAsync<Document>(sql, PrefixedParameters.FromDictionary(_query._queryState._sqlBuilder.Parameters), transaction).WithCancellation(cancellationToken))
                             {
                                 documents.Add(document);
                             }

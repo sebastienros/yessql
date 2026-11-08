@@ -464,7 +464,7 @@ namespace YesSql
                         (state.Connection, Definition: new CommandDefinition(state.Command, state.Parameters, state.Transaction, null, null, CommandFlags.Buffered, cancellationToken: state.CancellationToken)),
                         static query => query.Connection.QueryAsync<Document>(query.Definition));
                 },
-                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = new { Id = id }, Table = documentTable, Statistics = _statistics, CancellationToken = cancellationToken });
+                new { Store = _store, Connection = _connection, Transaction = _transaction, Command = command, Parameters = PrefixedParameters.FromTemplate(new { Id = id }), Table = documentTable, Statistics = _statistics, CancellationToken = cancellationToken });
 
                 // Clone documents returned from ProduceAsync as they might be shared across sessions
                 return result.FirstOrDefault()?.Clone();
@@ -598,7 +598,7 @@ namespace YesSql
                     Connection = _connection,
                     Transaction = _transaction,
                     Command = command,
-                    Parameters = new { Ids = ids },
+                    Parameters = PrefixedParameters.FromTemplate(new { Ids = ids }),
                     Table = documentTable,
                     Statistics = _statistics,
                     CancellationToken = cancellationToken,
@@ -1408,7 +1408,7 @@ namespace YesSql
 
             var index = await YesSqlInstrumentation.ExecuteAsync(
                 new DbOperation(_store.Configuration, _connection, DbOperation.Select, _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection), sql, _statistics),
-                (_connection, descriptor.IndexType, Definition: new CommandDefinition(sql, new { currentKey }, _transaction, null, null, CommandFlags.Buffered, cancellationToken)),
+                (_connection, descriptor.IndexType, Definition: new CommandDefinition(sql, PrefixedParameters.FromTemplate(new { currentKey }), _transaction, null, null, CommandFlags.Buffered, cancellationToken)),
                 static state => state._connection.QueryAsync(state.IndexType, state.Definition));
             return index.FirstOrDefault() as ReduceIndex;
         }
