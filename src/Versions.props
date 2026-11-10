@@ -23,4 +23,10 @@
     <SystemSecurityCryptographyPkcsPackageVersion>9.0.22</SystemSecurityCryptographyPkcsPackageVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <MicrosoftExtensionsLoggingAbstractionsPackageVersion>11.0.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>11.0.0</MicrosoftExtensionsDependencyInjectionAbstractionsPackageVersion>
+    <SystemSecurityCryptographyPkcsPackageVersion>11.0.0</SystemSecurityCryptographyPkcsPackageVersion>
+  </PropertyGroup>
+
 </Project>

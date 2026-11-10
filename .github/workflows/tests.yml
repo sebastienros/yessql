@@ -21,6 +21,9 @@ jobs:
           - name: Sqlite
             filter: YesSql.Tests.SqliteTests
             framework: net10.0
+          - name: Sqlite
+            filter: YesSql.Tests.SqliteTests
+            framework: net11.0
           - name: Sqlite Legacy Identity
             filter: YesSql.Tests.SqliteLegacyIdentityTests
             framework: net8.0
@@ -30,6 +33,9 @@ jobs:
           - name: Telemetry
             filter: YesSql.Tests.TelemetryTests
             framework: net10.0
+          - name: Telemetry
+            filter: YesSql.Tests.TelemetryTests
+            framework: net11.0
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-dotnet@v5
@@ -37,6 +43,7 @@ jobs:
         dotnet-version: |
           8.0.x
           10.0.x
+          11.0.x
     - name: Build
       run: dotnet build --configuration Release
     - name: Test - ${{ matrix.name }} ${{ matrix.framework }}
@@ -66,6 +73,9 @@ jobs:
           - name: PostgresQL
             filter: YesSql.Tests.PostgreSqlTests
             framework: net10.0
+          - name: PostgresQL
+            filter: YesSql.Tests.PostgreSqlTests
+            framework: net11.0
           - name: PostgresQL Legacy Identity - No Schema
             filter: YesSql.Tests.PostgreSqlLegacyIdentityTests
             framework: net8.0
@@ -76,6 +86,7 @@ jobs:
         dotnet-version: |
           8.0.x
           10.0.x
+          11.0.x
     - name: Build
       run: dotnet build --configuration Release
     - name: Test - ${{ matrix.name }} ${{ matrix.framework }}
@@ -97,7 +108,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        framework: [ net8.0, net10.0 ]
+        framework: [ net8.0, net10.0, net11.0 ]
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-dotnet@v5
@@ -105,6 +116,7 @@ jobs:
         dotnet-version: |
           8.0.x
           10.0.x
+          11.0.x
     - name: Build
       run: dotnet build --configuration Release
     - name: Test - MySQL ${{ matrix.framework }}
@@ -125,7 +137,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        framework: [ net8.0, net10.0 ]
+        framework: [ net8.0, net10.0, net11.0 ]
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-dotnet@v5
@@ -133,6 +145,7 @@ jobs:
         dotnet-version: |
           8.0.x
           10.0.x
+          11.0.x
     - name: Build
       run: dotnet build --configuration Release
     - name: Test - SQL Server 2019 ${{ matrix.framework }}

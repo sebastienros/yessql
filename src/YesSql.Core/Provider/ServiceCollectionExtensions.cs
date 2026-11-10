@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             ArgumentNullException.ThrowIfNull(setupAction);
 
-            var config = new Configuration();
+            var config = new YesSql.Configuration();
             setupAction.Invoke(config);
             services.AddSingleton<IStore>(StoreFactory.CreateAndInitializeAsync(config).GetAwaiter().GetResult());
 
