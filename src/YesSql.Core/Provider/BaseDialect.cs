@@ -184,6 +184,7 @@ namespace YesSql.Provider
             return sb.ToString();
         }
         public abstract string GetDropIndexString(string indexName, string tableName, string schema);
+        public virtual string GetIndexExistsSql(string indexName, string tableName, string schema) => null;
         public abstract string QuoteForColumnName(string columnName);
         public abstract string QuoteForTableName(string tableName, string schema);
         public abstract string QuoteForAliasName(string aliasName);
