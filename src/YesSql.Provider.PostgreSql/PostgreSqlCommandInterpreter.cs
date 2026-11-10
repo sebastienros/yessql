@@ -68,7 +68,7 @@ namespace YesSql.Provider.PostgreSql
                 return;
             }
 
-            builder.AppendFormat("create index concurrently {1} on {0} ({2}) ",
+            builder.AppendFormat("create index concurrently if not exists {1} on {0} ({2}) ",
                 _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                 _dialect.QuoteForColumnName(command.IndexName),
                 string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(GetRawColumnName(x))))

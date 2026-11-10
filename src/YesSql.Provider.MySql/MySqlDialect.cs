@@ -276,6 +276,14 @@ namespace YesSql.Provider.MySql
         }
 
         /// <inheritdoc />
+        public override string GetIndexExistsSql(string indexName, string tableName, string schema)
+        {
+            // MySQL has no "create index if not exists", and checking in the same statement would need a user variable,
+            // which MySqlConnector rejects by default. Index names are unique per table.
+            return "select 1 from information_schema.statistics where table_schema = database() and table_name = " + GetSqlValue(tableName) + " and index_name = " + GetSqlValue(indexName) + " limit 1";
+        }
+
+        /// <inheritdoc />
         public override string QuoteForColumnName(string columnName)
         {
             return "`" + columnName + "`";

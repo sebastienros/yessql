@@ -90,8 +90,8 @@ namespace YesSql.Tests
         {
             var dialect = new PostgreSqlDialect();
 
-            Assert.Equal("""create index concurrently "IDX_Name" on "People" ("Name", "Age")""", CreateIndexSql(dialect, c => new PostgreSqlCommandInterpreter(c), true));
-            Assert.Equal("""create index "IDX_Name" on "People" ("Name", "Age")""", CreateIndexSql(dialect, c => new PostgreSqlCommandInterpreter(c), false));
+            Assert.Equal("""create index concurrently if not exists "IDX_Name" on "People" ("Name", "Age")""", CreateIndexSql(dialect, c => new PostgreSqlCommandInterpreter(c), true));
+            Assert.Equal("""create index if not exists "IDX_Name" on "People" ("Name", "Age")""", CreateIndexSql(dialect, c => new PostgreSqlCommandInterpreter(c), false));
         }
 
         [Fact]
@@ -99,11 +99,14 @@ namespace YesSql.Tests
         {
             var dialect = new SqlServerDialect();
 
+            const string ifNotExists = "if not exists (select 1 from sys.indexes where name = N'IDX_Name' and object_id = object_id(N'[People]')) ";
+
             Assert.Equal(
-                "if serverproperty('EngineEdition') in (3, 5, 8) exec(N'create index [IDX_Name] on [People] ([Name], [Age]) with (online = on)') " +
-                "else create index [IDX_Name] on [People] ([Name], [Age])",
+                ifNotExists +
+                "begin if serverproperty('EngineEdition') in (3, 5, 8) exec(N'create index [IDX_Name] on [People] ([Name], [Age]) with (online = on)') " +
+                "else create index [IDX_Name] on [People] ([Name], [Age]) end",
                 CreateIndexSql(dialect, c => new SqlServerCommandInterpreter(c), true));
-            Assert.Equal("create index [IDX_Name] on [People] ([Name], [Age])", CreateIndexSql(dialect, c => new SqlServerCommandInterpreter(c), false));
+            Assert.Equal(ifNotExists + "create index [IDX_Name] on [People] ([Name], [Age])", CreateIndexSql(dialect, c => new SqlServerCommandInterpreter(c), false));
         }
 
         [Fact]
@@ -121,7 +124,7 @@ namespace YesSql.Tests
             var dialect = new SqliteDialect();
 
             Assert.False(dialect.SupportsConcurrentIndexCreation);
-            Assert.Equal("create index [IDX_Name] on [People] ([Name], [Age])", CreateIndexSql(dialect, c => new SqliteCommandInterpreter(c), true));
+            Assert.Equal("create index if not exists [IDX_Name] on [People] ([Name], [Age])", CreateIndexSql(dialect, c => new SqliteCommandInterpreter(c), true));
         }
 
         [Fact]

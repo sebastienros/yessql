@@ -228,6 +228,7 @@ namespace YesSql.Sql
             {
                 var alterTable = new AlterTableCommand(Prefix(name), Dialect, TablePrefix, concurrentIndexCreation);
                 table(alterTable);
+                await RemoveExistingIndexesAsync(alterTable);
                 await ExecuteAsync(_commandInterpreter.CreateSql(alterTable), name);
             }
             catch (Exception e)
@@ -394,6 +395,35 @@ namespace YesSql.Sql
                     new CommandDefinition(statement, null, Transaction));
             }
         }
+        /// <summary>
+        /// Removes the indexes that already exist, such that indexes can be created ahead of a migration, for instance online,
+        /// without the migration failing. Only for the dialects whose statements creating indexes don't skip existing ones.
+        /// </summary>
+        private async Task RemoveExistingIndexesAsync(AlterTableCommand alterTable)
+        {
+            for (var i = alterTable.TableCommands.Count - 1; i >= 0; i--)
+            {
+                if (alterTable.TableCommands[i] is not IAddIndexCommand addIndex)
+                {
+                    continue;
+                }
+
+                var sql = Dialect.GetIndexExistsSql(addIndex.IndexName, alterTable.Name, _configuration.Schema);
+
+                if (sql == null)
+                {
+                    return;
+                }
+
+                _logger.LogTrace(sql);
+
+                if (await Connection.ExecuteScalarAsync<object>(new CommandDefinition(sql, null, Transaction)) != null)
+                {
+                    alterTable.TableCommands.RemoveAt(i);
+                }
+            }
+        }
+
         private string Prefix(string table)
             => TablePrefix + table;
     }

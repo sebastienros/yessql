@@ -4835,6 +4835,56 @@ namespace YesSql.Tests
         }
 
         [Fact]
+        public async Task ShouldNotCreateIndexWhenOneWithTheSameNameExists()
+        {
+            var configuration = _store.Configuration;
+            var dialect = configuration.SqlDialect;
+            var indexName = dialect.FormatIndexName((dialect.PrefixIndex ? configuration.TablePrefix : "") + "IDX_Property_Existing");
+            var indexColumnsSql = GetIndexColumnsSql(configuration.TablePrefix + nameof(PropertyIndex), indexName);
+
+            await using var connection = configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel))
+            {
+                var builder = new SchemaBuilder(configuration, transaction);
+
+                await builder.DropMapIndexTableAsync<PropertyIndex>();
+
+                await builder.CreateMapIndexTableAsync<PropertyIndex>(column => column
+                    .Column<string>(nameof(PropertyIndex.Name), col => col.WithLength(255))
+                    .Column<bool>(nameof(PropertyIndex.ForRent))
+                    .Column<bool>(nameof(PropertyIndex.IsOccupied))
+                );
+
+                // Stands for an index that was created ahead of the migration, for instance online.
+                await builder.AlterTableAsync(nameof(PropertyIndex), table => table
+                    .CreateIndex("IDX_Property_Existing", nameof(PropertyIndex.ForRent), nameof(PropertyIndex.Name))
+                );
+
+                await transaction.CommitAsync();
+            }
+
+            Assert.Equal([nameof(PropertyIndex.ForRent), nameof(PropertyIndex.Name)], await connection.QueryAsync<string>(indexColumnsSql));
+
+            // Twice, as running the same migration again must not fail either.
+            for (var i = 0; i < 2; i++)
+            {
+                await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
+                var builder = new SchemaBuilder(configuration, transaction);
+
+                await builder.AlterTableAsync(nameof(PropertyIndex), table => table
+                    .CreateIndex("IDX_Property_Existing", nameof(PropertyIndex.IsOccupied))
+                );
+
+                await transaction.CommitAsync();
+            }
+
+            // The existing index is left as is.
+            Assert.Equal([nameof(PropertyIndex.ForRent), nameof(PropertyIndex.Name)], await connection.QueryAsync<string>(indexColumnsSql));
+        }
+
+        [Fact]
         public async Task ShouldSaveReduceIndexInCollection()
         {
             _store.RegisterIndexes<PersonsByNameIndexProviderCol>("Col1");

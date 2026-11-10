@@ -226,9 +226,14 @@ namespace YesSql.Sql
                 );
         }
 
+        /// <summary>
+        /// Appends the SQL statement that adds an index to the specified builder.
+        /// The statement does nothing when an index with the same name already exists, such that indexes can be created
+        /// ahead of a migration, for instance online or concurrently, without the migration failing or blocking.
+        /// </summary>
         public virtual void Run(StringBuilder builder, IAddIndexCommand command)
         {
-            builder.AppendFormat("create index {1} on {0} ({2}) ",
+            builder.AppendFormat("create index if not exists {1} on {0} ({2}) ",
                 _dialect.QuoteForTableName(command.Name, _configuration.Schema),
                 _dialect.QuoteForColumnName(command.IndexName),
                 string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(GetRawColumnName(x))).ToArray())

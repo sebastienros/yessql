@@ -191,7 +191,7 @@ Creating an index on a large table can block the writes to that table until it i
 | MySQL | `algorithm=inplace lock=none` | Fails instead of locking the table if the index can't be created that way |
 | SQLite | Not supported | |
 
-PostgreSQL can't create an index concurrently in a transaction, so it is only done with a schema builder created from a connection instead of a transaction. Each of its statements then runs on its own, and a failure doesn't revert the previous ones. A concurrent index creation that fails also leaves an invalid index behind, that has to be dropped before trying again.
+PostgreSQL can't create an index concurrently in a transaction, so it is only done with a schema builder created from a connection instead of a transaction. Each of its statements then runs on its own, and a failure doesn't revert the previous ones. A concurrent index creation that fails also leaves an invalid index behind. Since an index that already exists isn't created again, it has to be dropped before trying again, or it is kept invalid.
 
 ```csharp
 await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
