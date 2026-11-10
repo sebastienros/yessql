@@ -14,6 +14,7 @@ namespace YesSql.Sql
         private readonly ICommandInterpreter _commandInterpreter;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
+        private readonly bool _concurrentIndexCreation;
 
         public string TablePrefix { get; private set; }
         public ISqlDialect Dialect { get; private set; }
@@ -24,17 +25,40 @@ namespace YesSql.Sql
         public IdentityColumnSize IdentityColumnSize { get; set; }
 
         public SchemaBuilder(IConfiguration configuration, DbTransaction transaction, bool throwOnError = true)
+            : this(configuration, transaction.Connection, transaction, throwOnError)
         {
+        }
+
+        /// <summary>
+        /// Creates a schema builder that runs each statement on its own, outside of any transaction.
+        /// </summary>
+        /// <remarks>
+        /// Some databases can only create indexes without blocking writes outside of a transaction, like PostgreSQL with
+        /// <c>CREATE INDEX CONCURRENTLY</c>. A failing statement doesn't revert the previous ones.
+        /// </remarks>
+        public SchemaBuilder(IConfiguration configuration, DbConnection connection, bool throwOnError = true)
+            : this(configuration, connection, null, throwOnError)
+        {
+        }
+
+        private SchemaBuilder(IConfiguration configuration, DbConnection connection, DbTransaction transaction, bool throwOnError)
+        {
+            ArgumentNullException.ThrowIfNull(connection);
+
             Transaction = transaction;
             _configuration = configuration;
             _logger = configuration.Logger;
-            Connection = Transaction.Connection;
+            Connection = connection;
             _commandInterpreter = configuration.CommandInterpreter;
             Dialect = configuration.SqlDialect;
             TablePrefix = configuration.TablePrefix;
             ThrowOnError = throwOnError;
             TableNameConvention = configuration.TableNameConvention;
             IdentityColumnSize = configuration.IdentityColumnSize;
+
+            _concurrentIndexCreation = configuration.ConcurrentIndexCreationEnabled
+                && Dialect.SupportsConcurrentIndexCreation
+                && (transaction == null || Dialect.SupportsConcurrentIndexCreationInTransaction);
         }
 
         public async Task CreateMapIndexTableAsync(Type indexType, Action<ICreateTableCommand> table, string collection)
@@ -64,7 +88,8 @@ namespace YesSql.Sql
                 // then skip scans the whole index.
 
                 await AlterTableAsync(indexTable, table =>
-                    table.CreateIndex($"IDX_FK_{indexTable}", "DocumentId")
+                    table.CreateIndex($"IDX_FK_{indexTable}", "DocumentId"),
+                    concurrentIndexCreation: false
                     );
             }
             catch (Exception e)
@@ -104,7 +129,8 @@ namespace YesSql.Sql
                 await CreateForeignKeyAsync("FK_" + bridgeTableName + "_DocumentId", bridgeTableName, new[] { "DocumentId" }, documentTable, new[] { "Id" });
 
                 await AlterTableAsync(bridgeTableName, table =>
-                    table.CreateIndex($"IDX_FK_{bridgeTableName}", indexName + "Id", "DocumentId")
+                    table.CreateIndex($"IDX_FK_{bridgeTableName}", indexName + "Id", "DocumentId"),
+                    concurrentIndexCreation: false
                     );
 
                 // NB: The index above can't serve the foreign key on DocumentId, which every document delete has to check.
@@ -112,7 +138,8 @@ namespace YesSql.Sql
                 // Keep it on DocumentId alone, adding the reduce index id gave counts no real benefit.
 
                 await AlterTableAsync(bridgeTableName, table =>
-                    table.CreateIndex($"IDX_FK_{bridgeTableName}_DocumentId", "DocumentId")
+                    table.CreateIndex($"IDX_FK_{bridgeTableName}_DocumentId", "DocumentId"),
+                    concurrentIndexCreation: false
                     );
             }
             catch (Exception e)
@@ -191,11 +218,15 @@ namespace YesSql.Sql
             }
         }
 
-        public async Task AlterTableAsync(string name, Action<IAlterTableCommand> table)
+        public Task AlterTableAsync(string name, Action<IAlterTableCommand> table)
+            => AlterTableAsync(name, table, _concurrentIndexCreation);
+
+        // The indexes of a table created by the same call don't need to be created concurrently, the table is empty.
+        private async Task AlterTableAsync(string name, Action<IAlterTableCommand> table, bool concurrentIndexCreation)
         {
             try
             {
-                var alterTable = new AlterTableCommand(Prefix(name), Dialect, TablePrefix);
+                var alterTable = new AlterTableCommand(Prefix(name), Dialect, TablePrefix, concurrentIndexCreation);
                 table(alterTable);
                 await RemoveExistingIndexesAsync(alterTable);
                 await ExecuteAsync(_commandInterpreter.CreateSql(alterTable), name);

@@ -14,5 +14,10 @@
         /// Gets the names of the columns that the index is defined on.
         /// </summary>
         string[] ColumnNames { get; }
+
+        /// <summary>
+        /// Gets or sets whether the index is created without blocking writes to its table, when the database supports it.
+        /// </summary>
+        bool Concurrent { get; set; }
     }
 }

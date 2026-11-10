@@ -159,6 +159,11 @@ namespace YesSql.Provider.PostgreSql
         /// <inheritdoc />
         public override bool PrefixIndex => true;
         /// <inheritdoc />
+        public override bool SupportsConcurrentIndexCreation => true;
+        /// <inheritdoc />
+        /// <remarks>PostgreSQL fails with "CREATE INDEX CONCURRENTLY cannot run inside a transaction block".</remarks>
+        public override bool SupportsConcurrentIndexCreationInTransaction => false;
+        /// <inheritdoc />
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)

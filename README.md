@@ -180,6 +180,35 @@ With the benchmarks in `samples/YesSql.Samples.Performance` on a local server, i
 
 Prepared statements use generic plans once PostgreSQL considers them as good as custom ones, which depends on up-to-date table statistics. Tables that change a lot quickly, like freshly loaded ones, may need an `ANALYZE` before their statistics, and the plans based on them, are accurate.
 
+### Creating indexes without blocking writes
+
+Creating an index on a large table can block the writes to that table until it is done. By default, the indexes that `ISchemaBuilder.AlterTable` creates are built while the table can still be written to, when the database supports it:
+
+| Provider | SQL | Conditions |
+| --- | --- | --- |
+| PostgreSQL | `create index concurrently` | Only with a schema builder that doesn't use a transaction |
+| SQL Server | `with (online = on)` | Enterprise and Developer editions, Azure SQL Database and Managed Instance. The other editions create the index the regular way |
+| MySQL | `algorithm=inplace lock=none` | Fails instead of locking the table if the index can't be created that way |
+| SQLite | Not supported | |
+
+PostgreSQL can't create an index concurrently in a transaction, so it is only done with a schema builder created from a connection instead of a transaction. Each of its statements then runs on its own, and a failure doesn't revert the previous ones. A concurrent index creation that fails also leaves an invalid index behind. Since an index that already exists isn't created again, it has to be dropped before trying again, or it is kept invalid.
+
+```csharp
+await using var connection = store.Configuration.ConnectionFactory.CreateConnection();
+await connection.OpenAsync();
+
+var builder = new SchemaBuilder(store.Configuration, connection);
+
+await builder.AlterIndexTableAsync<PersonByName>(table => table
+    .CreateIndex("IDX_PersonByName_Name", "Name", "DocumentId"));
+```
+
+The indexes YesSql creates with the index tables, which are still empty, are always created the regular way. To create all the indexes the regular way, disable it in the configuration:
+
+```csharp
+configuration.DisableConcurrentIndexCreation();
+```
+
 Development
 -------------------
 

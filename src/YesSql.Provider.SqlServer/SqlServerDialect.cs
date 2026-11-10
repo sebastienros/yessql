@@ -283,6 +283,12 @@ namespace YesSql.Provider.SqlServer
         public override bool SupportsIfExistsBeforeTableName => true;
 
         /// <inheritdoc />
+        public override bool SupportsConcurrentIndexCreation => true;
+
+        /// <inheritdoc />
+        public override bool SupportsConcurrentIndexCreationInTransaction => true;
+
+        /// <inheritdoc />
         public override int MaxParametersPerCommand => 2098;
 
         /// <inheritdoc />

@@ -7,11 +7,20 @@ namespace YesSql.Sql.Schema
         private readonly ISqlDialect _dialect;
         private readonly string _tablePrefix;
 
+        private readonly bool _concurrentIndexCreation;
+
         public AlterTableCommand(string name, ISqlDialect dialect, string tablePrefix)
+            : this(name, dialect, tablePrefix, concurrentIndexCreation: false)
+        {
+        }
+
+        /// <param name="concurrentIndexCreation">Whether the indexes are created without blocking writes to the table.</param>
+        public AlterTableCommand(string name, ISqlDialect dialect, string tablePrefix, bool concurrentIndexCreation)
             : base(name, SchemaCommandType.AlterTable)
         {
             _dialect = dialect;
             _tablePrefix = tablePrefix;
+            _concurrentIndexCreation = concurrentIndexCreation;
         }
 
         public void AddColumn(string columnName, Type dbType, Action<IAddColumnCommand> column = null)
@@ -59,7 +68,11 @@ namespace YesSql.Sql.Schema
                 indexName = _tablePrefix + indexName;
             }
 
-            var command = new AddIndexCommand(Name, _dialect.FormatIndexName(indexName), columnNames);
+            var command = new AddIndexCommand(Name, _dialect.FormatIndexName(indexName), columnNames)
+            {
+                Concurrent = _concurrentIndexCreation,
+            };
+
             TableCommands.Add(command);
         }
 

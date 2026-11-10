@@ -34,13 +34,23 @@ namespace YesSql.Provider.SqlServer
 
         /// <summary>
         /// Appends the SQL statement that adds an index to the specified builder, unless an index with the same name
-        /// already exists on the table.
+        /// already exists on the table, online when the command requires it.
         /// </summary>
+        /// <remarks>
+        /// Online index operations are only available on the Enterprise and Developer editions, Azure SQL Database and
+        /// Azure SQL Managed Instance. The other editions create the index the regular way.
+        /// </remarks>
         /// <param name="builder">The builder to append the SQL statement to.</param>
         /// <param name="command">The add index command to run.</param>
         public override void Run(StringBuilder builder, IAddIndexCommand command)
         {
             var table = _dialect.QuoteForTableName(command.Name, _configuration.Schema);
+
+            var createIndex = string.Format("create index {1} on {0} ({2})",
+                table,
+                _dialect.QuoteForColumnName(command.IndexName),
+                string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(GetRawColumnName(x))))
+                );
 
             // SQL Server has no "create index if not exists". Index names are unique per table.
             builder.AppendFormat("if not exists (select 1 from sys.indexes where name = {0} and object_id = object_id({1})) ",
@@ -48,11 +58,20 @@ namespace YesSql.Provider.SqlServer
                 _dialect.GetSqlValue(table)
                 );
 
-            builder.AppendFormat("create index {1} on {0} ({2}) ",
-                table,
-                _dialect.QuoteForColumnName(command.IndexName),
-                string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(GetRawColumnName(x))))
-                );
+            if (!command.Concurrent)
+            {
+                builder.Append(createIndex).Append(' ');
+                return;
+            }
+
+            // The online statement is run by EXEC so that the other editions don't reject the batch.
+            // EngineEdition: 3 = Enterprise or Developer, 5 = Azure SQL Database, 8 = Azure SQL Managed Instance.
+            builder
+                .Append("begin if serverproperty('EngineEdition') in (3, 5, 8) exec(")
+                .Append(_dialect.GetSqlValue(createIndex + " with (online = on)"))
+                .Append(") else ")
+                .Append(createIndex)
+                .Append(" end");
         }
     }
 }
