@@ -78,7 +78,7 @@ namespace YesSql.Provider.MySql
         }
 
         /// <summary>
-        /// Appends the SQL statement that adds an index to the specified builder.
+        /// Appends the SQL statement that adds an index to the specified builder, without blocking writes when the command requires it.
         /// </summary>
         /// <param name="builder">The builder to append the SQL statement to.</param>
         /// <param name="command">The add index command to run.</param>
@@ -89,6 +89,12 @@ namespace YesSql.Provider.MySql
                 _dialect.QuoteForColumnName(command.IndexName),
                 string.Join(", ", command.ColumnNames.Select(x => GetColumnName(x)).ToArray())
                 );
+
+            if (command.Concurrent)
+            {
+                // Fails instead of silently locking the table if the index can't be created without blocking writes.
+                builder.Append("algorithm=inplace lock=none ");
+            }
         }
 
         private string GetColumnName(string name)

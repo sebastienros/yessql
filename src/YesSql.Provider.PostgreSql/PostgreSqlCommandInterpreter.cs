@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Linq;
 using System.Text;
 using YesSql.Sql;
 using YesSql.Sql.Schema;
@@ -52,6 +53,26 @@ namespace YesSql.Provider.PostgreSql
                     .Append(" set default ")
                     .Append(_dialect.GetSqlValue(command.Default));
             }
+        }
+
+        /// <summary>
+        /// Appends the SQL statement that adds an index to the specified builder, concurrently when the command requires it.
+        /// </summary>
+        /// <param name="builder">The builder to append the SQL statement to.</param>
+        /// <param name="command">The add index command to run.</param>
+        public override void Run(StringBuilder builder, IAddIndexCommand command)
+        {
+            if (!command.Concurrent)
+            {
+                base.Run(builder, command);
+                return;
+            }
+
+            builder.AppendFormat("create index concurrently {1} on {0} ({2}) ",
+                _dialect.QuoteForTableName(command.Name, _configuration.Schema),
+                _dialect.QuoteForColumnName(command.IndexName),
+                string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(GetRawColumnName(x))))
+                );
         }
     }
 }

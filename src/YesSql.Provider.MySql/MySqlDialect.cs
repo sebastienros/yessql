@@ -118,6 +118,12 @@ namespace YesSql.Provider.MySql
         public override bool SupportsIfExistsBeforeTableName => true;
 
         /// <inheritdoc />
+        public override bool SupportsConcurrentIndexCreation => true;
+
+        /// <inheritdoc />
+        public override bool SupportsConcurrentIndexCreationInTransaction => true;
+
+        /// <inheritdoc />
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)

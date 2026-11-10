@@ -12,5 +12,7 @@
         }
 
         public string[] ColumnNames { get; private set; }
+
+        public bool Concurrent { get; set; }
     }
 }

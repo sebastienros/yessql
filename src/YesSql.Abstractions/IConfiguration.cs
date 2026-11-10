@@ -80,6 +80,21 @@ namespace YesSql
         public bool EnableThreadSafetyChecks { get; set; }
 
         /// <summary>
+        /// Gets or sets whether indexes are created without blocking writes to their table when the database supports it.
+        /// </summary>
+        /// <remarks>
+        /// When enabled, the indexes created on existing tables use <c>CREATE INDEX CONCURRENTLY</c> on PostgreSQL,
+        /// <c>ONLINE = ON</c> on SQL Server editions that support online index operations, and
+        /// <c>ALGORITHM=INPLACE LOCK=NONE</c> on MySQL. SQLite doesn't support it and always creates indexes the regular way.
+        /// PostgreSQL can't create an index concurrently in a transaction, so it is only used by a schema builder that doesn't
+        /// have one.
+        /// </remarks>
+        /// <value>
+        /// The default value is <see langword="true"/>.
+        /// </value>
+        bool ConcurrentIndexCreationEnabled { get; set; }
+
+        /// <summary>
         /// Gets the collection of types that must be checked for concurrency.
         /// </summary>
         HashSet<Type> ConcurrentTypes { get; }
@@ -184,6 +199,15 @@ namespace YesSql
         public static IConfiguration DisableQueryGating(this IConfiguration configuration)
         {
             configuration.QueryGatingEnabled = false;
+            return configuration;
+        }
+
+        /// <summary>
+        /// Disables the creation of indexes that don't block writes to their table, see <see cref="IConfiguration.ConcurrentIndexCreationEnabled"/>.
+        /// </summary>
+        public static IConfiguration DisableConcurrentIndexCreation(this IConfiguration configuration)
+        {
+            configuration.ConcurrentIndexCreationEnabled = false;
             return configuration;
         }
 

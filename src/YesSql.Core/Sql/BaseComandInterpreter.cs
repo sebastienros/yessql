@@ -321,7 +321,7 @@ namespace YesSql.Sql
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        private static string GetRawColumnName(string name)
+        protected static string GetRawColumnName(string name)
         {
             var index = name.IndexOf('(');
 

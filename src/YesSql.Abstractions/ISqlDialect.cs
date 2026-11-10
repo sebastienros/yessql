@@ -105,6 +105,16 @@ namespace YesSql
         bool PrefixIndex { get; }
 
         /// <summary>
+        /// Gets whether the dialect can create an index without blocking writes to its table.
+        /// </summary>
+        bool SupportsConcurrentIndexCreation { get; }
+
+        /// <summary>
+        /// Gets whether the dialect can create an index without blocking writes to its table inside a transaction.
+        /// </summary>
+        bool SupportsConcurrentIndexCreationInTransaction { get; }
+
+        /// <summary>
         /// Gets whether the identity columns requires the data type.
         /// </summary>
         bool HasDataTypeInIdentityColumn { get; }

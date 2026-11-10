@@ -4756,6 +4756,84 @@ namespace YesSql.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ShouldCreateIndexesOnExistingTable(bool concurrentIndexCreationEnabled)
+        {
+            const string table = "ExistingTable";
+
+            var configuration = _store.Configuration;
+            var dialect = configuration.SqlDialect;
+            var initialEnabled = configuration.ConcurrentIndexCreationEnabled;
+            var initialLogger = configuration.Logger;
+            var log = new StringBuilder();
+
+            await using var connection = configuration.ConnectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            async Task DropTableAsync()
+            {
+                await using var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel);
+                await new SchemaBuilder(configuration, transaction, throwOnError: false).DropTableAsync(table);
+                await transaction.CommitAsync();
+            }
+
+            string IndexName(string name) => dialect.FormatIndexName((dialect.PrefixIndex ? configuration.TablePrefix : "") + name);
+
+            // Each dialect has its own syntax, none of them is used by a regular index creation.
+            bool IsConcurrent(string sql) => sql.Contains(" concurrently ") || sql.Contains("online = on") || sql.Contains("lock=none");
+
+            try
+            {
+                configuration.ConcurrentIndexCreationEnabled = concurrentIndexCreationEnabled;
+                configuration.Logger = new TestLogger(log);
+
+                await DropTableAsync();
+
+                await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel))
+                {
+                    await new SchemaBuilder(configuration, transaction).CreateTableAsync(table, column => column
+                        .Column<int>("Id", c => c.PrimaryKey().NotNull())
+                        .Column<string>("Name", c => c.WithLength(255)));
+
+                    await transaction.CommitAsync();
+                }
+
+                var quotedTable = dialect.QuoteForTableName(configuration.TablePrefix + table, configuration.Schema);
+                var insert = $"insert into {quotedTable} ({dialect.QuoteForColumnName("Id")}, {dialect.QuoteForColumnName("Name")}) values (@Id, @Name)";
+                await connection.ExecuteAsync(insert, Enumerable.Range(1, 100).Select(i => new { Id = i, Name = "Name" + i }));
+
+                // In a transaction, PostgreSQL can't create the index concurrently and creates it the regular way.
+                log.Clear();
+                await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel))
+                {
+                    await new SchemaBuilder(configuration, transaction).AlterTableAsync(table, t => t.CreateIndex("IDX_ExistingTable_Name", "Name"));
+                    await transaction.CommitAsync();
+                }
+
+                Assert.Equal(
+                    concurrentIndexCreationEnabled && dialect.SupportsConcurrentIndexCreation && dialect.SupportsConcurrentIndexCreationInTransaction,
+                    IsConcurrent(log.ToString()));
+
+                // Outside of a transaction every dialect that supports it creates the index concurrently.
+                log.Clear();
+                await new SchemaBuilder(configuration, connection).AlterTableAsync(table, t => t.CreateIndex("IDX_ExistingTable_Name_Id", "Name", "Id"));
+
+                Assert.Equal(concurrentIndexCreationEnabled && dialect.SupportsConcurrentIndexCreation, IsConcurrent(log.ToString()));
+
+                Assert.Equal(["Name"], await connection.QueryAsync<string>(GetIndexColumnsSql(configuration.TablePrefix + table, IndexName("IDX_ExistingTable_Name"))));
+                Assert.Equal(["Name", "Id"], await connection.QueryAsync<string>(GetIndexColumnsSql(configuration.TablePrefix + table, IndexName("IDX_ExistingTable_Name_Id"))));
+            }
+            finally
+            {
+                configuration.ConcurrentIndexCreationEnabled = initialEnabled;
+                configuration.Logger = initialLogger;
+
+                await DropTableAsync();
+            }
+        }
+
         [Fact]
         public async Task ShouldSaveReduceIndexInCollection()
         {

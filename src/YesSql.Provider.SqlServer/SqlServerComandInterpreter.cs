@@ -30,5 +30,35 @@ namespace YesSql.Provider.SqlServer
                 _dialect.GetSqlValue(command.NewColumnName)
                 );            
         }
+
+        /// <summary>
+        /// Appends the SQL statement that adds an index to the specified builder, online when the command requires it.
+        /// </summary>
+        /// <remarks>
+        /// Online index operations are only available on the Enterprise and Developer editions, Azure SQL Database and
+        /// Azure SQL Managed Instance. The other editions create the index the regular way.
+        /// </remarks>
+        /// <param name="builder">The builder to append the SQL statement to.</param>
+        /// <param name="command">The add index command to run.</param>
+        public override void Run(StringBuilder builder, IAddIndexCommand command)
+        {
+            if (!command.Concurrent)
+            {
+                base.Run(builder, command);
+                return;
+            }
+
+            var createIndex = new StringBuilder();
+            base.Run(createIndex, command);
+            var statement = createIndex.ToString().TrimEnd();
+
+            // The online statement is run by EXEC so that the other editions don't reject the batch.
+            // EngineEdition: 3 = Enterprise or Developer, 5 = Azure SQL Database, 8 = Azure SQL Managed Instance.
+            builder
+                .Append("if serverproperty('EngineEdition') in (3, 5, 8) exec(")
+                .Append(_dialect.GetSqlValue(statement + " with (online = on)"))
+                .Append(") else ")
+                .Append(statement);
+        }
     }
 }

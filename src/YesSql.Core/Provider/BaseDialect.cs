@@ -127,6 +127,9 @@ namespace YesSql.Provider
 
         public virtual bool SupportsUnique => true;
 
+        public virtual bool SupportsConcurrentIndexCreation => false;
+        public virtual bool SupportsConcurrentIndexCreationInTransaction => false;
+
         public virtual bool SupportsForeignKeyConstraintInAlterTable => true;
 
         public virtual string FormatKeyName(string name) => name;
