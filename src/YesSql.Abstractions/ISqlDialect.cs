@@ -180,6 +180,12 @@ namespace YesSql
         string GetDropIndexString(string indexName, string tableName, string schema);
 
         /// <summary>
+        /// Gets the SQL statement returning a row when an index with the specified name exists on the table, in which case
+        /// it is not created again. Returns <c>null</c> when the statements creating indexes already skip existing ones.
+        /// </summary>
+        string GetIndexExistsSql(string indexName, string tableName, string schema) => null;
+
+        /// <summary>
         /// Returns the quoted column.
         /// </summary>
         string QuoteForColumnName(string columnName);

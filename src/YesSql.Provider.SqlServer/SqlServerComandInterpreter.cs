@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text;
 using YesSql.Sql;
 using YesSql.Sql.Schema;
@@ -29,6 +30,29 @@ namespace YesSql.Provider.SqlServer
                 // Don't [quote] the column name
                 _dialect.GetSqlValue(command.NewColumnName)
                 );            
+        }
+
+        /// <summary>
+        /// Appends the SQL statement that adds an index to the specified builder, unless an index with the same name
+        /// already exists on the table.
+        /// </summary>
+        /// <param name="builder">The builder to append the SQL statement to.</param>
+        /// <param name="command">The add index command to run.</param>
+        public override void Run(StringBuilder builder, IAddIndexCommand command)
+        {
+            var table = _dialect.QuoteForTableName(command.Name, _configuration.Schema);
+
+            // SQL Server has no "create index if not exists". Index names are unique per table.
+            builder.AppendFormat("if not exists (select 1 from sys.indexes where name = {0} and object_id = object_id({1})) ",
+                _dialect.GetSqlValue(command.IndexName),
+                _dialect.GetSqlValue(table)
+                );
+
+            builder.AppendFormat("create index {1} on {0} ({2}) ",
+                table,
+                _dialect.QuoteForColumnName(command.IndexName),
+                string.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(GetRawColumnName(x))))
+                );
         }
     }
 }
