@@ -2644,7 +2644,7 @@ namespace YesSql.Tests
         public async Task ShouldUpdateAttachmentIndex()
         {
             _store.RegisterIndexes<AttachmentByDayProvider>();
-            var date = new DateTime(2018, 06, 11);
+            var date = new DateTime(2018, 06, 11, 0, 0, 0, DateTimeKind.Utc);
 
             // Create one Email with 3 attachments
             await using (var session = _store.CreateSession())
@@ -3020,16 +3020,16 @@ namespace YesSql.Tests
             {
                 var dates = new[]
                 {
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 3),
-                    new DateTime(2011, 11, 4),
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 3),
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 1)
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 4, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc)
                 };
 
                 var articles = dates.Select(x => new Article
@@ -3080,19 +3080,19 @@ namespace YesSql.Tests
             {
                 var dates = new[]
                 {
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 1),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
 
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
 
-                    new DateTime(2011, 11, 3),
-                    new DateTime(2011, 11, 3),
+                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 3, 0, 0, 0, DateTimeKind.Utc),
 
-                    new DateTime(2011, 11, 4)
+                    new DateTime(2011, 11, 4, 0, 0, 0, DateTimeKind.Utc)
                 };
 
                 foreach (var date in dates)
@@ -3151,9 +3151,9 @@ namespace YesSql.Tests
             {
                 var dates = new[]
                 {
-                    new DateTime(2011, 11, 1),
-                    new DateTime(2011, 11, 2),
-                    new DateTime(2011, 11, 2),
+                    new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2011, 11, 2, 0, 0, 0, DateTimeKind.Utc),
                 };
 
                 var articles = dates.Select(x => new Article
@@ -4768,7 +4768,6 @@ namespace YesSql.Tests
             var dialect = configuration.SqlDialect;
             var initialEnabled = configuration.ConcurrentIndexCreationEnabled;
             var initialLogger = configuration.Logger;
-            var log = new StringBuilder();
 
             await using var connection = configuration.ConnectionFactory.CreateConnection();
             await connection.OpenAsync();
@@ -4787,8 +4786,9 @@ namespace YesSql.Tests
 
             try
             {
+                var logger = new FakeLogger<CoreTests>();
                 configuration.ConcurrentIndexCreationEnabled = concurrentIndexCreationEnabled;
-                configuration.Logger = new TestLogger(log);
+                configuration.Logger = logger;
 
                 await DropTableAsync();
 
@@ -4806,7 +4806,8 @@ namespace YesSql.Tests
                 await connection.ExecuteAsync(insert, Enumerable.Range(1, 100).Select(i => new { Id = i, Name = "Name" + i }));
 
                 // In a transaction, PostgreSQL can't create the index concurrently and creates it the regular way.
-                log.Clear();
+                logger.Collector.Clear();
+
                 await using (var transaction = await connection.BeginTransactionAsync(configuration.IsolationLevel))
                 {
                     await new SchemaBuilder(configuration, transaction).AlterTableAsync(table, t => t.CreateIndex("IDX_ExistingTable_Name", "Name"));
@@ -4815,13 +4816,14 @@ namespace YesSql.Tests
 
                 Assert.Equal(
                     concurrentIndexCreationEnabled && dialect.SupportsConcurrentIndexCreation && dialect.SupportsConcurrentIndexCreationInTransaction,
-                    IsConcurrent(log.ToString()));
+                    IsConcurrent(logger.LatestRecord.Message));
 
                 // Outside of a transaction every dialect that supports it creates the index concurrently.
-                log.Clear();
+                logger.Collector.Clear();
+
                 await new SchemaBuilder(configuration, connection).AlterTableAsync(table, t => t.CreateIndex("IDX_ExistingTable_Name_Id", "Name", "Id"));
 
-                Assert.Equal(concurrentIndexCreationEnabled && dialect.SupportsConcurrentIndexCreation, IsConcurrent(log.ToString()));
+                Assert.Equal(concurrentIndexCreationEnabled && dialect.SupportsConcurrentIndexCreation, IsConcurrent(logger.LatestRecord.Message));
 
                 Assert.Equal(["Name"], await connection.QueryAsync<string>(GetIndexColumnsSql(configuration.TablePrefix + table, IndexName("IDX_ExistingTable_Name"))));
                 Assert.Equal(["Name", "Id"], await connection.QueryAsync<string>(GetIndexColumnsSql(configuration.TablePrefix + table, IndexName("IDX_ExistingTable_Name_Id"))));
@@ -5929,8 +5931,8 @@ namespace YesSql.Tests
 
             await using (var session = _store.CreateSession())
             {
-                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
-                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc) });
+                await session.SaveAsync(new Article { PublishedUtc = new DateTime(2011, 11, 1, 0, 0, 0, DateTimeKind.Utc) });
 
                 await session.SaveChangesAsync();
             }
@@ -6436,7 +6438,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6470,7 +6472,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6494,7 +6496,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6573,7 +6575,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6594,7 +6596,7 @@ namespace YesSql.Tests
         {
             _store.RegisterIndexes<ExclusivePersonIndexProvider>();
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6636,7 +6638,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             var documentTable = _store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetDocumentTable("");
@@ -6678,7 +6680,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6708,7 +6710,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6739,7 +6741,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6766,7 +6768,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6791,7 +6793,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6816,7 +6818,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6831,7 +6833,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldCountDocumentsFromIndexesDeclaredOnSession()
         {
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6863,7 +6865,7 @@ namespace YesSql.Tests
         {
             _store.RegisterIndexes<ExclusivePersonIndexProviderCol>("Col1");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6881,7 +6883,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve", "Paul", "Scott");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -6891,25 +6893,25 @@ namespace YesSql.Tests
             Assert.Equal(new[] { "Scott", "Paul" }, page.Select(x => x.Firstname));
             AssertNotGrouped(logger, deferred: true);
 
-            logger.Clear();
+            logger.Collector.Clear();
             page = await session.Query<Person, PersonByName>(filterType: true).OrderBy(x => x.SomeName).ThenByDescending(x => x.Id).Take(2).ListAsync();
             Assert.Equal(new[] { "Bill", "Paul" }, page.Select(x => x.Firstname));
             AssertNotGrouped(logger, deferred: true);
 
             // A page without an order is ordered by document id.
-            logger.Clear();
+            logger.Collector.Clear();
             page = await session.Query<Person, PersonByName>().Skip(3).Take(10).ListAsync();
             Assert.Equal("Scott", Assert.Single(page).Firstname);
             AssertNotGrouped(logger, deferred: true);
 
             // Without a page the order is still only applied on the document ids.
-            logger.Clear();
+            logger.Collector.Clear();
             page = await session.Query<Person, PersonByName>(x => x.SomeName != "Bill").OrderBy(x => x.SomeName).ListAsync();
             Assert.Equal(new[] { "Paul", "Scott", "Steve" }, page.Select(x => x.Firstname));
             AssertNotGrouped(logger, deferred: true);
 
             // Without an order or a page there is nothing to apply on the document ids.
-            logger.Clear();
+            logger.Collector.Clear();
             page = await session.Query<Person, PersonByName>().ListAsync();
             Assert.Equal(4, page.Count);
             AssertNotGrouped(logger, deferred: false);
@@ -6930,7 +6932,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6939,14 +6941,14 @@ namespace YesSql.Tests
                 Assert.Equal(new[] { "Paul", "Bill" }, persons.Select(x => x.Firstname));
                 AssertNotGrouped(logger, deferred: true);
 
-                logger.Clear();
+                logger.Collector.Clear();
                 persons = await session.Query<Person>().Any(
                     x => x.With<PersonByName>(x => x.SomeName == "Bill"),
                     x => x.With<PersonByName>(x => x.SomeName == "Steve")).ListAsync();
                 Assert.Equal(2, persons.Count);
                 Assert.DoesNotContain("GROUP BY", logger.ToString());
 
-                logger.Clear();
+                logger.Collector.Clear();
                 Assert.Equal(2, await session.Query<Person>().Any(
                     x => x.With<PersonByName>(x => x.SomeName == "Bill"),
                     x => x.With<PersonByAge>(x => x.Age < 18)).CountAsync());
@@ -6969,7 +6971,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -6980,7 +6982,7 @@ namespace YesSql.Tests
                 Assert.IsType<Circle>(shapes[0]);
                 AssertNotGrouped(logger, deferred: true);
 
-                logger.Clear();
+                logger.Collector.Clear();
                 Assert.Equal(3, await session.Query<Shape, ShapeIndex>(filterType: false).CountAsync());
                 Assert.Contains("count(*)", Assert.Single(GetCountQueries(logger)));
             }
@@ -6993,7 +6995,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -7014,7 +7016,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
@@ -7041,7 +7043,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session2 = _store.CreateSession();
@@ -7066,7 +7068,7 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session2 = _store.CreateSession();
@@ -7074,9 +7076,9 @@ namespace YesSql.Tests
             var persons = await session2.Query<Person, PersonByName>().With<PersonByAge>().OrderBy(x => x.Age).ListAsync();
 
             Assert.Equal(new[] { "Steve", "Bill" }, persons.Select(x => x.Firstname));
-            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Contains("GROUP BY", logger.LatestRecord.Message);
 
-            logger.Clear();
+            logger.Collector.Clear();
             Assert.Equal(2, await session2.Query<Person, PersonByName>().With<PersonByAge>().CountAsync());
             Assert.Contains("count(distinct", Assert.Single(GetCountQueries(logger)));
         }
@@ -7095,13 +7097,13 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session2 = _store.CreateSession();
 
             Assert.Equal(2, (await session2.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync()).Count);
-            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Contains("GROUP BY", logger.LatestRecord.Message);
             Assert.Equal(2, await session2.Query<Person, PersonByName>().CountAsync());
         }
 
@@ -7112,28 +7114,28 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using (var session = _store.CreateSession())
             {
                 await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
-                Assert.DoesNotContain("GROUP BY", logger.ToString());
+                Assert.DoesNotContain("GROUP BY", logger.LatestRecord.Message);
 
                 session.RegisterIndexes(new SecondSingleRecordPersonIndexProvider());
 
-                logger.Clear();
+                logger.Collector.Clear();
                 await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
-                Assert.Contains("GROUP BY", logger.ToString());
+                Assert.Contains("GROUP BY", logger.LatestRecord.Message);
             }
 
             // The provider of another session doesn't apply.
-            logger.Clear();
+            logger.Collector.Clear();
 
             await using (var session = _store.CreateSession())
             {
                 await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
-                Assert.DoesNotContain("GROUP BY", logger.ToString());
+                Assert.DoesNotContain("GROUP BY", logger.LatestRecord.Message);
             }
         }
 
@@ -7142,14 +7144,14 @@ namespace YesSql.Tests
         {
             _store.RegisterIndexes<SingleRecordPersonIndexProvider>("Col1");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
 
             await session.Query<Person, PersonByName>().OrderBy(x => x.SomeName).ListAsync();
 
-            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Contains("GROUP BY", logger.LatestRecord.Message);
         }
 
         [Fact]
@@ -7165,13 +7167,13 @@ namespace YesSql.Tests
                 await session.SaveChangesAsync();
             }
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session2 = _store.CreateSession();
 
             Assert.Equal(2, (await session2.Query<Article, ArticlesByDay>().OrderBy(x => x.DayOfYear).ListAsync()).Count);
-            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Contains("GROUP BY", logger.LatestRecord.Message);
             Assert.Equal(2, await session2.Query<Article, ArticlesByDay>().CountAsync());
             Assert.Contains("count(distinct", Assert.Single(GetCountQueries(logger)));
         }
@@ -7183,7 +7185,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7191,9 +7193,9 @@ namespace YesSql.Tests
             var persons = await session.Query<Person>().With<PersonByName>().OrderBy(x => x.SomeName).NoIndexOptimizations().ListAsync();
 
             Assert.Equal(new[] { "Bill", "Steve" }, persons.Select(x => x.Firstname));
-            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Contains("GROUP BY", logger.LatestRecord.Message);
 
-            logger.Clear();
+            logger.Collector.Clear();
             Assert.Equal(2, await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().CountAsync());
             Assert.Contains("count(distinct", Assert.Single(GetCountQueries(logger)));
         }
@@ -7205,7 +7207,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7224,15 +7226,15 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
 
             Assert.Equal(2, (await session.Query<Person>().With<PersonByName>().OrderBy(x => x.SomeName).NoIndexOptimizations().ListAsync()).Count);
-            Assert.Contains("GROUP BY", logger.ToString());
+            Assert.Contains("GROUP BY", logger.LatestRecord.Message);
 
-            logger.Clear();
+            logger.Collector.Clear();
             Assert.Equal(2, await session.Query<Person>().With<PersonByName>().NoIndexOptimizations().CountAsync());
 
             var count = Assert.Single(GetCountQueries(logger));
@@ -7248,7 +7250,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7268,7 +7270,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7285,7 +7287,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7303,7 +7305,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7321,7 +7323,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7339,7 +7341,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7361,7 +7363,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7381,7 +7383,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7401,7 +7403,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7423,7 +7425,7 @@ namespace YesSql.Tests
 
             await SavePersonsAsync("Bill", "Steve");
 
-            var logger = new TestLogger();
+            var logger = new FakeLogger<CoreTests>();
             _store.Configuration.Logger = logger;
 
             await using var session = _store.CreateSession();
@@ -7433,7 +7435,7 @@ namespace YesSql.Tests
             Assert.Equal(new[] { "Bill", "Steve" }, persons.Select(x => x.Firstname));
             AssertNotGrouped(logger, deferred: true);
 
-            logger.Clear();
+            logger.Collector.Clear();
             Assert.Equal(2, await session.Query<Person, PersonByAge>(x => x.Age == 0).NoDuplicates().CountAsync());
 #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -7472,9 +7474,9 @@ namespace YesSql.Tests
             await session.SaveChangesAsync();
         }
 
-        private static void AssertNotGrouped(TestLogger logger, bool deferred)
+        private static void AssertNotGrouped(FakeLogger<CoreTests> logger, bool deferred)
         {
-            var log = logger.ToString();
+            var log = logger.LatestRecord.Message;
 
             Assert.DoesNotContain("GROUP BY", log);
             Assert.DoesNotContain("MAX(", log);
@@ -7489,11 +7491,11 @@ namespace YesSql.Tests
             }
         }
 
-        private static string[] GetCountQueries(TestLogger logger)
+        private static string[] GetCountQueries(FakeLogger<CoreTests> logger)
         {
-            return logger.ToString()
-                .Split(Environment.NewLine)
-                .Where(line => line.Contains("count(", StringComparison.OrdinalIgnoreCase))
+            return logger.Collector.GetSnapshot()
+                .Select(record => record.Message)
+                .Where(message => message.Contains("count(", StringComparison.OrdinalIgnoreCase))
                 .ToArray();
         }
 
